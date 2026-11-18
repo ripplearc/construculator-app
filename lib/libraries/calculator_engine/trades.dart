@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
@@ -120,20 +121,35 @@ final class FootingVolume extends Equatable {
   /// The cross-section of the footing.
   final PieceSize crossSection;
 
-  /// A run of footing of [length] at [crossSection].
-  const FootingVolume({required this.length, required this.crossSection});
+  /// The system of units the volume is written in: cubic yards under
+  /// Imperial, cubic metres under Metric, whatever unit the length was
+  /// typed in (Section 6, "Display settings": "A trade result follows the
+  /// System of units setting, as a weight does. A footing mixes the typed
+  /// length with a stored cross-section, so 10m then Footng reads in yd³
+  /// under Imperial and in m³ under Metric"; Section 9, "(m³ under
+  /// Metric)"; product manager, 17 November 2026).
+  final MeasurementSystem system;
+
+  /// A run of footing of [length] at [crossSection], written in the cubic
+  /// unit of [system].
+  const FootingVolume({
+    required this.length,
+    required this.crossSection,
+    required this.system,
+  });
 
   /// The concrete: the length times the cross-section's face, both at
   /// their precise ticks, kept exact and rounded to two decimals at
-  /// display. It is written in cubic yards after an imperial length and
-  /// cubic metres after a metric one (Section 6: results follow the entry
-  /// system).
+  /// display, in the cubic unit of [system].
   Volume get volume => Volume(
     length.preciseTicks /
         Length.ticksPerFoot *
         crossSection.squareTicks /
         _squareTicksPerSquareFoot,
-    unit: length.unit.isMetric ? Unit.metre : Unit.yard,
+    unit: switch (system) {
+      MeasurementSystem.imperial => Unit.yard,
+      MeasurementSystem.metric => Unit.metre,
+    },
   );
 
   /// The same length of footing at another cross-section, as the pill
@@ -142,11 +158,15 @@ final class FootingVolume extends Equatable {
   /// caller keeps the last good one ("Size must be more than zero").
   FootingVolume? recount(PieceSize crossSection) {
     if (!crossSection.hasFace) return null;
-    return FootingVolume(length: length, crossSection: crossSection);
+    return FootingVolume(
+      length: length,
+      crossSection: crossSection,
+      system: system,
+    );
   }
 
   @override
-  List<Object?> get props => [length, crossSection];
+  List<Object?> get props => [length, crossSection, system];
 }
 
 const int _squareTicksPerSquareFoot =
@@ -190,13 +210,18 @@ class Trades extends Equatable {
   /// rest), so that is the one guard.
   List<FootingVolume> footingVolumesFor(
     Length length,
-    List<PieceSize> crossSections,
-  ) {
+    List<PieceSize> crossSections, {
+    required MeasurementSystem system,
+  }) {
     if (!_isAboveZero(length)) return const [];
     return [
       for (final crossSection in crossSections)
         if (crossSection.hasFace)
-          FootingVolume(length: length, crossSection: crossSection),
+          FootingVolume(
+            length: length,
+            crossSection: crossSection,
+            system: system,
+          ),
     ];
   }
 

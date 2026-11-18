@@ -90,21 +90,27 @@
         </regex>
 
         <!-- D2 (CA-1066) -->
-        <!-- RULE 9: the footing volume multiplies by the ticks per foot,
-             forgets the square feet, or is written in yards after a metric
-             length or in metres after an imperial one -->
-        <regex pattern="length\.preciseTicks /\s*Length\.ticksPerFoot \*\s*crossSection\.squareTicks /\s*_squareTicksPerSquareFoot,\s*unit: length\.unit\.isMetric \? Unit\.metre : Unit\.yard," dotAll="true" id="trades.footing.volume">
-            <mutation text="length.preciseTicks * Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: length.unit.isMetric ? Unit.metre : Unit.yard,"/>
-            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks, unit: length.unit.isMetric ? Unit.metre : Unit.yard,"/>
+        <!-- RULE 9 (R1): the footing volume multiplies by the ticks per
+             foot, forgets the square feet, is always written in yards or
+             in metres, or follows the length's unit instead of the System
+             of units setting -->
+        <regex pattern="length\.preciseTicks /\s*Length\.ticksPerFoot \*\s*crossSection\.squareTicks /\s*_squareTicksPerSquareFoot,\s*unit: switch \(system\) \{\s*MeasurementSystem\.imperial =&gt; Unit\.yard,\s*MeasurementSystem\.metric =&gt; Unit\.metre,\s*\}," dotAll="true" id="trades.footing.volume">
+            <mutation text="length.preciseTicks * Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: switch (system) { MeasurementSystem.imperial =&gt; Unit.yard, MeasurementSystem.metric =&gt; Unit.metre, },"/>
+            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks, unit: switch (system) { MeasurementSystem.imperial =&gt; Unit.yard, MeasurementSystem.metric =&gt; Unit.metre, },"/>
             <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: Unit.yard,"/>
             <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: Unit.metre,"/>
+            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: length.unit.isMetric ? Unit.metre : Unit.yard,"/>
+        </regex>
+        <!-- RULE 9b (R1): a recount drops the system -->
+        <regex pattern="return FootingVolume\(\s*length: length,\s*crossSection: crossSection,\s*system: system,\s*\);" dotAll="true" id="trades.footing.recount_system">
+            <mutation text="return FootingVolume(length: length, crossSection: crossSection, system: MeasurementSystem.imperial);"/>
         </regex>
 
         <!-- RULE 10: a footing recount takes a cross-section with no face,
              or forgets the length -->
-        <regex pattern="if \(!crossSection\.hasFace\) return null;\s*return FootingVolume\(length: length, crossSection: crossSection\);" dotAll="true" id="trades.footing.recount">
-            <mutation text="return FootingVolume(length: length, crossSection: crossSection);"/>
-            <mutation text="if (!crossSection.hasFace) return null; return FootingVolume(length: const Length(0, unit: Unit.foot), crossSection: crossSection);"/>
+        <regex pattern="if \(!crossSection\.hasFace\) return null;\s*return FootingVolume\(\s*length: length,\s*crossSection: crossSection,\s*system: system,\s*\);" dotAll="true" id="trades.footing.recount">
+            <mutation text="return FootingVolume(length: length, crossSection: crossSection, system: system);"/>
+            <mutation text="if (!crossSection.hasFace) return null; return FootingVolume(length: const Length(0, unit: Unit.foot), crossSection: crossSection, system: system);"/>
         </regex>
 
         <!-- RULE 16: a length of zero is usable, the smallest one above
