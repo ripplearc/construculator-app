@@ -7,10 +7,7 @@ class FakeIdGeneratorImpl implements IdGenerator {
   int _issued = 0;
 
   @override
-  String newId() {
-    _issued++;
-    return '00000000-0000-4000-8000-${_issued.toString().padLeft(12, '0')}';
-  }
+  String newId() => idAt(++_issued);
 
   /// The id [newId] returned for the [position]th call, counting from 1.
   static String idAt(int position) =>
