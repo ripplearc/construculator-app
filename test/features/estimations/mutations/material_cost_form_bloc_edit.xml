@@ -12,68 +12,100 @@
     </exclude>
 
     <rules>
-        <regex pattern="(edit_save.id_blank)" id="id: existing\?\.id \?\? ''">
+        <regex pattern="(id: existing\?\.id \?\? '')" id="edit_save.id_blank">
             <mutation text="id: ''"/>
         </regex>
 
-        <regex pattern="(edit_save.created_at_now)" id="createdAt: existing\?\.createdAt \?\? now">
+        <regex pattern="(createdAt: existing\?\.createdAt \?\? now)" id="edit_save.created_at_now">
             <mutation text="createdAt: now"/>
         </regex>
 
-        <regex pattern="(edit_save.update_when_new)" id="final result = edited == null">
+        <regex pattern="(final result = edited == null)" id="edit_save.update_when_new">
             <mutation text="final result = edited != null"/>
         </regex>
 
-        <regex pattern="(edit_save.unit_saved_on_edit)" id="if \(edited == null\) \{">
+        <regex pattern="(if \(edited == null\) \{)" id="edit_save.unit_saved_on_edit">
             <mutation text="if (edited != null) {"/>
         </regex>
 
-        <regex pattern="(edit_rate.guard_off)" id="_ when d\.isEditingExistingLine &amp;&amp; rate == d\.rate =&gt; d\.rateStatus,">
-            <mutation text="_ when false &amp;&amp; rate == d.rate =&gt; d.rateStatus,"/>
+        <regex pattern="(_ when stored != null &amp;&amp; rate == stored\.unitPrice\.amount =&gt;)" id="edit_rate.guard_off">
+            <mutation text="_ when false &amp;&amp; rate == stored.unitPrice.amount =&gt;"/>
         </regex>
 
-        <regex pattern="(edit_rate.guard_inverted)" id="rate == d\.rate =&gt;">
-            <mutation text="rate != d.rate =&gt;"/>
+        <regex pattern="(rate == stored\.unitPrice\.amount =&gt;)" id="edit_rate.guard_inverted">
+            <mutation text="rate != stored.unitPrice.amount =&gt;"/>
         </regex>
 
-        <regex pattern="(edit_open.no_baseline)" id="_formValuesAtOpening = opened;">
+        <regex pattern="(_formValuesAtOpening = opened;)" id="edit_open.no_baseline">
             <mutation text="// baseline removed"/>
         </regex>
 
-        <regex pattern="(edit_open.no_name)" id="itemName: item\.itemName,">
+        <regex pattern="(itemName: item\.itemName,)" id="edit_open.no_name">
             <mutation text="itemName: '',"/>
         </regex>
 
-        <regex pattern="(edit_open.no_quantity)" id="quantity: item\.quantity\.value,">
+        <regex pattern="(quantity: item\.quantity\.value,)" id="edit_open.no_quantity">
             <mutation text="quantity: null,"/>
         </regex>
 
-        <regex pattern="(edit_open.no_unit)" id="unit: item\.quantity\.unit,">
+        <regex pattern="(unit: item\.quantity\.unit,)" id="edit_open.no_unit">
             <mutation text="unit: null,"/>
         </regex>
 
-        <regex pattern="(edit_open.no_rate)" id="rate: item\.unitPrice\.amount,">
+        <regex pattern="(rate: item\.unitPrice\.amount,)" id="edit_open.no_rate">
             <mutation text="rate: null,"/>
         </regex>
 
-        <regex pattern="(edit_open.status_missing)" id="rateStatus: item\.rateStatus,">
+        <regex pattern="(rateStatus: item\.rateStatus,)" id="edit_open.status_missing">
             <mutation text="rateStatus: RateStatus.missing,"/>
         </regex>
 
-        <regex pattern="(edit_delete.new_line_deletable)" id="edited == null \|\|">
+        <regex pattern="(edited == null \|\|)" id="edit_delete.new_line_deletable">
             <mutation text="edited != null ||"/>
         </regex>
 
-        <regex pattern="(edit_delete.failure_not_flagged)" id="whileDeleting: true\)">
+        <regex pattern="(whileDeleting: true\))" id="edit_delete.failure_not_flagged">
             <mutation text="whileDeleting: false)"/>
         </regex>
 
-        <regex pattern="(edit_delete.repeat_allowed)" id="state is MaterialCostFormDeleted\) \{\n      return;\n    \}\n    emit\(MaterialCostFormSubmitting\(draft\)\);\n    final result = await _repository\.deleteCostItem">
+        <regex pattern="(state is MaterialCostFormDeleted\) \{\n      return;\n    \}\n    emit\(MaterialCostFormSubmitting\(draft\)\);\n    final result = await _repository\.deleteCostItem)" id="edit_delete.repeat_allowed">
             <mutation text="state is MaterialCostFormSubmitting) {\n      return;\n    }\n    emit(MaterialCostFormSubmitting(draft));\n    final result = await _repository.deleteCostItem"/>
         </regex>
 
-        <regex pattern="(edit_failure.keep_delete_failure)" id="MaterialCostFormFailure\(whileDeleting: false, :final failure\)">
+        <regex pattern="(MaterialCostFormFailure\(whileDeleting: false, :final failure\))" id="edit_failure.keep_delete_failure">
             <mutation text="MaterialCostFormFailure(:final failure)"/>
+        </regex>
+
+        <regex pattern="(\.\.\.\?existing\?\.calculation,)" id="edit_save.calculation_kept">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(\? existing\.quantityProvenance)" id="edit_save.provenance_kept">
+            <mutation text="? QuantityProvenance.manual"/>
+        </regex>
+
+        <regex pattern="(\? existing\.calculatorFormula)" id="edit_save.formula_kept">
+            <mutation text="? null"/>
+        </regex>
+
+        <regex pattern="(wastePercent: existing\?\.wastePercent,)" id="edit_save.waste_kept">
+            <mutation text="wastePercent: null,"/>
+        </regex>
+
+        <regex pattern="(productLink: existing\?\.productLink,)" id="edit_save.link_kept">
+            <mutation text="productLink: null,"/>
+        </regex>
+
+        <regex pattern="(description: existing\?\.description,)" id="edit_save.note_kept">
+            <mutation text="description: null,"/>
+        </regex>
+
+        <regex pattern="(quantity == existing\.quantity\.value)" id="edit_save.quantity_change_ignored">
+            <mutation text="quantity != existing.quantity.value"/>
+        </regex>
+
+        <regex pattern="(stored\.rateStatus,)" id="edit_rate.status_not_put_back">
+            <mutation text="RateStatus.ownRateUnconfirmed,"/>
         </regex>
 
     </rules>

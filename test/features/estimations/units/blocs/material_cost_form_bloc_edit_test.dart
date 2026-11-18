@@ -4,8 +4,13 @@ import 'package:construculator/features/estimation/domain/repositories/cost_item
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -25,6 +30,8 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late CostItemRepository repository;
     late LastUsedUnitRepository lastUsedUnits;
+    late FakeStorageService storage;
+    late FakeAuthRepository auth;
 
     Future<MaterialCostItem> storedLine() async {
       final items = await repository.getCostItemsForEstimate(estimateId);
@@ -49,13 +56,18 @@ void main() {
         bloc.add(MaterialCostEditOpened(await storedLine()));
 
     setUpAll(() {
+      final clock = FakeClockImpl();
+      storage = FakeStorageService();
+      auth = FakeAuthRepository(clock: clock);
       Modular.init(
         EstimationModule(
           FakeAppBootstrapFactory.create(
-            supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+            supabaseWrapper: FakeSupabaseWrapper(clock: clock),
           ),
         ),
       );
+      Modular.replaceInstance<StorageService>(storage);
+      Modular.replaceInstance<AuthRepository>(auth);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostItemRepository>();
@@ -66,6 +78,16 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      storage.reset();
+      auth.reset();
+      auth.setCurrentCredentials(
+        UserCredential(
+          id: 'account-1',
+          email: 'a@example.com',
+          metadata: const {},
+          createdAt: DateTime(2026),
+        ),
+      );
       bloc = Modular.get<MaterialCostFormBloc>();
     });
 
@@ -219,7 +241,7 @@ void main() {
       expect: () => [
         isA<MaterialCostFormSubmitting>(),
         isA<MaterialCostFormSuccess>().having(
-          (s) => s.createdItem.id,
+          (s) => s.savedItem.id,
           'id',
           itemId,
         ),
@@ -280,6 +302,135 @@ void main() {
       },
     );
 
+    void seedRichLine() =>
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: itemId,
+            estimateId: estimateId,
+            itemName: 'Rebar',
+            description: 'Back wall only',
+            productLink: 'https://example.test/rebar',
+            wastePercent: 10.0,
+            unitPrice: 100.0,
+            quantity: 5.0,
+            unit: 'pieces',
+            itemTotalCost: 500.0,
+            rateStatus: 'own_rate_confirmed',
+            quantityProvenance: 'from_calculator',
+            calculatorFormula: '47.24in x 94.49in',
+          ),
+        ]);
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'puts back the stored rate status when the stored rate is typed again',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialRateUpdated('10'))
+          ..add(const MaterialRateUpdated('100'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.data.rate, 100.0);
+        expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+        expect(bloc.state.data.hasUnsavedChanges, isFalse);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'marks the rate as the own rate while a different rate is typed',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc.add(const MaterialRateUpdated('10'));
+      },
+      verify: (bloc) =>
+          expect(bloc.state.data.rateStatus, RateStatus.ownRateUnconfirmed),
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving only a new name keeps the note, link, waste, formula and '
+      'quantity source',
+      setUp: seedRichLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialCostItemTypeChanged('Steel bar'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async {
+        final line = await storedLine();
+        expect(line.itemName, 'Steel bar');
+        expect(line.description, 'Back wall only');
+        expect(line.productLink, 'https://example.test/rebar');
+        expect(line.wastePercent, 10.0);
+        expect(line.quantityProvenance, QuantityProvenance.fromCalculator);
+        expect(line.calculatorFormula, '47.24in x 94.49in');
+        expect(line.quantity.value, 5.0);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving a new quantity makes the quantity manual and drops the formula',
+      setUp: seedRichLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialQuantityUpdated('7'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async {
+        final line = await storedLine();
+        expect(line.quantity.value, 7.0);
+        expect(line.quantityProvenance, QuantityProvenance.manual);
+        expect(line.calculatorFormula, isNull);
+        expect(line.description, 'Back wall only');
+        expect(line.wastePercent, 10.0);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'a remembered unit that arrives late does not replace the stored unit',
+      setUp: () {
+        seedLine();
+        return lastUsedUnits.saveLastUnit(CostItemType.material, Unit.meters);
+      },
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialQuantityUpdated('5'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.data.unit, Unit.pieces);
+        expect(bloc.state.data.hasUnsavedChanges, isFalse);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving a change to a line does not change the remembered unit',
+      setUp: () {
+        seedLine();
+        return lastUsedUnits.saveLastUnit(CostItemType.material, Unit.meters);
+      },
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialQuantityUpdated('7'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async => expect(
+        await lastUsedUnits.getLastUnit(CostItemType.material),
+        Unit.meters,
+      ),
+    );
+
     group('deleting the line', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'removes the stored line and ends in Deleted',
@@ -298,6 +449,23 @@ void main() {
           final items = await repository.getCostItemsForEstimate(estimateId);
           expect(items.getRightOrNull(), isEmpty);
         },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'a second Delete after the line is deleted does nothing',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc.add(const MaterialCostDeleteRequested());
+          await bloc.stream.firstWhere((s) => s is MaterialCostFormDeleted);
+          bloc.add(const MaterialCostDeleteRequested());
+        },
+        skip: 1,
+        expect: () => [
+          isA<MaterialCostFormSubmitting>(),
+          isA<MaterialCostFormDeleted>(),
+        ],
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(

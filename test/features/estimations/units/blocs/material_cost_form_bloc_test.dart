@@ -475,7 +475,7 @@ void main() {
         expect: () => [
           isA<MaterialCostFormSubmitting>(),
           isA<MaterialCostFormSuccess>().having(
-            (s) => s.createdItem.itemName,
+            (s) => s.savedItem.itemName,
             'itemName',
             'Interior paint',
           ),
