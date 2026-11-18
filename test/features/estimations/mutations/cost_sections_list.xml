@@ -21,8 +21,8 @@
             <mutation text="final isEmpty = false;"/>
         </regex>
 
-        <regex pattern="(if \(isEmpty\) _addFirstCost\(context\),)" dotAll="true" id="list.empty.never_show_first_cost">
-            <mutation text=""/>
+        <regex pattern="(if \(isEmpty\)\s*SliverFillRemaining\()" dotAll="true" id="list.empty.never_show_first_cost">
+            <mutation text="if (false) SliverFillRemaining("/>
         </regex>
 
         <regex pattern="(if \(lines\.isEmpty\))" dotAll="true" id="list.section.negate_empty_check">
@@ -73,7 +73,7 @@
             <mutation text="costs.equipmentLines,"/>
         </regex>
 
-        <regex pattern="(onPressed: widget\.onAddFirstCost,)" dotAll="true" id="list.first_cost.drop_handler">
+        <regex pattern="(onPressed: onAddFirstCost,)" dotAll="true" id="list.first_cost.drop_handler">
             <mutation text="onPressed: null,"/>
         </regex>
 
