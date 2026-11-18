@@ -172,6 +172,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
                       children: [
                         SheetSearchField(
                           controller: _searchController,
+                          hintText: context.l10n.yourRatesSearchHint,
                           onChanged: _search,
                         ),
                         const SizedBox(height: CoreSpacing.space4),
