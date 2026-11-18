@@ -1947,9 +1947,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorPillDensity => 'Density';
 
   @override
-  String get calculatorPillShownAs => 'Shown as';
-
-  @override
   String get calculatorPillAcross => 'Across';
 
   @override
@@ -2195,7 +2192,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorNoteSlopeAboveZero =>
-      'A slope must be above 0%. Edit the Slope chip.';
+      'Slope must be more than 0%. Edit the Slope chip.';
+
+  @override
+  String get calculatorNoteSidesNotWhole =>
+      'Sides needs a whole number, 3 or more.';
 
   @override
   String get calculatorNotePitchHasNoDms =>
@@ -2664,6 +2665,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorToastAngleThreePartsTitle => 'An angle has three parts';
+
+  @override
+  String get calculatorToastPitchUnderRightAngleTitle =>
+      'A pitch must be under 90°';
+
+  @override
+  String get calculatorToastPitchAtLeastZeroTitle =>
+      'A pitch must be 0° or more';
+
+  @override
+  String get calculatorToastFlatPitchHasNoRunTitle => 'A flat pitch has no run';
+
+  @override
+  String get calculatorToastSlopeAboveZeroTitle => 'Slope must be more than 0%';
+
+  @override
+  String get calculatorToastEditThePitchChipBody => 'Edit the Pitch chip.';
+
+  @override
+  String get calculatorToastEditTheSlopeChipBody => 'Edit the Slope chip.';
 
   @override
   String get calculatorToastFinishTheAngleBody =>

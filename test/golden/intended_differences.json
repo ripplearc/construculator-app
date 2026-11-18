@@ -42,20 +42,26 @@
   {
    "scenario": "S86",
    "checkpoint": "a trailing point can only go to D:M:S",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "depKey", "equals": "Input 8. as 8°00'00\""}
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. So 8. has no pill. The prototype offers 8°00'.",
+   "dart": {"kind": "depKeyShown", "equals": false}
   },
   {
    "scenario": "S86",
    "checkpoint": "…and the pill names where the next tap goes",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "depKey", "equals": "Input 8.45in/12in as 8°45'00\""}
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. So 8.45in/12in offers the way back to 8.45°. The prototype offers 8°45'.",
+   "dart": {"kind": "depKey", "equals": "Input 8.45in/12in as 8.45°"}
   },
   {
    "scenario": "S86",
    "checkpoint": "stop 3: D:M:S — 8.75°, the same digits re-read",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "8°45'00\""}, {"kind": "stripAt", "index": 0, "equals": "Pitch-degrees: 8.75°"}]}
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. So the second tap comes home to 8.45°. The prototype's second tap re-reads the digits as 8°45'.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "8.45°"}, {"kind": "stripAt", "index": 0, "equals": "Pitch-degrees: 8.45°"}]}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "a full lap comes home to exactly what was typed",
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. With two readings the third tap is the trade reading again, 8.45in/12in. The prototype's third tap leaves its D:M:S stop for 8.45°.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "8.45in/12in"}, {"kind": "depKey", "equals": "Input 8.45in/12in as 8.45°"}]}
   },
   {
    "scenario": "S86",
@@ -180,14 +186,14 @@
   {
    "scenario": "S115",
    "checkpoint": "…one notch past the band, and the trade stop is gone",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "depKey", "equals": "Input 24.5° as 24°05'00\""}
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. So 24.5, past the roof, has no pill. The prototype offers 24°05'.",
+   "dart": {"kind": "depKeyShown", "equals": false}
   },
   {
    "scenario": "S115",
    "checkpoint": "the case that started this: two sensible readings, no 68.5° wall",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "30.45°"}, {"kind": "depKey", "equals": "Input 30.45° as 30°45'00\""}]}
+   "reason": "UX doc Section 8 ('D:M:S is not a pitch reading') and decision tree rows 197 and 260 (product manager, 15 November 2026; CA-1094): under Pitch the Read-as pill offers degrees and in/12in and the way back, never D:M:S; walkthrough 17.4's D:M:S stop is a doc error. So 30.45, past the roof, has no pill. The prototype offers 30°45'.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "30.45°"}, {"kind": "depKeyShown", "equals": false}]}
   },
   {
    "scenario": "S116",

@@ -85,12 +85,13 @@ void main() {
 
   group('Tape Read-as pill (F2b)', () {
     group('under Pitch (walkthrough 17.4)', () {
-      test('S86: every reading reachable, none guessed, and a full lap comes '
-          'home to what was typed', () {
+      test('S86 (decision tree row 260): the pill offers the other reading '
+          'and then the way back, never D:M:S, and the second tap comes home '
+          'to what was typed', () {
         var tape = press(const Tape(), '[Pitch] 8');
         expect(pill(tape), 'Input 8° as 8in/12in');
         tape = press(tape, '.');
-        expect(pill(tape), 'Input 8. as 8°00\'00"');
+        expect(tape.readAsOffer, isNull, reason: '8. still ends in its point');
         tape = press(tape, '4 5');
         expect(chipText(tape, 0), '8.45');
         expect(pill(tape), 'Input 8.45° as 8.45in/12in');
@@ -101,12 +102,7 @@ void main() {
         // 8.45in is kept exactly (CA-1190): atan(8.45/12) is 35.15°, where the
         // tick-rounded 541/64in read 35.16°.
         expect(strip(tape).first, 'Pitch-degrees: 35.15°');
-        expect(pill(tape), 'Input 8.45in/12in as 8°45\'00"');
-
-        tape = press(tape, 'pill');
-        expect(chipText(tape, 0), '8°45\'00"');
-        expect(strip(tape).first, 'Pitch-degrees: 8.75°');
-        expect(pill(tape), 'Input 8°45\'00" as 8.45°');
+        expect(pill(tape), 'Input 8.45in/12in as 8.45°');
 
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '8.45');
@@ -114,10 +110,7 @@ void main() {
         expect(tape, press(const Tape(), '[Pitch] 8 . 4 5'));
       });
 
-      test('S86 under rule 4.10 (CA-1372): 8.89 has no D:M:S reading, since '
-          '89 minutes can never be typed, so the pill cycles the two '
-          'readings left (walkthrough 17.4, steps 8 to 10; decision tree '
-          'row 260)', () {
+      test('row 260: Pitch 8.89 cycles the same two readings', () {
         var tape = press(const Tape(), '[Pitch] 8 . 8 9');
         expect(pill(tape), 'Input 8.89° as 8.89in/12in');
         tape = press(tape, 'pill');
@@ -134,6 +127,12 @@ void main() {
           isNull,
         );
         expect(press(const Tape(), '[Pitch] 3 8 DMS 3').readAsOffer, isNull);
+        expect(
+          press(const Tape(), '[Pitch] 8 DMS 3').readAsOffer,
+          isNull,
+          reason: 'a D:M:S the key typed has no other reading, even one '
+              'whose digits would read as a roof',
+        );
         expect(press(const Tape(), '[Pitch] 3 8 DMS').readAsOffer, isNull);
       });
 
@@ -153,7 +152,7 @@ void main() {
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '6');
         tape = press(tape, '.');
-        expect(pill(tape), 'Input 6. as 6°00\'00"');
+        expect(tape.readAsOffer, isNull, reason: '6. still ends in its point');
         tape = press(tape, '5');
         expect(pill(tape), 'Input 6.5° as 6.5in/12in');
         final twelve = press(const Tape(), '[Pitch] 1 2');
@@ -167,13 +166,11 @@ void main() {
           'Input 24° as 24in/12in',
         );
         expect(
-          pill(press(const Tape(), '[Pitch] 2 4 . 5')),
-          'Input 24.5° as 24°05\'00"',
+          press(const Tape(), '[Pitch] 2 4 . 5').readAsOffer,
+          isNull,
+          reason: '24.5in/12in is past the roof, and D:M:S is no pitch reading',
         );
-        expect(
-          pill(press(const Tape(), '[Pitch] 3 0 . 4 5')),
-          'Input 30.45° as 30°45\'00"',
-        );
+        expect(press(const Tape(), '[Pitch] 3 0 . 4 5').readAsOffer, isNull);
         expect(press(const Tape(), '[Pitch] 1 0 0').readAsOffer, isNull);
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 5')),
@@ -203,8 +200,9 @@ void main() {
         );
       });
 
-      test('⌫ on a minutes digit after the laps drops the pill', () {
-        var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill pill');
+      test('⌫ on a minutes digit of a D:M:S opened by a second point drops '
+          'the way back', () {
+        var tape = press(const Tape(), '[Pitch] 8 . 4 5 .');
         expect(pill(tape), 'Input 8°45\'00" as 8.45°');
         tape = press(tape, '⌫ ⌫ ⌫');
         expect(chipText(tape, 0), '8°');
@@ -277,8 +275,8 @@ void main() {
         expect(press(const Tape(), '[Pitch] 0 . 0 0 7').readAsOffer, isNull);
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 0 1 pill')),
-          'Input 0.01in/12in as 0°01\'00"',
-          reason: 'two decimals read as minutes',
+          'Input 0.01in/12in as 0.01°',
+          reason: 'the way back, never D:M:S (row 260)',
         );
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 0 0 8')),
@@ -377,9 +375,9 @@ void main() {
       });
     });
 
-    test('rule 4.10: the way back survives the seal: [Pitch] 8.45, pill, '
-        'pill, + then ⌫ still offers 8.45°', () {
-      final sealed = press(const Tape(), '[Pitch] 8 . 4 5 pill pill +');
+    test('rule 4.10: the way back survives the seal: [Pitch] 8.45. then + '
+        'and ⌫ still offers 8.45°', () {
+      final sealed = press(const Tape(), '[Pitch] 8 . 4 5 . +');
       expect((sealed.chips.first as ValueChip).entry.text, '8°45\'00"');
       final reopened = press(sealed, '⌫');
       expect(pill(reopened), 'Input 8°45\'00" as 8.45°');
@@ -389,7 +387,7 @@ void main() {
     test('rule 4.10: the way back goes with the first ⌫ that takes a digit '
         'off the number; the ⌫ that closes the seal\'s empty seconds field '
         'changes no digit and keeps it', () {
-      var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill pill + ⌫');
+      var tape = press(const Tape(), '[Pitch] 8 . 4 5 . + ⌫');
       expect(chipText(tape, 0), '8°45\'00"');
       expect(pill(tape), 'Input 8°45\'00" as 8.45°');
       tape = press(tape, '⌫');

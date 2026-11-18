@@ -566,8 +566,9 @@ class CalculatorState extends Equatable {
   }
 
   /// The note that takes the place of the suggestions (Section 1.8), or
-  /// `null`: a warning first — a pitch or a slope the rules cannot use
-  /// (Section 5.4), a prefix trig chip its function cannot answer — then
+  /// `null`: a warning first — a pitch, a slope or a Sides count the rules
+  /// cannot use (Sections 5.4 and 1.8), a prefix trig chip its function
+  /// cannot answer — then
   /// the D:M:S key that changed nothing on a pitch answer, which the next
   /// key closes.
   CalculatorStripNote? get stripNote {
@@ -581,6 +582,8 @@ class CalculatorState extends Equatable {
         return const CalculatorFlatPitchHasNoRunNote();
       case RuleRefusal.slopeOutOfRange:
         return const CalculatorSlopeOutOfRangeNote();
+      case RuleRefusal.sidesNotWhole:
+        return const CalculatorSidesNotWholeNote();
       case null:
         break;
     }
@@ -799,6 +802,8 @@ class CalculatorState extends Equatable {
         const CalculatorSecondsTwoDigitsToast(),
       (TapeEntryRefused(reason: EntryRefusal.angleHasThreeParts), _, _) =>
         const CalculatorAngleThreePartsToast(),
+      (TapeRefused(reason: TapeRefusal.nothingToCompute), _, _) =>
+        _rangeWarningOnEquals,
       _ => null,
     };
   }
@@ -806,4 +811,21 @@ class CalculatorState extends Equatable {
   static bool _isABareNumber(ValueChip? typed) =>
       typed != null &&
       typed.entry.tokens.every((token) => token.denominator == null);
+
+  CalculatorToast? get _rangeWarningOnEquals => switch (stripNote) {
+    CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true) =>
+      const CalculatorRangeWarningToast(
+        CalculatorRangeWarning.pitchUnderRightAngle,
+      ),
+    CalculatorPitchOutOfRangeNote() => const CalculatorRangeWarningToast(
+      CalculatorRangeWarning.pitchAtLeastZero,
+    ),
+    CalculatorFlatPitchHasNoRunNote() => const CalculatorRangeWarningToast(
+      CalculatorRangeWarning.flatPitchHasNoRun,
+    ),
+    CalculatorSlopeOutOfRangeNote() => const CalculatorRangeWarningToast(
+      CalculatorRangeWarning.slopeAboveZero,
+    ),
+    _ => null,
+  };
 }

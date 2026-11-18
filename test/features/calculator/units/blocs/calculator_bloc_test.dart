@@ -1855,6 +1855,142 @@ void main() {
       });
     });
 
+    group('CA-1094: strip notes (Section 1.8)', () {
+      test('a Sides count no regular polygon has takes the strip with "Sides '
+          'needs a whole number, 3 or more.", and a whole count of 3 or more '
+          'gives the strip back (decision tree row 339)', () {
+        final notWhole = CalculatorState(
+          tape: pressed('[Diameter] 1 2 ft [Sides] 6 . 5'),
+        );
+        expect(notWhole.stripNote, const CalculatorSidesNotWholeNote());
+        expect(notWhole.suggestions, isEmpty);
+        expect(notWhole.conversions, isEmpty);
+        expect(
+          CalculatorState(
+            tape: pressed('[Diameter] 1 2 ft [Sides] 2'),
+          ).stripNote,
+          const CalculatorSidesNotWholeNote(),
+        );
+        final whole = CalculatorState(
+          tape: pressed('[Diameter] 1 2 ft [Sides] 6'),
+        );
+        expect(whole.stripNote, isNull);
+        expect(whole.suggestions, isNotEmpty);
+        expect(
+          CalculatorLabelFormatter(
+            AppLocalizationsEn(),
+          ).stripText(const CalculatorSidesNotWholeNote()),
+          'Sides needs a whole number, 3 or more.',
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '= while the pitch note shows raises a red Alert in the words of the '
+        'note, and the tape does not change (decision tree row 375)',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: pressed('[Pitch] 9 5 [Run] 1 0 ft')),
+        act: (bloc) => bloc.add(const CalculatorEqualsPressed()),
+        expect: () => [
+          CalculatorState(
+            tape: pressed('[Pitch] 9 5 [Run] 1 0 ft'),
+            refusal: const TapeRefused(TapeRefusal.nothingToCompute),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorRangeWarningToast(
+            CalculatorRangeWarning.pitchUnderRightAngle,
+          ),
+        ),
+      );
+
+      test('each warning = repeats reads as its note does, title then body, '
+          'and = with no warning on the strip raises no Alert', () {
+        final labels = CalculatorLabelFormatter(AppLocalizationsEn());
+        const nothingToCompute = TapeRefused(TapeRefusal.nothingToCompute);
+        final warnings = {
+          '[Pitch] 9 5 [Run] 1 0 ft': (
+            CalculatorRangeWarning.pitchUnderRightAngle,
+            'A pitch must be under 90°',
+            'Edit the Pitch chip.',
+          ),
+          '[Pitch] 0 [Rise] 1 0 ft': (
+            CalculatorRangeWarning.flatPitchHasNoRun,
+            'A flat pitch has no run',
+            'Edit the Pitch chip.',
+          ),
+          '[Slope] 0 [Run] 1 0 ft': (
+            CalculatorRangeWarning.slopeAboveZero,
+            'Slope must be more than 0%',
+            'Edit the Slope chip.',
+          ),
+        };
+        for (final MapEntry(key: keys, value: (warning, title, body))
+            in warnings.entries) {
+          final state = CalculatorState(
+            tape: pressed(keys),
+            refusal: nothingToCompute,
+          );
+          final toast = CalculatorRangeWarningToast(warning);
+          expect(state.toast, toast, reason: keys);
+          expect(labels.toastTitle(toast), title);
+          expect(labels.toastBody(toast), body);
+          expect(
+            labels.stripText(state.stripNote),
+            '$title. $body',
+            reason: 'the Alert repeats the note word for word',
+          );
+        }
+        const belowZero = CalculatorRangeWarningToast(
+          CalculatorRangeWarning.pitchAtLeastZero,
+        );
+        final recalledBelowZero = CalculatorState(
+          tape: const Tape(
+            chips: [
+              ValueChip(
+                key: 'Pitch',
+                entry: EntryBuffer([Token(digits: '-5')]),
+                exact: (
+                  spelled: EntryBuffer([Token(digits: '-5')]),
+                  value: Angle(-5),
+                ),
+                readsDegrees: true,
+                isActive: false,
+              ),
+              ValueChip(
+                key: 'Run',
+                entry: EntryBuffer([Token(digits: '10', unit: Unit.foot)]),
+                isActive: false,
+              ),
+            ],
+          ),
+          refusal: nothingToCompute,
+        );
+        expect(
+          recalledBelowZero.stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
+        );
+        expect(recalledBelowZero.toast, belowZero);
+        expect(labels.toastTitle(belowZero), 'A pitch must be 0° or more');
+        expect(labels.toastBody(belowZero), 'Edit the Pitch chip.');
+        expect(
+          CalculatorState(
+            tape: pressed('[Diameter] 1 2 ft [Sides] 6 . 5'),
+            refusal: nothingToCompute,
+          ).toast,
+          isNull,
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('1 2 ft'),
+            refusal: nothingToCompute,
+          ).toast,
+          isNull,
+        );
+      });
+    });
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,
@@ -3185,8 +3321,13 @@ void main() {
         expect(pillOf('[Pitch] 8 . 4 5').rebuildsAnAnswer, isFalse);
         expect(pillOf('[Pitch] 8 in').sourceText, '8in/12in');
         expect(pillOf('[Pitch] 8 in').targetText, '8°');
-        expect(pillOf('[Pitch] 8 .').sourceText, '8.');
-        expect(pillOf('[Pitch] 8 .').targetText, '8°00\'00"');
+        expect(
+          stateOf('[Pitch] 8 .').dependentKeys,
+          isEmpty,
+          reason: 'D:M:S is no pitch reading (decision tree row 260)',
+        );
+        expect(pillOf('[Pitch] 8 . 4 5 .').sourceText, '8°45\'00"');
+        expect(pillOf('[Pitch] 8 . 4 5 .').targetText, '8.45°');
         expect(pillOf('[Slope] 0 . 6 5').sourceText, '0.65%');
         expect(pillOf('[Slope] 0 . 6 5').targetText, '65%');
         expect(pillOf('[SIN] 3 8 . 3 0').sourceText, '38.30°');
