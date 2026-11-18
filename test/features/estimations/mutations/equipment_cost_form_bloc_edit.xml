@@ -64,6 +64,7 @@
 
     <commands>
         <command group="equipment_cost_form_bloc_edit" expected-return="0">fvm flutter test test/features/estimations/units/blocs/equipment_cost_form_bloc_edit_test.dart</command>
+        <command group="equipment_cost_form_bloc_edit" expected-return="0">fvm flutter test test/features/estimations/units/blocs/equipment_cost_form_bloc_test.dart --plain-name "on a line already on the estimate"</command>
     </commands>
 
     <threshold failure="85">
