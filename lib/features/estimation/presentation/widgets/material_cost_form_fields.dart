@@ -12,6 +12,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_fi
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -135,7 +136,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
       buildWhen: (previous, current) =>
           previous.data.unit != current.data.unit ||
-          _isRateMissing(previous) != _isRateMissing(current) ||
+          previous.data.rateStatus != current.data.rateStatus ||
+          previous.data.offersSaveAsDefault !=
+              current.data.offersSaveAsDefault ||
+          (current.data.offersSaveAsDefault &&
+              (previous.data.rate != current.data.rate ||
+                  previous.data.itemName != current.data.itemName)) ||
           _isSaving(previous) != _isSaving(current),
       builder: (context, state) => SingleChildScrollView(
         child: Column(
@@ -195,6 +201,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
             ),
             SheetFieldRow(
               label: l10n.materialRateLabel,
+              labelTrailing:
+                  state.data.rateStatus == RateStatus.sampleRateUnverified
+                  ? CoreStatusBadge(
+                      key: const Key('rate_status_badge'),
+                      label: l10n.materialSampleRateBadge,
+                      size: CoreStatusBadgeSize.compact,
+                    )
+                  : null,
               valueGap: CoreSpacing.space2,
               onTap: _rateFocus.requestFocus,
               child: Row(
@@ -253,7 +267,13 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
-            if (_isRateMissing(state)) const _RateLookupHint(),
+            if (_isRateMissing(state))
+              _FieldHint(
+                key: const Key('material_rate_lookup_hint'),
+                text: l10n.materialRateLookupHint,
+              ),
+            if (state.data.offersSaveAsDefault)
+              _SaveAsDefaultHint(data: state.data),
             const SizedBox(height: CoreSpacing.space4),
           ],
         ),
@@ -279,14 +299,40 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   }
 }
 
-class _RateLookupHint extends StatelessWidget {
-  const _RateLookupHint();
+class _SaveAsDefaultHint extends StatelessWidget {
+  final MaterialCostFormData data;
+
+  const _SaveAsDefaultHint({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final amount = DisplayFormatter.currency.format(data.rate);
+    final price = switch (data.unit) {
+      final unit? =>
+        '$amount ${l10n.materialRatePerUnitSuffix(unit.displayName(l10n))}',
+      null => amount,
+    };
+    return _FieldHint(
+      key: const Key('save_as_default_helper_text'),
+      text: l10n.materialSaveAsDefaultHelperText(
+        price,
+        l10n.yourRatesName,
+        data.itemName.trim().toLowerCase(),
+      ),
+    );
+  }
+}
+
+class _FieldHint extends StatelessWidget {
+  final String text;
+
+  const _FieldHint({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     return Padding(
-      key: const Key('material_rate_lookup_hint'),
       padding: const EdgeInsets.fromLTRB(
         CoreSpacing.space5,
         CoreSpacing.space2,
@@ -304,7 +350,7 @@ class _RateLookupHint extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              context.l10n.materialRateLookupHint,
+              text,
               style: context.textTheme.bodySmallRegular.copyWith(
                 color: colorTheme.textBody,
               ),

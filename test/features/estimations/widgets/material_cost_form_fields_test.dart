@@ -716,6 +716,21 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_paint-rate')), findsOneWidget);
     });
 
+    testWidgets('a picked saved rate has no tag and no offer to save it', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'interior paint');
+
+      await pickFromLookup(tester);
+
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      expect(
+        find.byKey(const Key('save_as_default_helper_text')),
+        findsNothing,
+      );
+    });
+
     testWidgets('a picked rate fills the rate and unit, keeps the typed name '
         'and removes the search button', (tester) async {
       await pumpFields(tester);
@@ -790,6 +805,87 @@ void main() {
       expect(textOf(tester, rateField), '52');
       expect(bloc.state.data.itemName, 'Interior paint · ProClassic');
       expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
+    });
+
+    testWidgets('tags the rate Sample rate beside the Rate label, and says '
+        'what saving it as the default does', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await tester.enterText(nameField, 'Interior paint');
+      await tester.enterText(quantityField, '2');
+      await tester.tap(unitPill);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
+      await tester.tap(find.byKey(const Key('unit_option_liters')));
+      await tester.pumpAndSettle();
+
+      await pickSample(tester);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('rate_status_badge')),
+          matching: find.text(l10n.materialSampleRateBadge),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('save_as_default_helper_text')),
+          matching: find.text(
+            l10n.materialSaveAsDefaultHelperText(
+              r'$52.00 /Liters',
+              l10n.yourRatesName,
+              'interior paint · proclassic',
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('typing over the sample price removes the tag and keeps the '
+        'offer to save the typed price', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await pickSample(tester);
+
+      await tester.enterText(rateField, '60');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      expect(
+        find.byKey(const Key('save_as_default_helper_text')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('save_as_default_helper_text')),
+          matching: find.textContaining(r'$60.00'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the save line follows every edit of the price and name', (
+      tester,
+    ) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await pickSample(tester);
+
+      await tester.enterText(rateField, '60');
+      await tester.pumpAndSettle();
+      await tester.enterText(rateField, '65');
+      await tester.enterText(nameField, 'Primer');
+      await tester.pumpAndSettle();
+
+      final helper = find.byKey(const Key('save_as_default_helper_text'));
+      expect(
+        find.descendant(of: helper, matching: find.textContaining(r'$65.00')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: helper, matching: find.textContaining('primer')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('uses the product alone as the name while none is typed', (
