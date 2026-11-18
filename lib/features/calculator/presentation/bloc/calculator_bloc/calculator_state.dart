@@ -791,6 +791,14 @@ class CalculatorState extends Equatable {
         final key?,
       ) =>
         CalculatorKeepsLengthToast(key: key, unit: unit, value: valueText),
+      (TapeEntryRefused(reason: EntryRefusal.partOfSixtyOrMore), _, _) =>
+        const CalculatorPartUnderSixtyToast(),
+      (TapeEntryRefused(reason: EntryRefusal.minutesHaveTwoDigits), _, _) =>
+        const CalculatorMinutesTwoDigitsToast(),
+      (TapeEntryRefused(reason: EntryRefusal.secondsHaveTwoDigits), _, _) =>
+        const CalculatorSecondsTwoDigitsToast(),
+      (TapeEntryRefused(reason: EntryRefusal.angleHasThreeParts), _, _) =>
+        const CalculatorAngleThreePartsToast(),
       _ => null,
     };
   }
