@@ -183,6 +183,6 @@
     </rules>
 
     <commands>
-        <command group="cost_line_meta_formatter" expected-return="0">fvm flutter test test/features/estimations/helpers/cost_line_meta_formatter_test.dart</command>
+        <command group="cost_line_meta_formatter" expected-return="0" timeout="90">fvm flutter test --no-pub --timeout 5s test/features/estimations/helpers/cost_line_meta_formatter_test.dart</command>
     </commands>
 </mutations>
