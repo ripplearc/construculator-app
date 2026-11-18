@@ -2345,6 +2345,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get materialSaveAsDefaultLink => 'Save as my default';
+
+  @override
+  String materialSavedToYourRatesHint(String yourRates, String itemName) {
+    return 'Saved to $yourRates — auto-fills next time you add $itemName.';
+  }
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 
   @override

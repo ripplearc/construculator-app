@@ -29,6 +29,8 @@ const double _nameBottomPadding = 6;
 
 const double _lookupButtonTapSize = 48;
 
+enum _DefaultSave { idle, saving, saved }
+
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
@@ -74,10 +76,15 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
   late final _rateController = CurrencyDisplayController(focusNode: _rateFocus);
+  late final YourRatesBloc _saveBloc;
+  _DefaultSave _defaultSave = _DefaultSave.idle;
+  double? _rateBeingSaved;
+  String? _savedItemName;
 
   @override
   void initState() {
     super.initState();
+    _saveBloc = widget.yourRatesBlocFactory();
     final bloc = context.read<MaterialCostFormBloc>();
     if (widget.initialRateEntry case final entry?) {
       _nameController.text = entry.itemName;
@@ -120,8 +127,55 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     }
   }
 
+  void _saveAsDefault(MaterialCostFormData data) {
+    final rate = data.rate;
+    if (rate == null) return;
+    _rateBeingSaved = rate;
+    _savedItemName = data.itemName.trim();
+    _saveBloc.add(
+      YourRatesSaveRequested(
+        YourRateEntry(
+          id: '',
+          companyId: '',
+          itemName: data.itemName.trim(),
+          category: CostItemType.material,
+          rate: Money(amount: rate),
+          unit: data.unit,
+          savedAt: widget.clock.now(),
+          entryLabel: data.unit?.name,
+        ),
+      ),
+    );
+  }
+
+  void _onDefaultSaveState(BuildContext context, YourRatesState state) {
+    switch (state) {
+      case YourRatesSaving():
+        setState(() => _defaultSave = _DefaultSave.saving);
+      case YourRatesSaveSucceeded():
+        setState(() => _defaultSave = _DefaultSave.saved);
+        if (_rateBeingSaved case final rate?) {
+          context.read<MaterialCostFormBloc>().add(
+            MaterialRateSavedAsDefault(rate),
+          );
+        }
+      case YourRatesSaveCollision() ||
+          YourRatesSaveLabelTaken() ||
+          YourRatesSaveFailed() ||
+          YourRatesSaveNoCompany():
+        setState(() => _defaultSave = _DefaultSave.idle);
+      case YourRatesLoading() ||
+          YourRatesRetrying() ||
+          YourRatesLoaded() ||
+          YourRatesSearchResults() ||
+          YourRatesError():
+        break;
+    }
+  }
+
   @override
   void dispose() {
+    unawaited(_saveBloc.close());
     _nameController.dispose();
     _quantityController.dispose();
     _rateController.dispose();
@@ -133,6 +187,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<YourRatesBloc, YourRatesState>(
+      bloc: _saveBloc,
+      listener: _onDefaultSaveState,
+      child: _buildFields(context),
+    );
+  }
+
+  Widget _buildFields(BuildContext context) {
     final l10n = context.l10n;
     final bloc = context.read<MaterialCostFormBloc>();
     return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
@@ -141,7 +203,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           previous.data.rateStatus != current.data.rateStatus ||
           previous.data.offersSaveAsDefault !=
               current.data.offersSaveAsDefault ||
-          (current.data.offersSaveAsDefault &&
+          ((current.data.offersSaveAsDefault ||
+                  _defaultSave == _DefaultSave.saved) &&
               (previous.data.rate != current.data.rate ||
                   previous.data.itemName != current.data.itemName)) ||
           _isSaving(previous) != _isSaving(current),
@@ -252,6 +315,11 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                       ],
                     ),
                   ),
+                  if (state.data.offersSaveAsDefault)
+                    _SaveAsDefaultLink(
+                      isSaving: _defaultSave == _DefaultSave.saving,
+                      onTap: () => _saveAsDefault(state.data),
+                    ),
                   if (_isRateMissing(state))
                     SizedBox(
                       width: _lookupButtonTapSize,
@@ -276,6 +344,16 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               ),
             if (state.data.offersSaveAsDefault)
               _SaveAsDefaultHint(data: state.data),
+            if (_defaultSave == _DefaultSave.saved &&
+                state.data.rateStatus == RateStatus.ownRateConfirmed &&
+                state.data.itemName.trim() == _savedItemName)
+              _FieldHint(
+                key: const Key('saved_as_default_helper_text'),
+                text: l10n.materialSavedToYourRatesHint(
+                  l10n.yourRatesName,
+                  state.data.itemName.trim().toLowerCase(),
+                ),
+              ),
             const SizedBox(height: CoreSpacing.space4),
           ],
         ),
@@ -323,6 +401,51 @@ class _SaveAsDefaultHint extends StatelessWidget {
         data.nameToFindRateBy.toLowerCase(),
       ),
       emphasis: l10n.yourRatesName,
+    );
+  }
+}
+
+// TODO: [CA-1510] use CoreUI's text link once it exists. https://ripplearc.youtrack.cloud/issue/CA-1510
+class _SaveAsDefaultLink extends StatelessWidget {
+  final bool isSaving;
+  final VoidCallback onTap;
+
+  const _SaveAsDefaultLink({required this.isSaving, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.materialSaveAsDefaultLink;
+    return Semantics(
+      button: true,
+      enabled: !isSaving,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('save_as_default_link'),
+        behavior: HitTestBehavior.opaque,
+        onTap: isSaving ? null : onTap,
+        child: IntrinsicWidth(
+          child: SizedBox(
+            height: _SheetTextField._drawnHeight,
+            child: OverflowBox(
+              maxHeight: _lookupButtonTapSize,
+              child: SizedBox(
+                height: _lookupButtonTapSize,
+                child: Center(
+                  child: Text(
+                    label,
+                    style: context.textTheme.bodyLargeSemiBold.copyWith(
+                      color: isSaving
+                          ? context.colorTheme.textDisable
+                          : context.colorTheme.textLink,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

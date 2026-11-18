@@ -802,6 +802,41 @@ void main() {
       );
     });
 
+    group('rate saved as the default', () {
+      const picked = MaterialSampleRatePicked(
+        itemName: 'Interior paint · ProClassic',
+        rate: 52,
+        unit: Unit.liters,
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'makes the saved rate the user\'s own and stops offering to save it',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(const MaterialRateSavedAsDefault(52)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.rateStatus, RateStatus.ownRateConfirmed);
+          expect(data.offersSaveAsDefault, isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'leaves a rate typed while the save ran untouched',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(const MaterialRateUpdated('60'))
+          ..add(const MaterialRateSavedAsDefault(52)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.rateStatus, RateStatus.ownRateUnconfirmed);
+          expect(data.offersSaveAsDefault, isTrue);
+        },
+      );
+    });
+
     group('line total', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'is zero until both quantity and rate are set',

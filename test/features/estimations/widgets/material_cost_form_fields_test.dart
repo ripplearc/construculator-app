@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
@@ -945,6 +946,175 @@ void main() {
       await pickSample(tester);
 
       expect(textOf(tester, nameField), 'ProClassic');
+    });
+  });
+
+  group('Save as my default', () {
+    const proClassic = SampleRateRow(
+      id: 'proclassic',
+      productName: 'ProClassic',
+      rate: Money(amount: 52),
+      unit: Unit.liters,
+    );
+    final link = find.byKey(const Key('save_as_default_link'));
+    final badge = find.byKey(const Key('rate_status_badge'));
+
+    Future<void> openVerify(WidgetTester tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await tester.enterText(nameField, 'Interior paint');
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final row = find.byKey(const Key('sample_rate_row_proclassic'));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_lookup_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<YourRateEntry>> savedMaterials() async {
+      final result = await Modular.get<YourRatesRepository>().search(
+        '',
+        category: CostItemType.material,
+        companyId: 'company-1',
+      );
+      return result.getRightOrNull()!;
+    }
+
+    testWidgets('saves the sample rate to Your rates under the material name, '
+        'with its unit as the entry label', (tester) async {
+      await openVerify(tester);
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      final saved = (await savedMaterials()).single;
+      expect(saved.itemName, 'Interior paint · ProClassic');
+      expect(saved.rate.amount, 52);
+      expect(saved.unit, Unit.liters);
+      expect(saved.entryLabel, 'liters');
+    });
+
+    testWidgets('once saved, the tag and the link go and the line says it '
+        'is saved', (tester) async {
+      await openVerify(tester);
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(badge, findsNothing);
+      expect(link, findsNothing);
+      expect(
+        find.byKey(const Key('save_as_default_helper_text')),
+        findsNothing,
+      );
+      expect(
+        find.text(
+          l10n.materialSavedToYourRatesHint(
+            l10n.yourRatesName,
+            'interior paint · proclassic',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+    });
+
+    testWidgets('the saved line goes once the name is changed', (tester) async {
+      await openVerify(tester);
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(nameField, 'Primer');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('saved_as_default_helper_text')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a failed save keeps the tag and the link', (tester) async {
+      await openVerify(tester);
+      database.executeError = StateError('disk full');
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      expect(badge, findsOneWidget);
+      expect(link, findsOneWidget);
+      expect(
+        find.byKey(const Key('saved_as_default_helper_text')),
+        findsNothing,
+      );
+      expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
+    });
+
+    testWidgets('a second try after a failure saves the rate', (tester) async {
+      await openVerify(tester);
+      database.executeError = StateError('disk full');
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      database.executeError = null;
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      expect(badge, findsNothing);
+      expect(await savedMaterials(), hasLength(1));
+    });
+
+    testWidgets('a name and unit already in Your rates is not saved again', (
+      tester,
+    ) async {
+      database.seedRow({
+        'id': 'old-paint',
+        'company_id': 'company-1',
+        'category': 'material',
+        'item_name': 'Interior paint · ProClassic',
+        'rate_amount': 48.0,
+        'rate_currency': 'USD',
+        'unit': 'liters',
+        'entry_label': 'liters',
+        'saved_at': '2026-01-01T00:00:00.000Z',
+      });
+      await openVerify(tester);
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      expect(badge, findsOneWidget);
+      expect(link, findsOneWidget);
+      expect(await savedMaterials(), hasLength(1));
+    });
+
+    testWidgets('the link is not offered for a rate picked from Your rates', (
+      tester,
+    ) async {
+      database.seedRow({
+        'id': 'paint-rate',
+        'company_id': 'company-1',
+        'category': 'material',
+        'item_name': 'Interior paint',
+        'rate_amount': 52.0,
+        'rate_currency': 'USD',
+        'unit': 'liters',
+        'saved_at': '2026-01-10T00:00:00.000Z',
+      });
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'interior paint');
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rate_row_paint-rate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_lookup_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(link, findsNothing);
     });
   });
 }
