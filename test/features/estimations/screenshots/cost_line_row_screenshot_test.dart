@@ -10,7 +10,7 @@ import '../../../utils/screenshot/font_loader.dart';
 import '../helpers/cost_line_test_items.dart';
 
 void main() {
-  const size = Size(412, 460);
+  const size = Size(412, 600);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async => loadAppFontsAll());
@@ -35,7 +35,10 @@ void main() {
                 spacing: CoreSpacing.space3,
                 children: [
                   CostLineRow(item: materialLine(), isHighlighted: false),
-                  CostLineRow(item: laborLine(), isHighlighted: false),
+                  CostLineRow(
+                    item: laborLine(calculation: const {'laborRate': 48}),
+                    isHighlighted: false,
+                  ),
                   CostLineRow(item: equipmentLine(), isHighlighted: false),
                   CostLineRow(
                     item: equipmentLine(
@@ -44,8 +47,18 @@ void main() {
                       dailyRate: null,
                       jobAmount: const Money(amount: 400),
                       deliveryFee: null,
+                      total: 400,
                     ),
                     isHighlighted: true,
+                  ),
+                  CostLineRow(
+                    item: materialLine(
+                      name:
+                          'Type-X fire-rated gypsum board, 5/8" × 4′ × 12′, '
+                          'moisture & mould resistant',
+                      total: 104318.6,
+                    ),
+                    isHighlighted: false,
                   ),
                 ],
               ),
@@ -58,15 +71,16 @@ void main() {
   }
 
   screenshotThemeGroups('Cost line row Screenshot Tests', (theme, suffix) {
-    testWidgets('material, labor, day and job lines, one highlighted', (
-      tester,
-    ) async {
-      await pumpRows(tester, theme);
+    testWidgets(
+      'material, labor, day, job and long-name lines, one highlighted',
+      (tester) async {
+        await pumpRows(tester, theme);
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('goldens/cost_line_row/lines$suffix.png'),
-      );
-    });
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/cost_line_row/lines$suffix.png'),
+        );
+      },
+    );
   });
 }
