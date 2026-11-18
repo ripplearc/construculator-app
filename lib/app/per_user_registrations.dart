@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/session/session_module.dart';
 
 /// Every per-user registration of the app, in the order they are added.

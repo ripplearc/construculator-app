@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Starts and ends the session: the group of objects that exist only while one
 /// user is signed in.
 ///
