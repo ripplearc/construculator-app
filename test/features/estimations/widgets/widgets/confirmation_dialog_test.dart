@@ -235,15 +235,18 @@ void main() {
   });
 
   group('a destructive secondary answer', () {
-    Color? secondaryLabelColor(WidgetTester tester) => tester
-        .widget<Text>(
-          find.descendant(
-            of: find.byKey(ConfirmationDialog.secondaryButtonKey),
-            matching: find.byType(Text),
-          ),
-        )
-        .style
-        ?.color;
+    Color? secondaryLabelColor(WidgetTester tester) {
+      final style = tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(ConfirmationDialog.secondaryButtonKey),
+              matching: find.byType(Text),
+            ),
+          )
+          .style;
+      if (style == null) return null;
+      return style.color;
+    }
 
     testWidgets('is drawn in the error colour', (tester) async {
       await openDialog(tester, isSecondaryDestructive: true);
