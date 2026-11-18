@@ -83,9 +83,30 @@ void main() {
     database.seedRows([newRow]);
   }
 
+  void seedMaterial({
+    required String itemName,
+    required double amount,
+    required Unit unit,
+    required DateTime savedAt,
+  }) {
+    final newRow = {
+      'id': 'rate-${seededRows.length + 1}',
+      'company_id': 'company-1',
+      'category': 'material',
+      'item_name': itemName,
+      'rate_amount': amount,
+      'rate_currency': 'USD',
+      'unit': unit.name,
+      'saved_at': savedAt.toIso8601String(),
+    };
+    seededRows = [...seededRows, newRow];
+    database.seedRows([newRow]);
+  }
+
   Future<void> pumpSheet({
     required WidgetTester tester,
     required ThemeData theme,
+    CostItemType category = CostItemType.equipment,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -96,7 +117,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<YourRatesBloc>(
             create: (_) => Modular.get<YourRatesBloc>(),
-            child: YourRatesRecentsSheet(clock: clock),
+            child: YourRatesRecentsSheet(clock: clock, category: category),
           ),
         ),
       ),
@@ -311,6 +332,84 @@ void main() {
         find.byType(YourRatesRecentsSheet),
         matchesGoldenFile(
           'goldens/your_rates_recents_sheet/${size.width}x${size.height}/search_no_match$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('displays only "+ New material cost" when no material is '
+        'saved', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpSheet(
+        tester: tester,
+        theme: theme,
+        category: CostItemType.material,
+      );
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/material_empty$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('displays the last four materials, each priced per its unit', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      final names = [
+        ('Interior paint · ProClassic', 52.0, Unit.liters),
+        ('PVA drywall primer', 9.5, Unit.liters),
+        ('Drywall screws', 18.0, Unit.boxes),
+        ('Joint compound', 14.25, Unit.bags),
+        ('Corner bead', 3.1, Unit.pieces),
+      ];
+      for (final (index, (name, amount, unit)) in names.indexed) {
+        seedMaterial(
+          itemName: name,
+          amount: amount,
+          unit: unit,
+          savedAt: clock.now().subtract(Duration(days: index * 3)),
+        );
+      }
+
+      await pumpSheet(
+        tester: tester,
+        theme: theme,
+        category: CostItemType.material,
+      );
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/material_recents$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('displays the material no-match line and its Create row', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpSheet(
+        tester: tester,
+        theme: theme,
+        category: CostItemType.material,
+      );
+      await typeQuery(tester, 'primer');
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/material_search_no_match$suffix.png',
         ),
       );
     });
