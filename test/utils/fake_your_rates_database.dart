@@ -71,6 +71,14 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// removes the row, so a test can hold an undo that is still running.
   Completer<void>? deleteGate;
 
+  int _yourRatesReads = 0;
+  int? _failingYourRatesRead;
+
+  /// Makes the [readNumber]th `your_rates` read from now on throw, so a test
+  /// can fail one read of a flow that reads more than once.
+  void failYourRatesReadNumber(int readNumber) =>
+      _failingYourRatesRead = _yourRatesReads + readNumber;
+
   final List<Map<String, Object?>> _companyRows = [];
   final Map<String, Map<String, Object?>> _refusalRows = {};
 
@@ -229,6 +237,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     }
     _requireYourRatesTable(sql);
     await getAllGate?.future;
+    if (++_yourRatesReads == _failingYourRatesRead) {
+      throw StateError('the your_rates read was made to fail');
+    }
 
     final filters = <String, Object?>{};
     final nullableFilters = _nullableFilterColumns.allMatches(sql).toList();
@@ -378,6 +389,8 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     failRowDeletes = false;
     failRowInserts = false;
     deletedRowIds.clear();
+    _yourRatesReads = 0;
+    _failingYourRatesRead = null;
     insertedRows.clear();
     updatedRowIds.clear();
   }

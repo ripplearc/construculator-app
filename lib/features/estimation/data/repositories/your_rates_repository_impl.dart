@@ -107,6 +107,32 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   @override
+  Future<Either<Failure, YourRateEntry?>> getByItemNameAndLabel(
+    String itemName,
+    CostItemType category, {
+    required EquipmentPricingMethod? method,
+    required String label,
+    required String companyId,
+  }) async {
+    if (companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
+    try {
+      final labelKey = _matchKey(label);
+      final matches =
+          (await _entriesNamed(category, itemName, companyId: companyId)).where(
+            (entry) {
+              final savedLabel = entry.entryLabel;
+              return entry.equipmentMethod == method &&
+                  savedLabel != null &&
+                  _matchKey(savedLabel) == labelKey;
+            },
+          );
+      return Right(matches.firstOrNull);
+    } catch (e) {
+      return Left(_handleError(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> save(
     YourRateEntry entry, {
     Duration? within,

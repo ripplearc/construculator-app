@@ -947,10 +947,42 @@ void main() {
             bloc.add(YourRatesSaveRequested(entry(entryLabel: 'supplier  a'))),
         expect: () => [
           isA<YourRatesSaving>(),
+          isA<YourRatesSaveLabelTaken>()
+              .having(
+                (s) => s.entry.entryLabel,
+                'entry.entryLabel',
+                'supplier  a',
+              )
+              .having((s) => s.takenBy!.id, 'takenBy.id', 'existing')
+              .having((s) => s.takenBy!.rate.amount, 'takenBy.rate', 250.0),
+        ],
+        verify: (_) {
+          expect(database.insertedRows, isEmpty);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveLabelTaken without a taken row when looking it up fails',
+        setUp: () {
+          database.seedRows([
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
+          ]);
+          database.failYourRatesReadNumber(3);
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(YourRatesSaveRequested(entry(entryLabel: 'Supplier A'))),
+        expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveLabelTaken>().having(
-            (s) => s.entry.entryLabel,
-            'entry.entryLabel',
-            'supplier  a',
+            (s) => s.takenBy,
+            'takenBy',
+            isNull,
           ),
         ],
         verify: (_) {
