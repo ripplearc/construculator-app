@@ -48,6 +48,31 @@ enum EntryRefusal {
   /// no length ("That value is already an angle"; Section 5.4).
   alreadyAnAngle,
 
+  /// A third digit typed into the minutes of an angle (38 [D:M:S] 30 then
+  /// 7): a bearing's minutes have two digits ("Minutes have two digits" /
+  /// "Press . to type the seconds, or = to finish the angle."; rule 4.10,
+  /// decision tree row 173).
+  minutesHaveTwoDigits,
+
+  /// A third digit typed into the seconds (30.5.12 then 3; "Seconds have
+  /// two digits" / "Press = or an operator to finish the angle."; rule
+  /// 4.10, decision tree row 174).
+  secondsHaveTwoDigits,
+
+  /// A digit, or the point that closes the minutes, that would make the
+  /// minutes or the seconds 60 or more (38 [D:M:S] 7 then 5; 38.75 then a
+  /// second point): the part is refused at the key that would make it, so
+  /// 38°75' never reaches the tape and nothing carries ("Minutes must be
+  /// under 60" / "Press ⌫ and type the minutes again."; rule 4.10, decision
+  /// tree rows 172, 177 and 370, product manager 15 November 2026).
+  partOfSixtyOrMore,
+
+  /// A point, or the D:M:S key, once the seconds are open (30.5.12 then
+  /// .): an angle has three parts ("An angle has three parts" / "Press =
+  /// or an operator to finish the angle."; rule 4.10, decision tree row
+  /// 176).
+  angleHasThreeParts,
+
   /// A unit key while [/] still waits for its denominator ("Finish the
   /// fraction").
   finishTheFraction,
@@ -145,10 +170,12 @@ final class EntryRefused extends EntryOutcome {
 /// calculators type it, with no degree key (rule 4.10; Section 3.5): a
 /// second decimal point, or the D:M:S key, re-reads the number as its
 /// segments (23.16.45 is 23°16'45", 38 [D:M:S] 30 [D:M:S] 45 the same), one
-/// segment closes when the next opens, and a segment that closes above 59
-/// carries into the one above it rather than being refused (30.89 reads
-/// 31°29'00"; Construction Master Pro redisplays such entries in the
-/// correct convention). An angle is always written with its three fields
+/// segment closes when the next opens, and a segment is what a bearing can
+/// hold: two digits, under 60. The digit that would make the minutes or
+/// the seconds 60 or more is refused, as is a third digit and a point
+/// after the seconds (rule 4.10; decision tree rows 172 to 177 and 370),
+/// so 38°75' never reaches the tape and nothing ever carries into the
+/// segment above. An angle is always written with its three fields
 /// (Section 6, "Rounding at display"): 38 [D:M:S] 30 reads 38°30'00" with
 /// the seconds still to come. The seal is the padding: a field that has
 /// closed is written to two digits the way a bearing is, 45°02'00", and
@@ -157,7 +184,7 @@ final class EntryRefused extends EntryOutcome {
 /// takes away again. The minutes close when the seconds open; the seconds
 /// close when a key leaves the chip ([sealed]), as rule 4.10 has it: any
 /// operator, =, a closing bracket or a function key closes the open field,
-/// so 38°75' becomes 39°15'00" on the tape and on the chip at once.
+/// so 38°5' becomes 38°05'00" on the tape and on the chip at once.
 class EntryBuffer extends Equatable {
   /// The tokens typed so far; the last one may still be open.
   final List<Token> tokens;
@@ -268,10 +295,11 @@ class EntryBuffer extends Equatable {
   static String _twoDigits(String segment) => segment.padLeft(2, '0');
 
   /// The buffer as a key that leaves the chip seals it: an angle's open
-  /// field closes, with the carry and the padding a closed field has
-  /// (38°75' seals as 39°15'00", 38°05'9" as 38°05'09", 38°30'75" as
-  /// 38°31'15", and 38 [D:M:S] alone as 38°00'00"), so that the chip and
-  /// the tape read the sealed angle at once (rule 4.10). Any other buffer,
+  /// field closes, with the padding a closed field has (38°5' seals as
+  /// 38°05'00", 38°05'9" as 38°05'09", and 38 [D:M:S] alone as
+  /// 38°00'00"), so that the chip and the tape read the sealed angle at
+  /// once (rule 4.10). Nothing carries: a part of 60 or more was refused
+  /// at the digit that would have made it. Any other buffer,
   /// and an angle whose fields have all closed, is returned as it is, so
   /// sealing twice changes nothing and a chip keeps the exact value behind
   /// a spelling it already had.
@@ -316,20 +344,10 @@ class EntryBuffer extends Equatable {
     String minutes,
     String seconds,
   ) {
-    final totalSeconds =
-        (double.tryParse(degrees) ?? 0).abs() * Token.secondsPerDegree +
-        (double.tryParse(minutes) ?? 0) * Token.minutesPerDegree +
-        (double.tryParse(seconds) ?? 0);
-    if (totalSeconds > _largestWholeNumberADoubleHolds) {
-      return (degrees: degrees, minutes: minutes, seconds: _twoDigits(seconds));
-    }
-    final total = totalSeconds.toInt();
-    final rest = total % Token.secondsPerDegree;
-    final sign = degrees.startsWith('-') ? '-' : '';
     return (
-      degrees: '$sign${total ~/ Token.secondsPerDegree}',
-      minutes: '${rest ~/ Token.minutesPerDegree}',
-      seconds: _twoDigits('${rest % Token.minutesPerDegree}'),
+      degrees: degrees,
+      minutes: minutes.isEmpty ? '0' : minutes,
+      seconds: _twoDigits(seconds),
     );
   }
 
@@ -382,13 +400,13 @@ class EntryBuffer extends Equatable {
     }
     if (last.isDegreesMinutesSeconds) {
       if (digit == '.') return closeDegreesMinutesSeconds();
-      return _replaceLast(_withSegmentDigit(last, digit));
+      return _withSegmentDigit(last, digit);
     }
     if (digit == '.' && last.digits.contains('.')) {
       if (!readsAngles || tokens.length > 1) {
         return const EntryRefused(EntryRefusal.secondDecimalPoint);
       }
-      return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
+      return _promoted(last, closingMinutes: true);
     }
     return _replaceLast(
       last.copyWith(digits: '${last.digits}$digit', typedAs: () => null),
@@ -398,9 +416,12 @@ class EntryBuffer extends Equatable {
   /// The D:M:S key (Section 3.5): closes the segment being typed and opens
   /// the next one. On a plain number it is the second decimal point made
   /// visible: 38 reads 38° with the minutes open, 38.3 reads 38°03'00"
-  /// with the seconds open. Pressed with the seconds open it changes nothing,
-  /// since an angle has three segments and a fourth press never eats the
-  /// third (walkthrough 16.3, step 6). A fraction cannot be an angle.
+  /// with the seconds open. Pressed with the seconds open it is refused,
+  /// since an angle has three parts and a fourth press never eats the
+  /// third (rule 4.10; decision tree row 176); the refusal keeps the key
+  /// from being silent (rule 4.12). Minutes that would close at 60 or
+  /// more, or with a third digit, are refused instead (38.75 then the
+  /// point: "Minutes must be under 60"). A fraction cannot be an angle.
   EntryOutcome closeDegreesMinutesSeconds() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null || last.unit != null) {
@@ -409,68 +430,77 @@ class EntryBuffer extends Equatable {
     if (last.denominator != null) {
       return const EntryRefused(EntryRefusal.fractionNeedsUnit);
     }
-    if (last.seconds != null) return EntryChanged(this);
+    if (last.seconds != null) {
+      return const EntryRefused(EntryRefusal.angleHasThreeParts);
+    }
     if (last.minutes case final minutes?) {
-      return _replaceLast(
-        _withMinutesClosed(last.digits, minutes, typedAs: last.typedAs),
-      );
+      return _withMinutesClosed(last.digits, minutes, typedAs: last.typedAs);
     }
     final closingMinutes =
         last.digits.contains('.') && !last.digits.endsWith('.');
-    return _replaceLast(
-      _asDegreesMinutesSeconds(last, closingMinutes: closingMinutes),
-    );
+    return _promoted(last, closingMinutes: closingMinutes);
   }
 
-  Token _asDegreesMinutesSeconds(Token plain, {required bool closingMinutes}) {
+  // A plain number re-read as its segments: the decimals are the minutes,
+  // closed at once by a second point (23.16. is 23°16' with the seconds
+  // open) and left open by the key on a trailing point (38. then D:M:S).
+  EntryOutcome _promoted(Token plain, {required bool closingMinutes}) {
     final (degrees, decimals) = _wholeAndDecimals(plain.digits);
     final minutes = decimals.isEmpty ? '' : decimals.substring(1);
     final typedAs =
         plain.typedAs ?? (plain.digits.contains('.') ? plain.digits : null);
     if (!closingMinutes) {
-      return Token(digits: degrees, minutes: minutes, typedAs: typedAs);
+      return _replaceLast(
+        Token(digits: degrees, minutes: minutes, typedAs: typedAs),
+      );
     }
     return _withMinutesClosed(degrees, minutes, typedAs: typedAs);
   }
 
-  Token _withMinutesClosed(
+  // The minutes close as the seconds open, once they are a part a bearing
+  // can hold; nothing carries into the degrees.
+  EntryOutcome _withMinutesClosed(
     String degrees,
     String minutes, {
     required String? typedAs,
   }) {
-    final totalMinutes =
-        double.parse(degrees) * Token.minutesPerDegree +
-        (double.tryParse(minutes) ?? 0);
-    if (totalMinutes > _largestWholeNumberADoubleHolds) {
-      return Token(
-        digits: degrees,
-        minutes: minutes,
-        seconds: '',
-        typedAs: typedAs,
-      );
+    if (_partRefusal(minutes, isSeconds: false) case final refusal?) {
+      return EntryRefused(refusal);
     }
-    final carried = totalMinutes.round();
-    return Token(
-      digits: '${carried ~/ Token.minutesPerDegree}',
-      minutes: '${carried % Token.minutesPerDegree}',
-      seconds: '',
-      typedAs: typedAs,
+    return _replaceLast(
+      Token(digits: degrees, minutes: minutes, seconds: '', typedAs: typedAs),
     );
   }
 
-  static const double _largestWholeNumberADoubleHolds = 9007199254740992;
-
-  Token _withSegmentDigit(Token angle, String digit) {
-    if (angle.seconds case final seconds?) {
-      return angle.copyWith(
-        seconds: () => '$seconds$digit',
-        typedAs: () => null,
-      );
+  EntryOutcome _withSegmentDigit(Token angle, String digit) {
+    final isSeconds = angle.seconds != null;
+    final part = '${isSeconds ? angle.seconds : angle.minutes}$digit';
+    if (_partRefusal(part, isSeconds: isSeconds) case final refusal?) {
+      return EntryRefused(refusal);
     }
-    return angle.copyWith(
-      minutes: () => '${angle.minutes}$digit',
-      typedAs: () => null,
+    return _replaceLast(
+      isSeconds
+          ? angle.copyWith(seconds: () => part, typedAs: () => null)
+          : angle.copyWith(minutes: () => part, typedAs: () => null),
     );
+  }
+
+  /// The digits a minutes or a seconds part can hold.
+  static const int partDigits = 2;
+
+  // Why a minutes or a seconds [part] cannot be typed or closed: a third
+  // digit, or a value of 60 or more (rule 4.10). `null` for a part a
+  // bearing can hold, the empty part included.
+  static EntryRefusal? _partRefusal(String part, {required bool isSeconds}) {
+    if (part.length > partDigits) {
+      return isSeconds
+          ? EntryRefusal.secondsHaveTwoDigits
+          : EntryRefusal.minutesHaveTwoDigits;
+    }
+    if ((int.tryParse(part) ?? 0) >= Token.minutesPerDegree) {
+      return EntryRefusal.partOfSixtyOrMore;
+    }
+    return null;
   }
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.

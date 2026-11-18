@@ -376,17 +376,29 @@ void main() {
     });
 
     test('rule 4.10: a chip filed while still active is filed as it reads '
-        'once sealed, 38 [D:M:S] 75 as 39°15\'00"', () {
-      final typed = activeOf(press(const Tape(), '3 8 DMS 7 5'));
+        'once sealed, 38 [D:M:S] 5 as 38°05\'00", never as 38°5\'00"', () {
+      final typed = activeOf(press(const Tape(), '3 8 DMS 5'));
+      expect(typed.entry.text, '38°5\'00"', reason: 'still open');
       final memory = const AngleMemory().filed(
         typed,
         parser: parser,
         formatter: formatter,
       );
-      expect(newest(memory, 'Sine')!.entry.text, '39°15\'00"');
+      expect(newest(memory, 'Sine')!.entry.text, '38°05\'00"');
       expect(
         newest(memory, 'Sine')!.value,
-        const Angle(39.25, spelling: AngleSpelling.degreesMinutesSeconds),
+        Angle(38 + 5 / 60, spelling: AngleSpelling.degreesMinutesSeconds),
+      );
+      final answer = memory.filedAnswer(
+        const Angle(38 + 5 / 60, spelling: AngleSpelling.degreesMinutesSeconds),
+        formatter: formatter,
+      );
+      expect(
+        answer.remembered,
+        hasLength(1),
+        reason:
+            'the answer reads the same, 38°05\'00", so it is one entry '
+            'though its minutes are spelled 05 and the typed ones 5',
       );
     });
 

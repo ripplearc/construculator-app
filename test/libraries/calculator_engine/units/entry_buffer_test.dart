@@ -500,18 +500,61 @@ void main() {
         );
       });
 
-      test('closing the minutes carries 60 and more into the degrees', () {
-        expect(typeAngle('30.89.').text, '31°29\'00"');
-        expect(typeAngle('30.89.00').text, '31°29\'00"');
+      test('rule 4.10 (CA-1372): the point that would close minutes of 60 or '
+          'more is refused, and nothing carries into the degrees; a third '
+          'decimal is refused as a third minutes digit', () {
+        final decimal = typeAngle('30.89');
         expect(
-          typeAngle('30.89.').tokens.single,
+          decimal.typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          decimal.closeDegreesMinutesSeconds(),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          typeAngle('30.600').typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.minutesHaveTwoDigits),
+        );
+        expect(
+          typeAngle('30.59.').tokens.single,
           const Token(
-            digits: '31',
-            minutes: '29',
+            digits: '30',
+            minutes: '59',
             seconds: '',
-            typedAs: '30.89',
+            typedAs: '30.59',
           ),
         );
+      });
+
+      test('rule 4.10 (CA-1372): the digit that would make the minutes or '
+          'the seconds 60 or more is refused at the key, and so is a third '
+          'digit (decision tree rows 172 to 174, 177, 370)', () {
+        expect(
+          typeAngle('38:7').typeDigit('5'),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+          reason: '38 [D:M:S] 7 then 5: the chip stays 38°7′',
+        );
+        expect(
+          typeAngle('12:9').typeDigit('9'),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(typeAngle('12:59').text, '12°59\'00"');
+        expect(
+          typeAngle('38:59').typeDigit('0'),
+          const EntryRefused(EntryRefusal.minutesHaveTwoDigits),
+        );
+        expect(
+          typeAngle('30:5:12').typeDigit('3'),
+          const EntryRefused(EntryRefusal.secondsHaveTwoDigits),
+        );
+        expect(
+          typeAngle('38:30:6').typeDigit('0'),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(typeAngle('38:30:59').text, '38°30\'59"');
+        expect(typeAngle('38:0:0').text, '38°00\'0"');
+        expect(typeAngle('0:00:00').sealed.text, '0°00\'00"');
       });
 
       test('a trailing point re-reads as whole degrees with no minutes', () {
@@ -536,12 +579,22 @@ void main() {
       });
 
       test('a fourth segment is refused without eating the third (S90), and '
-          'so is a third point', () {
+          'so is a third point: an angle has three parts (rule 4.10, '
+          'decision tree row 176; CA-1372)', () {
         final full = typeAngle('38:30:45');
-        expect(full.closeDegreesMinutesSeconds(), EntryChanged(full));
-        expect(full.typeDigit('.', readsAngles: true), EntryChanged(full));
+        expect(
+          full.closeDegreesMinutesSeconds(),
+          const EntryRefused(EntryRefusal.angleHasThreeParts),
+        );
+        expect(
+          full.typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.angleHasThreeParts),
+        );
         final open = typeAngle('38:30:');
-        expect(open.closeDegreesMinutesSeconds(), EntryChanged(open));
+        expect(
+          open.closeDegreesMinutesSeconds(),
+          const EntryRefused(EntryRefusal.angleHasThreeParts),
+        );
       });
 
       test('the padding is the seal (S113): closed minutes read two digits, '
@@ -552,10 +605,9 @@ void main() {
         expect(typeAngle('38:5:9').text, '38°05\'9"');
       });
 
-      test('an open seconds field shows exactly what was typed, 59 and '
-          'more included: the carry waits for the seal', () {
-        expect(typeAngle('38:30:75').text, '38°30\'75"');
-        expect(typeAngle('0:0:3600').text, '0°00\'3600"');
+      test('an open seconds field shows exactly what was typed, a single '
+          'digit unpadded', () {
+        expect(typeAngle('38:30:5').text, '38°30\'5"');
         expect(typeAngle('0:0:1').text, '0°00\'1"');
       });
 
@@ -581,21 +633,22 @@ void main() {
 
       group('the seal (rule 4.10: a key that leaves the chip closes the '
           'open field)', () {
-        test('an open minutes field closes with its carry and its padding, '
-            'and the seconds read 00', () {
-          final sealed = typeAngle('38:75').sealed;
-          expect(sealed.text, '39°15\'00"');
+        test('an open minutes field closes with its padding, and the '
+            'seconds read 00', () {
+          final sealed = typeAngle('38:15').sealed;
+          expect(sealed.text, '38°15\'00"');
           expect(
             sealed.tokens.single,
-            const Token(digits: '39', minutes: '15', seconds: '00'),
+            const Token(digits: '38', minutes: '15', seconds: '00'),
           );
           expect(typeAngle('38:5').sealed.text, '38°05\'00"');
+          expect(typeAngle('38:').sealed.text, '38°00\'00"');
         });
 
-        test('typed seconds pad to two digits, and carry past 59', () {
+        test('typed seconds pad to two digits', () {
           expect(typeAngle('38:5:9').sealed.text, '38°05\'09"');
-          expect(typeAngle('38:30:75').sealed.text, '38°31\'15"');
-          expect(typeAngle('0:0:3600').sealed.text, '1°00\'00"');
+          expect(typeAngle('38:30:59').sealed.text, '38°30\'59"');
+          expect(typeAngle('0:0:0').sealed.text, '0°00\'00"');
         });
 
         test('a one-digit seconds field pads to two at the seal', () {
@@ -613,18 +666,15 @@ void main() {
           final sealed = typeAngle('45.2.').sealed;
           expect(sealed.tokens.single.value, 45 + 2 / 60);
           expect(sealed.tokens.single.typedAs, '45.2');
-          expect(
-            typeAngle('38:30:75').sealed.tokens.single.value,
-            38.520833333333336,
-          );
+          expect(typeAngle('38:30:45').sealed.tokens.single.value, 38.5125);
         });
 
         test('a minus on the degrees stays on the whole angle', () {
           const negative = EntryBuffer([
-            Token(digits: '-30', minutes: '75', seconds: ''),
+            Token(digits: '-30', minutes: '15', seconds: ''),
           ]);
-          expect(negative.sealed.text, '-31°15\'00"');
-          expect(negative.sealed.tokens.single.value, -31.25);
+          expect(negative.sealed.text, '-30°15\'00"');
+          expect(negative.sealed.tokens.single.value, -30.25);
         });
 
         test('a buffer that is not an angle is unchanged, and sealing twice '
@@ -656,29 +706,30 @@ void main() {
       });
 
       test('a point on an angle is the key: it opens the next segment, and '
-          'a third one changes nothing', () {
+          'a third one is refused', () {
         expect(typeAngle('38:30.45').text, '38°30\'45"');
         expect(typeAngle('38.30.45').text, '38°30\'45"');
         final full = typeAngle('38:30:45');
-        expect(full.typeDigit('.', readsAngles: true), EntryChanged(full));
+        expect(
+          full.typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.angleHasThreeParts),
+        );
       });
 
-      test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
+      test('the degrees are never touched by the seal, however large', () {
         expect(
-          typeAngle('150119987579015:92:').text,
-          '150119987579016°32\'00"',
-          reason: '9,007,199,254,740,992 minutes, the last exact carry',
+          typeAngle('150119987579015:32:').text,
+          '150119987579015°32\'00"',
         );
         expect(
-          typeAngle('150119987579015:94:').text,
-          '150119987579015°94\'00"',
-          reason: 'two past it: the segments are left as typed',
+          typeAngle('150119987579015:4:7').sealed.text,
+          '150119987579015°04\'07"',
         );
       });
 
       test('one angle spells the same whether typed or computed (S113)', () {
         const formatter = QuantityFormatter();
-        for (final digits in ['45.2', '12.1', '6.0', '30.89', '38.5']) {
+        for (final digits in ['45.2', '12.1', '6.0', '30.59', '38.5']) {
           final entry = typeAngle('$digits:');
           final spelled = formatter.format(
             Angle(

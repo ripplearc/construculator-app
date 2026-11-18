@@ -30,14 +30,14 @@
   {
    "scenario": "S85",
    "checkpoint": "closing the segment carries the 89 minutes: 31°29'",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "value", "equals": "31°29'00\""}
+   "reason": "UX doc rule 4.10 (product manager, 15 November 2026; decision tree row 370; CA-1372): a minutes part of 60 or more is refused at the key that would make it, so the point that would close 89 minutes is refused and nothing carries; 30.89 stays a decimal. The prototype carries 89 minutes into 31°29'.",
+   "dart": {"kind": "value", "equals": "30.89°"}
   },
   {
    "scenario": "S85",
    "checkpoint": "lands normalised, never an error",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "value", "equals": "31°29'00\""}
+   "reason": "As above (UX doc rule 4.10; CA-1372): the point was refused, so the two zeros typed after it lengthen the decimal, 30.8900. The prototype shows the carried 31°29'0\".",
+   "dart": {"kind": "value", "equals": "30.8900°"}
   },
   {
    "scenario": "S86",
@@ -60,8 +60,14 @@
   {
    "scenario": "S86",
    "checkpoint": "…and the over-60 carry was previewed, not sprung",
-   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
-   "dart": {"kind": "value", "equals": "9°29'00\""}
+   "reason": "UX doc rule 4.10 and walkthrough 17.4, steps 8 to 10 (decision tree row 260; CA-1372): 89 minutes can never be typed, so 8.89 has no D:M:S reading and the pill cycles its two readings, 8.89in/12in and 8.89°; two taps come home to 8.89°. The prototype previews a carried 9°29'.",
+   "dart": {"kind": "value", "equals": "8.89°"}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "which still returns the un-normalised digits, untouched",
+   "reason": "As above (walkthrough 17.4, steps 8 to 10; CA-1372): with two readings a third tap is the trade reading again, 8.89in/12in. The prototype's third tap leaves its D:M:S stop for 8.89°.",
+   "dart": {"kind": "value", "equals": "8.89in/12in"}
   },
   {
    "scenario": "S87",
