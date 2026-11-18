@@ -4064,6 +4064,12 @@ abstract class AppLocalizations {
   /// **'/{unit}'**
   String materialRatePerUnitSuffix(String unit);
 
+  /// Hint under the empty Rate row of the material form, pointing at the search button that opens Look up a rate
+  ///
+  /// In en, this message translates to:
+  /// **'Never priced this? Use the search icon above to look it up in the cost file.'**
+  String get materialRateLookupHint;
+
   /// Greyed-out button at the foot of the material Look up a rate sheet before a row is picked; once a row is picked it reads yourRatesUseButtonLabel instead
   ///
   /// In en, this message translates to:

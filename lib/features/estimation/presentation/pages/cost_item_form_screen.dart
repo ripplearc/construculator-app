@@ -286,6 +286,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       CostItemType.material => MaterialCostFormFields(
         initialRateEntry: widget.initialRateEntry,
         initialName: widget.initialName,
+        yourRatesBlocFactory: widget.yourRatesBlocFactory,
+        clock: widget.clock,
       ),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,

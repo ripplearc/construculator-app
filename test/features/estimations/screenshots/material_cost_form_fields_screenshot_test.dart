@@ -2,6 +2,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -75,7 +76,10 @@ void main() {
         home: Scaffold(
           body: BlocProvider<MaterialCostFormBloc>.value(
             value: bloc,
-            child: const MaterialCostFormFields(),
+            child: MaterialCostFormFields(
+              yourRatesBlocFactory: Modular.get<YourRatesBloc>,
+              clock: FakeClockImpl(),
+            ),
           ),
         ),
       ),
