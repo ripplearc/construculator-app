@@ -402,7 +402,7 @@ void main() {
 
         final loaded = await dataSource.loadEstimationById('est-1');
 
-        expect(loaded?.id, 'est-1');
+        expect(loaded!.id, 'est-1');
         expect(fakeWrapper.getAllCalls.single.parameters, ['est-1']);
       });
 
@@ -411,7 +411,7 @@ void main() {
 
         final loaded = await dataSource.loadEstimationById('est-1');
 
-        expect(loaded?.isLocked, isTrue);
+        expect(loaded!.isLocked, isTrue);
       });
 
       test('returns null when the phone has no row with the id', () async {
@@ -544,8 +544,8 @@ void main() {
             newName: 'Renamed',
           );
 
-          expect(updated?.id, 'est-1');
-          expect(updated?.estimateName, 'Renamed');
+          expect(updated!.id, 'est-1');
+          expect(updated.estimateName, 'Renamed');
           final call = fakeWrapper.executeCalls.single;
           expect(
             call.sql,
@@ -577,7 +577,7 @@ void main() {
             newName: estimateNameDefault,
           );
 
-          expect(updated?.estimateName, estimateNameDefault);
+          expect(updated!.estimateName, estimateNameDefault);
           expect(fakeWrapper.executeCalls, isEmpty);
         });
 
@@ -619,7 +619,7 @@ void main() {
             isLocked: true,
           );
 
-          expect(updated?.isLocked, isTrue);
+          expect(updated!.isLocked, isTrue);
           final call = fakeWrapper.executeCalls.single;
           expect(
             call.sql,
@@ -647,7 +647,7 @@ void main() {
             isLocked: true,
           );
 
-          expect(updated?.isLocked, isTrue);
+          expect(updated!.isLocked, isTrue);
           expect(fakeWrapper.executeCalls, isEmpty);
         });
 
