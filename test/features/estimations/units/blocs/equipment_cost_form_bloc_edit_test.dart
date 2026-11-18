@@ -70,6 +70,39 @@ void main() {
     tearDown(() => bloc.close());
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'puts back the stored rate status when the stored rate is typed again',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('20'))
+          ..add(const EquipmentRateUpdatedEvent('200'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.dailyRate, 200.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.sampleRateUnverified);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'marks the rate as the own rate while a different rate is typed',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('20'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.dailyRate, 20.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.ownRateUnconfirmed);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'opens a day line with every stored value in the form',
       setUp: seedLine,
       build: () => bloc,

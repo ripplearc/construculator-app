@@ -32,6 +32,18 @@
             <mutation text="return storedRate == pickedRate;"/>
         </regex>
 
+        <regex pattern="(stored != null &amp;&amp; rate == storedRate)" id="edit_rate.guard_off">
+            <mutation text="false &amp;&amp; rate == storedRate"/>
+        </regex>
+
+        <regex pattern="(rate == storedRate\))" id="edit_rate.guard_inverted">
+            <mutation text="rate != storedRate)"/>
+        </regex>
+
+        <regex pattern="(rateStatus: stored\.rateStatus)" id="edit_rate.status_not_put_back">
+            <mutation text="rateStatus: rateStatus"/>
+        </regex>
+
         <regex pattern="(_formValuesAtOpening = opened;)" id="edit_open.no_baseline">
             <mutation text="// baseline removed"/>
         </regex>

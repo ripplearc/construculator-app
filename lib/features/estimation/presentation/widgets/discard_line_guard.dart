@@ -163,17 +163,14 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
           ? l10n.discardChangesDialogTitle
           : l10n.discardLineDialogTitle,
       body: TextSpan(
-        text: switch ((isEditing, name.isEmpty)) {
-          (true, true) => l10n.discardChangesDialogBodyUnnamed(
-            DisplayFormatter.formatCurrency(savedTotal),
-          ),
-          (true, false) => l10n.discardChangesDialogBody(
-            name,
-            DisplayFormatter.formatCurrency(savedTotal),
-          ),
-          (false, true) => l10n.discardLineDialogBodyUnnamed,
-          (false, false) => l10n.discardLineDialogBody(name),
-        },
+        text: isEditing
+            ? l10n.discardChangesDialogBody(
+                name,
+                DisplayFormatter.formatCurrency(savedTotal),
+              )
+            : name.isEmpty
+            ? l10n.discardLineDialogBodyUnnamed
+            : l10n.discardLineDialogBody(name),
       ),
       secondaryLabel: l10n.discardLineDiscardButton,
       primaryLabel: l10n.discardLineKeepEditingButton,

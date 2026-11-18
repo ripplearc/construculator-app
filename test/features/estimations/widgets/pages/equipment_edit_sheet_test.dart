@@ -161,7 +161,21 @@ void main() {
       expect(inField('equipment_name_field', 'Scissor lift'), findsOneWidget);
       expect(inField('duration_field', '3'), findsOneWidget);
       expect(inField('rate_field', '200'), findsOneWidget);
-      expect(inField('delivery_fee_field', '85'), findsOneWidget);
+    });
+
+    testWidgets('opens with Delivery folded and reads its fee in the row', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('delivery_fee_row')),
+          matching: find.textContaining('85'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
     });
 
     testWidgets('offers Save this line and says no change yet', (tester) async {
@@ -173,7 +187,7 @@ void main() {
             .label,
         l10n.saveThisLineButton,
       );
-      expect(find.text(l10n.noChangeYetNote), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
     });
 
     testWidgets('closes at once on back when nothing was touched', (
@@ -209,6 +223,62 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.discardLineDialogTitle), findsNothing);
+    });
+
+    testWidgets('closes at once when a changed value is put back', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+      await enter(tester, 'duration_field', '4');
+      await enter(tester, 'duration_field', '3');
+
+      await tapBack(tester);
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.byType(SheetHeader), findsNothing);
+    });
+
+    testWidgets('Keep editing keeps the sheet open with the changed values', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+      await enter(tester, 'duration_field', '4');
+      await tapBack(tester);
+
+      await tester.tap(find.byKey(ConfirmationDialog.primaryButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.byType(SheetHeader), findsOneWidget);
+      expect(inField('duration_field', '4'), findsOneWidget);
+    });
+
+    testWidgets('a tap on the dimmed background asks "Discard changes?" too', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+      await enter(tester, 'duration_field', '4');
+
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardChangesDialogTitle), findsOneWidget);
+    });
+
+    testWidgets('a swipe down on the handle asks "Discard changes?" too', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+      await enter(tester, 'duration_field', '4');
+
+      await tester.fling(
+        find.byKey(GuardedQuickSheet.handleKey),
+        const Offset(0, 300),
+        1500,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardChangesDialogTitle), findsOneWidget);
     });
 
     testWidgets('Discard closes the sheet and leaves the stored line alone', (

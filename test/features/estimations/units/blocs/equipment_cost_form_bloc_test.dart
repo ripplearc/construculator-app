@@ -1934,8 +1934,8 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'leaves the order alone when an existing line is saved with a picked '
-        'saved rate',
+        'puts a different saved rate first in recents when an existing line is '
+        'saved with it',
         setUp: () => fakeSupabaseWrapper.addTableData(
           DatabaseConstants.costItemsTable,
           [
@@ -1960,8 +1960,8 @@ void main() {
           );
         },
         verify: (_) async {
-          expect(await recentsOrder(), ['newer', 'older']);
-          expect(database.updatedRowIds, isEmpty);
+          expect(await recentsOrder(), ['older', 'newer']);
+          expect(database.updatedRowIds, ['older']);
         },
       );
 

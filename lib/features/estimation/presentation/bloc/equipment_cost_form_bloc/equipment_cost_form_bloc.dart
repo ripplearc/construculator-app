@@ -94,11 +94,16 @@ class EquipmentCostFormBloc
           : RateStatus.ownRateUnconfirmed;
       _emit(emit, (d) {
         final isDay = d.method == EquipmentPricingMethod.day;
-        // The fields echo the stored rate when the form opens on a line, and
-        // that must not turn a confirmed rate into an unconfirmed one.
-        if (d.isEditingExistingLine &&
-            rate == (isDay ? d.dailyRate : d.jobAmount)) {
-          return d;
+        // Typing the rate the line was stored with puts back its stored
+        // status, so deleting a digit and typing it again changes nothing.
+        final stored = d.editedItem;
+        final storedRate = stored == null
+            ? null
+            : (isDay ? stored.dailyRate?.amount : stored.jobAmount?.amount);
+        if (stored != null && rate == storedRate) {
+          return isDay
+              ? d.copyWith(dailyRate: rate, rateStatus: stored.rateStatus)
+              : d.copyWith(jobAmount: rate, rateStatus: stored.rateStatus);
         }
         return isDay
             ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
