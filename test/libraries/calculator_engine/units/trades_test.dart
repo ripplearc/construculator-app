@@ -252,7 +252,11 @@ void main() {
 
       test('S45, row 238: 22ft of footing is 0.72yd³ at 16in x 8in and '
           '2.44yd³ at 24in x 18in, in the store\'s order', () {
-        final volumes = trades.footingVolumesFor(feet(22), crossSections);
+        final volumes = trades.footingVolumesFor(
+          feet(22),
+          crossSections,
+          system: MeasurementSystem.imperial,
+        );
         expect(
           [
             for (final volume in volumes)
@@ -265,21 +269,72 @@ void main() {
       });
 
       test('the volume is kept exact and rounded only at display', () {
-        final volume = trades.footingVolumesFor(feet(22), crossSections).first;
+        final volume = trades
+            .footingVolumesFor(
+              feet(22),
+              crossSections,
+              system: MeasurementSystem.imperial,
+            )
+            .first;
         expect(volume.volume.cubicFeet, closeTo(22 * 16 * 8 / 144, 1e-9));
         expect(volume.volume.unit, Unit.yard);
       });
 
-      test('a metric length of footing answers in cubic metres: 7m at '
-          '16in x 8in is 0.58m³ (Section 6, results follow the entry '
-          'system)', () {
-        final volume = trades.footingVolumesFor(metres(7), crossSections).first;
-        expect(formatter.format(volume.volume), '0.58m³');
+      test('R1 (D1, product manager 17 November 2026): a footing follows '
+          'the System of units setting, whatever unit the length was typed '
+          'in — 10m then Footng reads in yd³ under Imperial and in m³ under '
+          'Metric (Section 6, "Display settings"; Section 9, "(m³ under '
+          'Metric)")', () {
+        String first(Length length, MeasurementSystem system) {
+          final volume = trades
+              .footingVolumesFor(length, crossSections, system: system)
+              .first;
+          expect(volume.system, system);
+          return QuantityFormatter(
+            preferences: CalculatorPreferences(system: system),
+          ).format(volume.volume);
+        }
+
+        expect(first(metres(10), MeasurementSystem.metric), '0.83m³');
+        expect(first(metres(10), MeasurementSystem.imperial), '1.08yd³');
+        expect(first(metres(7), MeasurementSystem.metric), '0.58m³');
+        expect(first(feet(22), MeasurementSystem.metric), '0.55m³');
+        expect(first(feet(22), MeasurementSystem.imperial), '0.72yd³');
+      });
+
+      test('R1: a recount keeps the system with the length', () {
+        final metric = trades
+            .footingVolumesFor(
+              feet(22),
+              crossSections,
+              system: MeasurementSystem.metric,
+            )
+            .first;
+        final wider = metric.recount(inches(24, 18))!;
+        expect(wider.system, MeasurementSystem.metric);
+        expect(wider.volume.unit, Unit.metre);
+        expect(
+          metric,
+          isNot(
+            FootingVolume(
+              length: metric.length,
+              crossSection: metric.crossSection,
+              system: MeasurementSystem.imperial,
+            ),
+          ),
+          reason: 'the system is part of the volume',
+        );
       });
 
       test('the cross-section pill recomputes the same length: 22ft at '
           '24in x 18in is 2.44yd³, and a section with no face is refused', () {
-        final volume = trades.footingVolumesFor(feet(22), crossSections).first;
+        final volume = trades
+            .footingVolumesFor(
+              feet(22),
+              crossSections,
+              system: MeasurementSystem.imperial,
+            )
+            .first;
         final wider = volume.recount(inches(24, 18))!;
         expect(formatter.format(wider.volume), '2.44yd³');
         expect(wider.length, feet(22));
@@ -290,42 +345,92 @@ void main() {
       test('a length of zero or less takes no concrete, one under half a '
           'tick (0.1mm) still does, and a cross-section with no face is left '
           'out', () {
-        expect(trades.footingVolumesFor(noLength, crossSections), isEmpty);
-        expect(trades.footingVolumesFor(feet(-22), crossSections), isEmpty);
+        expect(
+          trades.footingVolumesFor(
+            noLength,
+            crossSections,
+            system: MeasurementSystem.imperial,
+          ),
+          isEmpty,
+        );
+        expect(
+          trades.footingVolumesFor(
+            feet(-22),
+            crossSections,
+            system: MeasurementSystem.imperial,
+          ),
+          isEmpty,
+        );
         const tenthOfAMillimetre = Length.exact(
           Rational(1, 254),
           unit: Unit.millimetre,
         );
         expect(tenthOfAMillimetre.ticks, 0, reason: 'under half a tick');
         expect(
-          trades.footingVolumesFor(tenthOfAMillimetre, crossSections),
+          trades.footingVolumesFor(
+            tenthOfAMillimetre,
+            crossSections,
+            system: MeasurementSystem.imperial,
+          ),
           hasLength(2),
         );
         expect(
           trades
-              .footingVolumesFor(feet(22), [inches(0, 8), inches(16, 8)])
+              .footingVolumesFor(feet(22), [
+                inches(0, 8),
+                inches(16, 8),
+              ], system: MeasurementSystem.imperial)
               .map((volume) => volume.crossSection),
           [inches(16, 8)],
         );
-        expect(trades.footingVolumesFor(feet(22), const []), isEmpty);
+        expect(
+          trades.footingVolumesFor(
+            feet(22),
+            const [],
+            system: MeasurementSystem.imperial,
+          ),
+          isEmpty,
+        );
       });
 
       test('the longest footing the parser accepts, 19,999,999.99ft at '
           '24in x 18in, is 2,222,222.22yd³', () {
         final volume = trades
-            .footingVolumesFor(feet(19999999.99), crossSections)
+            .footingVolumesFor(
+              feet(19999999.99),
+              crossSections,
+              system: MeasurementSystem.imperial,
+            )
             .last;
         expect(formatter.format(volume.volume), '2,222,222.22yd³');
       });
 
       test('volumes compare by what they carry', () {
         expect(
-          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
-          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
+          FootingVolume(
+            length: feet(22),
+            crossSection: inches(16, 8),
+            system: MeasurementSystem.imperial,
+          ),
+          FootingVolume(
+            length: feet(22),
+            crossSection: inches(16, 8),
+            system: MeasurementSystem.imperial,
+          ),
         );
         expect(
-          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
-          isNot(FootingVolume(length: feet(22), crossSection: inches(24, 18))),
+          FootingVolume(
+            length: feet(22),
+            crossSection: inches(16, 8),
+            system: MeasurementSystem.imperial,
+          ),
+          isNot(
+            FootingVolume(
+              length: feet(22),
+              crossSection: inches(24, 18),
+              system: MeasurementSystem.imperial,
+            ),
+          ),
         );
       });
     });
