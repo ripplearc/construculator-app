@@ -55,7 +55,7 @@ void main() {
     test('lists the 23 storyboard units in six groups, in order', () {
       final shown = {
         for (final group in imperialMaterialUnits)
-          group.group.heading(l10n): [
+          group.measure.heading(l10n): [
             for (final unit in group.units)
               '${unit.symbol(l10n)} ${unit.displayName(l10n)}',
           ],
