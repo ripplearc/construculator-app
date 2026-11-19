@@ -5,6 +5,7 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/powersync/data/connectors/supabase_powersync_connector.dart';
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
+import 'package:construculator/libraries/powersync/testing/fake_cost_item_refusal_database.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -16,7 +17,6 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../../utils/fake_cost_item_refusal_database.dart';
 
 void main() {
   final bootstrap = FakeAppBootstrapFactory.create();

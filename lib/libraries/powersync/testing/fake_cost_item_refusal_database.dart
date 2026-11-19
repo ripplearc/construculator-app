@@ -1,7 +1,7 @@
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
-import 'package:sqlite3/common.dart';
+import 'package:powersync/sqlite3_common.dart';
 
 /// A [FakePowerSyncDatabase] for tests of the upload step that remembers the
 /// phone's `cost_items` rows and the rows of the local-only
@@ -35,7 +35,7 @@ class FakeCostItemRefusalDatabase extends FakePowerSyncDatabase {
 
   /// Puts [row] in `cost_items` as the phone's copy of a cost line.
   void seedCostItem(Map<String, Object?> row) {
-    _costItemsById[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+    _costItemsById[row[DatabaseConstants.idColumn] as String] = Map.of(row);
   }
 
   /// Every refusal record now in the table, by the id of its cost line.
@@ -97,9 +97,11 @@ class FakeCostItemRefusalDatabase extends FakePowerSyncDatabase {
   }
 
   void _insertRefusal(String sql, List<Object?> parameters) {
-    final columns = _insertColumns
-        .firstMatch(sql)!
-        .group(1)!
+    final columnList = _insertColumns.firstMatch(sql)?.group(1);
+    if (columnList == null) {
+      throw StateError('Cannot read the columns of: $sql');
+    }
+    final columns = columnList
         .split(',')
         .map((column) => column.trim())
         .toList();
@@ -120,6 +122,6 @@ class FakeCostItemRefusalDatabase extends FakePowerSyncDatabase {
     final row = {
       for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
     };
-    _refusalsById[row[DatabaseConstants.idColumn]! as String] = row;
+    _refusalsById[row[DatabaseConstants.idColumn] as String] = row;
   }
 }
