@@ -348,6 +348,29 @@ void main() {
           expect(_dataOf(b.state).unit, Unit.pieces);
         });
       });
+
+      test('keeps the unit of an attached price after its rate is typed over '
+          'and cleared', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(
+              const MaterialPriceAttached(
+                rate: 9.5,
+                rateStatus: RateStatus.ownRateConfirmed,
+                price: AttachedPrice(buyUnit: Unit.gallons),
+              ),
+            )
+            ..add(const MaterialRateUpdated(''))
+            ..add(const MaterialCostItemTypeChanged('Drywall'));
+          settle();
+
+          expect(_dataOf(b.state).rate, isNull);
+          expect(_dataOf(b.state).unit, Unit.gallons);
+        });
+      });
     });
 
     group('changing the unit', () {
