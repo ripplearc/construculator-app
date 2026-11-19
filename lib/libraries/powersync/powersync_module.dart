@@ -4,6 +4,7 @@ import 'package:construculator/libraries/powersync/data/powersync_database_wrapp
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
 import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:powersync/powersync.dart';
 
@@ -19,11 +20,15 @@ class PowerSyncModule extends Module {
   PowerSyncModule(this.appBootstrap);
 
   @override
+  List<Module> get imports => [ClockModule()];
+
+  @override
   void exportedBinds(Injector i) {
     i.addLazySingleton<PowerSyncBackendConnector>(
       () => SupabasePowerSyncConnector(
         supabaseWrapper: appBootstrap.supabaseWrapper,
         envLoader: appBootstrap.envLoader,
+        clock: i(),
       ),
     );
 

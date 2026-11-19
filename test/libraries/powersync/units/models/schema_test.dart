@@ -48,4 +48,25 @@ void main() {
       },
     );
   });
+  group('cost_item_refusals table', () {
+    final table = schema.tables.singleWhere(
+      (table) => table.name == 'cost_item_refusals',
+    );
+
+    test('stays on the phone and is never uploaded', () {
+      expect(table.localOnly, isTrue);
+    });
+
+    test('has the columns that keep a refused line, with their types', () {
+      expect(
+        {for (final column in table.columns) column.name: column.type},
+        {
+          'estimate_id': ColumnType.text,
+          'line': ColumnType.text,
+          'reason': ColumnType.text,
+          'refused_at': ColumnType.text,
+        },
+      );
+    });
+  });
 }
