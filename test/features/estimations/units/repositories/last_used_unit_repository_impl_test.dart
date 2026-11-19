@@ -141,6 +141,29 @@ void main() {
       expect(await lastUnit(CostItemType.material, 'Drywall'), Unit.sheets);
     });
 
+    test('keeps every other material when the saved units cannot be read '
+        'during a save', () async {
+      await save(CostItemType.material, 'Drywall', Unit.sheets);
+      await save(CostItemType.material, 'Paint', Unit.gallons);
+      storage.shouldThrowOnRead = true;
+
+      await save(CostItemType.material, 'Screws', Unit.pieces);
+      storage.shouldThrowOnRead = false;
+
+      expect(await lastUnit(CostItemType.material, 'Drywall'), Unit.sheets);
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.gallons);
+      expect(await lastUnit(CostItemType.material, 'Screws'), isNull);
+    });
+
+    test('returns nothing when the saved units are damaged', () async {
+      await storage.saveData<String>(
+        'last_used_units.account-1.material',
+        'not json',
+      );
+
+      expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
+    });
+
     test('keeps the previous unit when a save fails', () async {
       await save(CostItemType.material, 'Paint', Unit.liters);
       storage.shouldThrowOnWrite = true;

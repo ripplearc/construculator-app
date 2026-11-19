@@ -12,7 +12,9 @@ import 'package:construculator/libraries/storage/interfaces/storage_service.dart
 ///
 /// A failed read or write is a lost convenience, not an error the user can act
 /// on, so both are swallowed and a read falls back to no remembered units. A
-/// stored name that is no longer a known unit is left out of the read.
+/// save skips when the stored units cannot be read, so the other materials
+/// are not overwritten, and starts over when they are damaged. A stored name
+/// that is no longer a known unit is left out of the read.
 class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
   LastUsedUnitRepositoryImpl({
     required this._storage,
@@ -29,7 +31,7 @@ class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
     final key = _keyFor(category);
     if (key == null) return RememberedUnits.none;
     try {
-      return await _readUnits(key);
+      return _decodeUnits(await _storage.getData<String>(key));
     } catch (e) {
       _logger.warning('Could not read the last used units: $e');
       return RememberedUnits.none;
@@ -44,9 +46,14 @@ class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
   ) async {
     final key = _keyFor(category);
     if (key == null) return;
-    // Starting from what can be read keeps a damaged entry from blocking
-    // every later save.
-    final units = (await getLastUnits(category)).withUnit(itemName, unit);
+    final String? stored;
+    try {
+      stored = await _storage.getData<String>(key);
+    } catch (e) {
+      _logger.warning('Could not read the last used units, so none saved: $e');
+      return;
+    }
+    final units = _decodeUnits(stored).withUnit(itemName, unit);
     try {
       await _storage.saveData<String>(
         key,
@@ -63,14 +70,20 @@ class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
     }
   }
 
-  Future<RememberedUnits> _readUnits(String key) async {
-    final stored = await _storage.getData<String>(key);
+  RememberedUnits _decodeUnits(String? stored) {
     if (stored == null) return RememberedUnits.none;
-    final decoded = jsonDecode(stored) as Map<String, dynamic>;
-    return RememberedUnits({
-      for (final MapEntry(:key, :value) in decoded.entries)
-        key: ?Unit.values.where((unit) => unit.name == value).firstOrNull,
-    });
+    try {
+      final decoded = jsonDecode(stored) as Map<String, dynamic>;
+      return RememberedUnits({
+        for (final MapEntry(:key, :value) in decoded.entries)
+          key: ?Unit.values.where((unit) => unit.name == value).firstOrNull,
+      });
+    } catch (e) {
+      // Damaged units start over, so one bad entry does not block every
+      // later save.
+      _logger.warning('The last used units are damaged: $e');
+      return RememberedUnits.none;
+    }
   }
 
   String? _keyFor(CostItemType category) {
