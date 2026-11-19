@@ -9,6 +9,8 @@ import 'package:construculator/features/estimation/presentation/widgets/money_in
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -174,6 +176,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   double? _amountBeingSaved;
   ({String id, double price, EquipmentPricingMethod method})?
   _recalledRateBeingSaved;
+  String? _goneRecalledRateId;
 
   @override
   void initState() {
@@ -537,7 +540,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _onRateEdited();
     _savedUnderLabel = false;
     _rateEditedWhileSaving = false;
-    _recalledRateBeingSaved = data.recalledRowToReplace;
+    final recalledRate = data.recalledRowToReplace;
+    _recalledRateBeingSaved = recalledRate?.id == _goneRecalledRateId
+        ? null
+        : recalledRate;
     final entry = _buildYourRateEntry(data);
     _amountBeingSaved = entry.rate.amount;
     _yourRatesBloc.add(YourRatesSaveRequested(entry));
@@ -585,13 +591,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       case YourRatesSaveLabelTaken():
         _rateEditedWhileSaving = false;
         setState(() => _rateSaveStatus = _RateSaveStatus.idle);
-      case YourRatesSaveFailed():
+      case YourRatesSaveFailed(:final failure):
+        _forgetRecalledRateWhenGone(failure);
+        _showRateSaveFailed();
       case YourRatesSaveNoCompany():
-        setState(
-          () => _rateSaveStatus = _rateEditedWhileSaving
-              ? _RateSaveStatus.idle
-              : _RateSaveStatus.failed,
-        );
+        _showRateSaveFailed();
       case YourRatesSaveSucceeded():
         setState(
           () => _rateSaveStatus = _rateEditedWhileSaving
@@ -609,6 +613,21 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       case YourRatesSearchResults():
       case YourRatesError():
         break;
+    }
+  }
+
+  void _showRateSaveFailed() => setState(
+    () => _rateSaveStatus = _rateEditedWhileSaving
+        ? _RateSaveStatus.idle
+        : _RateSaveStatus.failed,
+  );
+
+  void _forgetRecalledRateWhenGone(Failure failure) {
+    final recalledRate = _recalledRateBeingSaved;
+    if (recalledRate != null &&
+        failure is EstimationFailure &&
+        failure.errorType == EstimationErrorType.notFoundError) {
+      _goneRecalledRateId = recalledRate.id;
     }
   }
 

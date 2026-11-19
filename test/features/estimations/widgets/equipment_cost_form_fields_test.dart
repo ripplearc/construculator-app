@@ -3216,6 +3216,44 @@ void main() {
       );
 
       testWidgets(
+        'tapping the button again after the saved row was gone takes the '
+        'name-this-rate path and the price is saved',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          database.reset();
+          await seedRate(
+            itemName: 'Dumpster',
+            amount: 300,
+            method: EquipmentPricingMethod.job,
+          );
+          await tapSave(tester);
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
+
+          await tapSave(tester);
+
+          expect(find.byKey(ConfirmationDialog.bodyKey), findsNothing);
+          expect(
+            find.byKey(const Key('entry_label_dialog_title')),
+            findsOneWidget,
+          );
+          await tester.enterText(
+            find.byKey(const Key('entry_label_field')),
+            'Big skip',
+          );
+          await tester.tap(
+            find.byKey(const Key('entry_label_dialog_save_button')),
+          );
+          await tester.pumpAndSettle();
+
+          expect(await savedDumpsterPrices(), unorderedEquals([300.0, 450.0]));
+        },
+      );
+
+      testWidgets(
         'a failed replace says the default was not saved, under the button, '
         'and the saved price stays',
         (tester) async {
