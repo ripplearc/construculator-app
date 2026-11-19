@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_id.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -146,12 +147,62 @@ void main() {
     });
 
     group('insertRate', () {
-      test('gives the new row an id and shows it in the next read', () async {
+      test('gives the new row the id its identity works out to', () async {
         final saved = await dataSource.insertRate(newDto());
 
         final rates = await dataSource.loadRates();
-        expect(saved.id, isNotEmpty);
+        expect(
+          saved.id,
+          YourRateId.of(
+            companyId: 'company-1',
+            category: 'equipment',
+            itemName: 'Excavator',
+            equipmentMethod: 'day',
+          ),
+        );
         expect(rates.map((rate) => rate.id), [saved.id]);
+      });
+
+      test('gives a labelled and an unlabelled entry two ids and keeps both '
+          'rows', () async {
+        final unlabelled = await dataSource.insertRate(newDto());
+        final labelled = await dataSource.insertRate(
+          newDto(entryLabel: 'With operator'),
+        );
+
+        final rates = await dataSource.loadRates(companyId: 'company-1');
+        expect(labelled.id, isNot(unlabelled.id));
+        expect(rates.map((rate) => rate.id), {unlabelled.id, labelled.id});
+      });
+
+      test('gives a label that differs only by capital letters or extra spaces '
+          'the same id', () async {
+        final first = await dataSource.insertRate(
+          newDto(entryLabel: 'With operator'),
+        );
+        await dataSource.deleteRateById(first.id);
+        final second = await dataSource.insertRate(
+          newDto(entryLabel: '  WITH   Operator '),
+        );
+
+        expect(second.id, first.id);
+      });
+
+      test('ignores an id the caller put on the entry', () async {
+        final saved = await dataSource.insertRate(
+          YourRateEntryDto(
+            id: 'chosen-by-caller',
+            companyId: 'company-1',
+            category: 'equipment',
+            itemName: 'Excavator',
+            rateAmount: 250,
+            rateCurrency: 'USD',
+            equipmentMethod: 'day',
+            savedAt: '2026-10-01T08:00:00.000Z',
+          ),
+        );
+
+        expect(saved.id, isNot('chosen-by-caller'));
       });
 
       test('stamps created and updated time from the clock', () async {
@@ -210,6 +261,40 @@ void main() {
           dataSource.updateRate('missing', newDto()),
           throwsStateError,
         );
+      });
+    });
+
+    group('putRate', () {
+      test('writes the whole row over the row with that id', () async {
+        final saved = await dataSource.insertRate(newDto());
+
+        final put = await dataSource.putRate(saved.id, newDto(rateAmount: 400));
+
+        final rates = await dataSource.loadRates();
+        expect(rates.single.rateAmount, 400);
+        expect(put.id, saved.id);
+      });
+
+      test('queues a full row, not a change to the old row', () async {
+        final saved = await dataSource.insertRate(newDto());
+        database.reset();
+
+        await dataSource.putRate(saved.id, newDto(rateAmount: 400));
+
+        expect(database.updatedRowIds, isEmpty);
+        expect(database.insertedRows.single['id'], saved.id);
+      });
+
+      test('writes a row the phone does not hold yet', () async {
+        final put = await dataSource.putRate('new-id', newDto());
+
+        expect(put.id, 'new-id');
+      });
+
+      test('reports a write the phone cannot do', () async {
+        database.executeError = StateError('disk full');
+
+        await expectLater(dataSource.putRate('r1', newDto()), throwsStateError);
       });
     });
 

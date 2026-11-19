@@ -4,9 +4,9 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/y
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_id.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:powersync/powersync.dart' show uuid;
 
 /// Reads and writes "Your rates" in the phone's own PowerSync database.
 ///
@@ -47,6 +47,11 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.entryLabelColumn}, ${DatabaseConstants.savedAtColumn}, '
       '${DatabaseConstants.createdAtColumn}, ${DatabaseConstants.updatedAtColumn}) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+  static final _putSql = _insertSql.replaceFirst(
+    'INSERT INTO',
+    'INSERT OR REPLACE INTO',
+  );
 
   static const _updateSql =
       'UPDATE ${DatabaseConstants.yourRatesTable} SET '
@@ -105,22 +110,26 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   Future<YourRateEntryDto> insertRate(YourRateEntryDto dto) async {
     try {
       await _ensureSyncing();
-      final id = uuid.v4();
-      final now = _clock.now().toUtc().toIso8601String();
-      await _database.execute(_insertSql, [
-        id,
-        dto.companyId,
-        dto.category,
-        dto.itemName,
-        dto.rateAmount,
-        dto.rateCurrency,
-        dto.unit,
-        dto.equipmentMethod,
-        dto.entryLabel,
-        dto.savedAt,
-        now,
-        now,
-      ]);
+      final id = YourRateId.of(
+        companyId: dto.companyId,
+        category: dto.category,
+        itemName: dto.itemName,
+        equipmentMethod: dto.equipmentMethod,
+        entryLabel: dto.entryLabel,
+      );
+      await _writeWholeRow(_insertSql, id, dto);
+      return _readById(id);
+    } catch (e, stack) {
+      _logger.error('Failed to save your rate on the phone', e, stack);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<YourRateEntryDto> putRate(String id, YourRateEntryDto dto) async {
+    try {
+      await _ensureSyncing();
+      await _writeWholeRow(_putSql, id, dto);
       return _readById(id);
     } catch (e, stack) {
       _logger.error('Failed to save your rate on the phone', e, stack);
@@ -150,6 +159,24 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       _logger.error('Failed to update your rate on the phone', e, stack);
       rethrow;
     }
+  }
+
+  Future<void> _writeWholeRow(String sql, String id, YourRateEntryDto dto) {
+    final now = _clock.now().toUtc().toIso8601String();
+    return _database.execute(sql, [
+      id,
+      dto.companyId,
+      dto.category,
+      dto.itemName,
+      dto.rateAmount,
+      dto.rateCurrency,
+      dto.unit,
+      dto.equipmentMethod,
+      dto.entryLabel,
+      dto.savedAt,
+      now,
+      now,
+    ]);
   }
 
   @override

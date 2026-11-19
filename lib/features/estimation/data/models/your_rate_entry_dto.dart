@@ -12,8 +12,8 @@ import 'package:equatable/equatable.dart';
 /// itself when it saves a row. Reading those three back always goes through
 /// [fromJson] against the stored row.
 class YourRateEntryDto extends Equatable {
-  /// Unique identifier for the rate entry; generated on the phone when the
-  /// rate is first saved.
+  /// Unique identifier for the rate entry; worked out from its company,
+  /// category, name, pricing method and label when the rate is first saved.
   final String id;
 
   /// ID of the company this rate entry belongs to.

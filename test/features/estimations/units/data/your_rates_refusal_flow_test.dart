@@ -106,6 +106,56 @@ void main() {
         expect(found.getRightOrNull()!.single.rate.amount, 400.0);
       },
     );
+
+    test(
+      'a valid price saved after a refusal reaches the server as a full row',
+      () async {
+        await dataSource.insertRate(excavator(450));
+        server.shouldThrowOnUpsert = true;
+        server.upsertExceptionType = SupabaseExceptionType.postgrest;
+        server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+        Future<void> uploadLastWrite(FakePhoneBackedPowerSyncDatabase db) {
+          final stored = Map.of(phone.insertedRows.last);
+          final columns = Map.of(stored)..remove('id');
+          db.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(
+                1,
+                UpdateType.put,
+                'your_rates',
+                stored['id']! as String,
+                null,
+                columns,
+              ),
+            ]),
+          );
+          return connector.uploadData(db);
+        }
+
+        await uploadLastWrite(FakePhoneBackedPowerSyncDatabase(phone));
+        server.shouldThrowOnUpsert = false;
+
+        final result = await repository.save(
+          YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Excavator',
+            category: CostItemType.equipment,
+            rate: Money(amount: 250),
+            savedAt: DateTime.utc(2026, 10, 1, 9),
+            equipmentMethod: EquipmentPricingMethod.day,
+          ),
+        );
+        await uploadLastWrite(FakePhoneBackedPowerSyncDatabase(phone));
+
+        expect(result.isRight(), isTrue);
+        expect(phone.updatedRowIds, isEmpty);
+        expect(
+          server.getMethodCallsFor('upsert').last['data'],
+          containsPair('rate_amount', 250.0),
+        );
+      },
+    );
   });
 }
 

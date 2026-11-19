@@ -17,8 +17,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// - Distinguishes permanent failures (RLS denial) from transient failures
 ///
 /// A refused `your_rates` change is skipped so it cannot block the queue:
-/// a value the server rejects (23514), a duplicate from another phone (23505),
-/// and a PATCH whose row the server does not have (PGRST116).
+/// a value the server rejects (23514), a unique clash on another id (23505,
+/// which a server with the id check no longer produces), and a PATCH whose row
+/// the server does not have (PGRST116).
 ///
 /// A `user_calculator_stores` row is sent with its `values` decoded: the
 /// column is jsonb on the server and JSON text on the phone, and sent as text
@@ -30,12 +31,15 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// one id per default on every phone, so this is a safety net, not the path
 /// a change normally takes.
 ///
-/// When two phones save the same Your rates entry, the later upload overwrites
-/// the earlier one. Two entries are the same when the item name, pricing
-/// method and label match, where a name or label matches ignoring capital
-/// letters and extra spaces. That copies the server rule behind the
-/// `item_name_key` column: trim, collapse runs of spaces to one, lower-case.
-/// If the server rule changes, change `YourRateRefusalKey.normalizeName` with it.
+/// Two phones that save the same Your rates entry send the same id
+/// (`YourRateId`), so the second upload is an upsert on that id and the later
+/// change wins. A server with the id check refuses a row whose id is not that id
+/// (23514), so the overwrite below cannot run there. It is kept for a server
+/// without that check. It matches the saved row on name, pricing method and
+/// label, where a name or label matches ignoring capital letters and extra
+/// spaces. That copies the server rule behind the `item_name_key` column: trim,
+/// collapse runs of spaces to one, lower-case. If the server rule changes,
+/// change `YourRateRefusalKey.normalizeName` with it.
 class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
@@ -126,8 +130,6 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         return;
       }
       if (!_isRefusedRateChange(error, operation)) rethrow;
-      // TODO: [CA-1306] Derive the rate id from its name and label so a clash is one row and later edits find it.
-      // https://ripplearc.youtrack.cloud/issue/CA-1306
       if (await _overwroteRateWithSameKey(error, operation)) {
         await _forgetRefusalWithoutBlocking(database, operation);
         return;

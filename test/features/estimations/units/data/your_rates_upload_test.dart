@@ -108,6 +108,144 @@ void main() {
       expect(update['data'], containsPair('rate_amount', 400.0));
     });
 
+    group('on two phones', () {
+      YourRateEntryDto sameRateTypedDifferently() => YourRateEntryDto(
+        id: '',
+        companyId: 'company-1',
+        category: 'equipment',
+        itemName: '  EXCAVATOR ',
+        rateAmount: 300,
+        rateCurrency: 'USD',
+        equipmentMethod: 'day',
+        savedAt: '2026-10-01T09:00:00.000Z',
+      );
+
+      Future<void> upload(Map<String, Object?> storedRow) async {
+        final fakeDatabase = FakePowerSyncDatabase()
+          ..setNextTransaction(FakeCrudTransaction([queuedPutFor(storedRow)]));
+        await connector.uploadData(fakeDatabase);
+      }
+
+      Future<Map<String, Object?>> secondPhoneSavesSameRate() async {
+        phone.reset();
+        await dataSource.insertRate(sameRateTypedDifferently());
+        return phone.insertedRows.single;
+      }
+
+      test('give the same rate one id however its name is typed', () async {
+        final first = await dataSource.insertRate(newRate());
+        final secondRow = await secondPhoneSavesSameRate();
+
+        expect(secondRow['id'], first.id);
+      });
+
+      test(
+        'upload the same rate as one row, the later upload winning',
+        () async {
+          await dataSource.insertRate(newRate());
+          final firstRow = phone.insertedRows.single;
+          final secondRow = await secondPhoneSavesSameRate();
+
+          await upload(firstRow);
+          await upload(secondRow);
+
+          final uploads = server.getMethodCallsFor('upsert');
+          expect(uploads.map((call) => call['onConflict']), ['id', 'id']);
+          expect(uploads.map((call) => (call['data'] as Map)['id']).toSet(), {
+            firstRow['id'],
+          });
+          expect(uploads.last['data'], containsPair('rate_amount', 300.0));
+        },
+      );
+
+      test('keep an edit made after the clash on the server row', () async {
+        final first = await dataSource.insertRate(newRate());
+        final secondRow = await secondPhoneSavesSameRate();
+        server.addTableData('your_rates', [
+          {'id': first.id, 'rate_amount': 300.0},
+        ]);
+        final fakeDatabase = FakePowerSyncDatabase()
+          ..setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(
+                3,
+                UpdateType.patch,
+                'your_rates',
+                secondRow['id']! as String,
+                null,
+                {'rate_amount': 500.0},
+              ),
+            ]),
+          );
+
+        await connector.uploadData(fakeDatabase);
+
+        final update = server.getMethodCallsFor('update').single;
+        expect(update['filterValue'], first.id);
+        expect(update['data'], containsPair('rate_amount', 500.0));
+      });
+    });
+
+    group('from an older build that makes its own ids', () {
+      const randomId = 'id-made-by-an-older-build';
+
+      test(
+        'is refused by a server that checks the id, without blocking the queue',
+        () async {
+          phone.seedRow({
+            'id': randomId,
+            'company_id': 'company-1',
+            'category': 'equipment',
+            'item_name': 'Excavator',
+            'rate_amount': 250.0,
+            'rate_currency': 'USD',
+            'unit': null,
+            'equipment_method': 'day',
+            'entry_label': null,
+            'saved_at': '2026-10-01T08:00:00.000Z',
+            'created_at': '2026-10-01T08:00:00.000Z',
+            'updated_at': '2026-10-01T08:00:00.000Z',
+          });
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'your_rates', randomId, null, {
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Excavator',
+              'rate_amount': 250.0,
+              'rate_currency': 'USD',
+              'equipment_method': 'day',
+              'saved_at': '2026-10-01T08:00:00.000Z',
+            }),
+          ]);
+          final database = FakePhoneBackedPowerSyncDatabase(phone)
+            ..setNextTransaction(transaction);
+
+          await connector.uploadData(database);
+
+          expect(
+            server.getMethodCallsFor('upsert').single['data'],
+            containsPair('id', randomId),
+          );
+          expect(transaction.isCompleted, isTrue);
+          expect(
+            phone.refusalRow(
+              YourRateRefusalKey.of(
+                userId: 'user-1',
+                companyId: 'company-1',
+                category: 'equipment',
+                itemName: 'Excavator',
+                equipmentMethod: 'day',
+              ),
+            )!['refused_amount'],
+            250.0,
+          );
+        },
+      );
+    });
+
     group('refused by the server', () {
       final excavatorKey = YourRateRefusalKey.of(
         userId: 'user-1',
