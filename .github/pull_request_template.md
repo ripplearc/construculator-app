@@ -2,7 +2,7 @@
 <!-- Two or three sentences on what changed and why. Ticket: CA-... -->
 
 ## Size
-<!-- Lines changed in production code, without tests and generated files. -->
+<!-- Production lines added (insertions), counted with the command in .claude/rules/01-digestible-pr.md. -->
 <!-- Count lib/**/*.dart only; leave out *.g.dart, *.freezed.dart and other generated files. -->
 
 ## How it was tested
