@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -7,14 +10,28 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// step finds.
 ///
 /// It emulates only the statements `PowerSyncLocalCostItemDataSource` issues:
-/// an `INSERT OR REPLACE` and the `SELECT` of one estimate's rows. It reads
+/// an `INSERT OR REPLACE`, the `SELECT` of one estimate's rows, and the watch
+/// of the ids whose upload is still waiting (see [finishUpload]). It reads
 /// the SQL text, so a column the schema does not have, or a placeholder count
 /// that does not match the parameters, fails the way SQLite would.
+///
+/// Every row written through `execute` waits in an upload queue, as it does in
+/// PowerSync, until [finishUpload] is called for its id. A row put in by
+/// [seedRow] is not queued, as a row sync delivered is not.
 class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
   final Map<String, Map<String, Object?>> _rowsById = {};
+  final Set<String> _pendingUploadIds = {};
+  final StreamController<void> _changes = StreamController.broadcast(
+    sync: true,
+  );
 
   static final _insertColumns = RegExp(r'\(([^)]*)\)\s*VALUES');
   static final _placeholders = RegExp(r'\?');
+  static final _queuedWriteTable = RegExp(
+    r"json_extract\(data, '\$\.type'\) = 'cost_items'",
+  );
+  static final _queuedWriteRowId = RegExp(r"json_extract\(data, '\$\.id'\)");
+  static final _membershipInQueue = RegExp(r'(?<!NOT )\bIN \(');
   static final _estimateFilter = RegExp(r'WHERE\s+(\w+)\s*=\s*\?');
 
   static final _knownColumns = {
@@ -33,12 +50,60 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
   /// Puts [row] in the table as though sync had delivered it.
   void seedRow(Map<String, Object?> row) {
     _rowsById[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+    _changes.add(null);
+  }
+
+  /// Takes the row with [id] out of the upload queue, as the server taking
+  /// the line does.
+  void finishUpload(String id) {
+    _pendingUploadIds.remove(id);
+    _changes.add(null);
   }
 
   @override
   void reset() {
     super.reset();
     _rowsById.clear();
+    _pendingUploadIds.clear();
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watch(
+    String sql, {
+    List<Object?> parameters = const [],
+    Duration throttle = kDefaultWatchThrottle,
+  }) {
+    final column = _estimateFilter.firstMatch(sql)?.group(1);
+    if (!sql.contains('FROM ${DatabaseConstants.costItemsTable}') ||
+        !sql.contains('ps_crud') ||
+        column == null) {
+      throw StateError('FakeCostItemsDatabase cannot watch: $sql');
+    }
+    if (!_knownColumns.contains(column)) {
+      throw StateError('cost_items has no column named $column');
+    }
+    if (!_queuedWriteTable.hasMatch(sql) ||
+        !_queuedWriteRowId.hasMatch(sql) ||
+        !_membershipInQueue.hasMatch(sql)) {
+      throw StateError(
+        'A ps_crud entry holds the table in "type" and the row in "id", and '
+        'a line is waiting while its id is IN the queue: $sql',
+      );
+    }
+    watchCalls.add((sql: sql, parameters: parameters));
+    List<Map<String, dynamic>> current() => [
+      for (final row in _rowsById.values)
+        if (row[column] == parameters.single &&
+            _pendingUploadIds.contains(row[DatabaseConstants.idColumn]))
+          {DatabaseConstants.idColumn: row[DatabaseConstants.idColumn]},
+    ];
+    return Stream.multi((listener) {
+      listener.add(current());
+      final subscription = _changes.stream.listen(
+        (_) => listener.add(current()),
+      );
+      listener.onCancel = subscription.cancel;
+    });
   }
 
   @override
@@ -71,7 +136,10 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     final row = {
       for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
     };
-    _rowsById[row[DatabaseConstants.idColumn]! as String] = row;
+    final id = row[DatabaseConstants.idColumn]! as String;
+    _rowsById[id] = row;
+    _pendingUploadIds.add(id);
+    _changes.add(null);
   }
 
   @override
