@@ -108,6 +108,19 @@
             <mutation text="RateStatus.ownRateUnconfirmed,"/>
         </regex>
 
+        <!-- UNFINISHED CHANGE (CA-1287) -->
+        <regex pattern="          costItemId: data\.editedItem\?\.id,\n" dotAll="true" id="material_edit.unfinished.saved_line_id">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="estimateId: data\.editedItem\?\.estimateId \?\? _estimateId," dotAll="false" id="material_edit.unfinished.estimate_of_line">
+            <mutation text="estimateId: _estimateId,"/>
+        </regex>
+        <regex pattern="    _formValuesAtOpening = opened;\n    _openingValuesKnown = true;" dotAll="true" id="material_edit.unfinished.opened_edit">
+            <mutation text="    _formValuesAtOpening = opened;"/>
+        </regex>
+        <regex pattern="          _removeUnfinishedLine\(\);\n          return MaterialCostFormDeleted\(draft\);" dotAll="true" id="material_edit.unfinished.keep_after_delete">
+            <mutation text="          return MaterialCostFormDeleted(draft);"/>
+        </regex>
     </rules>
 
     <commands>

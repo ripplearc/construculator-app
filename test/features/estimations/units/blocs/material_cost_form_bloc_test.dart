@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/estimation/data/repositories/unfinished_cost_line_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/unfinished_cost_line_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/unfinished_cost_line_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -15,6 +18,7 @@ import 'package:construculator/libraries/powersync/interfaces/powersync_database
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -22,6 +26,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_cost_items_database.dart';
+
+const _started = MaterialCostFormStarted(estimateId: 'estimate-1');
 
 MaterialCostFormData _dataOf(MaterialCostFormState state) =>
     (state as MaterialCostFormEditing).data;
@@ -34,6 +40,7 @@ void main() {
     late FakeStorageService storage;
     late FakeAuthRepository auth;
     late LastUsedUnitRepository lastUsedUnits;
+    late UnfinishedCostLineRepository unfinishedLines;
 
     setUpAll(() {
       final clock = FakeClockImpl();
@@ -70,6 +77,12 @@ void main() {
           createdAt: DateTime(2026),
         ),
       );
+      unfinishedLines = UnfinishedCostLineRepositoryImpl(
+        storage: storage,
+        authRepository: auth,
+        clock: Modular.get<Clock>(),
+      );
+      Modular.replaceInstance<UnfinishedCostLineRepository>(unfinishedLines);
       bloc = Modular.get<MaterialCostFormBloc>();
     });
 
@@ -103,7 +116,7 @@ void main() {
         'opens with no unit before a name is typed',
         setUp: () => remember('Interior paint', Unit.gallons),
         build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
+        act: (b) => b.add(_started),
         expect: () => <MaterialCostFormState>[],
       );
 
@@ -111,7 +124,7 @@ void main() {
           'material, whatever its capitals and spaces', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Interior paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b.add(const MaterialCostItemTypeChanged(' interior  PAINT '));
           settle();
@@ -126,14 +139,14 @@ void main() {
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialCostItemTypeChanged('Interior paint'))
-          ..add(const MaterialCostFormStarted()),
+          ..add(_started),
         verify: (b) => expect(_dataOf(b.state).unit, Unit.gallons),
       );
 
       test('leaves the unit empty for a material with no remembered unit', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Interior paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b.add(const MaterialCostItemTypeChanged('Drywall screws'));
           settle();
@@ -152,7 +165,7 @@ void main() {
             ),
           );
           settle();
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b.add(const MaterialCostItemTypeChanged('Interior paint'));
           settle();
@@ -169,7 +182,7 @@ void main() {
         },
         build: () => bloc,
         act: (b) => b
-          ..add(const MaterialCostFormStarted())
+          ..add(_started)
           ..add(const MaterialCostItemTypeChanged('Interior paint')),
         verify: (b) => expect(_dataOf(b.state).unit, isNull),
       );
@@ -179,7 +192,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -195,7 +208,7 @@ void main() {
       test('keeps a unit the user picked when the name changes', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Interior paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialUnitSelected(Unit.squareFeet))
@@ -211,7 +224,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Drywall screws', Unit.pounds);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           const name = 'Drywall screws';
           for (var length = 1; length <= name.length; length++) {
@@ -228,7 +241,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -242,7 +255,7 @@ void main() {
       test('empties a remembered unit when the new name has none', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -257,7 +270,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -274,7 +287,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -293,7 +306,7 @@ void main() {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Drywall'))
@@ -310,7 +323,7 @@ void main() {
       test('keeps a picked unit after a typed quantity is cleared', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialUnitSelected(Unit.squareFeet))
@@ -326,7 +339,7 @@ void main() {
       test('still fills an empty unit when the quantity was typed first', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialQuantityUpdated('3'))
@@ -341,7 +354,7 @@ void main() {
           'change keeps it', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Interior paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Interior paint'))
@@ -363,7 +376,7 @@ void main() {
           'and cleared', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Drywall', Unit.sheets);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(
@@ -940,7 +953,7 @@ void main() {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'are none until something is typed',
         build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
+        act: (b) => b.add(_started),
         verify: (b) => expect(b.state.data.hasUnsavedChanges, isFalse),
       );
 
@@ -948,7 +961,7 @@ void main() {
         'are none while the name is only spaces',
         build: () => bloc,
         act: (b) => b
-          ..add(const MaterialCostFormStarted())
+          ..add(_started)
           ..add(const MaterialCostItemTypeChanged('   ')),
         verify: (b) => expect(hasChanges(b), isFalse),
       );
@@ -963,7 +976,7 @@ void main() {
           'appear when ${event.runtimeType} changes a field',
           build: () => bloc,
           act: (b) => b
-            ..add(const MaterialCostFormStarted())
+            ..add(_started)
             ..add(event),
           verify: (b) => expect(hasChanges(b), isTrue),
         );
@@ -973,7 +986,7 @@ void main() {
         'disappear when a typed value is cleared again',
         build: () => bloc,
         act: (b) => b
-          ..add(const MaterialCostFormStarted())
+          ..add(_started)
           ..add(const MaterialCostItemTypeChanged('Paint'))
           ..add(const MaterialCostItemTypeChanged('')),
         verify: (b) => expect(hasChanges(b), isFalse),
@@ -983,7 +996,7 @@ void main() {
           'with it', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Paint'))
@@ -999,7 +1012,7 @@ void main() {
           'the unit is still on screen', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
-          b.add(const MaterialCostFormStarted());
+          b.add(_started);
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Paint'))
@@ -1348,6 +1361,162 @@ void main() {
             MaterialBlockerKind.invalid,
           ),
         ),
+      );
+    });
+
+    group('unfinished line', () {
+      const filledEvents = <MaterialCostFormEvent>[
+        _started,
+        MaterialCostItemTypeChanged('Interior paint'),
+        MaterialQuantityUpdated('7'),
+        MaterialUnitSelected(Unit.liters),
+        MaterialRateUpdated('2.55'),
+      ];
+      late UnfinishedCostLine earlierLine;
+
+      setUp(() {
+        earlierLine = UnfinishedCostLine(
+          category: CostItemType.equipment,
+          estimateId: 'estimate-9',
+          itemName: 'Excavator',
+          updatedAt: Modular.get<Clock>().now(),
+        );
+      });
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps what was typed after every change',
+        build: () => bloc,
+        act: (b) => filledEvents.forEach(b.add),
+        verify: (_) async {
+          expect(
+            await unfinishedLines.read(),
+            isA<UnfinishedCostLine>()
+                .having((l) => l.category, 'category', CostItemType.material)
+                .having((l) => l.estimateId, 'estimateId', 'estimate-1')
+                .having((l) => l.itemName, 'itemName', 'Interior paint')
+                .having((l) => l.quantity, 'quantity', 7)
+                .having((l) => l.unit, 'unit', Unit.liters)
+                .having((l) => l.rate, 'rate', 2.55)
+                .having((l) => l.isChangeToSavedLine, 'saved line', isFalse),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a half-typed line with only a name',
+        build: () => bloc,
+        act: (b) => b
+          ..add(_started)
+          ..add(const MaterialCostItemTypeChanged('Pri')),
+        verify: (_) async {
+          expect(
+            await unfinishedLines.read(),
+            isA<UnfinishedCostLine>()
+                .having((l) => l.itemName, 'itemName', 'Pri')
+                .having((l) => l.quantity, 'quantity', isNull),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps nothing for a form opened and never changed',
+        setUp: () => unfinishedLines.save(earlierLine),
+        build: () => bloc,
+        act: (b) => b.add(_started),
+        verify: (_) async => expect(await unfinishedLines.read(), earlierLine),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps nothing while the form is still opening with a remembered unit',
+        setUp: () async {
+          await remember('Interior paint', Unit.gallons);
+          await unfinishedLines.save(earlierLine);
+        },
+        build: () => bloc,
+        act: (b) async {
+          b
+            ..add(const MaterialCostItemTypeChanged('Interior paint'))
+            ..add(_started);
+          await b.stream.firstWhere((s) => s.data.unit == Unit.gallons);
+        },
+        verify: (_) async => expect(await unfinishedLines.read(), earlierLine),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line when the form is changed back to how it opened',
+        build: () => bloc,
+        act: (b) => b
+          ..add(_started)
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(const MaterialCostItemTypeChanged('')),
+        verify: (_) async => expect(await unfinishedLines.read(), isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line once it is added to the estimate',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+        },
+        verify: (b) async {
+          expect(b.state, isA<MaterialCostFormSuccess>());
+          expect(await unfinishedLines.read(), isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the line when adding it fails',
+        setUp: () => database.executeError = StateError('disk full'),
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+        },
+        verify: (b) async {
+          expect(b.state, isA<MaterialCostFormFailure>());
+          expect(
+            await unfinishedLines.read(),
+            isA<UnfinishedCostLine>().having(
+              (l) => l.itemName,
+              'itemName',
+              'Interior paint',
+            ),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line when it is discarded',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormDiscarded());
+        },
+        verify: (_) async => expect(await unfinishedLines.read(), isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line when it is discarded after adding it failed',
+        setUp: () => database.executeError = StateError('disk full'),
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          b.add(const MaterialCostFormDiscarded());
+        },
+        verify: (_) async => expect(await unfinishedLines.read(), isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'leaves an earlier line alone when an unchanged form is discarded',
+        setUp: () => unfinishedLines.save(earlierLine),
+        build: () => bloc,
+        act: (b) => b
+          ..add(_started)
+          ..add(const MaterialCostFormDiscarded()),
+        verify: (_) async => expect(await unfinishedLines.read(), earlierLine),
       );
     });
 
