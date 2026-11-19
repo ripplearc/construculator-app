@@ -3475,7 +3475,7 @@
   },
   "materialSavedToYourRatesHint": "Saved to {yourRates} — auto-fills next time you add {itemName}.",
   "@materialSavedToYourRatesHint": {
-    "description": "Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName and itemName is the material name in lower case",
+    "description": "Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case",
     "context": "Storyboard CUJ 4, sub-flow A, screen 5 Verify, build note Helper text (after)",
     "placeholders": {
       "yourRates": {

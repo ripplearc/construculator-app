@@ -963,7 +963,6 @@ void main() {
       await pumpFields(tester, sampleRows: const [proClassic]);
       await tester.enterText(nameField, 'Interior paint');
       await tester.tap(find.byKey(const Key('lookup_rate_button')));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       final row = find.byKey(const Key('sample_rate_row_proclassic'));
       await tester.ensureVisible(row);
@@ -1015,8 +1014,9 @@ void main() {
         find.text(
           l10n.materialSavedToYourRatesHint(
             l10n.yourRatesName,
-            'interior paint · proclassic',
+            'interior paint',
           ),
+          findRichText: true,
         ),
         findsOneWidget,
       );
@@ -1107,7 +1107,6 @@ void main() {
       await pumpFields(tester);
       await tester.enterText(nameField, 'interior paint');
       await tester.tap(find.byKey(const Key('lookup_rate_button')));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('your_rate_row_paint-rate')));
       await tester.pumpAndSettle();

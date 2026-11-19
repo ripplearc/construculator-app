@@ -4122,7 +4122,7 @@ abstract class AppLocalizations {
   /// **'Save as my default'**
   String get materialSaveAsDefaultLink;
 
-  /// Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName and itemName is the material name in lower case
+  /// Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case
   ///
   /// In en, this message translates to:
   /// **'Saved to {yourRates} — auto-fills next time you add {itemName}.'**
