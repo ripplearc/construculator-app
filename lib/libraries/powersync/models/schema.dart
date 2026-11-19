@@ -134,6 +134,19 @@ const Schema schema = Schema([
     Column.text('shown_at'),
   ]),
 
+  // Device-only: a cost line the server refused for good (42501, an estimate
+  // that was deleted or access that was removed) or a line whose calculation
+  // text is not JSON. The `id` is the id of the cost_items row. `line` is the
+  // phone's row as JSON text, kept because no sync stream holds cost_items yet
+  // and the next checkpoint removes the row from the phone. `reason` is the
+  // refusal code or the cause, `refused_at` an ISO 8601 UTC time.
+  Table.localOnly('cost_item_refusals', [
+    Column.text('estimate_id'),
+    Column.text('line'),
+    Column.text('reason'),
+    Column.text('refused_at'),
+  ]),
+
   // On-demand stream: call `db.syncStream('user_rates')` before reading. The
   // backend's `item_name_key` column is generated server-side and not synced.
   Table(
