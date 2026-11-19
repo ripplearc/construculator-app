@@ -55,5 +55,9 @@ abstract final class LocalOnlyTableRegistry {
       tableName: DatabaseConstants.yourRateRefusalsTable,
       policy: LocalOnlyTablePolicy.clearWhenUserChanges,
     ),
+    LocalOnlyTableRegistration(
+      tableName: DatabaseConstants.costItemRefusalsTable,
+      policy: LocalOnlyTablePolicy.clearWhenUserChanges,
+    ),
   ];
 }

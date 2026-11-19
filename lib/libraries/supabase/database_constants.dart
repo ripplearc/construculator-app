@@ -56,6 +56,9 @@ class DatabaseConstants {
   /// Device-only table of Your rates defaults the server refused.
   static const String yourRateRefusalsTable = 'your_rate_refusals';
 
+  /// Device-only table of cost lines the server refused for good.
+  static const String costItemRefusalsTable = 'cost_item_refusals';
+
   /// Table storing per-user project search history. Fully isolated from
   /// [searchHistoryTable] (which serves Global Search) — neither feature reads
   /// from nor writes to the other's table.
@@ -187,6 +190,9 @@ class DatabaseConstants {
   static const String refusedAmountColumn = 'refused_amount';
   static const String acceptedAmountColumn = 'accepted_amount';
   static const String shownAtColumn = 'shown_at';
+  static const String lineColumn = 'line';
+  static const String reasonColumn = 'reason';
+  static const String refusedAtColumn = 'refused_at';
 
   // Consent columns (id and user_id use the shared columns above; these
   // tables timestamp with published_at and recorded_at, not created_at)
