@@ -1444,8 +1444,7 @@ void main() {
           ),
           'primer',
         );
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pumpAndSettle();
+        await tester.pump();
         await tester.tap(find.byKey(const Key('create_typed_name_row')));
         await tester.pumpAndSettle();
 
