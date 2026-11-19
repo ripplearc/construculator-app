@@ -7,7 +7,10 @@ sealed class MaterialCostFormEvent {
 
 /// Fired when the form opens, so it can select the unit this account used last.
 class MaterialCostFormStarted extends MaterialCostFormEvent {
-  const MaterialCostFormStarted();
+  const MaterialCostFormStarted({required this.estimateId});
+
+  /// The estimate the form adds to.
+  final String estimateId;
 }
 
 /// Fired when the user changes the material name.
@@ -48,4 +51,10 @@ class MaterialCostFormSubmitted extends MaterialCostFormEvent {
 
   /// The estimate this cost item is being added to.
   final String estimateId;
+}
+
+/// Fired when the user discards the line through the "Discard this line?"
+/// question.
+class MaterialCostFormDiscarded extends MaterialCostFormEvent {
+  const MaterialCostFormDiscarded();
 }

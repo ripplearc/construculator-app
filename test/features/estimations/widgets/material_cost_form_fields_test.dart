@@ -457,7 +457,7 @@ void main() {
   group('unit', () {
     testWidgets('starts empty when no unit was used before', (tester) async {
       await pumpFields(tester);
-      bloc.add(const MaterialCostFormStarted());
+      bloc.add(const MaterialCostFormStarted(estimateId: 'estimate-1'));
       await tester.pumpAndSettle();
 
       expect(
@@ -469,7 +469,7 @@ void main() {
     testWidgets('starts on the unit this account used last', (tester) async {
       await lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags);
       await pumpFields(tester);
-      bloc.add(const MaterialCostFormStarted());
+      bloc.add(const MaterialCostFormStarted(estimateId: 'estimate-1'));
       await tester.pumpAndSettle();
 
       expect(

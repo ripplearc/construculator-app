@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/unfinished_cost_line.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/unfinished_cost_line_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
@@ -16,17 +20,26 @@ const double _lineTotalColumnLimit = 1e16;
 
 /// BLoC for managing the material cost form: name, quantity, unit and rate,
 /// and the validation that decides when Add is enabled.
+///
+/// After every change it keeps the form as the unfinished line on the phone,
+/// so the line survives the phone closing the app. A form that is still as it
+/// opened keeps nothing. Adding the line, discarding it, or changing it back
+/// to how it opened removes the line this form kept.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
+  final UnfinishedCostLineRepository _unfinishedLineRepository;
   final Clock _clock;
 
   MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
+  String _estimateId = '';
+  bool _keepsUnfinishedLine = false;
 
   MaterialCostFormBloc({
     required this._repository,
     required this._lastUsedUnitRepository,
+    required this._unfinishedLineRepository,
     required this._clock,
   }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
@@ -42,12 +55,14 @@ class MaterialCostFormBloc
     );
     on<MaterialRateUpdated>(_onRateUpdated);
     on<MaterialCostFormSubmitted>(_onSubmitted);
+    on<MaterialCostFormDiscarded>((_, _) => _removeUnfinishedLine());
   }
 
   Future<void> _onStarted(
     MaterialCostFormStarted event,
     Emitter<MaterialCostFormState> emit,
   ) async {
+    _estimateId = event.estimateId;
     final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
@@ -92,6 +107,32 @@ class MaterialCostFormBloc
       ),
       _ => MaterialCostFormEditing(next),
     });
+    next.hasUnsavedChanges
+        ? _keepUnfinishedLine(next)
+        : _removeUnfinishedLine();
+  }
+
+  void _keepUnfinishedLine(MaterialCostFormData data) {
+    _keepsUnfinishedLine = true;
+    unawaited(
+      _unfinishedLineRepository.save(
+        UnfinishedCostLine(
+          category: CostItemType.material,
+          estimateId: _estimateId,
+          itemName: data.itemName,
+          quantity: data.quantity,
+          unit: data.unit,
+          rate: data.rate,
+          updatedAt: _clock.now(),
+        ),
+      ),
+    );
+  }
+
+  void _removeUnfinishedLine() {
+    if (!_keepsUnfinishedLine) return;
+    _keepsUnfinishedLine = false;
+    unawaited(_unfinishedLineRepository.remove());
   }
 
   Future<void> _onSubmitted(
@@ -124,6 +165,7 @@ class MaterialCostFormBloc
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
       (created) async {
         await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
+        _removeUnfinishedLine();
         emit(MaterialCostFormSuccess(draft, created));
       },
     );

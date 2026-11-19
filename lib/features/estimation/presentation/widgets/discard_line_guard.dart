@@ -35,6 +35,9 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// Whether a save started from the form is still running in [state].
   final bool Function(S state) isSaveRunning;
 
+  /// Called when the user answers Discard, just before the sheet closes.
+  final VoidCallback? onDiscarded;
+
   final Widget child;
 
   const DiscardLineGuard({
@@ -42,6 +45,7 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
     required this.hasUnsavedChanges,
     required this.itemNameOf,
     this.isSaveRunning = _neverRunning,
+    this.onDiscarded,
     required this.child,
   });
 
@@ -158,6 +162,7 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       primaryLabel: l10n.discardLineKeepEditingButton,
     );
     if (keepEditing == false && context.mounted) {
+      widget.onDiscarded?.call();
       Navigator.of(context).pop();
     }
   }

@@ -110,6 +110,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     state is MaterialCostFormFailure) &&
                 state.data.hasUnsavedChanges,
             itemNameOf: (state) => state.data.itemName,
+            onDiscarded: () => context.read<MaterialCostFormBloc>().add(
+              const MaterialCostFormDiscarded(),
+            ),
             child: sheet,
           ),
         CostItemType.equipment =>
