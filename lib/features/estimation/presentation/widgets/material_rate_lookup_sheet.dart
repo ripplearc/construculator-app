@@ -320,7 +320,7 @@ class _SampleGroup extends StatelessWidget {
           CoreListRow.selectable(
             key: Key('sample_rate_row_${row.id}'),
             title: row.productName,
-            // TODO: [CA-1157] show the price per unit as a second line under the price once CoreListRow has one. https://ripplearc.youtrack.cloud/issue/CA-1157
+            // TODO: [CA-1510] show the price per unit as a second line under the price once CoreListRow has one. https://ripplearc.youtrack.cloud/issue/CA-1510
             subtitle: [
               ?row.details,
               if (columnUnit != null)
