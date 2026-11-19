@@ -55,7 +55,7 @@ void registerProjectHeaderPerUserObjects(Injector i) =>
 void _registerPerUserObjects(Injector i) {
   i.addLazySingleton<GetProjectHeaderUseCase>(
     () => GetProjectHeaderUseCase(
-      Modular.get<ProjectRepository>(),
+      i.get<ProjectRepository>(),
       Modular.get<AuthRepository>(),
     ),
   );

@@ -29,6 +29,9 @@ class AuthManagerImpl implements AuthManager {
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
+  /// The user the last session was started for, or null before the first.
+  String? _sessionUserId;
+
   AuthManagerImpl({
     required this._wrapper,
     required this._authRepository,
@@ -53,7 +56,7 @@ class AuthManagerImpl implements AuthManager {
           if (user != null) {
             // TODO: [CA-1471] Move session start and end into the sign-in check
             // and the sign-out handler.
-            _sessionService.startSession();
+            _startSessionFor(user.id);
             unawaited(_currentCompanyResolver.resolveAfterSignIn());
             _emitAuthStateChanged(
               AuthStatus.authenticated,
@@ -65,8 +68,9 @@ class AuthManagerImpl implements AuthManager {
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
           unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
-          // TODO: [CA-1471] Move session end into the sign-out handler.
-          _sessionService.endSession();
+          // The session stays: Supabase also sends signedOut when a token
+          // refresh fails, and open screens still hold its objects. It ends at
+          // logout or when a different user signs in.
         }
       },
       onError: (error) {
@@ -87,7 +91,7 @@ class AuthManagerImpl implements AuthManager {
       if (user != null) {
         // TODO: [CA-1471] Move session start for a resumed login into the
         // sign-in check.
-        _sessionService.startSession();
+        _startSessionFor(user.id);
         unawaited(_sentryWrapper.setUser(user.id));
         // TODO: [CA-961] Gate identify() on recorded analytics consent once
         // the server-driven consent flow lands; currently relies on the
@@ -108,6 +112,12 @@ class AuthManagerImpl implements AuthManager {
     } else {
       _emitAuthStateChanged(AuthStatus.unauthenticated, null);
     }
+  }
+
+  void _startSessionFor(String userId) {
+    if (_sessionUserId != userId) _sessionService.endSession();
+    _sessionService.startSession();
+    _sessionUserId = userId;
   }
 
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {
@@ -378,6 +388,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
+      _sessionService.endSession();
 
       await _sentryWrapper.setUser(null);
       unawaited(

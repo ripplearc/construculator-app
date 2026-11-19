@@ -230,7 +230,7 @@ void _registerPerUserObjects(Injector i) {
       repository: Modular.get<CostEstimationRepository>(),
       authRepository: Modular.get<AuthRepository>(),
       clock: Modular.get<Clock>(),
-      currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+      currentProjectNotifier: i.get<CurrentProjectNotifier>(),
     ),
   );
 }
