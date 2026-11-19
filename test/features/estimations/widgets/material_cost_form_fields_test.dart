@@ -2,7 +2,6 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -17,6 +16,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +24,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
+import '../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   late FakeStorageService storage;
@@ -95,7 +96,7 @@ void main() {
             child: MaterialCostFormFields(
               initialRateEntry: initialRateEntry,
               initialName: initialName,
-              yourRatesBlocFactory: Modular.get<YourRatesBloc>,
+              yourRatesBlocFactory: yourRatesBlocWithoutDebounce,
               clock: FakeClockImpl(),
             ),
           ),
@@ -281,6 +282,27 @@ void main() {
         find.descendant(of: rateField, matching: find.byType(TextField)),
       );
       expect(unit.style!.fontSize, lessThan(rate.style!.fontSize!));
+    });
+
+    testWidgets('shortens a long unit with an ellipsis so the search button '
+        'still fits on a 360 dp phone', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpFields(tester);
+      bloc.add(const MaterialUnitSelected(Unit.squareMeters));
+      await tester.pumpAndSettle();
+
+      final unit = find.text('/Square meters');
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.renderObject<RenderParagraph>(unit).didExceedMaxLines,
+        isTrue,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('lookup_rate_button'))).right,
+        lessThanOrEqualTo(360),
+      );
     });
 
     testWidgets('shows the unit even before a rate is typed', (tester) async {
@@ -638,7 +660,6 @@ void main() {
 
     Future<void> pickFromLookup(WidgetTester tester) async {
       await tester.tap(lookupButton);
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('your_rate_row_paint-rate')));
       await tester.pumpAndSettle();
@@ -680,7 +701,6 @@ void main() {
       await tester.enterText(nameField, 'interior paint');
 
       await tester.tap(lookupButton);
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(
@@ -726,7 +746,6 @@ void main() {
     ) async {
       await pumpFields(tester);
       await tester.tap(lookupButton);
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       await tester.tapAt(const Offset(10, 10));
