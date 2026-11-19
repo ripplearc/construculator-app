@@ -32,8 +32,12 @@
             <mutation text="return storedRate == pickedRate;"/>
         </regex>
 
-        <regex pattern="(stored != null &amp;&amp; rate == storedRate)" id="edit_rate.guard_off">
-            <mutation text="false &amp;&amp; rate == storedRate"/>
+        <regex pattern="(stored != null &amp;&amp; rate != null)" id="edit_rate.guard_off">
+            <mutation text="false &amp;&amp; rate != null"/>
+        </regex>
+
+        <regex pattern="(rate != null &amp;&amp; rate == storedRate)" id="edit_rate.empty_field_guard_dropped">
+            <mutation text="rate == storedRate"/>
         </regex>
 
         <regex pattern="(rate == storedRate\))" id="edit_rate.guard_inverted">
