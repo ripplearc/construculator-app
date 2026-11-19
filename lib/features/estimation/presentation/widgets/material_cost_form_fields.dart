@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/helpers/unit_dis
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,10 +49,10 @@ class MaterialCostFormFields extends StatefulWidget {
 class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _rateController = TextEditingController();
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
+  late final _rateController = CurrencyDisplayController(focusNode: _rateFocus);
 
   @override
   void initState() {
@@ -161,7 +162,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                       decimal: true,
                     ),
                     inputFormatters: [_decimalLimitFormatter(decimals: 2)],
-                    // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                     onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
                   ),
                   if (state.data.unit case final unit?)
@@ -279,11 +279,17 @@ class _SheetTextField extends StatelessWidget {
   }
 
   double _textWidth(BuildContext context, TextStyle style) {
+    final shownStyle =
+        Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style;
     final painter = TextPainter(
-      text: TextSpan(
-        text: controller.text.isEmpty ? hintText : controller.text,
-        style: Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style,
-      ),
+      // Measures what the controller paints, such as "$52.00" for "52".
+      text: controller.text.isEmpty
+          ? TextSpan(text: hintText, style: shownStyle)
+          : controller.buildTextSpan(
+              context: context,
+              style: shownStyle,
+              withComposing: false,
+            ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,

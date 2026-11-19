@@ -562,6 +562,35 @@ void main() {
       expect(textOf(tester, rateField), '9.5');
     });
 
+    testWidgets('shows a picked rate as currency until the field is tapped', (
+      tester,
+    ) async {
+      await pumpFields(tester, initialRateEntry: savedRate);
+      await tester.pumpAndSettle();
+      String shownRate() {
+        final field = tester.widget<EditableText>(
+          find.descendant(of: rateField, matching: find.byType(EditableText)),
+        );
+        return field.controller
+            .buildTextSpan(
+              context: tester.element(rateField),
+              withComposing: false,
+            )
+            .toPlainText();
+      }
+
+      expect(shownRate(), r'$52.00');
+      final currencyWidth = tester.getRect(rateField).width;
+
+      await tester.tap(rateField);
+      await tester.pumpAndSettle();
+
+      expect(shownRate(), '52');
+      // The field is as wide as what it shows, so the unit after it never
+      // overlaps "$52.00".
+      expect(tester.getRect(rateField).width, lessThan(currencyWidth));
+    });
+
     testWidgets('a typed name fills the name and leaves the rate empty', (
       tester,
     ) async {
