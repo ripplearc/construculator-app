@@ -83,7 +83,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isBusy: isSubmitting,
           errorMessage: state is MaterialCostFormFailure
-              ? l10n.addToEstimatePhoneSaveFailedError
+              ? l10n.addToEstimateFailedError
               : null,
           onAdd: submit,
           part: part,

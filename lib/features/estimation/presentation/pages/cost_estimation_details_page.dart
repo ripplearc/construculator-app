@@ -99,7 +99,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) =>
       _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
         type: CostItemType.equipment,
-        failureMessageOf: (l10n) => l10n.addToEstimateFailedError,
         asksBeforeClosing: true,
         entry: entry,
         name: name,
@@ -117,7 +116,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
-        failureMessageOf: (l10n) => l10n.addToEstimatePhoneSaveFailedError,
         asksBeforeClosing: true,
         blocFactory: widget.materialCostFormBlocFactory,
         addedItemIdOf: (state) =>
@@ -132,7 +130,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
-    required String Function(AppLocalizations l10n) failureMessageOf,
     bool asksBeforeClosing = false,
     required B Function() blocFactory,
     String? Function(S state)? addedItemIdOf,
@@ -204,7 +201,15 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             );
           }
         case _SheetOutcome.failed when wasSavingWhenDismissed:
-          CoreToast.showError(context, failureMessageOf(l10n), l10n.closeLabel);
+          CoreToast.showCustomToast(
+            context,
+            (_) => Toast.error(
+              description: l10n.addToEstimateFailedError,
+              closeLabel: l10n.closeLabel,
+              onClose: CoreToast.cleanup,
+            ),
+            duration: null,
+          );
         default:
           break;
       }

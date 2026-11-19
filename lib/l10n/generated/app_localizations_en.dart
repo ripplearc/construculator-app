@@ -2406,10 +2406,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToEstimateFailedError => 'This cost was not added. Try again.';
 
   @override
-  String get addToEstimatePhoneSaveFailedError =>
-      'Could not save on this phone. Try again.';
-
-  @override
   String get addsToEstimateNeedsQuantityNote =>
       'Needs a quantity before it can total';
 

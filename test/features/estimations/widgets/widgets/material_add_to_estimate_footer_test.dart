@@ -309,7 +309,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(AddToEstimateFooter.errorKey),
-          matching: find.text('Could not save on this phone. Try again.'),
+          matching: find.text('This cost was not added. Try again.'),
         ),
         findsOneWidget,
       );

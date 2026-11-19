@@ -3556,12 +3556,7 @@
   },
   "addToEstimateFailedError": "This cost was not added. Try again.",
   "@addToEstimateFailedError": {
-    "description": "Message shown when saving a cost line fails: a line above the Add button of the Equipment sheet, or a toast if a sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.",
-    "context": "N/A"
-  },
-  "addToEstimatePhoneSaveFailedError": "Could not save on this phone. Try again.",
-  "@addToEstimatePhoneSaveFailedError": {
-    "description": "Helper line above the Material sheet's Add button when the line could not be saved on this phone, or a toast if the sheet was closed during the save. The sheet stays open with every field filled in. Storyboard: CUJ 4, Adding a cost with weak or no signal, build note Add always works.",
+    "description": "Message shown when saving a cost line fails: a line above the Add button, or a red alert with no timer if the sheet was closed during the save. Storyboard frames: CUJ 4, The phone could not save the line; CUJ 6, Line not added.",
     "context": "N/A"
   },
   "addsToEstimateNeedsQuantityNote": "Needs a quantity before it can total",
