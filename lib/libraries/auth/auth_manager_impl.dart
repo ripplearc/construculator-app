@@ -56,6 +56,7 @@ class AuthManagerImpl implements AuthManager {
           if (user != null) {
             // TODO: [CA-1471] Move session start and end into the sign-in check
             // and the sign-out handler.
+            // https://ripplearc.youtrack.cloud/issue/CA-1471
             _startSessionFor(user.id);
             unawaited(_currentCompanyResolver.resolveAfterSignIn());
             _emitAuthStateChanged(
@@ -91,6 +92,7 @@ class AuthManagerImpl implements AuthManager {
       if (user != null) {
         // TODO: [CA-1471] Move session start for a resumed login into the
         // sign-in check.
+        // https://ripplearc.youtrack.cloud/issue/CA-1471
         _startSessionFor(user.id);
         unawaited(_sentryWrapper.setUser(user.id));
         // TODO: [CA-961] Gate identify() on recorded analytics consent once
