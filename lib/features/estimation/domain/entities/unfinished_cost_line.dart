@@ -47,14 +47,38 @@ class UnfinishedCostLine extends Equatable {
   /// The note typed so far, or null when none is typed.
   final String? note;
 
-  /// When the line was last changed.
+  /// When the line was last changed, in local time once read back.
   final DateTime updatedAt;
 
   /// Whether this is a change to a line already in the estimate, rather than
   /// a line not added yet.
   bool get isChangeToSavedLine => costItemId != null;
 
-  /// This record as JSON, with the change time in UTC.
+  /// The record read back from [json], or null when [json] is not one.
+  static UnfinishedCostLine? fromJson(Map<String, dynamic> json) {
+    final category = CostItemType.values
+        .where((type) => type.name == json['category'])
+        .firstOrNull;
+    final estimateId = json['estimateId'];
+    final updatedAt = DateTime.tryParse('${json['updatedAt']}');
+    if (category == null || estimateId is! String || updatedAt == null) {
+      return null;
+    }
+    return UnfinishedCostLine(
+      category: category,
+      estimateId: estimateId,
+      costItemId: _stringOrNull(json['costItemId']),
+      itemName: _stringOrNull(json['itemName']) ?? '',
+      quantity: _doubleOrNull(json['quantity']),
+      unit: Unit.values.where((unit) => unit.name == json['unit']).firstOrNull,
+      rate: _doubleOrNull(json['rate']),
+      wastePercent: _doubleOrNull(json['wastePercent']),
+      note: _stringOrNull(json['note']),
+      updatedAt: updatedAt.toLocal(),
+    );
+  }
+
+  /// This record as JSON, read back by [fromJson].
   Map<String, dynamic> toJson() => {
     'category': category.name,
     'estimateId': estimateId,
@@ -67,6 +91,11 @@ class UnfinishedCostLine extends Equatable {
     'note': note,
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };
+
+  static String? _stringOrNull(Object? value) => value is String ? value : null;
+
+  static double? _doubleOrNull(Object? value) =>
+      value is num ? value.toDouble() : null;
 
   @override
   List<Object?> get props => [

@@ -81,4 +81,69 @@ void main() {
       expect(change.isChangeToSavedLine, isTrue);
     });
   });
+
+  group('UnfinishedCostLine.fromJson', () {
+    test('reads back what toJson wrote', () {
+      expect(UnfinishedCostLine.fromJson(line.toJson()), line);
+    });
+
+    test('reads a whole-number quantity written as an int', () {
+      final json = {...line.toJson(), 'quantity': 12, 'rate': 14};
+
+      expect(
+        UnfinishedCostLine.fromJson(json),
+        _lineWith('rate', (l) => l.rate, 14.0),
+      );
+    });
+
+    test('reads a time written in UTC back as the same local time', () {
+      final json = {...line.toJson(), 'updatedAt': '2026-11-10T09:00:00Z'};
+
+      expect(
+        UnfinishedCostLine.fromJson(json),
+        _lineWith(
+          'updatedAt',
+          (l) => l.updatedAt,
+          DateTime.utc(2026, 11, 10, 9).toLocal(),
+        ),
+      );
+    });
+
+    test('reads an unknown unit as no unit', () {
+      final json = {...line.toJson(), 'unit': 'furlongs'};
+
+      expect(
+        UnfinishedCostLine.fromJson(json),
+        _lineWith('unit', (l) => l.unit, isNull),
+      );
+    });
+
+    test('reads back the saved line id', () {
+      final json = {...line.toJson(), 'costItemId': 'item-7'};
+
+      expect(
+        UnfinishedCostLine.fromJson(json),
+        _lineWith('costItemId', (l) => l.costItemId, 'item-7'),
+      );
+    });
+
+    for (final (name, change) in [
+      ('category', <String, Object?>{'category': null}),
+      ('estimate', <String, Object?>{'estimateId': 7}),
+      ('change time', <String, Object?>{'updatedAt': null}),
+    ]) {
+      test('returns null without a usable $name', () {
+        expect(
+          UnfinishedCostLine.fromJson({...line.toJson(), ...change}),
+          isNull,
+        );
+      });
+    }
+  });
 }
+
+Matcher _lineWith(
+  String name,
+  Object? Function(UnfinishedCostLine line) field,
+  Object? value,
+) => isA<UnfinishedCostLine>().having(field, name, value);
