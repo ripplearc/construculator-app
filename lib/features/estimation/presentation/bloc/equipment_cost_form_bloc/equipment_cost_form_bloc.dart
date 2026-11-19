@@ -100,7 +100,7 @@ class EquipmentCostFormBloc
         final storedRate = stored == null
             ? null
             : (isDay ? stored.dailyRate?.amount : stored.jobAmount?.amount);
-        if (stored != null && rate == storedRate) {
+        if (stored != null && rate != null && rate == storedRate) {
           return isDay
               ? d.copyWith(dailyRate: rate, rateStatus: stored.rateStatus)
               : d.copyWith(jobAmount: rate, rateStatus: stored.rateStatus);

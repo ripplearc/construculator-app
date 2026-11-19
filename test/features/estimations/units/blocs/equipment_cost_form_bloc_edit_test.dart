@@ -122,6 +122,25 @@ void main() {
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'an emptied field has no rate status when the line was stored with the '
+      'other pricing method',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        bloc
+          ..add(EquipmentCostEditOpened(await storedLine()))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentRateUpdatedEvent('5'))
+          ..add(const EquipmentRateUpdatedEvent(''));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.method, EquipmentPricingMethod.job);
+        expect(bloc.state.formData.jobAmount, isNull);
+        expect(bloc.state.formData.rateStatus, RateStatus.missing);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'opens a day line with every stored value in the form',
       setUp: seedLine,
       build: () => bloc,
@@ -257,32 +276,6 @@ void main() {
           false,
         ),
       ],
-    );
-
-    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-      'typing the stored rate again keeps the stored rate status',
-      setUp: () => seedLine(),
-      build: () => bloc,
-      act: (bloc) async {
-        bloc.add(EquipmentCostEditOpened(await storedLine()));
-        bloc.add(const EquipmentRateUpdatedEvent('200'));
-      },
-      verify: (bloc) => expect(
-        bloc.state.formData.rateStatus,
-        RateStatus.sampleRateUnverified,
-      ),
-    );
-
-    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-      'typing a different rate makes the rate status the typed own rate',
-      setUp: () => seedLine(),
-      build: () => bloc,
-      act: (bloc) async {
-        bloc.add(EquipmentCostEditOpened(await storedLine()));
-        bloc.add(const EquipmentRateUpdatedEvent('250'));
-      },
-      verify: (bloc) =>
-          expect(bloc.state.formData.rateStatus, RateStatus.ownRateUnconfirmed),
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
