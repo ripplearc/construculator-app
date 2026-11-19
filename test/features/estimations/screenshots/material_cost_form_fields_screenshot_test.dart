@@ -93,7 +93,7 @@ void main() {
       '7',
     );
     await tester.enterText(find.byKey(const Key('material_rate_field')), '52');
-    bloc.add(const MaterialUnitSelected(Unit.liters));
+    bloc.add(const MaterialUnitSelected(Unit.gallons));
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
   }
