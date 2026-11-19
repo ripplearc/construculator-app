@@ -24,6 +24,9 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
   final StreamController<void> _changes = StreamController.broadcast(
     sync: true,
   );
+  final StreamController<Object> _watchFailures = StreamController.broadcast(
+    sync: true,
+  );
 
   static final _insertColumns = RegExp(r'\(([^)]*)\)\s*VALUES');
   static final _placeholders = RegExp(r'\?');
@@ -52,6 +55,10 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     _rowsById[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
     _changes.add(null);
   }
+
+  /// Makes every open watch report [error], as a failed read of the phone's
+  /// database would.
+  void failWatches(Object error) => _watchFailures.add(error);
 
   /// Takes the row with [id] out of the upload queue, as the server taking
   /// the line does.
@@ -102,7 +109,11 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
       final subscription = _changes.stream.listen(
         (_) => listener.add(current()),
       );
-      listener.onCancel = subscription.cancel;
+      final failures = _watchFailures.stream.listen(listener.addError);
+      listener.onCancel = () {
+        failures.cancel();
+        return subscription.cancel();
+      };
     });
   }
 

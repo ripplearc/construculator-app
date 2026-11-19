@@ -1,10 +1,12 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/local_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/powersync_local_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
@@ -104,6 +106,10 @@ class EstimationModule extends Module {
       ),
     );
 
+    i.addLazySingleton<LocalCostItemDataSource>(
+      () => PowerSyncLocalCostItemDataSource(database: i.get()),
+    );
+
     i.addLazySingleton<LocalYourRatesDataSource>(
       () => LocalYourRatesDataSource(database: i.get(), clock: i.get()),
       config: BindConfig(onDispose: (dataSource) => dataSource.dispose()),
@@ -126,7 +132,10 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<CostItemRepository>(
-      () => CostItemRepositoryImpl(dataSource: i.get()),
+      () => CostItemRepositoryImpl(
+        dataSource: i.get<CostItemDataSource>(),
+        localDataSource: i.get<LocalCostItemDataSource>(),
+      ),
     );
 
     i.addLazySingleton<LastUsedUnitRepository>(

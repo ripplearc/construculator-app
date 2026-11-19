@@ -22,6 +22,27 @@ abstract class CostItemRepository {
   /// Creates a new cost item and returns the persisted entity.
   Future<Either<Failure, CostItem>> createCostItem(CostItem item);
 
+  /// Saves [item] on this phone under its own id and returns it. The server
+  /// gets the line later, so this never waits for a signal.
+  ///
+  /// Saving the same id again replaces the line, so a retry never adds a
+  /// second one. Returns `Left(EstimationFailure)` when the phone cannot
+  /// write or the line has no id.
+  Future<Either<Failure, CostItem>> addCostItemOnPhone(CostItem item);
+
+  /// Watches the ids of the lines of [estimateId] on this phone that the
+  /// server has not received yet.
+  ///
+  /// A line leaves the set once the server has it. A line that is not in the
+  /// set is on the server or not on this phone, so a screen that lists the
+  /// lines marks a line as not synced when its id is in the set.
+  ///
+  /// Emits now, and again whenever a line is saved or an upload finishes. A
+  /// failed read arrives as a `Left` and the stream stays open.
+  Stream<Either<Failure, Set<String>>> watchNotSyncedCostItemIds(
+    String estimateId,
+  );
+
   /// The name of the estimate of [companyId]'s projects holding the newest
   /// equipment line called [itemName] that is priced by [pricingMethod] at
   /// exactly [rateAmount] (the daily rate under day pricing, the job amount

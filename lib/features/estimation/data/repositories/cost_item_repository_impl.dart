@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/local_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
@@ -10,11 +11,28 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 
+/// Reads and writes cost lines: the server through [dataSource], and this
+/// phone's own database through [localDataSource].
 class CostItemRepositoryImpl implements CostItemRepository {
-  CostItemRepositoryImpl({required this.dataSource});
+  CostItemRepositoryImpl({
+    required this.dataSource,
+    required this.localDataSource,
+  });
 
+  /// The server's cost lines.
   final CostItemDataSource dataSource;
+
+  /// The cost lines saved on this phone.
+  final LocalCostItemDataSource localDataSource;
   static final _logger = AppLogger().tag('CostItemRepositoryImpl');
+
+  static const _unexpectedFailure = EstimationFailure(
+    errorType: EstimationErrorType.unexpectedError,
+  );
+
+  static const _phoneStorageFailure = EstimationFailure(
+    errorType: EstimationErrorType.unexpectedDatabaseError,
+  );
 
   /// The most rows the API returns for one request. A full page may have
   /// dropped rows, so a sum over it could be too small.
@@ -29,6 +47,42 @@ class CostItemRepositoryImpl implements CostItemRepository {
     } catch (e) {
       return _handleError(e, 'creating cost item');
     }
+  }
+
+  @override
+  Future<Either<Failure, CostItem>> addCostItemOnPhone(CostItem item) async {
+    if (item.id.isEmpty) return const Left(_unexpectedFailure);
+    try {
+      await localDataSource.saveCostItemOnPhone(CostItemDto.fromEntity(item));
+      return Right(item);
+    } catch (_) {
+      return const Left(_phoneStorageFailure);
+    }
+  }
+
+  // TODO: [CA-1290] show the grey Not synced line and the sync summary from this set. https://ripplearc.youtrack.cloud/issue/CA-1290
+  @override
+  Stream<Either<Failure, Set<String>>> watchNotSyncedCostItemIds(
+    String estimateId,
+  ) {
+    return localDataSource
+        .watchCostItemIdsWithPendingUpload(estimateId)
+        .transform(
+          StreamTransformer<
+            Set<String>,
+            Either<Failure, Set<String>>
+          >.fromHandlers(
+            handleData: (notSynced, sink) => sink.add(Right(notSynced)),
+            handleError: (error, stack, sink) {
+              _logger.error(
+                'Failed to watch cost lines not synced',
+                error,
+                stack,
+              );
+              sink.add(const Left(_phoneStorageFailure));
+            },
+          ),
+        );
   }
 
   @override
