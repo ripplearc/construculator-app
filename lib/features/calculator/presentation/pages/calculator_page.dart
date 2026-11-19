@@ -199,13 +199,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
   Color _accentFor(AppColorsExtension colors, String groupId) =>
       switch (groupId) {
         CalculatorLabelFormatter.basicGeometryGroupId =>
-          colors.keyboardFunctions,
-        CalculatorLabelFormatter.shapesGroupId => colors.indigo,
-        CalculatorLabelFormatter.materialsGroupId => colors.iconOrange,
-        // TODO: [CA-1196] Use the group accent tokens once coreui has them.
-        // https://ripplearc.youtrack.cloud/issue/CA-1196
-        CalculatorLabelFormatter.unitGroupId => colors.keyboardUnits,
-        CalculatorLabelFormatter.trigonometryGroupId => colors.textSuccess,
+          colors.keyboardGroupGeometry,
+        CalculatorLabelFormatter.shapesGroupId => colors.keyboardGroupShapes,
+        CalculatorLabelFormatter.materialsGroupId =>
+          colors.keyboardGroupMaterials,
+        CalculatorLabelFormatter.unitGroupId => colors.keyboardGroupUnit,
+        CalculatorLabelFormatter.trigonometryGroupId =>
+          colors.keyboardGroupTrigonometry,
         _ => colors.keyboardFunctions,
       };
 

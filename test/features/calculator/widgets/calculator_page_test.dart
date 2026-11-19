@@ -205,11 +205,11 @@ void main() {
     expect(
       accentsById,
       equals({
-        'Basic Geometry': colors.keyboardFunctions,
-        'Shapes': colors.indigo,
-        'Materials': colors.iconOrange,
-        'Unit': colors.keyboardUnits,
-        'Trigonometry': colors.textSuccess,
+        'Basic Geometry': colors.keyboardGroupGeometry,
+        'Shapes': colors.keyboardGroupShapes,
+        'Materials': colors.keyboardGroupMaterials,
+        'Unit': colors.keyboardGroupUnit,
+        'Trigonometry': colors.keyboardGroupTrigonometry,
       }),
     );
   });
