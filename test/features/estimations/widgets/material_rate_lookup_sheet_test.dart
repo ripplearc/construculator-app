@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -110,7 +109,7 @@ void main() {
                     context: context,
                     initialQuery: initialQuery,
                     clock: clock,
-                    blocFactory: () => Modular.get<YourRatesBloc>(),
+                    blocFactory: yourRatesBlocWithoutDebounce,
                   );
                   closed = true;
                 },
@@ -122,7 +121,6 @@ void main() {
       ),
     );
     await tester.tap(find.byKey(const Key('open_sheet')));
-    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
@@ -289,7 +287,6 @@ void main() {
       database.getAllGate = gate;
 
       await tester.enterText(searchField, 'drywall');
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
 
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
