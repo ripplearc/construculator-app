@@ -7,8 +7,13 @@ import 'package:construculator/libraries/errors/failures.dart';
 abstract class CostItemRepository {
   /// The sum of the totals of every cost item in an estimate, in dollars.
   ///
-  /// The database keeps no running total for an estimate, so this is the
-  /// estimate's total. Each item total is already rounded to the cent.
+  /// Counts each line once by id: the lines on the server and the lines saved
+  /// on this phone, including those the server has not received yet and those
+  /// it refused for good. When the server and this phone both have a line, the
+  /// phone's total counts. When the server cannot be read (a weak signal or no
+  /// signal) this returns the failure, so the page shows its normal error with
+  /// Try again, and never a total made of the phone's lines alone. Each item
+  /// total is already rounded to the cent.
   Future<Either<Failure, double>> getEstimateItemsTotal(String estimateId);
 
   /// Every cost item of an estimate, oldest first.

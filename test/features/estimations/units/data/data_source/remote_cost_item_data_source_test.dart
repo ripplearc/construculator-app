@@ -381,19 +381,23 @@ void main() {
     group('fetchItemTotalCostsByEstimateId', () {
       test('returns the totals of that estimate only', () async {
         seedItemTable([
-          {'estimate_id': testEstimateId, 'item_total_cost': 580},
-          {'estimate_id': testEstimateId, 'item_total_cost': 2993.62},
-          {'estimate_id': 'estimate-other', 'item_total_cost': 99},
+          {'id': 'a', 'estimate_id': testEstimateId, 'item_total_cost': 580},
+          {
+            'id': 'b',
+            'estimate_id': testEstimateId,
+            'item_total_cost': 2993.62,
+          },
+          {'id': 'c', 'estimate_id': 'estimate-other', 'item_total_cost': 99},
         ]);
 
         final totals = await dataSource.fetchItemTotalCostsByEstimateId(
           testEstimateId,
         );
 
-        expect(totals, [580.0, 2993.62]);
+        expect(totals, {'a': 580.0, 'b': 2993.62});
       });
 
-      test('returns an empty list when the estimate has no items', () async {
+      test('returns an empty map when the estimate has no items', () async {
         final totals = await dataSource.fetchItemTotalCostsByEstimateId(
           testEstimateId,
         );
@@ -401,23 +405,49 @@ void main() {
         expect(totals, isEmpty);
       });
 
-      test('asks only for the total column of the estimate\'s items', () async {
+      test('asks only for the id and total columns of the estimate\'s items, '
+          'without retrying', () async {
         await dataSource.fetchItemTotalCostsByEstimateId(testEstimateId);
 
         expect(
-          fakeSupabaseWrapper.getMethodCallsFor('select').single,
-          equals({
-            'method': 'select',
-            'table': DatabaseConstants.costItemsTable,
-            'columns': DatabaseConstants.itemTotalCostColumn,
-            'filterColumn': DatabaseConstants.estimateIdColumn,
-            'filterValue': testEstimateId,
-          }),
+          fakeSupabaseWrapper.getMethodCallsFor('selectMatch').single,
+          allOf(
+            containsPair('table', DatabaseConstants.costItemsTable),
+            containsPair(
+              'columns',
+              '${DatabaseConstants.idColumn}, ${DatabaseConstants.itemTotalCostColumn}',
+            ),
+            containsPair('filters', {
+              DatabaseConstants.estimateIdColumn: testEstimateId,
+            }),
+            containsPair('retry', false),
+          ),
         );
       });
 
+      test('gives up after a few seconds when the server does not answer', () {
+        fakeAsync((async) {
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..completer = Completer<void>();
+          Object? failure;
+          dataSource.fetchItemTotalCostsByEstimateId(testEstimateId).catchError(
+            (Object error) {
+              failure = error;
+              return <String, double>{};
+            },
+          );
+
+          async.elapse(const Duration(seconds: 4));
+          expect(failure, isNull);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(failure, isA<TimeoutException>());
+        });
+      });
+
       test('rethrows when the select fails', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
 
         await expectLater(
           () => dataSource.fetchItemTotalCostsByEstimateId(testEstimateId),

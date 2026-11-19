@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/local_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/powersync_local_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
@@ -137,6 +139,68 @@ void main() {
 
         await expectLater(
           dataSource.loadCostItemsByEstimateId('estimate-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+    group('loadRefusedLineTotalsByEstimateId', () {
+      void seedRefusal(
+        String id, {
+        String estimateId = 'estimate-1',
+        Map<String, Object?> line = const {'item_total_cost': 21.5},
+      }) => database.seedRefusal({
+        'id': id,
+        'estimate_id': estimateId,
+        'line': jsonEncode({'id': id, 'estimate_id': estimateId, ...line}),
+        'reason': '42501',
+        'refused_at': '2026-11-18T09:30:00.000Z',
+      });
+
+      test('returns the saved total of each refused line by its id', () async {
+        seedRefusal('line-1');
+        seedRefusal('line-2', line: {'item_total_cost': 40});
+
+        final totals = await dataSource.loadRefusedLineTotalsByEstimateId(
+          'estimate-1',
+        );
+
+        expect(totals, {'line-1': 21.5, 'line-2': 40.0});
+      });
+
+      test('returns 0 for a refused line that had no total', () async {
+        seedRefusal('line-1', line: const {});
+
+        final totals = await dataSource.loadRefusedLineTotalsByEstimateId(
+          'estimate-1',
+        );
+
+        expect(totals, {'line-1': 0.0});
+      });
+
+      test('returns only the refused lines of the asked estimate', () async {
+        seedRefusal('line-1');
+        seedRefusal('other', estimateId: 'estimate-2');
+
+        final totals = await dataSource.loadRefusedLineTotalsByEstimateId(
+          'estimate-1',
+        );
+
+        expect(totals.keys, ['line-1']);
+      });
+
+      test('returns nothing for an estimate with no refused line', () async {
+        final totals = await dataSource.loadRefusedLineTotalsByEstimateId(
+          'estimate-1',
+        );
+
+        expect(totals, isEmpty);
+      });
+
+      test('rethrows when the phone cannot read', () async {
+        database.refusalReadError = StateError('database locked');
+
+        await expectLater(
+          dataSource.loadRefusedLineTotalsByEstimateId('estimate-1'),
           throwsA(isA<StateError>()),
         );
       });
