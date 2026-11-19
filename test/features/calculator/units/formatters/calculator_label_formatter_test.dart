@@ -270,6 +270,11 @@ void main() {
       expect(labels.toastBody(three), contains('and 2 more removed'));
     });
 
+    test('CA-1094: with no strip note there are no note words, so the strip '
+        'shows its suggestions or its placeholder (Section 1.8)', () {
+      expect(labels.noteText(null), isNull);
+    });
+
     test('CA-1376: the percent tip says what it adds or takes off, of the '
         'total or of the bracket, in full up to 52 characters and in its '
         'short form past them (Section 1.8)', () {
@@ -286,28 +291,28 @@ void main() {
         ofTheBracket: bracket,
       );
 
-      expect(labels.stripText(tip()), 'Adds 10% of the total 1,500 = 150.');
+      expect(labels.noteText(tip()), 'Adds 10% of the total 1,500 = 150.');
       expect(
-        labels.stripText(tip(bracket: true)),
+        labels.noteText(tip(bracket: true)),
         'Adds 10% of the bracket 1,500 = 150.',
       );
       expect(
-        labels.stripText(tip(adds: false)),
+        labels.noteText(tip(adds: false)),
         'Takes off 10% of the total 1,500 = 150.',
       );
       expect(
-        labels.stripText(tip(adds: false, bracket: true)),
+        labels.noteText(tip(adds: false, bracket: true)),
         'Takes off 10% of the bracket 1,500 = 150.',
       );
       final atTheLimit = tip(total: '12345678901234', amount: '123456789012');
-      expect(labels.stripText(atTheLimit), hasLength(52));
-      expect(labels.stripText(atTheLimit), startsWith('Adds 10% of the total'));
+      expect(labels.noteText(atTheLimit), hasLength(52));
+      expect(labels.noteText(atTheLimit), startsWith('Adds 10% of the total'));
       expect(
-        labels.stripText(tip(total: '123456789012345', amount: '123456789012')),
+        labels.noteText(tip(total: '123456789012345', amount: '123456789012')),
         'Adds 10% of the total so far.',
       );
       expect(
-        labels.stripText(
+        labels.noteText(
           tip(adds: false, total: '1234567890', amount: '123456789012'),
         ),
         'Takes off 10% of the total so far.',
@@ -380,11 +385,11 @@ void main() {
         expect(labels.toastBody(toast), body, reason: warning.name);
       }
       expect(
-        labels.stripText(const CalculatorSidesNotWholeNote()),
+        labels.noteText(const CalculatorSidesNotWholeNote()),
         'Sides needs a whole number, 3 or more.',
       );
       expect(
-        labels.stripText(const CalculatorSlopeOutOfRangeNote()),
+        labels.noteText(const CalculatorSlopeOutOfRangeNote()),
         'Slope must be more than 0%. Edit the Slope chip.',
       );
     });
