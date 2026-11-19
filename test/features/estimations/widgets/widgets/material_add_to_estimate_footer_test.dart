@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -15,24 +16,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_items_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeCostItemsDatabase database;
   late MaterialCostFormBloc bloc;
 
   setUpAll(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    database = FakeCostItemsDatabase();
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
 
   setUp(() {
     fakeSupabase.reset();
+    database.reset();
   });
 
   Future<void> pumpFooter(WidgetTester tester) async {
@@ -88,9 +94,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  void holdInserts() {
+  void holdSaves() {
     final held = Completer<void>();
-    fakeSupabase.completer = held;
+    database.writeGate = held;
     addTearDown(() {
       if (!held.isCompleted) held.complete();
     });
@@ -246,13 +252,13 @@ void main() {
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pumpAndSettle();
 
-      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(database.rows, hasLength(1));
       expect(find.byType(MaterialAddToEstimateFooter), findsNothing);
     });
 
     testWidgets('keeps the sheet open and says so above the button when '
         'saving fails', (tester) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await pumpFooter(tester);
       await fillAll(tester);
 
@@ -281,8 +287,7 @@ void main() {
         'line saves', (tester) async {
       await pumpFooter(tester);
       await fillAll(tester);
-      fakeSupabase.shouldDelayOperations = true;
-      holdInserts();
+      holdSaves();
 
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
@@ -290,8 +295,7 @@ void main() {
       expect(isButtonDisabled(tester), isTrue);
       expect(find.text('Add to estimate'), findsOneWidget);
 
-      fakeSupabase.completer!.complete();
-      fakeSupabase.shouldDelayOperations = false;
+      database.writeGate!.complete();
       await tester.pumpAndSettle();
     });
 
@@ -304,7 +308,7 @@ void main() {
 
     testWidgets('removes the error line while the next save runs and shows '
         'it again if that fails too', (tester) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await pumpFooter(tester);
       await fillAll(tester);
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
@@ -312,14 +316,12 @@ void main() {
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
 
-      fakeSupabase.shouldDelayOperations = true;
-      holdInserts();
+      holdSaves();
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
 
-      fakeSupabase.completer!.complete();
-      fakeSupabase.shouldDelayOperations = false;
+      database.writeGate!.complete();
       await tester.pump();
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
@@ -327,7 +329,7 @@ void main() {
 
     testWidgets('keeps the error line while a field is edited and removes it '
         'when Add is tapped again', (tester) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await pumpFooter(tester);
       await fillAll(tester);
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
@@ -339,28 +341,26 @@ void main() {
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
 
-      fakeSupabase.shouldDelayOperations = true;
-      holdInserts();
+      holdSaves();
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
 
-      fakeSupabase.completer!.complete();
-      fakeSupabase.shouldDelayOperations = false;
+      database.writeGate!.complete();
       await tester.pumpAndSettle();
     });
 
     testWidgets('adds the line on a second try and closes the sheet', (
       tester,
     ) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await pumpFooter(tester);
       await fillAll(tester);
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
       await tester.pump();
 
-      fakeSupabase.shouldThrowOnInsert = false;
+      database.executeError = null;
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pumpAndSettle();
 

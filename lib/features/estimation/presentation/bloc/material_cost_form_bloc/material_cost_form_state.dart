@@ -202,7 +202,7 @@ class MaterialCostFormSuccess extends MaterialCostFormState {
   @override
   final MaterialCostFormData data;
 
-  /// The cost item as saved by [CostItemRepository.createCostItem].
+  /// The cost item as saved by [CostItemRepository.addCostItemOnPhone].
   final CostItem createdItem;
 }
 
@@ -215,7 +215,7 @@ class MaterialCostFormFailure extends MaterialCostFormState {
   @override
   final MaterialCostFormData data;
 
-  /// The failure returned by [CostItemRepository.createCostItem].
+  /// The failure returned by [CostItemRepository.addCostItemOnPhone].
   final Failure failure;
 }
 

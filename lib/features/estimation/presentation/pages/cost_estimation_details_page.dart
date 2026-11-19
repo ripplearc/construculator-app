@@ -189,6 +189,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           final addedItemId = addedItemIdOf?.call(formBloc.state);
           if (addedItemId != null) _addedLineHighlight.highlight(addedItemId);
           if (summary is EstimateSummaryLoaded) {
+            // TODO: [CA-1290] word the toast by signal: no signal, weak signal, signal. https://ripplearc.youtrack.cloud/issue/CA-1290
             CoreToast.showCustomToast(
               context,
               (_) => AddedToEstimateToast(
@@ -200,10 +201,14 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             );
           }
         case _SheetOutcome.failed when wasSavingWhenDismissed:
-          CoreToast.showError(
+          CoreToast.showCustomToast(
             context,
-            l10n.addToEstimateFailedError,
-            l10n.closeLabel,
+            (_) => Toast.error(
+              description: l10n.addToEstimateFailedError,
+              closeLabel: l10n.closeLabel,
+              onClose: CoreToast.cleanup,
+            ),
+            duration: null,
           );
         default:
           break;

@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -17,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_cost_items_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
@@ -24,20 +26,24 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeCostItemsDatabase database;
 
   setUpAll(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    database = FakeCostItemsDatabase();
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
 
   setUp(() async {
     fakeSupabase.reset();
+    database.reset();
     await loadAppFontsAll();
   });
 
@@ -175,7 +181,7 @@ void main() {
     });
 
     testWidgets('save failed, with the error above the button', (tester) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '3');

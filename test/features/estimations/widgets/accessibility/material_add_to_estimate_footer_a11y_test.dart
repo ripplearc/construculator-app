@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -13,23 +14,30 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_items_database.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeCostItemsDatabase database;
 
   setUpAll(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    database = FakeCostItemsDatabase();
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
 
-  setUp(() => fakeSupabase.reset());
+  setUp(() {
+    fakeSupabase.reset();
+    database.reset();
+  });
 
   Widget makeWidget(ThemeData theme, MaterialCostFormBloc bloc) => MaterialApp(
     theme: theme,
@@ -87,7 +95,7 @@ void main() {
     ) async {
       await setupA11yTest(tester);
       final handle = tester.ensureSemantics();
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       final bloc = newBloc()
         ..add(const MaterialCostItemTypeChanged('Interior paint'))
         ..add(const MaterialQuantityUpdated('7'))
