@@ -82,6 +82,33 @@ void main() {
       expect(dropdown.isClosed, isTrue);
     });
 
+    test('dispose the project repository when the session ends', () async {
+      sessionService.startSession();
+      final repository = Modular.get<ProjectRepository>();
+      final projects = repository.watchProjects('user-1');
+      final streamClosed = expectLater(projects, emitsThrough(emitsDone));
+
+      sessionService.endSession();
+
+      await streamClosed;
+    });
+
+    test(
+      'dispose the current project notifier when the session ends',
+      () async {
+        sessionService.startSession();
+        final notifier = Modular.get<CurrentProjectNotifier>();
+        final streamClosed = expectLater(
+          notifier.onCurrentProjectChanged,
+          emitsDone,
+        );
+
+        sessionService.endSession();
+
+        await streamClosed;
+      },
+    );
+
     test('build new objects for the next session', () {
       sessionService.startSession();
       final dropdown = Modular.get<ProjectDropdownBloc>();

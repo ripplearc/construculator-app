@@ -110,7 +110,7 @@ void registerDashboardPerUserObjects(Injector i) => _registerPerUserObjects(i);
 void _registerPerUserObjects(Injector i) {
   i.addLazySingleton<ProjectDropdownBloc>(
     () => ProjectDropdownBloc(
-      projectRepository: Modular.get<ProjectRepository>(),
+      projectRepository: i.get<ProjectRepository>(),
       authManager: Modular.get<AuthManager>(),
     ),
     config: BindConfig(onDispose: (bloc) => bloc.close()),
