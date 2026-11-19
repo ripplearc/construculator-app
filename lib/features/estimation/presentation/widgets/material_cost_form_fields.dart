@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/number_pad_put_back_label.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
+import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -24,7 +26,13 @@ const double _nameBottomPadding = 6;
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
-  const MaterialCostFormFields({super.key});
+  /// Where Quantity and Rate put the app's own number pad. While one of them
+  /// has focus it holds that field's [NumberPadSession], and the phone's
+  /// keyboard stays down; otherwise it holds null. Without it both fields
+  /// open the phone's number keyboard.
+  final ValueNotifier<NumberPadSession?>? numberPad;
+
+  const MaterialCostFormFields({super.key, this.numberPad});
 
   @override
   State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
@@ -37,6 +45,30 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
+  late final _quantityFormatter = _decimalLimitFormatter(decimals: 4);
+  late final _rateFormatter = _decimalLimitFormatter(decimals: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityFocus.addListener(
+      () => _followFocus(
+        _quantityFocus,
+        _quantityController,
+        _quantityFormatter,
+        (value) => _bloc.add(MaterialQuantityUpdated(value)),
+      ),
+    );
+    _rateFocus.addListener(
+      () => _followFocus(
+        _rateFocus,
+        _rateController,
+        _rateFormatter,
+        (value) => _bloc.add(MaterialRateUpdated(value)),
+        shown: context.l10n.numberPadRateValue,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -96,10 +128,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                     focusNode: _quantityFocus,
                     label: l10n.materialQuantityLabel,
                     hintText: l10n.materialQuantityPlaceholder,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [_decimalLimitFormatter(decimals: 4)],
+                    keyboardType: _numberKeyboard,
+                    onTap: _selectAll(_quantityController),
+                    inputFormatters: [_quantityFormatter],
                     onChanged: (value) =>
                         bloc.add(MaterialQuantityUpdated(value)),
                   ),
@@ -128,10 +159,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                     focusNode: _rateFocus,
                     label: l10n.materialRateLabel,
                     hintText: l10n.materialRatePlaceholder,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [_decimalLimitFormatter(decimals: 2)],
+                    keyboardType: _numberKeyboard,
+                    onTap: _selectAll(_rateController),
+                    inputFormatters: [_rateFormatter],
                     // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                     onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
                   ),
@@ -150,6 +180,50 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
     );
+  }
+
+  MaterialCostFormBloc get _bloc => context.read<MaterialCostFormBloc>();
+
+  TextInputType get _numberKeyboard {
+    // TextInputType.none, not readOnly, keeps the caret and Paste while the
+    // phone's keyboard stays down (CoreNumberKeypad docs).
+    return widget.numberPad == null
+        ? const TextInputType.numberWithOptions(decimal: true)
+        : TextInputType.none;
+  }
+
+  VoidCallback? _selectAll(TextEditingController controller) =>
+      widget.numberPad == null
+      ? null
+      : () => controller.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: controller.text.length,
+        );
+
+  void _followFocus(
+    FocusNode focus,
+    TextEditingController controller,
+    TextInputFormatter formatter,
+    ValueChanged<String> onChanged, {
+    String Function(String value)? shown,
+  }) {
+    final numberPad = widget.numberPad;
+    if (numberPad == null) return;
+    if (focus.hasFocus) {
+      _selectAll(controller)?.call();
+      final l10n = context.l10n;
+      numberPad.value = NumberPadSession(
+        controller: controller,
+        formatter: formatter,
+        onChanged: onChanged,
+        putBackLabelOf: (value) =>
+            numberPadPutBackLabel(l10n, value, shown: shown),
+      );
+    } else {
+      // Flutter tells the field losing focus before the one gaining it, so a
+      // move to the other number field puts its session back after this.
+      numberPad.value = null;
+    }
   }
 
   bool _isSaving(MaterialCostFormState state) =>
@@ -181,6 +255,7 @@ class _SheetTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String> onChanged;
+  final VoidCallback? onTap;
   final bool readOnly;
 
   final bool fitsText;
@@ -196,6 +271,7 @@ class _SheetTextField extends StatelessWidget {
     this.fitsText = false,
     this.keyboardType,
     this.inputFormatters,
+    this.onTap,
   });
 
   @override
@@ -227,6 +303,7 @@ class _SheetTextField extends StatelessWidget {
                 keyboardType: keyboardType,
                 inputFormatters: inputFormatters,
                 onChanged: onChanged,
+                onTap: onTap,
                 maxLines: 1,
                 cursorColor: colorTheme.textHeadline,
                 style: textStyle,

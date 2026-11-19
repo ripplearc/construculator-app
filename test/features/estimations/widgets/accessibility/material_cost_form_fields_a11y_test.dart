@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -28,7 +29,10 @@ void main() {
 
   tearDownAll(Modular.dispose);
 
-  Widget makeWidget(ThemeData theme) => MaterialApp(
+  Widget makeWidget(
+    ThemeData theme, {
+    ValueNotifier<NumberPadSession?>? numberPad,
+  }) => MaterialApp(
     theme: theme,
     locale: const Locale('en'),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -36,10 +40,10 @@ void main() {
     home: Scaffold(
       body: BlocProvider<MaterialCostFormBloc>(
         create: (_) => Modular.get<MaterialCostFormBloc>(),
-        child: const Column(
+        child: Column(
           children: [
-            Flexible(child: MaterialCostFormFields()),
-            MaterialAddToEstimateFooter(
+            Flexible(child: MaterialCostFormFields(numberPad: numberPad)),
+            const MaterialAddToEstimateFooter(
               estimateId: 'estimate-1',
               estimateName: 'Bedroom 2',
               estimateTotal: 2093.02,
@@ -51,6 +55,32 @@ void main() {
   );
 
   group('Material sheet – accessibility', () {
+    for (final field in ['material_quantity_field', 'material_rate_field']) {
+      testWidgets('a11y: with the app\'s own number pad, $field still meets '
+          'tap target and label guidelines in both themes and reads as a '
+          'text field', (tester) async {
+        await setupA11yTest(tester);
+        final numberPad = ValueNotifier<NumberPadSession?>(null);
+        addTearDown(numberPad.dispose);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, numberPad: numberPad),
+          find.byKey(Key(field)),
+        );
+        final handle = tester.ensureSemantics();
+        final semantics = tester.getSemantics(
+          find.descendant(
+            of: find.byKey(Key(field)),
+            matching: find.byType(EditableText),
+          ),
+        );
+        expect(semantics.flagsCollection.isTextField, isTrue);
+        expect(semantics.flagsCollection.isReadOnly, isFalse);
+        handle.dispose();
+      });
+    }
+
     testWidgets('a11y: the unit button meets tap target and label guidelines '
         'in both themes', (tester) async {
       await setupA11yTest(tester);
