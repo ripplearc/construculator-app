@@ -4106,7 +4106,7 @@ abstract class AppLocalizations {
   /// **'Sample rate'**
   String get materialSampleRateBadge;
 
-  /// Helper line under the material Rate row while Save as my default is offered; price is the pre-formatted currency followed by materialRatePerUnitSuffix when the form has a unit, yourRates is yourRatesName and itemName is the material name in lower case
+  /// Helper line under the material Rate row while Save as my default is offered; price is the pre-formatted currency followed by materialRatePerUnitSuffix when the form has a unit, yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case
   ///
   /// In en, this message translates to:
   /// **'Saves {price} to {yourRates} — it auto-fills next time you add {itemName}.'**

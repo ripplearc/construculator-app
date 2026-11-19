@@ -90,6 +90,7 @@ class MaterialCostFormData extends Equatable {
     this.hasUnsavedChanges = false,
     this.recalledRateId,
     this.isFromSampleFile = false,
+    this.typedSearchName,
   });
 
   /// The material name entered by the user.
@@ -128,6 +129,14 @@ class MaterialCostFormData extends Equatable {
   /// Whether the rate came from the sample cost file, picked as it is or
   /// typed over afterwards. Picking a saved rate clears it.
   final bool isFromSampleFile;
+
+  /// The name typed before a sample product was appended to it, or null when
+  /// none was typed. Editing the name or picking a saved rate clears it.
+  final String? typedSearchName;
+
+  /// The name a later search finds the saved rate by: the name typed before
+  /// the sample product was appended, or else the whole material name.
+  String get nameToFindRateBy => (typedSearchName ?? itemName).trim();
 
   /// Whether the form offers to save the rate as the user's default: a rate
   /// from the sample cost file that is not saved yet, on a named material,
@@ -183,6 +192,7 @@ class MaterialCostFormData extends Equatable {
     bool? hasUnsavedChanges,
     Object? recalledRateId = _unset,
     bool? isFromSampleFile,
+    Object? typedSearchName = _unset,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -197,6 +207,9 @@ class MaterialCostFormData extends Equatable {
           ? this.recalledRateId
           : recalledRateId as String?,
       isFromSampleFile: isFromSampleFile ?? this.isFromSampleFile,
+      typedSearchName: typedSearchName == _unset
+          ? this.typedSearchName
+          : typedSearchName as String?,
     );
   }
 
@@ -212,6 +225,7 @@ class MaterialCostFormData extends Equatable {
     hasUnsavedChanges,
     recalledRateId,
     isFromSampleFile,
+    typedSearchName,
   ];
 }
 

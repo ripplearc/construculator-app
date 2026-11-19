@@ -3452,7 +3452,7 @@
   },
   "materialSaveAsDefaultHelperText": "Saves {price} to {yourRates} — it auto-fills next time you add {itemName}.",
   "@materialSaveAsDefaultHelperText": {
-    "description": "Helper line under the material Rate row while Save as my default is offered; price is the pre-formatted currency followed by materialRatePerUnitSuffix when the form has a unit, yourRates is yourRatesName and itemName is the material name in lower case",
+    "description": "Helper line under the material Rate row while Save as my default is offered; price is the pre-formatted currency followed by materialRatePerUnitSuffix when the form has a unit, yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case",
     "context": "Storyboard CUJ 4, sub-flow A, screen 5 Verify, build note Helper text",
     "placeholders": {
       "price": {

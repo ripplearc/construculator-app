@@ -835,8 +835,51 @@ void main() {
             l10n.materialSaveAsDefaultHelperText(
               r'$52.00 /Liters',
               l10n.yourRatesName,
-              'interior paint · proclassic',
+              'interior paint',
             ),
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('draws "Your rates" in the save line in semibold', (
+      tester,
+    ) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await tester.enterText(nameField, 'Interior paint');
+
+      await pickSample(tester);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final line = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('save_as_default_helper_text')),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Text && widget.textSpan != null,
+          ),
+        ),
+      );
+      final yourRates = (line.textSpan! as TextSpan).children!
+          .whereType<TextSpan>()
+          .singleWhere((span) => span.text == l10n.yourRatesName);
+      expect(yourRates.style!.fontWeight, FontWeight.w600);
+    });
+
+    testWidgets('names the product in the save line when no name was typed', (
+      tester,
+    ) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+
+      await pickSample(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('save_as_default_helper_text')),
+          matching: find.textContaining(
+            'next time you add proclassic.',
+            findRichText: true,
           ),
         ),
         findsOneWidget,
@@ -859,7 +902,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('save_as_default_helper_text')),
-          matching: find.textContaining(r'$60.00'),
+          matching: find.textContaining(r'$60.00', findRichText: true),
         ),
         findsOneWidget,
       );
@@ -879,11 +922,17 @@ void main() {
 
       final helper = find.byKey(const Key('save_as_default_helper_text'));
       expect(
-        find.descendant(of: helper, matching: find.textContaining(r'$65.00')),
+        find.descendant(
+          of: helper,
+          matching: find.textContaining(r'$65.00', findRichText: true),
+        ),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: helper, matching: find.textContaining('primer')),
+        find.descendant(
+          of: helper,
+          matching: find.textContaining('primer', findRichText: true),
+        ),
         findsOneWidget,
       );
     });
