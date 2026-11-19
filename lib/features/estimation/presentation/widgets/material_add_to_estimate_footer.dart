@@ -53,6 +53,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           lineTotal: data.lineTotal,
           estimateName: estimateName,
           estimateTotal: estimateTotal,
+          isEditingExistingLine: data.isEditingExistingLine,
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isBusy:
               state is MaterialCostFormSubmitting ||

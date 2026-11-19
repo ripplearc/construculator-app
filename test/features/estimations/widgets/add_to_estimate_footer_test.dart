@@ -16,6 +16,7 @@ void main() {
     AddToEstimateBlock? block,
     bool isBusy = false,
     String? errorMessage,
+    bool isEditingExistingLine = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -32,6 +33,7 @@ void main() {
             block: block,
             isBusy: isBusy,
             errorMessage: errorMessage,
+            isEditingExistingLine: isEditingExistingLine,
             onAdd: () => addCount++,
           ),
         ),
@@ -92,6 +94,33 @@ void main() {
     expect(find.text('Needs a rate before it can total'), findsOneWidget);
     expect(find.text('Add to estimate'), findsNothing);
     expect(addCount, 0);
+  });
+
+  testWidgets(
+    'keeps the edit wording on a stored line while a number is missing',
+    (tester) async {
+      await pumpFooter(
+        tester,
+        isEditingExistingLine: true,
+        block: const AddToEstimateBlock(
+          note: 'Needs a quantity before it can total',
+          buttonLabel: 'Enter a quantity to continue',
+        ),
+      );
+
+      expect(find.text('Changes this estimate'), findsOneWidget);
+      expect(find.text('Adds to this estimate'), findsNothing);
+      expect(find.text('Enter a quantity to continue'), findsOneWidget);
+    },
+  );
+
+  testWidgets('labels the button Save this line over a stored line', (
+    tester,
+  ) async {
+    await pumpFooter(tester, isEditingExistingLine: true);
+
+    expect(find.text('Save this line'), findsOneWidget);
+    expect(find.text('Add to estimate'), findsNothing);
   });
 
   testWidgets('shows no error line unless a message is given', (tester) async {

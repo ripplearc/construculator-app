@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -365,6 +368,56 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(MaterialAddToEstimateFooter), findsNothing);
+    });
+  });
+
+  group('over a line already on the estimate', () {
+    Future<void> openStoredLine(WidgetTester tester) async {
+      fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+        CostItemTestDataMapFactory.createMaterialItemData(
+          id: 'item-1',
+          estimateId: 'estimate-1',
+          itemName: 'Rebar',
+          unitPrice: 100.0,
+          quantity: 5.0,
+          unit: 'pieces',
+          itemTotalCost: 500.0,
+          rateStatus: 'own_rate_confirmed',
+        ),
+      ]);
+      await pumpFooter(tester);
+      final items = await Modular.get<CostItemRepository>()
+          .getCostItemsForEstimate('estimate-1');
+      bloc.add(
+        MaterialCostEditOpened(
+          items.getRightOrNull()!.single as MaterialCostItem,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('keeps the edit wording while the quantity is cleared', (
+      tester,
+    ) async {
+      await openStoredLine(tester);
+
+      await fill(tester, quantity: '');
+
+      expect(find.text('Changes this estimate'), findsOneWidget);
+      expect(find.text('Adds to this estimate'), findsNothing);
+      expect(find.text('Add to estimate'), findsNothing);
+    });
+
+    testWidgets('keeps the edit wording while the rate is cleared', (
+      tester,
+    ) async {
+      await openStoredLine(tester);
+
+      await fill(tester, rate: '');
+
+      expect(find.text('Changes this estimate'), findsOneWidget);
+      expect(find.text('Adds to this estimate'), findsNothing);
+      expect(find.text('Add to estimate'), findsNothing);
     });
   });
 }

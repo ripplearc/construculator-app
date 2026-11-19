@@ -53,6 +53,11 @@ class AddToEstimateFooter extends StatelessWidget {
   /// [changeInEstimateTotal] is not null; it picks the title of the panel.
   final bool hasUnsavedChanges;
 
+  /// Whether the footer saves changes to a line already on the estimate. Set
+  /// it even while [changeInEstimateTotal] is `null`, so the panel and the
+  /// button keep their edit wording while a number is being retyped.
+  final bool isEditingExistingLine;
+
   /// Called when the user taps Delete this line. The button is drawn only
   /// when this is set, which is for a line already on the estimate.
   final VoidCallback? onDelete;
@@ -73,6 +78,7 @@ class AddToEstimateFooter extends StatelessWidget {
     required this.onAdd,
     this.changeInEstimateTotal,
     this.hasUnsavedChanges = false,
+    this.isEditingExistingLine = false,
     this.onDelete,
     this.deleteFailed = false,
   });
@@ -99,6 +105,7 @@ class AddToEstimateFooter extends StatelessWidget {
               block: block,
               changeInEstimateTotal: changeInEstimateTotal,
               hasUnsavedChanges: hasUnsavedChanges,
+              isEditingExistingLine: isEditingExistingLine,
             ),
             if (errorMessage case final message?) ...[
               const SizedBox(height: CoreSpacing.space4),
@@ -110,9 +117,9 @@ class AddToEstimateFooter extends StatelessWidget {
               key: buttonKey,
               label:
                   block?.buttonLabel ??
-                  (changeInEstimateTotal == null
-                      ? l10n.addToEstimateButton
-                      : l10n.saveThisLineButton),
+                  (isEditingExistingLine || changeInEstimateTotal != null
+                      ? l10n.saveThisLineButton
+                      : l10n.addToEstimateButton),
               isDisabled: block != null || isBusy,
               onPressed: onAdd,
             ),

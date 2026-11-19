@@ -11,6 +11,7 @@ void main() {
     double? deliveryFee,
     String estimateName = 'Bedroom 2',
     AddToEstimateBlock? block,
+    bool isEditingExistingLine = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -25,6 +26,7 @@ void main() {
             estimateName: estimateName,
             estimateTotal: 2993.62,
             block: block,
+            isEditingExistingLine: isEditingExistingLine,
           ),
         ),
       ),
@@ -108,6 +110,25 @@ void main() {
       expect(find.text(r'$520.00'), findsNothing);
       expect(find.text('Bedroom 2'), findsNothing);
       expect(find.textContaining('total  '), findsNothing);
+    });
+
+    testWidgets(
+      'keeps the edit title over a stored line while a number is missing',
+      (tester) async {
+        await pumpPanel(tester, block: block, isEditingExistingLine: true);
+
+        expect(find.text('Changes this estimate'), findsOneWidget);
+        expect(find.text('Adds to this estimate'), findsNothing);
+      },
+    );
+
+    testWidgets('titles the card as an addition for a new line', (
+      tester,
+    ) async {
+      await pumpPanel(tester, block: block);
+
+      expect(find.text('Adds to this estimate'), findsOneWidget);
+      expect(find.text('Changes this estimate'), findsNothing);
     });
   });
 }
