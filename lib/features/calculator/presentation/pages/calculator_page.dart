@@ -27,9 +27,6 @@ class CalculatorPage extends StatefulWidget {
   /// The key of the System of units pill, for tests.
   static const Key unitsPillKey = ValueKey('calc_units_pill');
 
-  /// The key of the panel drawn behind the display and the pill, for tests.
-  static const Key displayPanelKey = ValueKey('calc_display_panel');
-
   /// The key of a setting sheet's option, for tests.
   static Key settingOptionKey(String optionId) =>
       ValueKey('calc_setting_option_$optionId');
@@ -91,10 +88,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     super.dispose();
   }
 
-  // TODO: [CA-1375] Move the pill into CoreDisplayArea's empty tape row
-  // once the display area takes a trailing widget there.
-  // https://ripplearc.youtrack.cloud/issue/CA-1375
-  Widget _unitsPillBesideDisplay(
+  Widget _unitsPill(
     CalculatorSettingFormatter settings,
     CalculatorState state,
   ) {
@@ -109,23 +103,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
       onPressed: () => _bloc.add(const CalculatorUnitSystemToggled()),
     );
   }
-
-  // TODO: [CA-1375] Drop this box once CoreDisplayArea takes the pill in its
-  // own empty tape row: it paints the display's collapsed panel behind the
-  // row that holds the display and the pill, so the panel keeps its width.
-  // https://ripplearc.youtrack.cloud/issue/CA-1375
-  BoxDecoration _displayPanelBehindThePill(AppColorsExtension colors) =>
-      BoxDecoration(
-        color: _currentStage == DisplayAreaStage.fullScreen
-            ? colors.backgroundBlueMid
-            : colors.backgroundBlueLight,
-        borderRadius: _currentStage == DisplayAreaStage.fullScreen
-            ? BorderRadius.zero
-            : const BorderRadius.only(
-                bottomLeft: Radius.circular(CoreSpacing.space7),
-                bottomRight: Radius.circular(CoreSpacing.space7),
-              ),
-      );
 
   Future<void> _showSettingSheet(CalculatorSetting setting) async {
     await CoreQuickSheet.show<void>(
@@ -490,59 +467,36 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       physics: _currentStage != DisplayAreaStage.collapsed
                           ? const NeverScrollableScrollPhysics()
                           : const AlwaysScrollableScrollPhysics(),
-                      child: DecoratedBox(
-                        key: CalculatorPage.displayPanelKey,
-                        decoration: state.showsUnitsPill
-                            ? _displayPanelBehindThePill(colors)
-                            : const BoxDecoration(),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: CoreDisplayArea(
-                                label: switch (state.labelKeyId) {
-                                  final id? => _displayLabelFor(l10n, id),
-                                  null => null,
-                                },
-                                value: state.valueText,
-                                isTyping: state.isTyping,
-                                closeSemanticLabel: l10n.closeButton,
-                                historyPlaceholder:
-                                    l10n.calculatorHistoryPlaceholder,
-                                chipsList: _localizeChips(
-                                  l10n,
-                                  state.chipsList,
-                                ),
-                                // TODO(CA-965): previousSessions is unwired pending
-                                // research into archiving trigger, data model, and
-                                // persistence approach for calculation history.
-                                // TODO: [CA-1088] The pills under the value come
-                                // with the engine's answers.
-                                // https://ripplearc.youtrack.cloud/issue/CA-1088
-                                dependentKeys: const [],
-                                // TODO: [CA-1092] Close the calculator when ✕ is
-                                // refused with nothing being typed (Section 1.1).
-                                // https://ripplearc.youtrack.cloud/issue/CA-1092
-                                onClose: () => bloc.add(
-                                  const CalculatorActiveValueCleared(),
-                                ),
-                                onStageChanged: (stage) {
-                                  if (_currentStage != stage) {
-                                    setState(() => _currentStage = stage);
-                                  }
-                                },
-                              ),
-                            ),
-                            if (state.showsUnitsPill)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: CoreSpacing.space2,
-                                  right: CoreSpacing.space4,
-                                ),
-                                child: _unitsPillBesideDisplay(settings, state),
-                              ),
-                          ],
-                        ),
+                      child: CoreDisplayArea(
+                        emptyTapeTrailing: state.showsUnitsPill
+                            ? _unitsPill(settings, state)
+                            : null,
+                        label: switch (state.labelKeyId) {
+                          final id? => _displayLabelFor(l10n, id),
+                          null => null,
+                        },
+                        value: state.valueText,
+                        isTyping: state.isTyping,
+                        closeSemanticLabel: l10n.closeButton,
+                        historyPlaceholder: l10n.calculatorHistoryPlaceholder,
+                        chipsList: _localizeChips(l10n, state.chipsList),
+                        // TODO(CA-965): previousSessions is unwired pending
+                        // research into archiving trigger, data model, and
+                        // persistence approach for calculation history.
+                        // TODO: [CA-1088] The pills under the value come
+                        // with the engine's answers.
+                        // https://ripplearc.youtrack.cloud/issue/CA-1088
+                        dependentKeys: const [],
+                        // TODO: [CA-1092] Close the calculator when ✕ is
+                        // refused with nothing being typed (Section 1.1).
+                        // https://ripplearc.youtrack.cloud/issue/CA-1092
+                        onClose: () =>
+                            bloc.add(const CalculatorActiveValueCleared()),
+                        onStageChanged: (stage) {
+                          if (_currentStage != stage) {
+                            setState(() => _currentStage = stage);
+                          }
+                        },
                       ),
                     ),
                   ),
