@@ -146,6 +146,26 @@
         <regex pattern="String\? noteText\(CalculatorStripNote\? note\) =&gt; switch \(note\) \{\s*null =&gt; null," dotAll="true" id="calculator_label_formatter.note.none_is_a_note">
             <mutation text="String? noteText(CalculatorStripNote? note) =&gt; switch (note) { null =&gt; l10n.calculatorStripPlaceholder,"/>
         </regex>
+        <!-- CA-1198: a keyboard key or control is read in another key's words,
+             or a digit by its bare face -->
+        <regex pattern="ControlAction\.delete =&gt; l10n\.calculatorKeyDeleteSemantics,\s*ControlAction\.clearAll =&gt; l10n\.calculatorKeyClearAllSemantics," dotAll="true" id="calculator_label_formatter.keyboard.control_labels_swapped">
+            <mutation text="ControlAction.delete =&gt; l10n.calculatorKeyClearAllSemantics, ControlAction.clearAll =&gt; l10n.calculatorKeyDeleteSemantics,"/>
+        </regex>
+        <regex pattern="ControlAction\.delete =&gt; l10n\.calculatorKeyDeleteHint,\s*ControlAction\.clearAll =&gt; l10n\.calculatorKeyClearAllHint," dotAll="true" id="calculator_label_formatter.keyboard.control_hints_swapped">
+            <mutation text="ControlAction.delete =&gt; l10n.calculatorKeyClearAllHint, ControlAction.clearAll =&gt; l10n.calculatorKeyDeleteHint,"/>
+        </regex>
+        <regex pattern="ControlAction\.paren =&gt; l10n\.calculatorBracketKeySemantics," dotAll="true" id="calculator_label_formatter.keyboard.bracket_label">
+            <mutation text="ControlAction.paren =&gt; l10n.calculatorKeyDeleteSemantics,"/>
+        </regex>
+        <regex pattern="digitLabel: \(digit\) =&gt; l10n\.calculatorKeyDigitSemantics\(digit\.label\)," dotAll="true" id="calculator_label_formatter.keyboard.digit_bare">
+            <mutation text="digitLabel: (digit) =&gt; digit.label,"/>
+        </regex>
+        <regex pattern="groupHeader: l10n\.calculatorGroupHeaderSemantics," dotAll="true" id="calculator_label_formatter.keyboard.group_header">
+            <mutation text="groupHeader: l10n.calculatorReorderGroupSemantics,"/>
+        </regex>
+        <regex pattern="dragHandle: l10n\.calculatorKeyboardHandleSemantics," dotAll="true" id="calculator_label_formatter.keyboard.drag_handle">
+            <mutation text="dragHandle: l10n.calculatorViewAllSemantics,"/>
+        </regex>
     </rules>
 
     <commands>
