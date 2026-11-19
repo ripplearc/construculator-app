@@ -43,6 +43,28 @@ void main() {
       },
     );
 
+    test(
+      'differs for two rates whose name and label run together the same',
+      () {
+        final first = YourRateId.of(
+          companyId: 'c1',
+          category: 'equipment',
+          itemName: 'Scissor lift',
+          equipmentMethod: 'day',
+          entryLabel: 'a|job|b',
+        );
+        final second = YourRateId.of(
+          companyId: 'c1',
+          category: 'equipment',
+          itemName: 'Scissor lift|day|a',
+          equipmentMethod: 'job',
+          entryLabel: 'b',
+        );
+
+        expect(first, isNot(second));
+      },
+    );
+
     test('differs for a day rate and a job price of the same name', () {
       String idOf(String method) => YourRateId.of(
         companyId: 'c1',

@@ -7,9 +7,11 @@ import 'package:powersync/powersync.dart' show uuid;
 /// id, so two phones that save one rate offline end with one row and a later
 /// edit always finds it. Case and extra spaces in the name or the label do not
 /// change the id. The id is a version 5 UUID of the company, category, name
-/// key, pricing method and label key. A second price saved under another label
-/// for the same name and method gets its own id, so both prices are kept. No
-/// label and a blank label give the same id.
+/// key, pricing method and label key. A backslash or a `|` in the name key or
+/// the label key is written with a backslash before it, so no name or label can
+/// run into the next part and two different rates never share an id. A second
+/// price saved under another label for the same name and method gets its own
+/// id, so both prices are kept. No label and a blank label give the same id.
 ///
 /// The examples in `your_rate_id_examples.json` are run here and by the
 /// backend's `your_rate_id_test.sql`. Change the rule in both places together.
@@ -30,7 +32,10 @@ abstract final class YourRateId {
     final labelKey = YourRateRefusalKey.normalizeLabel(entryLabel) ?? '';
     return uuid.v5(
       _namespace,
-      '${companyId.toLowerCase()}|$category|$nameKey|${equipmentMethod ?? ''}|$labelKey',
+      '${companyId.toLowerCase()}|$category|${_escape(nameKey)}|${equipmentMethod ?? ''}|${_escape(labelKey)}',
     );
   }
+
+  static String _escape(String key) =>
+      key.replaceAll(r'\', r'\\').replaceAll('|', r'\|');
 }
