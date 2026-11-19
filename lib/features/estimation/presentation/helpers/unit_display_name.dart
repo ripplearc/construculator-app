@@ -74,15 +74,15 @@ extension UnitDisplayName on Unit {
   };
 }
 
-/// The localized heading of a [UnitGroup] in the unit list.
-extension UnitGroupHeading on UnitGroup {
-  /// This group's heading in the language of [l10n], for example "By area".
+/// The localized heading the unit list shows over units of this measure.
+extension UnitMeasureHeading on UnitMeasure {
+  /// The heading in the language of [l10n], for example "By area".
   String heading(AppLocalizations l10n) => switch (this) {
-    UnitGroup.length => l10n.unitGroupLength,
-    UnitGroup.area => l10n.unitGroupArea,
-    UnitGroup.volume => l10n.unitGroupVolume,
-    UnitGroup.weight => l10n.unitGroupWeight,
-    UnitGroup.count => l10n.unitGroupCount,
-    UnitGroup.packaging => l10n.unitGroupPackaging,
+    UnitMeasure.length => l10n.unitGroupLength,
+    UnitMeasure.area => l10n.unitGroupArea,
+    UnitMeasure.volume => l10n.unitGroupVolume,
+    UnitMeasure.weight => l10n.unitGroupWeight,
+    UnitMeasure.count => l10n.unitGroupCount,
+    UnitMeasure.packaging => l10n.unitGroupPackaging,
   };
 }
