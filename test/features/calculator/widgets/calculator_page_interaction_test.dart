@@ -159,20 +159,20 @@ void main() {
       ['1000', '+500', '+10%'],
     );
     expect(
-      tester
-          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
-          .suggestionAreaPlaceholder,
-      l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150'),
+      find.text(
+        l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150'),
+      ),
+      findsOneWidget,
     );
 
     await tester.tap(find.byKey(CoreResultButton.testKey));
     await tester.pump();
     expect(bloc.state.valueText, '1,650');
     expect(
-      tester
-          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
-          .suggestionAreaPlaceholder,
-      isNot(l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150')),
+      find.text(
+        l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150'),
+      ),
+      findsNothing,
       reason: 'the tip closes on the next key',
     );
   });
@@ -728,10 +728,8 @@ void main() {
     expect(find.text(l10n.calculatorToastEditThePitchChipBody), findsOneWidget);
     expect(bloc.state.tape, before);
     expect(
-      tester
-          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
-          .suggestionAreaPlaceholder,
-      l10n.calculatorNotePitchUnderRightAngle,
+      find.text(l10n.calculatorNotePitchUnderRightAngle),
+      findsOneWidget,
       reason: 'the note stays while its cause stays',
     );
   });
@@ -788,8 +786,9 @@ void main() {
     expect(find.text('120in'), findsNothing);
   });
 
-  testWidgets('a strip note takes the place of the suggestions and of the '
-      'placeholder, from l10n', (tester) async {
+  testWidgets('a strip note takes the whole strip, in its own slot: no '
+      'suggestion chip and no placeholder while it shows, and both return '
+      'when it clears (CA-1094, acceptance criterion 3)', (tester) async {
     await pumpPage(tester);
     final l10n = l10nOf(tester);
     for (final key in const [
@@ -800,23 +799,22 @@ void main() {
       await press(tester, key);
     }
 
-    final strip = tester.widget<CoreSuggestionArea>(
-      find.byType(CoreSuggestionArea),
-    );
-    expect(strip.aiSuggestions, isEmpty);
-    expect(
-      strip.suggestionAreaPlaceholder,
-      l10n.calculatorNotePitchUnderRightAngle,
-    );
     expect(find.text(l10n.calculatorNotePitchUnderRightAngle), findsOneWidget);
+    expect(find.byKey(CoreSuggestionArea.chipTestKey(0)), findsNothing);
+    expect(find.text(l10n.calculatorStripPlaceholder), findsNothing);
 
     await press(tester, 'calc_key_clearAll');
 
+    expect(find.text(l10n.calculatorNotePitchUnderRightAngle), findsNothing);
+    expect(find.text(l10n.calculatorStripPlaceholder), findsOneWidget);
+
+    for (final key in const ['calc_key_Slope', 'calc_key_seven']) {
+      await press(tester, key);
+    }
     expect(
-      tester
-          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
-          .suggestionAreaPlaceholder,
-      l10n.calculatorStripPlaceholder,
+      find.byKey(CoreSuggestionArea.chipTestKey(0)),
+      findsOneWidget,
+      reason: 'the suggestions come back once no note holds the strip',
     );
   });
 

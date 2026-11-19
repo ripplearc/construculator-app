@@ -123,6 +123,14 @@
         <regex pattern="OperatorType\.percent =&gt; const CalculatorPercentPressed\(\)," dotAll="true" id="calculator_page.percent.another_key">
             <mutation text="OperatorType.percent =&gt; const CalculatorEqualsPressed(),"/>
         </regex>
+        <!-- CA-1094 (Section 1.8): the strip note never reaches CoreUI's note
+             slot, or the placeholder stands in for it -->
+        <regex pattern="note: labels\.noteText\(state\.stripNote\)," dotAll="true" id="calculator_page.strip_note.not_shown">
+            <mutation text="note: null,"/>
+        </regex>
+        <regex pattern="suggestionAreaPlaceholder:\s*l10n\.calculatorStripPlaceholder," dotAll="true" id="calculator_page.strip_note.placeholder_dropped">
+            <mutation text="suggestionAreaPlaceholder: '',"/>
+        </regex>
     </rules>
 
     <commands>

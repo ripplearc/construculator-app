@@ -1881,7 +1881,7 @@ void main() {
         expect(
           CalculatorLabelFormatter(
             AppLocalizationsEn(),
-          ).stripText(const CalculatorSidesNotWholeNote()),
+          ).noteText(const CalculatorSidesNotWholeNote()),
           'Sides needs a whole number, 3 or more.',
         );
       });
@@ -1964,7 +1964,7 @@ void main() {
           expect(labels.toastTitle(toast), title);
           expect(labels.toastBody(toast), body);
           expect(
-            labels.stripText(state.stripNote),
+            labels.noteText(state.stripNote),
             '$title. $body',
             reason: 'the Alert repeats the note word for word',
           );
@@ -2158,7 +2158,7 @@ void main() {
       final labels = CalculatorLabelFormatter(AppLocalizationsEn());
       String? tipOf(String keys) =>
           switch (CalculatorState(tape: pressed(keys)).stripNote) {
-            final CalculatorPercentTipNote tip => labels.stripText(tip),
+            final CalculatorPercentTipNote tip => labels.noteText(tip),
             _ => null,
           };
 
@@ -2253,9 +2253,9 @@ void main() {
               .length,
           greaterThan(CalculatorLabelFormatter.longestNote),
         );
-        expect(labels.stripText(tip), 'Adds 12.5% of the total so far.');
+        expect(labels.noteText(tip), 'Adds 12.5% of the total so far.');
         expect(
-          labels.stripText(
+          labels.noteText(
             const CalculatorPercentTipNote(
               addsToTheTotal: false,
               percent: '12.5%',
@@ -2267,7 +2267,7 @@ void main() {
           'Takes off 12.5% of the total so far.',
         );
         expect(
-          labels.stripText(
+          labels.noteText(
             const CalculatorPercentTipNote(
               addsToTheTotal: true,
               percent: '10%',

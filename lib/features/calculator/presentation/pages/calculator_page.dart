@@ -406,12 +406,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                               id: _PageSlot.strip,
                               child: CoreSuggestionArea(
                                 layout: CoreSuggestionLayout.twoRows,
-                                // TODO: [CA-1094] Draw a strip note in the warning
-                                // colour, as Section 1.8 asks, once the strip has a
-                                // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
-                                suggestionAreaPlaceholder: labels.stripText(
-                                  state.stripNote,
-                                ),
+                                suggestionAreaPlaceholder:
+                                    l10n.calculatorStripPlaceholder,
+                                note: labels.noteText(state.stripNote),
                                 aiSuggestions: _stripRow(
                                   labels,
                                   bloc,

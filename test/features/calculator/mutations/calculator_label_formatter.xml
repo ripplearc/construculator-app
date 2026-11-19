@@ -142,6 +142,10 @@
         <regex pattern="CalculatorPercentDividesByZeroToast\(:final bracket\) =&gt;\s*l10n\.calculatorToastPercentBracketIsZeroBody\(bracket\)," dotAll="true" id="calculator_label_formatter.toast.bracket_body">
             <mutation text="CalculatorPercentDividesByZeroToast(:final bracket) =&gt; l10n.calculatorToastPercentBracketIsZeroBody(''),"/>
         </regex>
+        <!-- CA-1094: with no note the strip still gets a note, its placeholder -->
+        <regex pattern="String\? noteText\(CalculatorStripNote\? note\) =&gt; switch \(note\) \{\s*null =&gt; null," dotAll="true" id="calculator_label_formatter.note.none_is_a_note">
+            <mutation text="String? noteText(CalculatorStripNote? note) =&gt; switch (note) { null =&gt; l10n.calculatorStripPlaceholder,"/>
+        </regex>
     </rules>
 
     <commands>
