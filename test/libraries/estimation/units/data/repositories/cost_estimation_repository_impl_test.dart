@@ -2117,6 +2117,83 @@ void main() {
       );
     });
 
+    group('a write on a row of a full oldest-first list', () {
+      Future<StreamQueue<Either<Failure, List<CostEstimate>>>>
+      watchFirstPageOfThree() async {
+        seedEstimations(defaultPageDatasetSize * 3);
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final queue = StreamQueue(
+          repository.watchEstimations(testProjectId, ascending: true),
+        );
+        await queue.next;
+        return queue;
+      }
+
+      test(
+        'a delete stays hidden when an older row pushes the last row out of the list and the list grows',
+        () async {
+          const lastRowOfFirstPage = 'estimate-9';
+          const olderRowId = 'estimate-older';
+          final queue = await watchFirstPageOfThree();
+          await repository.deleteEstimation(lastRowOfFirstPage, testProjectId);
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: olderRowId,
+              projectId: testProjectId,
+              estimateName: olderRowId,
+              createdAt: '2025-12-01T00:00:00.000Z',
+            ),
+          ]);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == olderRowId)) break;
+          }
+
+          await repository.loadMoreEstimations(testProjectId, ascending: true);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.length > defaultPageDatasetSize) {
+              expect(
+                list.map((e) => e.id),
+                isNot(contains(lastRowOfFirstPage)),
+              );
+              expect(list.map((e) => e.id), contains('estimate-8'));
+              break;
+            }
+          }
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a delete is forgotten once the phone shows a row inside the list gone',
+        () async {
+          const rowInsideList = 'estimate-5';
+          final queue = await watchFirstPageOfThree();
+          await repository.deleteEstimation(rowInsideList, testProjectId);
+          fakePhoneDatabase.removeRow(rowInsideList);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == 'estimate-10')) break;
+          }
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: rowInsideList,
+              projectId: testProjectId,
+              estimateName: 'Estimate 5',
+              createdAt: '2026-01-06T00:00:00.000Z',
+            ),
+          ]);
+
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == rowInsideList)) break;
+          }
+          await queue.cancel();
+        },
+      );
+    });
+
     group('a write on the last row of a full list', () {
       const lastRowOfFirstPage = 'estimate-20';
       const newerRowId = 'estimate-newer';
