@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -180,7 +181,56 @@ void main() {
         tester.getSemantics(find.text('Couldn’t open your saved prices.')),
         isSemantics(isLiveRegion: true),
       );
+      expect(
+        tester.getSemantics(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).yourRatesRecentsLoadErrorHint,
+          ),
+        ),
+        isSemantics(isLiveRegion: true),
+      );
       handle.dispose();
+    });
+
+    testWidgets('a11y: a retry that fails again announces the failed-read '
+        'message, and opening the sheet does not', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final announcements = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockDecodedMessageHandler<dynamic>(
+        SystemChannels.accessibility,
+        (message) async {
+          final event = message as Map<Object?, Object?>;
+          if (event['type'] == 'announce') {
+            final data = event['data']! as Map<Object?, Object?>;
+            announcements.add(data['message']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => messenger.setMockDecodedMessageHandler<dynamic>(
+          SystemChannels.accessibility,
+          null,
+        ),
+      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+      expect(announcements, isEmpty);
+
+      await tester.tap(
+        find.byKey(const Key('your_rates_recents_try_again_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(announcements, [
+        '${l10n.yourRatesLoadError} ${l10n.yourRatesRecentsLoadErrorHint}',
+      ]);
     });
   });
 }

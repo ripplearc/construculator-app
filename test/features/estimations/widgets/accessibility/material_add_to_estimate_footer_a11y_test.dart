@@ -101,7 +101,7 @@ void main() {
       await tester.pump();
 
       final semantics = tester.getSemantics(
-        find.byKey(AddToEstimateFooter.errorKey),
+        find.text('This cost was not added. Try again.'),
       );
       expect(semantics.label, contains('This cost was not added. Try again.'));
       expect(semantics.flagsCollection.isLiveRegion, isTrue);
