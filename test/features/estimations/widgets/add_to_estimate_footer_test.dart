@@ -16,6 +16,7 @@ void main() {
     AddToEstimateBlock? block,
     bool isBusy = false,
     String? errorMessage,
+    Widget? keypad,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -33,11 +34,43 @@ void main() {
             isBusy: isBusy,
             errorMessage: errorMessage,
             onAdd: () => addCount++,
+            keypad: keypad,
           ),
         ),
       ),
     );
   }
+
+  const keypadKey = Key('keypad');
+  const keypad = SizedBox(key: keypadKey, height: 100);
+
+  testWidgets('draws the keypad in place of the button, edge to edge', (
+    tester,
+  ) async {
+    await pumpFooter(tester, keypad: keypad);
+
+    final card = tester.getRect(find.byKey(AddToEstimateFooter.panelKey));
+    final pad = tester.getRect(find.byKey(keypadKey));
+    expect(find.byKey(AddToEstimateFooter.buttonKey), findsNothing);
+    expect(find.text('Add to estimate'), findsNothing);
+    expect(pad.top, card.bottom + CoreSpacing.space4);
+    expect(pad.left, 0);
+    expect(pad.right, tester.getSize(find.byType(Scaffold)).width);
+    expect(card.left, CoreSpacing.space5);
+  });
+
+  testWidgets('keeps the error line between the card and the keypad', (
+    tester,
+  ) async {
+    await pumpFooter(tester, keypad: keypad, errorMessage: 'Could not add.');
+
+    final card = tester.getRect(find.byKey(AddToEstimateFooter.panelKey));
+    final error = tester.getRect(find.byKey(AddToEstimateFooter.errorKey));
+    final pad = tester.getRect(find.byKey(keypadKey));
+    expect(error.top, greaterThanOrEqualTo(card.bottom));
+    expect(error.bottom, lessThanOrEqualTo(pad.top));
+    expect(error.left, CoreSpacing.space5);
+  });
 
   testWidgets('shows the card above the button', (tester) async {
     await pumpFooter(tester);
