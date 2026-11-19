@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -66,7 +67,7 @@ void main() {
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       body: BlocProvider<YourRatesBloc>(
-        create: (_) => Modular.get<YourRatesBloc>(),
+        create: (_) => yourRatesBlocWithoutDebounce(),
         child: MaterialRateLookupSheet(
           initialQuery: 'interior paint',
           clock: clock,
@@ -76,7 +77,6 @@ void main() {
   );
 
   Future<void> waitForSearch(WidgetTester tester) async {
-    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
