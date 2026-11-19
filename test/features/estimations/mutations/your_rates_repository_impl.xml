@@ -322,8 +322,11 @@
         <regex pattern="row\.entryLabel == written\.entryLabel;" dotAll="false" id="your_rates_repo.undo.label_compare">
             <mutation text="row.entryLabel != written.entryLabel;"/>
         </regex>
-        <regex pattern="undo: \(\) =&gt; dataSource\.updateRate\(\s*newId," dotAll="false" id="your_rates_repo.undo.restore_refused_row_skipped">
-            <mutation text="undo: () =&gt; dataSource.updateRate('',"/>
+        <regex pattern="undo: \(\) =&gt; dataSource\.putRate\(\s*newId," dotAll="false" id="your_rates_repo.undo.restore_refused_row_skipped">
+            <mutation text="undo: () =&gt; dataSource.putRate('',"/>
+        </regex>
+        <regex pattern="dataSource\.putRate\(newId, newDto\)" dotAll="false" id="your_rates_repo.id.take_over_as_patch">
+            <mutation text="dataSource.updateRate(newId, newDto)"/>
         </regex>
     </rules>
 

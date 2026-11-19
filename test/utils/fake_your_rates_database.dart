@@ -331,6 +331,13 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       final inserted = <String, Object?>{
         for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
       };
+      if (sql.startsWith('INSERT OR REPLACE')) {
+        _rows.removeWhere(
+          (row) =>
+              row[DatabaseConstants.idColumn] ==
+              inserted[DatabaseConstants.idColumn],
+        );
+      }
       _rows.add(inserted);
       insertedRows.add(inserted);
       afterInsert?.call();

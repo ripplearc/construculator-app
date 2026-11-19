@@ -264,6 +264,40 @@ void main() {
       });
     });
 
+    group('putRate', () {
+      test('writes the whole row over the row with that id', () async {
+        final saved = await dataSource.insertRate(newDto());
+
+        final put = await dataSource.putRate(saved.id, newDto(rateAmount: 400));
+
+        final rates = await dataSource.loadRates();
+        expect(rates.single.rateAmount, 400);
+        expect(put.id, saved.id);
+      });
+
+      test('queues a full row, not a change to the old row', () async {
+        final saved = await dataSource.insertRate(newDto());
+        database.reset();
+
+        await dataSource.putRate(saved.id, newDto(rateAmount: 400));
+
+        expect(database.updatedRowIds, isEmpty);
+        expect(database.insertedRows.single['id'], saved.id);
+      });
+
+      test('writes a row the phone does not hold yet', () async {
+        final put = await dataSource.putRate('new-id', newDto());
+
+        expect(put.id, 'new-id');
+      });
+
+      test('reports a write the phone cannot do', () async {
+        database.executeError = StateError('disk full');
+
+        await expectLater(dataSource.putRate('r1', newDto()), throwsStateError);
+      });
+    });
+
     group('deleteRateById', () {
       test('removes the row with that id and keeps the others', () async {
         final removed = await dataSource.insertRate(newDto());

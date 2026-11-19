@@ -238,10 +238,10 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
       if (accepted.isEmpty || replacesRateId == null) {
         if (refusedUnderNewId != null) {
-          final retried = _toEntry(await dataSource.updateRate(newId, newDto));
+          final retried = _toEntry(await dataSource.putRate(newId, newDto));
           return Right((
             entry: retried,
-            undo: () => dataSource.updateRate(
+            undo: () => dataSource.putRate(
               newId,
               YourRateEntryDto.fromEntity(refusedUnderNewId),
             ),

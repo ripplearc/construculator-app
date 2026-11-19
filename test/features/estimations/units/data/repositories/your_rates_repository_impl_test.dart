@@ -2017,7 +2017,7 @@ void main() {
         expect(database.refusalRow(excavatorKey), isNull);
       });
       test('a save over a row the server never accepted under the same id '
-          'updates that row and deletes nothing', () async {
+          'writes that row again whole and deletes nothing', () async {
         final excavatorId = YourRateId.of(
           companyId: testCompanyId,
           category: 'equipment',
@@ -2031,8 +2031,8 @@ void main() {
 
         expect(result.isRight(), isTrue);
         expect(database.deletedRowIds, isEmpty);
-        expect(database.insertedRows, isEmpty);
-        expect(database.updatedRowIds, [excavatorId]);
+        expect(database.updatedRowIds, isEmpty);
+        expect(database.insertedRows.map((row) => row['id']), [excavatorId]);
         expect((await lookUp()).single.rate.amount, 500.0);
         expect(database.refusalRow(excavatorKey), isNull);
       });
@@ -2047,7 +2047,7 @@ void main() {
         );
         seed([row(id: excavatorId, rateAmount: 450.0)]);
         refuse(accepted: null, refusedRowId: excavatorId);
-        final gate = database.updateGate = Completer<void>();
+        final gate = database.insertGate = Completer<void>();
         await impatientRepository.save(buildEntry(amount: 500.0));
 
         gate.complete();
@@ -2056,7 +2056,13 @@ void main() {
           within: const Duration(seconds: 30),
         );
 
-        expect(database.updatedRowIds, [excavatorId, excavatorId]);
+        expect(database.updatedRowIds, isEmpty);
+        expect(
+          database.insertedRows
+              .map((row) => row['id'])
+              .where((id) => id == excavatorId),
+          [excavatorId, excavatorId],
+        );
         expect(database.deletedRowIds, isEmpty);
       });
 

@@ -41,6 +41,16 @@ abstract class YourRatesDataSource {
   /// Throws an exception if the write fails or no row has [id].
   Future<YourRateEntryDto> updateRate(String id, YourRateEntryDto dto);
 
+  /// Writes the whole row of [dto] under [id], over any row that has [id], and
+  /// returns it.
+  ///
+  /// Unlike [updateRate], the upload that follows is a full row, so the server
+  /// takes it even when it has no row with [id], as when it refused the first
+  /// write of that row.
+  ///
+  /// Throws an exception if the write fails.
+  Future<YourRateEntryDto> putRate(String id, YourRateEntryDto dto);
+
   /// Sets `last_used_at` of the row identified by [id] to the current time in
   /// UTC and leaves every other price field alone.
   ///

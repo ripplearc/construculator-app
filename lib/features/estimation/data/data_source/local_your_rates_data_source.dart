@@ -48,6 +48,11 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.createdAtColumn}, ${DatabaseConstants.updatedAtColumn}) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
+  static final _putSql = _insertSql.replaceFirst(
+    'INSERT INTO',
+    'INSERT OR REPLACE INTO',
+  );
+
   static const _updateSql =
       'UPDATE ${DatabaseConstants.yourRatesTable} SET '
       '${DatabaseConstants.companyIdColumn} = ?, '
@@ -112,21 +117,19 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
         equipmentMethod: dto.equipmentMethod,
         entryLabel: dto.entryLabel,
       );
-      final now = _clock.now().toUtc().toIso8601String();
-      await _database.execute(_insertSql, [
-        id,
-        dto.companyId,
-        dto.category,
-        dto.itemName,
-        dto.rateAmount,
-        dto.rateCurrency,
-        dto.unit,
-        dto.equipmentMethod,
-        dto.entryLabel,
-        dto.savedAt,
-        now,
-        now,
-      ]);
+      await _writeWholeRow(_insertSql, id, dto);
+      return _readById(id);
+    } catch (e, stack) {
+      _logger.error('Failed to save your rate on the phone', e, stack);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<YourRateEntryDto> putRate(String id, YourRateEntryDto dto) async {
+    try {
+      await _ensureSyncing();
+      await _writeWholeRow(_putSql, id, dto);
       return _readById(id);
     } catch (e, stack) {
       _logger.error('Failed to save your rate on the phone', e, stack);
@@ -156,6 +159,24 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       _logger.error('Failed to update your rate on the phone', e, stack);
       rethrow;
     }
+  }
+
+  Future<void> _writeWholeRow(String sql, String id, YourRateEntryDto dto) {
+    final now = _clock.now().toUtc().toIso8601String();
+    return _database.execute(sql, [
+      id,
+      dto.companyId,
+      dto.category,
+      dto.itemName,
+      dto.rateAmount,
+      dto.rateCurrency,
+      dto.unit,
+      dto.equipmentMethod,
+      dto.entryLabel,
+      dto.savedAt,
+      now,
+      now,
+    ]);
   }
 
   @override
