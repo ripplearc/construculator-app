@@ -323,7 +323,6 @@ void main() {
 
       database.getAllError = null;
       await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('your_rates_load_error')), findsNothing);
