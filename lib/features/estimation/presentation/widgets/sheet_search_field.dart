@@ -10,7 +10,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// everywhere else it is used, so this wraps it in the bordered box.
 class SheetSearchField extends StatelessWidget {
   final TextEditingController controller;
+
+  /// The grey text in the box while it is empty, such as "Search or type a
+  /// material".
   final String hintText;
+
   final ValueChanged<String> onChanged;
 
   const SheetSearchField({

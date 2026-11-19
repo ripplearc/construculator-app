@@ -19,6 +19,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
+import '../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -92,6 +93,7 @@ void main() {
   Future<void> openSheet(
     WidgetTester tester, {
     CostItemType category = CostItemType.equipment,
+    bool searchAtOnce = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -109,7 +111,9 @@ void main() {
                     context: context,
                     clock: clock,
                     category: category,
-                    blocFactory: () => Modular.get<YourRatesBloc>(),
+                    blocFactory: searchAtOnce
+                        ? yourRatesBlocWithoutDebounce
+                        : () => Modular.get<YourRatesBloc>(),
                   );
                 },
                 child: const Text('open'),
@@ -835,7 +839,24 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('your_rate_row_paint-1')),
-          matching: find.textContaining('/Liters'),
+          matching: find.text('\$51.00 /Liters', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows a material rate saved with no unit as its price '
+        'alone', (tester) async {
+      database.reset();
+      database.seedRows([
+        materialRow('primer', 'PVA primer', rate: 9.5, daysAgo: 1, unit: null),
+      ]);
+      await openSheet(tester, category: CostItemType.material);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_primer')),
+          matching: find.text('\$9.50', findRichText: true),
         ),
         findsOneWidget,
       );
@@ -844,7 +865,11 @@ void main() {
     testWidgets('a typed name offers to create it as a new material cost, '
         'and tapping it returns that name', (tester) async {
       seedMaterials(1);
-      await openSheet(tester, category: CostItemType.material);
+      await openSheet(
+        tester,
+        category: CostItemType.material,
+        searchAtOnce: true,
+      );
 
       await tester.enterText(
         find.descendant(
@@ -853,7 +878,6 @@ void main() {
         ),
         'primer',
       );
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.yourRatesNoMatchState('primer')), findsOneWidget);
