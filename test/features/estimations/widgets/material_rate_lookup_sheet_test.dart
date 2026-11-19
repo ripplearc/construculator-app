@@ -15,6 +15,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
+import '../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -93,7 +94,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<YourRatesBloc>(
-            create: (_) => Modular.get<YourRatesBloc>(),
+            create: (_) => yourRatesBlocWithoutDebounce(),
             child: MaterialRateLookupSheet(
               initialQuery: initialQuery,
               clock: clock,
@@ -102,13 +103,11 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
   Future<void> typeQuery(WidgetTester tester, String query) async {
     await tester.enterText(searchField, query);
-    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
@@ -138,7 +137,22 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('your_rate_row_screws')),
-          matching: find.textContaining('/Boxes'),
+          matching: find.text('\$18.00 /Boxes', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows a rate saved with no unit as its price alone', (
+      tester,
+    ) async {
+      database.seedRows([materialRow('primer', 'PVA primer', 9.5, unit: null)]);
+      await openSheet(tester, initialQuery: 'primer');
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_primer')),
+          matching: find.text('\$9.50', findRichText: true),
         ),
         findsOneWidget,
       );

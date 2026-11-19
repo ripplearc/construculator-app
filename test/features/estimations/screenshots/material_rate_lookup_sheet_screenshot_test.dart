@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   const size = Size(390, 600);
@@ -85,7 +86,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<YourRatesBloc>(
-            create: (_) => Modular.get<YourRatesBloc>(),
+            create: (_) => yourRatesBlocWithoutDebounce(),
             child: MaterialRateLookupSheet(
               initialQuery: initialQuery,
               clock: clock,
@@ -94,7 +95,6 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
