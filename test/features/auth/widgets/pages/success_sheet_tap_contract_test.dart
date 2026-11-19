@@ -118,7 +118,7 @@ void main() {
       isA<TestFailure>().having(
         (failure) => failure.message,
         'message',
-        'Expected the success sheet but got a toast: Invalid code / Close',
+        'Expected the success sheet but got a toast: Invalid code',
       ),
     );
   });

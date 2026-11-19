@@ -404,6 +404,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                     ).add(GlobalSearchPerformed(query: _searchController.text)),
                   ),
                 ),
+                const SizedBox(width: CoreSpacing.space4),
               ],
             ),
           ),

@@ -149,9 +149,15 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           isDisabled: isCreating,
           onPressed: _onSubmit,
           child: isCreating
-              ? const CoreLoadingIndicator(
-                  key: Key('create_project_button_loading'),
-                  size: CoreSpacing.space8,
+              // TODO: [CA-1486] CoreLoadingIndicator grows to the full height
+              // of its parent inside a CoreButton, so the height is fixed here.
+              // https://ripplearc.youtrack.cloud/issue/CA-1486
+              ? const SizedBox(
+                  height: CoreSpacing.space8,
+                  child: CoreLoadingIndicator(
+                    key: Key('create_project_button_loading'),
+                    size: CoreSpacing.space8,
+                  ),
                 )
               : null,
         ),

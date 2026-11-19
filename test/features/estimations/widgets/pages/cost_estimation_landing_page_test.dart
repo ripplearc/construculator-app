@@ -1115,7 +1115,7 @@ void main() {
 
       // The sheet is still open after the first toggle.
       // Dismiss the toast that's blocking pointer events before the second toggle.
-      await tester.tap(find.text(l10n().closeLabel));
+      await tester.tap(find.bySemanticsLabel(l10n().closeLabel));
       await tester.pumpAndSettle();
 
       // Toggle again in the same open sheet — no need to reopen the menu.

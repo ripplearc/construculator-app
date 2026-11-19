@@ -83,7 +83,9 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: LoginWithEmailPage(email: email, router: router)),
+      makeTestableWidget(
+        child: LoginWithEmailPage(email: email, router: router),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -146,15 +148,21 @@ void main() {
         await enterEmail(tester, 'notregistered@example.com');
         await tester.pumpAndSettle();
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(tester, (
-          theme,
-        ) {
-          fakeSupabase.setRpcResponse('check_email_exists', false);
-          return makeTestableWidget(
-            theme: theme,
-            child: LoginWithEmailPage(email: 'notregistered@example.com', router: router),
-          );
-        }, find.byKey(const Key('Register')), checkTextContrastInDarkTheme: false);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.setRpcResponse('check_email_exists', false);
+            return makeTestableWidget(
+              theme: theme,
+              child: LoginWithEmailPage(
+                email: 'notregistered@example.com',
+                router: router,
+              ),
+            );
+          },
+          find.byKey(const Key('Register')),
+          checkTextContrastInDarkTheme: false,
+        );
       },
     );
 
@@ -207,15 +215,21 @@ void main() {
         await enterEmail(tester, 'error@example.com');
         await tester.pumpAndSettle();
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(tester, (
-          theme,
-        ) {
-          fakeSupabase.shouldThrowOnRpc = true;
-          return makeTestableWidget(
-            theme: theme,
-            child: LoginWithEmailPage(email: 'error@example.com', router: router),
-          );
-        }, find.text('Close'), checkTextContrastInDarkTheme: false);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.shouldThrowOnRpc = true;
+            return makeTestableWidget(
+              theme: theme,
+              child: LoginWithEmailPage(
+                email: 'error@example.com',
+                router: router,
+              ),
+            );
+          },
+          find.bySemanticsLabel('Close'),
+          checkTextContrastInDarkTheme: false,
+        );
       },
     );
   });
