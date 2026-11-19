@@ -7,6 +7,7 @@ import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -44,10 +45,19 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// letters and extra spaces. That copies the server rule behind the
 /// `item_name_key` column: trim, collapse runs of spaces to one, lower-case.
 /// If the server rule changes, change `YourRateRefusalKey.normalizeName` with it.
+///
+/// A `cost_items` change the server refuses with 42501, and a `cost_items`
+/// change whose `calculation` text is not JSON, are skipped the same way. The
+/// phone's row is saved as JSON in the local-only `cost_item_refusals` table
+/// first, because the next checkpoint removes the row from the phone while no
+/// sync stream holds `cost_items`.
 class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
+  final Clock _clock;
   static final _logger = AppLogger().tag('SupabasePowerSyncConnector');
+
+  static const _calculationNotJsonReason = 'calculation is not JSON';
 
   static const _jsonTextColumnByTable = {
     DatabaseConstants.userCalculatorStoresTable: DatabaseConstants.valuesColumn,
@@ -58,6 +68,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   SupabasePowerSyncConnector({
     required this._supabaseWrapper,
     required this._envLoader,
+    required this._clock,
   });
 
   /// Fetches the current PowerSync credentials from Supabase.
@@ -129,6 +140,19 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       await _processOperation(operation);
       await _forgetRefusalWithoutBlocking(database, operation);
     } on supabase.PostgrestException catch (error) {
+      if (_isRefusedCostLine(error, operation)) {
+        _logger.warning(
+          'The server refused a cost_items change (code ${error.code}): '
+          '${error.message}. Keeping the line on this phone and skipping the '
+          'change so the queue is not blocked.',
+        );
+        await _recordCostLineRefusalWithoutBlocking(
+          database,
+          operation,
+          '${error.code}',
+        );
+        return;
+      }
       if (_isDuplicateDefault(error, operation)) {
         if (await _overwroteDefaultWithSameSeed(operation)) return;
         _logger.warning(
@@ -150,7 +174,74 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         '${error.message}. Skipping it so the queue is not blocked.',
       );
       await _recordRefusalWithoutBlocking(database, operation);
+    } on FormatException catch (error, stackTrace) {
+      if (operation.table != DatabaseConstants.costItemsTable) rethrow;
+      _logger.error(
+        'The calculation of ${operation.table} row ${operation.id} is not '
+        'JSON. Keeping the line on this phone and skipping the change so the '
+        'queue is not blocked.',
+        error,
+        stackTrace,
+      );
+      await _recordCostLineRefusalWithoutBlocking(
+        database,
+        operation,
+        _calculationNotJsonReason,
+      );
     }
+  }
+
+  bool _isRefusedCostLine(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) =>
+      operation.table == DatabaseConstants.costItemsTable &&
+      error.code == '42501';
+
+  Future<void> _recordCostLineRefusalWithoutBlocking(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+    String reason,
+  ) async {
+    try {
+      await _recordCostLineRefusal(database, operation, reason);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not record the refused ${operation.table} row '
+        '${operation.id}; the line may be lost from this phone',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  // TODO: [CA-1291] Show this record as the red card and let the user move or discard the line.
+  // https://ripplearc.youtrack.cloud/issue/CA-1291
+  Future<void> _recordCostLineRefusal(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+    String reason,
+  ) async {
+    if (operation.op == UpdateType.delete) return;
+    final line = await database.getOptional(
+      'SELECT * FROM ${DatabaseConstants.costItemsTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?',
+      [operation.id],
+    );
+    if (line == null) return;
+    await database.execute(
+      'INSERT OR REPLACE INTO ${DatabaseConstants.costItemRefusalsTable} '
+      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.estimateIdColumn}, '
+      '${DatabaseConstants.lineColumn}, ${DatabaseConstants.reasonColumn}, '
+      '${DatabaseConstants.refusedAtColumn}) VALUES (?, ?, ?, ?, ?)',
+      [
+        operation.id,
+        line[DatabaseConstants.estimateIdColumn],
+        jsonEncode(line),
+        reason,
+        _clock.now().toUtc().toIso8601String(),
+      ],
+    );
   }
 
   Future<void> _recordRefusalWithoutBlocking(
@@ -189,6 +280,14 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     PowerSyncDatabase database,
     CrudEntry operation,
   ) async {
+    if (operation.table == DatabaseConstants.costItemsTable) {
+      await database.execute(
+        'DELETE FROM ${DatabaseConstants.costItemRefusalsTable} '
+        'WHERE ${DatabaseConstants.idColumn} = ?',
+        [operation.id],
+      );
+      return;
+    }
     if (operation.table != DatabaseConstants.yourRatesTable) return;
     if (_refusedRateAmount(operation) == null) return;
     final userId = _supabaseWrapper.currentUser?.id;
@@ -505,8 +604,6 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       return;
     }
 
-    // TODO: [CA-1477] a cost_items line the server refuses for good (42501: an estimate that was soft deleted, or removed access) is dropped from the queue and from the phone, and a calculation text that is not JSON blocks the queue.
-    // https://ripplearc.youtrack.cloud/issue/CA-1477
     _logger.error(
       'Transient error during upload: $error. '
       'PowerSync will retry automatically.',

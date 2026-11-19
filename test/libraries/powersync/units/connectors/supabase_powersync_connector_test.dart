@@ -1,17 +1,22 @@
+import 'dart:convert';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/data/connectors/supabase_powersync_connector.dart';
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_item_refusal_database.dart';
 
 void main() {
   final bootstrap = FakeAppBootstrapFactory.create();
@@ -297,6 +302,186 @@ void main() {
         final data = fakeSupabase.getMethodCallsFor('update').single['data'];
         expect(data, {
           'calculation': {'quantity': 3.0},
+        });
+      });
+
+      group('a cost line the server refuses or cannot decode', () {
+        final refusedAt = DateTime.utc(2026, 11, 18, 9, 30);
+        final phoneLine = <String, Object?>{
+          'id': 'line-1',
+          'estimate_id': 'estimate-1',
+          'item_name': 'Plywood',
+          'calculation': '{"quantity": 2.0}',
+        };
+        late FakeCostItemRefusalDatabase phone;
+        late SupabasePowerSyncConnector clockedConnector;
+
+        setUp(() {
+          phone = FakeCostItemRefusalDatabase()..seedCostItem(phoneLine);
+          clockedConnector = SupabasePowerSyncConnector(
+            supabaseWrapper: fakeSupabase,
+            envLoader: fakeEnvLoader,
+            clock: FakeClockImpl(refusedAt),
+          );
+        });
+
+        void refuseWithRlsDenial({required bool onUpdate}) {
+          if (onUpdate) {
+            fakeSupabase.shouldThrowOnUpdate = true;
+            fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          } else {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          }
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+        }
+
+        CrudEntry putLine() =>
+            CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+              'estimate_id': 'estimate-1',
+              'item_name': 'Plywood',
+              'calculation': '{"quantity": 2.0}',
+            });
+
+        CrudEntry deleteOtherRow() =>
+            CrudEntry(2, UpdateType.delete, 'projects', 'proj-1', null, null);
+
+        test('refused with 42501 on a PUT is recorded with the line, the time '
+            'and the reason, and the queue moves on', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          final transaction = FakeCrudTransaction([
+            putLine(),
+            deleteOtherRow(),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          final record = phone.refusals['line-1']!;
+          expect(record['estimate_id'], 'estimate-1');
+          expect(record['reason'], '42501');
+          expect(record['refused_at'], '2026-11-18T09:30:00.000Z');
+          expect(jsonDecode(record['line']! as String), phoneLine);
+          expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        test('refused with 42501 on a PATCH is recorded and the transaction '
+            'completes', () async {
+          refuseWithRlsDenial(onUpdate: true);
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'cost_items', 'line-1', null, {
+              'calculation': '{"quantity": 3.0}',
+            }),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals.keys, ['line-1']);
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        for (final text in ['not json', '']) {
+          test('a calculation text of "$text" is recorded as not JSON and '
+              'the queue moves on', () async {
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+                'estimate_id': 'estimate-1',
+                'calculation': text,
+              }),
+              deleteOtherRow(),
+            ]);
+            phone.setNextTransaction(transaction);
+
+            await clockedConnector.uploadData(phone);
+
+            expect(
+              phone.refusals['line-1']!['reason'],
+              'calculation is not JSON',
+            );
+            expect(fakeSupabase.getMethodCallsFor('upsert'), isEmpty);
+            expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          });
+        }
+
+        test('a refused DELETE records nothing and the transaction '
+            'completes', () async {
+          fakeSupabase.shouldThrowOnDelete = true;
+          fakeSupabase.deleteExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.delete, 'cost_items', 'line-1', null, null),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        test('a later upload of the same line that the server accepts removes '
+            'its refusal record', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          phone.setNextTransaction(FakeCrudTransaction([putLine()]));
+          await clockedConnector.uploadData(phone);
+          fakeSupabase.shouldThrowOnUpsert = false;
+          phone.setNextTransaction(FakeCrudTransaction([putLine()]));
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+        });
+
+        test(
+          'a refusal that cannot be recorded does not stop the queue',
+          () async {
+            refuseWithRlsDenial(onUpdate: false);
+            phone.statementError = StateError('disk full');
+            final transaction = FakeCrudTransaction([
+              putLine(),
+              deleteOtherRow(),
+            ]);
+            phone.setNextTransaction(transaction);
+
+            await clockedConnector.uploadData(phone);
+
+            expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          },
+        );
+
+        test('another server error on a cost line is retried: nothing is '
+            'recorded and the transaction stays queued', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.timeout;
+          final transaction = FakeCrudTransaction([putLine()]);
+          phone.setNextTransaction(transaction);
+
+          await expectLater(
+            clockedConnector.uploadData(phone),
+            throwsA(anything),
+          );
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isFalse);
+        });
+
+        test('a 42501 on another table records no cost line refusal', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'project_name': 'House',
+            }),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isTrue);
         });
       });
 
