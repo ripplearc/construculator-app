@@ -166,6 +166,16 @@
         <regex pattern="dragHandle: l10n\.calculatorKeyboardHandleSemantics," dotAll="true" id="calculator_label_formatter.keyboard.drag_handle">
             <mutation text="dragHandle: l10n.calculatorViewAllSemantics,"/>
         </regex>
+        <!-- CA-1370: the keyboard shows one of its words in another's place -->
+        <regex pattern="imperial: l10n\.calculatorUnitSystemImperial,\s*metric: l10n\.calculatorUnitSystemMetric," dotAll="true" id="calculator_label_formatter.keyboard.systems_swapped">
+            <mutation text="imperial: l10n.calculatorUnitSystemMetric, metric: l10n.calculatorUnitSystemImperial,"/>
+        </regex>
+        <regex pattern="viewAll: l10n\.calculatorViewAllButton," dotAll="true" id="calculator_label_formatter.keyboard.view_all_face">
+            <mutation text="viewAll: l10n.calculatorFunctionKeysTitle,"/>
+        </regex>
+        <regex pattern="groupHeader: l10n\.calculatorGroupHeader," dotAll="true" id="calculator_label_formatter.keyboard.visible_group_header">
+            <mutation text="groupHeader: l10n.calculatorGroupHeaderSemantics,"/>
+        </regex>
     </rules>
 
     <commands>

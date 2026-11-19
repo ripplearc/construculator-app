@@ -99,6 +99,30 @@ void main() {
     });
   });
 
+  test('the keyboard\'s visible words come from l10n (CA-1370)', () {
+    final l10n = AppLocalizationsEn();
+    final labels = CalculatorLabelFormatter(l10n).keyboardLabels;
+
+    expect(
+      (
+        labels.viewAll,
+        labels.functionKeys,
+        labels.groupHeader('Shapes'),
+        labels.measurementSystem,
+        labels.imperial,
+        labels.metric,
+      ),
+      (
+        l10n.calculatorViewAllButton,
+        l10n.calculatorFunctionKeysTitle,
+        l10n.calculatorGroupHeader('Shapes'),
+        l10n.calculatorMeasurementSystem,
+        l10n.calculatorUnitSystemImperial,
+        l10n.calculatorUnitSystemMetric,
+      ),
+    );
+  });
+
   group('CalculatorLabelFormatter keyboard semantics (CA-1198)', () {
     final l10n = AppLocalizationsEn();
     final semantics = CalculatorLabelFormatter(l10n).keyboardSemantics;
