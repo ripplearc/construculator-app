@@ -4,6 +4,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+// TODO: [CA-1508] Move this row to coreui as the library's Option row. https://ripplearc.youtrack.cloud/issue/CA-1508
 /// One radio row of the Select unit sheet: a radio, the unit's symbol, and
 /// its name at the far end.
 ///
