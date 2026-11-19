@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- UNFINISHED COST LINE REPOSITORY MUTATION TESTING -->
-    <!-- Targets: the per-account key and the stored JSON check -->
+    <!-- Targets: the 7-day clean-up, the write queue, the per-account key and the stored JSON check -->
 
     <files>
         <file>lib/features/estimation/data/repositories/unfinished_cost_line_repository_impl.dart</file>
@@ -13,6 +13,26 @@
     </exclude>
 
     <rules>
+        <regex pattern="Duration\(days: 7\)" dotAll="false" id="unfinished_line.keep_for.days">
+            <mutation text="Duration(days: 8)"/>
+            <mutation text="Duration(days: 6)"/>
+        </regex>
+        <regex pattern="difference\(line\.updatedAt\) &lt; _keepFor" dotAll="false" id="unfinished_line.expiry.boundary">
+            <mutation text="difference(line.updatedAt) &lt;= _keepFor"/>
+            <mutation text="difference(line.updatedAt) &gt; _keepFor"/>
+        </regex>
+        <regex pattern="    await remove\(\);\n    return null;" dotAll="true" id="unfinished_line.expiry.skip_remove">
+            <mutation text="    return null;"/>
+        </regex>
+        <regex pattern="return line;" dotAll="false" id="unfinished_line.expiry.never_keep">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="    await _lastWrite;\n" dotAll="true" id="unfinished_line.read.skip_wait">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="return _lastWrite = _lastWrite\.then\(\(_\) async \{" dotAll="false" id="unfinished_line.queue.no_chain">
+            <mutation text="return _lastWrite = Future.value().then((_) async {"/>
+        </regex>
         <regex pattern="if \(accountId == null\) return null;" dotAll="false" id="unfinished_line.key.no_account">
             <mutation text="if (accountId == null) return 'unfinished_cost_line.';"/>
         </regex>
