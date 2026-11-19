@@ -150,9 +150,10 @@ void main() {
           itemName: 'Interior paint · ProClassic',
           rate: 52,
           unit: Unit.liters,
+          typedName: 'Interior paint',
         ),
       );
-      FocusManager.instance.primaryFocus?.unfocus();
+      FocusManager.instance.primaryFocus!.unfocus();
       await tester.pumpAndSettle();
 
       await expectLater(

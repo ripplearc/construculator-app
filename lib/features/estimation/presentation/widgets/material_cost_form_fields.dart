@@ -115,6 +115,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
             itemName: _nameController.text,
             rate: row.rate.amount,
             unit: row.unit,
+            typedName: typedName,
           ),
         );
     }
@@ -280,7 +281,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 text: l10n.materialRateLookupHint(
                   l10n.materialRateLookupHintSearchIcon,
                 ),
-                boldText: l10n.materialRateLookupHintSearchIcon,
+                emphasis: l10n.materialRateLookupHintSearchIcon,
               ),
             if (state.data.offersSaveAsDefault)
               _SaveAsDefaultHint(data: state.data),
@@ -328,26 +329,27 @@ class _SaveAsDefaultHint extends StatelessWidget {
       text: l10n.materialSaveAsDefaultHelperText(
         price,
         l10n.yourRatesName,
-        data.itemName.trim().toLowerCase(),
+        data.nameToFindRateBy.toLowerCase(),
       ),
+      emphasis: l10n.yourRatesName,
     );
   }
 }
 
 class _FieldHint extends StatelessWidget {
   final String text;
+  final String? emphasis;
 
-  /// The words inside [text] drawn in bold, such as "search icon".
-  final String? boldText;
-
-  const _FieldHint({super.key, required this.text, this.boldText});
+  const _FieldHint({super.key, required this.text, this.emphasis});
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    final bold = boldText;
-    final parts = bold == null ? [text] : text.split(bold);
+    final style = context.textTheme.bodySmallRegular.copyWith(
+      color: colorTheme.textBody,
+    );
+    final emphasis = this.emphasis;
+    final at = emphasis == null ? -1 : text.indexOf(emphasis);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         CoreSpacing.space5,
@@ -365,25 +367,23 @@ class _FieldHint extends StatelessWidget {
             color: colorTheme.iconGrayMid,
           ),
           Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  for (var i = 0; i < parts.length; i++) ...[
-                    if (i > 0)
-                      TextSpan(
-                        text: boldText,
-                        style: textTheme.bodySmallSemiBold.copyWith(
-                          color: colorTheme.textHeadline,
+            child: emphasis == null || at < 0
+                ? Text(text, style: style)
+                : Text.rich(
+                    TextSpan(
+                      style: style,
+                      children: [
+                        TextSpan(text: text.substring(0, at)),
+                        TextSpan(
+                          text: emphasis,
+                          style: context.textTheme.bodySmallSemiBold.copyWith(
+                            color: colorTheme.textBody,
+                          ),
                         ),
-                      ),
-                    TextSpan(text: parts[i]),
-                  ],
-                ],
-              ),
-              style: textTheme.bodySmallRegular.copyWith(
-                color: colorTheme.textBody,
-              ),
-            ),
+                        TextSpan(text: text.substring(at + emphasis.length)),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
