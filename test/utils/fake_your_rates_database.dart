@@ -202,7 +202,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    if (sql.contains(DatabaseConstants.costItemsTable)) {
+    if (_isCostItemStatement(sql)) {
       return costItems.getAll(sql, parameters);
     }
     await super.getAll(sql, parameters);
@@ -255,7 +255,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    if (sql.contains(DatabaseConstants.costItemsTable)) {
+    if (_isCostItemStatement(sql)) {
       return costItems.execute(sql, parameters);
     }
     await super.execute(sql, parameters);
@@ -361,6 +361,12 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       throw StateError('no such column ${unknown.join(', ')} in: $sql');
     }
   }
+
+  /// Whether [sql] reads or writes `cost_items` or its refusal records, which
+  /// [costItems] answers.
+  static bool _isCostItemStatement(String sql) =>
+      sql.contains(DatabaseConstants.costItemsTable) ||
+      sql.contains(DatabaseConstants.costItemRefusalsTable);
 
   @override
   void reset() {

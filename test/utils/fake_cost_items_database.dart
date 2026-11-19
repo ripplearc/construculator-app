@@ -20,6 +20,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// [seedRow] is not queued, as a row sync delivered is not.
 class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
   final Map<String, Map<String, Object?>> _rowsById = {};
+  final Map<String, Map<String, Object?>> _refusalsById = {};
   final Set<String> _pendingUploadIds = {};
   final StreamController<void> _changes = StreamController.broadcast(
     sync: true,
@@ -50,6 +51,16 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     for (final row in _rowsById.values) {...row},
   ];
 
+  /// When set, reading the refusal records throws it, so a test can fail that
+  /// read without failing the read of the lines.
+  Object? refusalReadError;
+
+  /// Puts [row] in the `cost_item_refusals` table as the connector writes it
+  /// when the server refuses a line.
+  void seedRefusal(Map<String, Object?> row) {
+    _refusalsById[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+  }
+
   /// Puts [row] in the table as though sync had delivered it.
   void seedRow(Map<String, Object?> row) {
     _rowsById[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
@@ -71,6 +82,8 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
   void reset() {
     super.reset();
     _rowsById.clear();
+    _refusalsById.clear();
+    refusalReadError = null;
     _pendingUploadIds.clear();
   }
 
@@ -159,6 +172,9 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
   ]) async {
     await super.getAll(sql, parameters);
+    if (sql.contains('FROM ${DatabaseConstants.costItemRefusalsTable}')) {
+      return _refusedLines(sql, parameters);
+    }
     final column = _estimateFilter.firstMatch(sql)?.group(1);
     if (!sql.contains('FROM ${DatabaseConstants.costItemsTable}') ||
         column == null) {
@@ -179,5 +195,24 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
       );
     }
     return matching;
+  }
+
+  List<Map<String, dynamic>> _refusedLines(
+    String sql,
+    List<Object?> parameters,
+  ) {
+    final error = refusalReadError;
+    if (error != null) throw error;
+    if (!sql.contains('WHERE ${DatabaseConstants.estimateIdColumn} = ?')) {
+      throw StateError('FakeCostItemsDatabase cannot run: $sql');
+    }
+    return [
+      for (final row in _refusalsById.values)
+        if (row[DatabaseConstants.estimateIdColumn] == parameters.single)
+          {
+            DatabaseConstants.idColumn: row[DatabaseConstants.idColumn],
+            DatabaseConstants.lineColumn: row[DatabaseConstants.lineColumn],
+          },
+    ];
   }
 }

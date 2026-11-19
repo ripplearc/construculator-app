@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -141,21 +143,28 @@ void main() {
 
         expect(result.getRightOrNull(), 100);
       });
-
-      test('counts only the lines on the phone when the server cannot be '
-          'reached', () async {
-        seedServer({'server-1': 2000});
-        await repository.addCostItemOnPhone(line());
-        supabase.shouldThrowOnSelectMatch = true;
-        supabase.selectMatchExceptionType = SupabaseExceptionType.socket;
-
-        final result = await repository.getEstimateItemsTotal('estimate-1');
-
-        expect(result.getRightOrNull(), 100);
-      });
-
       test(
-        'counts only the lines on the phone when the server times out',
+        'returns the connection failure, not a total of the phone\'s lines, when '
+        'the server cannot be reached',
+        () async {
+          seedServer({'server-1': 2000});
+          await repository.addCostItemOnPhone(line());
+          supabase.shouldThrowOnSelectMatch = true;
+          supabase.selectMatchExceptionType = SupabaseExceptionType.socket;
+
+          final result = await repository.getEstimateItemsTotal('estimate-1');
+
+          expect(
+            result.getLeftOrNull(),
+            const EstimationFailure(
+              errorType: EstimationErrorType.connectionError,
+            ),
+          );
+        },
+      );
+      test(
+        'returns the timeout failure, not a total of the phone\'s lines, when '
+        'the server times out',
         () async {
           await repository.addCostItemOnPhone(line());
           supabase.shouldThrowOnSelectMatch = true;
@@ -163,9 +172,97 @@ void main() {
 
           final result = await repository.getEstimateItemsTotal('estimate-1');
 
-          expect(result.getRightOrNull(), 100);
+          expect(
+            result.getLeftOrNull(),
+            const EstimationFailure(
+              errorType: EstimationErrorType.timeoutError,
+            ),
+          );
         },
       );
+      String refusedLine(
+        String id, {
+        double? total,
+        String estimate = 'estimate-1',
+      }) => jsonEncode({
+        'id': id,
+        'estimate_id': estimate,
+        'item_total_cost': total,
+      });
+
+      void seedRefusal(
+        String id, {
+        double? total,
+        String estimate = 'estimate-1',
+      }) => database.seedRefusal({
+        'id': id,
+        'estimate_id': estimate,
+        'line': refusedLine(id, total: total, estimate: estimate),
+        'reason': '42501',
+        'refused_at': '2026-11-18T09:30:00.000Z',
+      });
+
+      test(
+        'counts a refused line that only its refusal record holds',
+        () async {
+          seedServer({'server-1': 2000});
+          seedRefusal('refused-1', total: 40);
+
+          final result = await repository.getEstimateItemsTotal('estimate-1');
+
+          expect(result.getRightOrNull(), 2040);
+        },
+      );
+
+      test('counts a refused line once, with the phone\'s total, while its row '
+          'is still on the phone', () async {
+        await repository.addCostItemOnPhone(line());
+        seedRefusal('line-1', total: 80);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 100);
+      });
+
+      test('counts the refused version of a line instead of the older version '
+          'on the server', () async {
+        seedServer({'line-1': 50});
+        seedRefusal('line-1', total: 80);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 80);
+      });
+
+      test('counts a refused line that had no total as 0', () async {
+        seedServer({'server-1': 2000});
+        seedRefusal('refused-1');
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 2000);
+      });
+
+      test('does not count another estimate\'s refused line', () async {
+        seedRefusal('refused-1', total: 40, estimate: 'estimate-2');
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 0);
+      });
+
+      test('fails when the refusal records cannot be read', () async {
+        database.refusalReadError = StateError('database locked');
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+      });
 
       test('does not count another estimate\'s lines on the phone', () async {
         await repository.addCostItemOnPhone(line());

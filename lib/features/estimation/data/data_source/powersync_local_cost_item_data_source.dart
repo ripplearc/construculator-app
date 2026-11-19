@@ -17,6 +17,10 @@ import 'package:flutter/foundation.dart';
 /// for it. Each entry is JSON text with the table name and the row id, and
 /// PowerSync deletes it when the connector completes the upload.
 ///
+/// A line the server refused for good is kept as JSON in the local-only
+/// `cost_item_refusals` table (see the connector), which [loadRefusedLineTotalsByEstimateId]
+/// reads.
+///
 /// A failed read or write is logged here, at the storage boundary, and
 /// rethrown for the repository to translate. A failed watch arrives as an
 /// error on the stream, and the repository logs it.
@@ -28,6 +32,11 @@ class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
       'SELECT * FROM ${DatabaseConstants.costItemsTable} '
       'WHERE ${DatabaseConstants.estimateIdColumn} = ? '
       'ORDER BY ${DatabaseConstants.createdAtColumn} ASC';
+
+  static const _selectRefusedByEstimateSql =
+      'SELECT ${DatabaseConstants.idColumn}, ${DatabaseConstants.lineColumn} '
+      'FROM ${DatabaseConstants.costItemRefusalsTable} '
+      'WHERE ${DatabaseConstants.estimateIdColumn} = ?';
 
   static const _pendingUploadsSql =
       'SELECT ${DatabaseConstants.idColumn} '
@@ -70,6 +79,36 @@ class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
       _logger.error('Failed to read cost lines from the phone', e, stack);
       rethrow;
     }
+  }
+
+  @override
+  Future<Map<String, double>> loadRefusedLineTotalsByEstimateId(
+    String estimateId,
+  ) async {
+    try {
+      final rows = await _database.getAll(_selectRefusedByEstimateSql, [
+        estimateId,
+      ]);
+      return {
+        for (final row in rows)
+          row[DatabaseConstants.idColumn] as String: _itemTotalCostOf(
+            row[DatabaseConstants.lineColumn] as String,
+          ),
+      };
+    } catch (e, stack) {
+      _logger.error(
+        'Failed to read refused cost lines from the phone',
+        e,
+        stack,
+      );
+      rethrow;
+    }
+  }
+
+  static double _itemTotalCostOf(String lineJson) {
+    final line = jsonDecode(lineJson) as Map<String, dynamic>;
+    return (line[DatabaseConstants.itemTotalCostColumn] as num?)?.toDouble() ??
+        0;
   }
 
   @override
