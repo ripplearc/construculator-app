@@ -55,8 +55,11 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     final bloc = context.read<MaterialCostFormBloc>();
     return BlocConsumer<MaterialCostFormBloc, MaterialCostFormState>(
       // An attached price fills or clears the rate without the user typing.
+      // A second price can share the first one's units, so its rate is
+      // watched too.
       listenWhen: (previous, current) =>
-          previous.data.attachedPrice != current.data.attachedPrice,
+          previous.data.attachedPrice != current.data.attachedPrice ||
+          previous.data.rate != current.data.rate,
       listener: (context, state) => _showAttachedRate(state.data),
       buildWhen: (previous, current) =>
           previous.data.unit != current.data.unit ||

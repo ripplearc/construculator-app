@@ -497,6 +497,28 @@ void main() {
       },
     );
 
+    testWidgets('shows the rate of a second price with the same units', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      for (final rate in [14.0, 16.0]) {
+        bloc.add(
+          MaterialPriceAttached(
+            rate: rate,
+            rateStatus: RateStatus.ownRateConfirmed,
+            price: const AttachedPrice(
+              buyUnit: Unit.sheets,
+              measureUnit: Unit.squareFeet,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(dataOf().rate, 16);
+      expect(textOf(tester, rateField), '16.00');
+    });
+
     for (final typed in ['15', '.']) {
       testWidgets('keeps "$typed" typed over an attached price', (
         tester,
