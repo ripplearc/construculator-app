@@ -408,6 +408,7 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                         ),
                   ),
                 ),
+                const SizedBox(width: CoreSpacing.space4),
               ],
             ),
           ),
