@@ -212,7 +212,7 @@ void main() {
   });
 
   testWidgets('puts the first heading 4 dp under the header and later '
-      'headings 16 dp under the row above, as in the storyboard', (
+      'headings 12 dp under the row above, as in the storyboard', (
     tester,
   ) async {
     await openSheet(tester);
@@ -222,7 +222,53 @@ void main() {
       find.byKey(const Key('unit_option_linearFeet')),
     );
     expect(tester.getRect(find.text('BY LENGTH')).top - header.bottom, 4);
-    expect(tester.getRect(find.text('BY AREA')).top - lastLengthRow.bottom, 16);
+    expect(tester.getRect(find.text('BY AREA')).top - lastLengthRow.bottom, 12);
+  });
+
+  List<BoxShadow>? headerShadow(WidgetTester tester) {
+    final header = tester.widget<DecoratedBox>(
+      find.byKey(SelectUnitSheet.headerKey),
+    );
+    return (header.decoration as BoxDecoration).boxShadow;
+  }
+
+  testWidgets('draws no shadow under the header while the list is at the top', (
+    tester,
+  ) async {
+    await openSheet(tester);
+
+    expect(headerShadow(tester), isNull);
+  });
+
+  testWidgets('draws the header shadow when it opens scrolled to a unit, '
+      'and drops it when the list is back at the top', (tester) async {
+    await openSheet(tester, selected: Unit.tubes);
+
+    expect(headerShadow(tester), CoreShadows.small);
+
+    await tester.fling(
+      find.byKey(const Key('unit_option_tubes')),
+      const Offset(0, 3000),
+      3000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('unit_option_feet')), findsOneWidget);
+    expect(headerShadow(tester), isNull);
+  });
+
+  testWidgets('draws the header shadow once the list is dragged up', (
+    tester,
+  ) async {
+    await openSheet(tester);
+
+    await tester.drag(
+      find.byKey(const Key('unit_option_feet')),
+      const Offset(0, -100),
+    );
+    await tester.pumpAndSettle();
+
+    expect(headerShadow(tester), CoreShadows.small);
   });
 
   testWidgets('at 2.0x text, opens with whole headings and the selected unit '
