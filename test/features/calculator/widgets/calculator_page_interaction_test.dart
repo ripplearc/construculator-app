@@ -2,6 +2,7 @@ import 'package:construculator/features/calculator/presentation/bloc/calculator_
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
@@ -83,6 +84,20 @@ void main() {
 
     await press(tester, 'calc_key_clearAll');
     expect(bloc.state, equals(CalculatorState.initial()));
+  });
+
+  testWidgets('the keyboard is read in the app\'s words: the bracket key by '
+      'its l10n name and hint (CA-1198)', (tester) async {
+    await pumpPage(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+
+    final bracket = tester.getSemantics(
+      find.byKey(const ValueKey('calc_key_paren')),
+    );
+    expect(bracket.label, contains(l10n.calculatorBracketKeySemantics));
+    expect(bracket.hint, l10n.calculatorBracketKeyHint);
   });
 
   testWidgets('÷ reaches the tape as a division, and % after a result is '
@@ -1296,9 +1311,9 @@ void main() {
     const panel = Key('calculator_detail_panel');
     const firstDigit = ValueKey('calc_key_one');
 
-    // CoreUI names the keyboard's handle itself, in English, with no
-    // parameter to pass a localized label through.
-    Finder handle() => find.bySemanticsLabel('Keyboard drag handle');
+    Finder handle() => find.bySemanticsLabel(
+      AppLocalizationsEn().calculatorKeyboardHandleSemantics,
+    );
 
     Finder inPanel(String text) =>
         find.descendant(of: find.byKey(panel), matching: find.text(text));

@@ -4506,6 +4506,90 @@ abstract class AppLocalizations {
   /// **'Drag to move the {group} group'**
   String calculatorReorderGroupSemantics(String group);
 
+  /// Screen reader label of a digit key on the calculator keyboard (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'{digit} button'**
+  String calculatorKeyDigitSemantics(String digit);
+
+  /// Screen reader label of an operator key on the calculator keyboard (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'{operator} operator button'**
+  String calculatorKeyOperatorSemantics(String operator);
+
+  /// Screen reader label of a unit key on the calculator keyboard, by the face the key shows (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'{unit} unit button'**
+  String calculatorKeyUnitSemantics(String unit);
+
+  /// Screen reader label of the calculator keyboard's ⌫ key (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete button'**
+  String get calculatorKeyDeleteSemantics;
+
+  /// Screen reader hint of the calculator keyboard's ⌫ key; withheld while the key is disabled (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the last entered character'**
+  String get calculatorKeyDeleteHint;
+
+  /// Screen reader label of the calculator keyboard's C key (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all button'**
+  String get calculatorKeyClearAllSemantics;
+
+  /// Screen reader hint of the calculator keyboard's C key; withheld while the key is disabled (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Clears all input'**
+  String get calculatorKeyClearAllHint;
+
+  /// Screen reader label of the calculator keyboard's result key, by the face it shows (=, AREA, Update) (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'{face} button'**
+  String calculatorKeyResultSemantics(String face);
+
+  /// Screen reader hint of the calculator keyboard's result key while it shows its default face (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Calculates and displays the result'**
+  String get calculatorKeyResultHint;
+
+  /// Screen reader label of the handle that folds and unfolds the calculator keypad (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard drag handle'**
+  String get calculatorKeyboardHandleSemantics;
+
+  /// Screen reader label of the View all button on the calculator's function-key strip; keep the visible "View all" inside it (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'View all function keys'**
+  String get calculatorViewAllSemantics;
+
+  /// Screen reader hint of the View all button on the calculator's function-key strip (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a bottom sheet with all available function keys'**
+  String get calculatorViewAllHint;
+
+  /// Screen reader label of the Imperial/Metric switch in the calculator's View all sheet (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit system switch'**
+  String get calculatorUnitSystemSwitchSemantics;
+
+  /// Screen reader label of a group header in the calculator's View all sheet (UX Design Doc Section 1.3; CA-1198)
+  ///
+  /// In en, this message translates to:
+  /// **'Function group header for {group}'**
+  String calculatorGroupHeaderSemantics(String group);
+
   /// Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)
   ///
   /// In en, this message translates to:

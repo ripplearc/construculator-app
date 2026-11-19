@@ -500,10 +500,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           newIndex: newIndex,
                         ),
                       ),
-                      reorderSemanticsLabelBuilder:
-                          l10n.calculatorReorderGroupSemantics,
-                      parenSemanticLabel: l10n.calculatorBracketKeySemantics,
-                      parenSemanticHint: l10n.calculatorBracketKeyHint,
+                      semantics: labels.keyboardSemantics,
                       onKeyTapped: (key) =>
                           bloc.add(CalculatorKeySelected(key.id)),
                       onUnitSystemChanged: (unitSystem) =>
