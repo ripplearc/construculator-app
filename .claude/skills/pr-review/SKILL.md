@@ -77,7 +77,7 @@ On missing/invalid input, return an error object (see [Errors](#errors)).
    buckets come from `scripts/filter_files.sh`; content-derived buckets
    (`stream_owning`, `logic_heavy`, `logger_using`) are confirmed by grepping the
    file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`,
-   `grep -lE "\b(Ink|InkWell|InkResponse)\(|Ink\.image\(" …` for `ink_using`).
+   `grep -lE '(^|[^A-Za-z0-9_])(Ink|InkWell|InkResponse)\(|Ink\.image\(' …` for `ink_using`, the same pattern as rule 17, with no `\b`).
    `Digestible PR` always runs once over the production-code diff size.
 
 3. **Gate** `Mutation Testing`, `Accessibility` and `PR Text Matches Diff`:
