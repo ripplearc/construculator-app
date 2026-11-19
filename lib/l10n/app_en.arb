@@ -3561,9 +3561,9 @@
       }
     }
   },
-  "costLineLaborHourRate": " · {rate}/hr",
+  "costLineLaborHourRate": " · {rate}/h",
   "@costLineLaborHourRate": {
-    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/hr",
+    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h",
     "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
     "placeholders": {
       "rate": {
@@ -3571,9 +3571,9 @@
       }
     }
   },
-  "costLineLaborCrewHourRate": " · {people} people × {rate}/hr",
+  "costLineLaborCrewHourRate": " · {people} people × {rate}/h",
   "@costLineLaborCrewHourRate": {
-    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/hr",
+    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h",
     "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
     "placeholders": {
       "people": {

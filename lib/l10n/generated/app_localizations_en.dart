@@ -2476,12 +2476,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String costLineLaborHourRate(String rate) {
-    return ' · $rate/hr';
+    return ' · $rate/h';
   }
 
   @override
   String costLineLaborCrewHourRate(int people, String rate) {
-    return ' · $people people × $rate/hr';
+    return ' · $people people × $rate/h';
   }
 
   @override

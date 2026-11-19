@@ -180,7 +180,7 @@ void main() {
       final labor = meta(laborLine(calculation: const {'laborRate': 52}))!;
 
       expect(labor.lead, '10 h');
-      expect(labor.tail, r' · $52.00/hr');
+      expect(labor.tail, r' · $52.00/h');
     });
 
     test('a labor line with no rate has no tail', () {
@@ -245,7 +245,7 @@ void main() {
           ),
           l10n,
         ),
-        r'16 h · $52.00/hr',
+        r'16 h · $52.00/h',
       );
     });
 
@@ -259,7 +259,7 @@ void main() {
           ),
           l10n,
         ),
-        r'16 h · 3 people × $52.00/hr',
+        r'16 h · 3 people × $52.00/h',
       );
     });
 
@@ -269,7 +269,7 @@ void main() {
           laborLine(calculation: const {'laborRate': 52}, crewSize: 1),
           l10n,
         ),
-        r'10 h · $52.00/hr',
+        r'10 h · $52.00/h',
       );
     });
 
@@ -279,7 +279,7 @@ void main() {
           laborLine(calculation: const {'laborRate': 58}, crewSize: 2),
           l10n,
         ),
-        r'10 h · 2 people × $58.00/hr',
+        r'10 h · 2 people × $58.00/h',
       );
     });
 
