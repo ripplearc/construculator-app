@@ -107,12 +107,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         }
         bloc.add(MaterialRateLookedUp(entry));
       case MaterialLookupSampleRate(:final row):
-        _nameController.text = row.materialNameAfter(_nameController.text);
+        final typedName = _nameController.text;
+        _nameController.text = row.materialNameAfter(typedName);
         bloc.add(
           MaterialSampleRatePicked(
             itemName: _nameController.text,
             rate: row.rate.amount,
             unit: row.unit,
+            typedName: typedName,
           ),
         );
     }
@@ -318,20 +320,27 @@ class _SaveAsDefaultHint extends StatelessWidget {
       text: l10n.materialSaveAsDefaultHelperText(
         price,
         l10n.yourRatesName,
-        data.itemName.trim().toLowerCase(),
+        data.nameToFindRateBy.toLowerCase(),
       ),
+      emphasis: l10n.yourRatesName,
     );
   }
 }
 
 class _FieldHint extends StatelessWidget {
   final String text;
+  final String? emphasis;
 
-  const _FieldHint({super.key, required this.text});
+  const _FieldHint({super.key, required this.text, this.emphasis});
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final style = context.textTheme.bodySmallRegular.copyWith(
+      color: colorTheme.textBody,
+    );
+    final emphasis = this.emphasis;
+    final at = emphasis == null ? -1 : text.indexOf(emphasis);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         CoreSpacing.space5,
@@ -349,12 +358,23 @@ class _FieldHint extends StatelessWidget {
             color: colorTheme.iconGrayMid,
           ),
           Expanded(
-            child: Text(
-              text,
-              style: context.textTheme.bodySmallRegular.copyWith(
-                color: colorTheme.textBody,
-              ),
-            ),
+            child: emphasis == null || at < 0
+                ? Text(text, style: style)
+                : Text.rich(
+                    TextSpan(
+                      style: style,
+                      children: [
+                        TextSpan(text: text.substring(0, at)),
+                        TextSpan(
+                          text: emphasis,
+                          style: context.textTheme.bodySmallSemiBold.copyWith(
+                            color: colorTheme.textBody,
+                          ),
+                        ),
+                        TextSpan(text: text.substring(at + emphasis.length)),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),

@@ -44,6 +44,7 @@ class MaterialCostFormBloc
           rateStatus: RateStatus.ownRateConfirmed,
           recalledRateId: e.entry.id,
           isFromSampleFile: false,
+          typedSearchName: null,
         ),
       ),
     );
@@ -57,13 +58,18 @@ class MaterialCostFormBloc
           rateStatus: RateStatus.sampleRateUnverified,
           recalledRateId: null,
           isFromSampleFile: true,
+          typedSearchName: e.typedName.trim().isEmpty ? null : e.typedName,
         ),
       ),
     );
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,
-        (d) => d.copyWith(itemName: e.value, recalledRateId: null),
+        (d) => d.copyWith(
+          itemName: e.value,
+          recalledRateId: null,
+          typedSearchName: null,
+        ),
       ),
     );
     on<MaterialQuantityUpdated>(

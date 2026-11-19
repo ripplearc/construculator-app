@@ -753,6 +753,55 @@ void main() {
       );
     });
 
+    group('the name a later search finds the rate by', () {
+      const pickedOnTypedName = MaterialSampleRatePicked(
+        itemName: 'Interior paint · ProClassic',
+        rate: 52,
+        unit: Unit.liters,
+        typedName: 'Interior paint',
+      );
+      String nameOf(MaterialCostFormBloc b) =>
+          _dataOf(b.state).nameToFindRateBy;
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is the name typed before the product was appended',
+        build: () => bloc,
+        act: (b) => b.add(pickedOnTypedName),
+        verify: (b) => expect(nameOf(b), 'Interior paint'),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is the whole name when nothing was typed before the pick',
+        build: () => bloc,
+        act: (b) => b.add(
+          const MaterialSampleRatePicked(
+            itemName: 'ProClassic',
+            rate: 52,
+            typedName: '  ',
+          ),
+        ),
+        verify: (b) => expect(nameOf(b), 'ProClassic'),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'follows the name once it is edited after the pick',
+        build: () => bloc,
+        act: (b) => b
+          ..add(pickedOnTypedName)
+          ..add(const MaterialCostItemTypeChanged('Primer')),
+        verify: (b) => expect(nameOf(b), 'Primer'),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is the whole name once a saved rate is picked instead',
+        build: () => bloc,
+        act: (b) => b
+          ..add(pickedOnTypedName)
+          ..add(MaterialRateLookedUp(_lookedUpRate)),
+        verify: (b) => expect(nameOf(b), 'Interior paint · ProClassic'),
+      );
+    });
+
     group('line total', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'is zero until both quantity and rate are set',
