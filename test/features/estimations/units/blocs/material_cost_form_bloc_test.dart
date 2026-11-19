@@ -259,6 +259,60 @@ void main() {
         });
       });
 
+      test('moves a remembered unit to the new name again once a typed '
+          'quantity is cleared', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Drywall'))
+            ..add(const MaterialQuantityUpdated('5'))
+            ..add(const MaterialQuantityUpdated(''))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).quantity, isNull);
+          expect(_dataOf(b.state).unit, Unit.gallons);
+        });
+      });
+
+      test('moves a remembered unit to the new name again once a typed rate '
+          'is cleared', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Drywall'))
+            ..add(const MaterialRateUpdated('14'))
+            ..add(const MaterialRateUpdated(''))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).rate, isNull);
+          expect(_dataOf(b.state).unit, Unit.gallons);
+        });
+      });
+
+      test('keeps a picked unit after a typed quantity is cleared', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialUnitSelected(Unit.squareFeet))
+            ..add(const MaterialQuantityUpdated('5'))
+            ..add(const MaterialQuantityUpdated(''))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.squareFeet);
+        });
+      });
+
       test('still fills an empty unit when the quantity was typed first', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
@@ -756,16 +810,15 @@ void main() {
         });
       });
 
-      test('stay when a kept remembered unit is left after the name is '
-          'cleared, since the unit is still on screen', () {
+      test('stay when a picked unit is left after the name is cleared, since '
+          'the unit is still on screen', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
           b.add(const MaterialCostFormStarted());
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Paint'))
-            ..add(const MaterialRateUpdated('5'))
-            ..add(const MaterialRateUpdated(''))
+            ..add(const MaterialUnitSelected(Unit.gallons))
             ..add(const MaterialCostItemTypeChanged(''));
           settle();
 

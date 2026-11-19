@@ -24,7 +24,7 @@ class MaterialCostFormBloc
 
   static const _formValuesAtOpening = MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
-  bool _shownUnitIsKept = false;
+  bool _unitPicked = false;
 
   MaterialCostFormBloc({
     required this._repository,
@@ -38,12 +38,12 @@ class MaterialCostFormBloc
         (d) => _withRememberedUnit(d.copyWith(itemName: e.value)),
       ),
     );
-    on<MaterialQuantityUpdated>((e, emit) {
-      _shownUnitIsKept = true;
-      _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value)));
-    });
+    on<MaterialQuantityUpdated>(
+      (e, emit) =>
+          _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value))),
+    );
     on<MaterialUnitSelected>((e, emit) {
-      _shownUnitIsKept = true;
+      _unitPicked = true;
       _emit(emit, (d) => d.copyWith(unit: e.unit));
     });
     on<MaterialRateUpdated>(_onRateUpdated);
@@ -64,16 +64,20 @@ class MaterialCostFormBloc
   }
 
   MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
-    if (data.unit != null && _shownUnitIsKept) return data;
+    // A name change must not swap the unit under a number already entered.
+    if (_keepsShownUnit(data)) return data;
     return data.copyWith(unit: _rememberedUnits.forItem(data.itemName));
   }
+
+  bool _keepsShownUnit(MaterialCostFormData data) =>
+      data.unit != null &&
+      (_unitPicked || data.quantity != null || data.rate != null);
 
   void _onRateUpdated(
     MaterialRateUpdated event,
     Emitter<MaterialCostFormState> emit,
   ) {
     final rate = double.tryParse(event.value);
-    _shownUnitIsKept = true;
     _emit(
       emit,
       (d) => d.copyWith(

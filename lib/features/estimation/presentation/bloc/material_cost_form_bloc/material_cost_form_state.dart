@@ -98,10 +98,11 @@ class MaterialCostFormData extends Equatable {
 
   /// The unit the quantity is counted in, or null when there is none yet.
   ///
-  /// While it is empty, or was filled from memory and nothing else was typed
-  /// or picked yet, it takes the unit last used for the typed material name,
-  /// and empties when that name has none. Once a unit is picked or a quantity
-  /// or rate is typed, a name change never replaces the unit shown.
+  /// While it is empty, or was filled from memory and no quantity or rate is
+  /// filled in, it takes the unit last used for the typed material name, and
+  /// empties when that name has none. Once a unit is picked, or while a
+  /// quantity or rate is filled in, a name change never replaces the unit
+  /// shown.
   final Unit? unit;
 
   /// The price of one unit, or null while empty or unreadable.
