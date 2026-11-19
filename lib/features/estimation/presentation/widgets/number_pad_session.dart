@@ -26,11 +26,19 @@ class NumberPadSession {
   /// The text the field held when the pad opened.
   final String openedWith;
 
+  /// The put-back button's label, fixed when the pad opened: what
+  /// [putBackLabelOf] made of [openedWith], such as "Back to 25" or "Clear".
+  final String putBackLabel;
+
+  /// [putBackLabelOf] names the put-back button for the text the field holds
+  /// now, which becomes [openedWith].
   NumberPadSession({
     required this.controller,
     required this.formatter,
     required this.onChanged,
-  }) : openedWith = controller.text;
+    required String Function(String openedWith) putBackLabelOf,
+  }) : openedWith = controller.text,
+       putBackLabel = putBackLabelOf(controller.text);
 
   /// Replaces the selection with [digit], 0 to 9.
   void typeDigit(int digit) {

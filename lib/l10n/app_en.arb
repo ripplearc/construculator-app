@@ -3419,5 +3419,30 @@
   "@costSectionEquipment": {
     "description": "Name of the Equipment section on the estimate screen",
     "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "numberPadClearButton": "Clear",
+  "@numberPadClearButton": {
+    "description": "Outlined button on the left under the app's own number pad when the field was empty when the pad opened; tapping it closes the pad and leaves the field empty",
+    "context": "Storyboard CUJ 4, sub-flow B screen 4 Keys up, build note Put-back button label"
+  },
+  "numberPadPutBackButton": "Back to {value}",
+  "@numberPadPutBackButton": {
+    "description": "Outlined button on the left under the app's own number pad, naming the value the field held when the pad opened with its sign and no unit word, for example 'Back to 25' or 'Back to $52'; tapping it puts that value back and closes the pad",
+    "context": "Storyboard CUJ 4, sub-flow B screen 4 Keys up, build note Put-back button label",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "numberPadRateValue": "${value}",
+  "@numberPadRateValue": {
+    "description": "A rate as the put-back button names it: the currency sign in front of the number the field held, with no cents added, for example '$52'",
+    "context": "Storyboard CUJ 4, sub-flow B screen 4 Keys up, build note Put-back button label: show the number with its % or $ sign",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }
