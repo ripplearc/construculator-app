@@ -2,7 +2,6 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
@@ -770,7 +769,6 @@ void main() {
 
     Future<void> pickSample(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('lookup_rate_button')));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       final row = find.byKey(const Key('sample_rate_row_proclassic'));
       await tester.ensureVisible(row);
