@@ -54,16 +54,30 @@
         </regex>
 
         <!-- RULE 4a: two spellings of one angle are two entries (CA-1368):
-             the entry is compared by its text alone, by its value alone, by
-             the exact double, by the whole Angle with its spelling, or
-             within a tolerance wide enough to merge 38.05 with 38°03'01" -->
-        <regex pattern="entry\.text == other\.entry\.text \|\|\s*\(value\.degrees - other\.value\.degrees\)\.abs\(\) &lt;=\s*AngleMemory\.sameAngleTolerance;" dotAll="true" id="angle_memory.same_entry">
+             the entry is compared by its text instead of what it reads as
+             (the order bug of the review of 18 Nov), by its value alone, by
+             what it reads as alone, by its text alone, or by the whole Angle
+             with its spelling -->
+        <regex pattern="_isSameAngle\(_degreesItReadsAs, other\._degreesItReadsAs\) \|\|\s*_isSameAngle\(value\.degrees, other\.value\.degrees\);" dotAll="true" id="angle_memory.same_entry">
+            <mutation text="entry.text == other.entry.text || _isSameAngle(value.degrees, other.value.degrees);"/>
+            <mutation text="_isSameAngle(value.degrees, other.value.degrees);"/>
+            <mutation text="_isSameAngle(_degreesItReadsAs, other._degreesItReadsAs);"/>
             <mutation text="entry.text == other.entry.text;"/>
-            <mutation text="(value.degrees - other.value.degrees).abs() &lt;= AngleMemory.sameAngleTolerance;"/>
-            <mutation text="entry.text == other.entry.text || value.degrees == other.value.degrees;"/>
-            <mutation text="entry.text == other.entry.text || value == other.value;"/>
-            <mutation text="entry.text == other.entry.text || (value.degrees - other.value.degrees).abs() &lt;= 1e-3;"/>
-            <mutation text="entry.text == other.entry.text || (value.degrees - other.value.degrees) &lt;= AngleMemory.sameAngleTolerance;"/>
+            <mutation text="value == other.value;"/>
+        </regex>
+
+        <!-- RULE 4b (R1 of CA-1368, review of 18 Nov): an entry is compared
+             by its digits as a double with no tolerance, within a tolerance
+             wide enough to merge 38.05 with 38°03'01", or one way round only;
+             an entry with no digits reads as 0 instead of its value -->
+        <regex pattern="static bool _isSameAngle\(double degrees, double otherDegrees\) =&gt;\s*\(degrees - otherDegrees\)\.abs\(\) &lt;= AngleMemory\.sameAngleTolerance;" dotAll="true" id="angle_memory.same_angle">
+            <mutation text="static bool _isSameAngle(double degrees, double otherDegrees) =&gt; degrees == otherDegrees;"/>
+            <mutation text="static bool _isSameAngle(double degrees, double otherDegrees) =&gt; (degrees - otherDegrees).abs() &lt;= 1e-3;"/>
+            <mutation text="static bool _isSameAngle(double degrees, double otherDegrees) =&gt; (degrees - otherDegrees) &lt;= AngleMemory.sameAngleTolerance;"/>
+        </regex>
+        <regex pattern="entry\.tokens\.firstOrNull\?\.value \?\? value\.degrees;" dotAll="true" id="angle_memory.reads_as">
+            <mutation text="value.degrees;"/>
+            <mutation text="entry.tokens.firstOrNull?.value ?? 0;"/>
         </regex>
         <regex pattern="AngleMemory\.of\(\[angle, \.\.\.remembered\]\);" dotAll="true" id="angle_memory.filed_at_the_back">
             <mutation text="AngleMemory.of([...remembered, angle]);"/>

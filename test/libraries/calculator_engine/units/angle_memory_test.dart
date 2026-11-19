@@ -749,6 +749,111 @@ void main() {
         expect(entries(turn), ['360', '0']);
       });
 
+      test('R1: a typed 30, an answer shown as 30 and a typed 30°00\'00" are '
+          'one entry, kept in the newest spelling, whichever order they are '
+          'filed in', () {
+        final arctangent = angleAnswer(TrigFunction.arctangent, 0.5774);
+        expect(
+          entries(
+            const AngleMemory().filedAnswer(arctangent, formatter: formatter),
+          ),
+          ['30'],
+          reason: 'the premise: the answer reads 30',
+        );
+        expect(
+          (arctangent.degrees - 30).abs(),
+          greaterThan(AngleMemory.sameAngleTolerance),
+          reason: 'the premise: the answer is worth more than 30',
+        );
+        final answerBetween = filedTyped(
+          filedTyped(
+            const AngleMemory(),
+            'SIN 3 0',
+          ).filedAnswer(arctangent, formatter: formatter),
+          '3 0 . 0 0 . 0 0',
+        );
+        expect(entries(answerBetween), ['30°00\'00"']);
+        expect(
+          answerBetween.remembered.single.value,
+          const Angle(30, spelling: AngleSpelling.degreesMinutesSeconds),
+        );
+        final answerFirst = filedTyped(
+          filedTyped(
+            const AngleMemory().filedAnswer(arctangent, formatter: formatter),
+            '3 0 . 0 0 . 0 0',
+          ),
+          'SIN 3 0',
+        );
+        expect(entries(answerFirst), ['30']);
+      });
+
+      test('R1: an answer a little under 30 that reads 30 and a typed '
+          '30°00\'00" are one entry, in either order', () {
+        final arctangent = angleAnswer(TrigFunction.arctangent, 0.57735);
+        expect(arctangent.degrees, lessThan(30), reason: 'the premise');
+        final answerFirst = filedTyped(
+          const AngleMemory().filedAnswer(arctangent, formatter: formatter),
+          '3 0 . 0 0 . 0 0',
+        );
+        expect(entries(answerFirst), ['30°00\'00"']);
+        final typedFirst = filedTyped(
+          const AngleMemory(),
+          '3 0 . 0 0 . 0 0',
+        ).filedAnswer(arctangent, formatter: formatter);
+        expect(entries(typedFirst), ['30']);
+        expect(typedFirst.remembered.single.value, arctangent);
+      });
+
+      test('R1: an answer shown as 38.05 and a typed 38°03\'00" are one '
+          'entry, though the answer is worth 38.0523', () {
+        final memory = filedTyped(
+          const AngleMemory().filedAnswer(
+            const Angle(38.0523),
+            formatter: formatter,
+          ),
+          '3 8 . 0 3 . 0 0',
+        );
+        expect(entries(memory), ['38°03\'00"']);
+      });
+
+      test('R1: one answer filed in two spellings that read differently is '
+          'one entry: 31.45 and 31°26\'56" are both 31.4489', () {
+        final memory = const AngleMemory()
+            .filedAnswer(const Angle(31.4489), formatter: formatter)
+            .filedAnswer(
+              const Angle(
+                31.4489,
+                spelling: AngleSpelling.degreesMinutesSeconds,
+              ),
+              formatter: formatter,
+            );
+        expect(entries(memory), ['31°26\'56"']);
+      });
+
+      test('R1: 38.02 and 38°01\'12" are one entry, though a double reads the '
+          'second as a hair under 38.02', () {
+        final dms = activeOf(press(const Tape(), '3 8 . 0 1 . 1 2'));
+        expect(dms.entry.sealed.tokens.single.value, isNot(38.02));
+        expect(dms.entry.sealed.tokens.single.value, closeTo(38.02, 1e-12));
+        final memory = filedTyped(
+          filedTyped(const AngleMemory(), '[Pitch] 3 8 . 0 2'),
+          '3 8 . 0 1 . 1 2',
+        );
+        expect(entries(memory), ['38°01\'12"']);
+      });
+
+      test('R1: an entry with no digits reads as the angle it is worth, so it '
+          'is not the same entry as a 0 beside it', () {
+        final memory = AngleMemory.of(const [
+          RememberedAngle(entry: EntryBuffer(), value: Angle(45)),
+          RememberedAngle(
+            entry: EntryBuffer([Token(digits: '0')]),
+            value: Angle(0),
+          ),
+        ]);
+        expect(memory.remembered, hasLength(2));
+      });
+
       test('the D:M:S key on a recalled 30, sealed and filed again, leaves '
           'the one entry 30°00\'00"', () {
         final memory = filedTyped(const AngleMemory(), '[Pitch] 3 0');

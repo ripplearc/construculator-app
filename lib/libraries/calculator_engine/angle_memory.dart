@@ -20,14 +20,22 @@ final class RememberedAngle extends Equatable {
 
   const RememberedAngle({required this.entry, required this.value});
 
-  /// Whether [other] is the same drawer entry: it reads the same, or it is
-  /// worth the same angle in another spelling (rule 4.16: 30 and 30°00'00"
-  /// are one entry). Worth the same means within
-  /// [AngleMemory.sameAngleTolerance] of each other.
+  /// Whether [other] is the same drawer entry: it reads as the same angle in
+  /// any spelling, or it is worth the same angle (rule 4.16, "filed by what
+  /// it reads as": 30, 30°00'00" and an answer shown as 30 are one entry,
+  /// whichever was filed first, and so are 31.45 and 31°26'56" when both
+  /// are one answer). The same means within [AngleMemory.sameAngleTolerance]
+  /// of each other, so 38.02 and 38°01'12" are one entry although a double
+  /// reads the second as 38.019999999999996.
   bool isSameEntryAs(RememberedAngle other) =>
-      entry.text == other.entry.text ||
-      (value.degrees - other.value.degrees).abs() <=
-          AngleMemory.sameAngleTolerance;
+      _isSameAngle(_degreesItReadsAs, other._degreesItReadsAs) ||
+      _isSameAngle(value.degrees, other.value.degrees);
+
+  double get _degreesItReadsAs =>
+      entry.tokens.firstOrNull?.value ?? value.degrees;
+
+  static bool _isSameAngle(double degrees, double otherDegrees) =>
+      (degrees - otherDegrees).abs() <= AngleMemory.sameAngleTolerance;
 
   @override
   List<Object?> get props => [entry, value];
