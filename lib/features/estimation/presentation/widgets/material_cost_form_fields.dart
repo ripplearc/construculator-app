@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/number_p
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -69,16 +70,19 @@ class MaterialCostFormFields extends StatefulWidget {
 class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _rateController = TextEditingController();
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
   late final _quantityFormatter = _decimalLimitFormatter(decimals: 4);
   late final _rateFormatter = _decimalLimitFormatter(decimals: 2);
+  late final CurrencyDisplayController _rateController;
 
   @override
   void initState() {
     super.initState();
+    // Made before the pad's focus listener below, so the controller's caret
+    // move on focus runs first and the pad's select-all wins.
+    _rateController = CurrencyDisplayController(focusNode: _rateFocus);
     _quantityFocus.addListener(
       () => _followFocus(
         _quantityFocus,
@@ -213,7 +217,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                       keyboardType: _numberKeyboard,
                       onTap: _selectAll(_rateController),
                       inputFormatters: [_rateFormatter],
-                      // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                       onChanged: (value) =>
                           bloc.add(MaterialRateUpdated(value)),
                     ),
@@ -413,11 +416,17 @@ class _SheetTextField extends StatelessWidget {
   }
 
   double _textWidth(BuildContext context, TextStyle style) {
+    final shownStyle =
+        Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style;
     final painter = TextPainter(
-      text: TextSpan(
-        text: controller.text.isEmpty ? hintText : controller.text,
-        style: Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style,
-      ),
+      // Measures what the controller paints, such as "$52.00" for "52".
+      text: controller.text.isEmpty
+          ? TextSpan(text: hintText, style: shownStyle)
+          : controller.buildTextSpan(
+              context: context,
+              style: shownStyle,
+              withComposing: false,
+            ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
