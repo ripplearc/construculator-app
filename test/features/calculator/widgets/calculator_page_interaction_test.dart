@@ -117,6 +117,42 @@ void main() {
     expect(bracket.hint, l10n.calculatorBracketKeyHint);
   });
 
+  testWidgets('the keyboard shows the app\'s words, not coreui\'s English: '
+      'View all, the sheet title, a group header and the unit switch '
+      '(CA-1370)', (tester) async {
+    await pumpPage(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    final keyboard = tester.widget<CoreKeyboard>(find.byType(CoreKeyboard));
+
+    expect(keyboard.labels, isNot(same(CoreKeyboardLabels.english)));
+    expect(keyboard.semantics, isNot(same(CoreKeyboardSemantics.english)));
+    expect(
+      (
+        keyboard.labels.viewAll,
+        keyboard.labels.functionKeys,
+        keyboard.labels.groupHeader(l10n.calculatorGroupShapes),
+        keyboard.labels.measurementSystem,
+        keyboard.labels.imperial,
+        keyboard.labels.metric,
+      ),
+      (
+        l10n.calculatorViewAllButton,
+        l10n.calculatorFunctionKeysTitle,
+        l10n.calculatorGroupHeader(l10n.calculatorGroupShapes),
+        l10n.calculatorMeasurementSystem,
+        l10n.calculatorUnitSystemImperial,
+        l10n.calculatorUnitSystemMetric,
+      ),
+    );
+
+    await tester.tap(find.text(l10n.calculatorViewAllButton));
+    await settle(tester);
+    expect(find.text(l10n.calculatorFunctionKeysTitle), findsOneWidget);
+    expect(find.text(l10n.calculatorMeasurementSystem), findsOneWidget);
+  });
+
   testWidgets('÷ reaches the tape as a division, and % after a result is '
       'refused with a red Alert (CA-1376; rule 4.12)', (tester) async {
     await pumpPage(tester);
@@ -216,7 +252,7 @@ void main() {
     await pumpPage(tester);
     final bloc = blocOf(tester);
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(AppLocalizationsEn().calculatorViewAllButton));
     await settle(tester);
     expect(find.byType(CoreFunctionKeyBottomSheet), findsOneWidget);
 
@@ -250,7 +286,7 @@ void main() {
     final bloc = blocOf(tester);
     final systemBefore = bloc.state.currentUnitSystem;
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(AppLocalizationsEn().calculatorViewAllButton));
     await settle(tester);
     await tester.tap(find.byType(CoreSwitch));
     await settle(tester);

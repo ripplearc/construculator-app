@@ -552,6 +552,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         ),
                       ),
                       semantics: labels.keyboardSemantics,
+                      labels: labels.keyboardLabels,
                       onKeyTapped: (key) =>
                           bloc.add(CalculatorKeySelected(key.id)),
                       onUnitSystemChanged: (unitSystem) =>

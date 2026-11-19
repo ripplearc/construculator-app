@@ -449,6 +449,18 @@ class CalculatorLabelFormatter {
         : l10n.calculatorNotePercentTakesOffSoFar(tip.percent);
   }
 
+  /// The words the calculator keyboard shows that are not a key's face, from
+  /// l10n (CA-1370): View all, the sheet's title, a group's header, the
+  /// Measurement System row and the switch's Imperial and Metric.
+  CoreKeyboardLabels get keyboardLabels => CoreKeyboardLabels(
+    viewAll: l10n.calculatorViewAllButton,
+    functionKeys: l10n.calculatorFunctionKeysTitle,
+    groupHeader: l10n.calculatorGroupHeader,
+    measurementSystem: l10n.calculatorMeasurementSystem,
+    imperial: l10n.calculatorUnitSystemImperial,
+    metric: l10n.calculatorUnitSystemMetric,
+  );
+
   /// What the calculator keyboard says to a screen reader, from l10n
   /// (CA-1198): every key, the fold handle, View all, the unit system switch
   /// and a group's header and drag handle in the View all sheet.
