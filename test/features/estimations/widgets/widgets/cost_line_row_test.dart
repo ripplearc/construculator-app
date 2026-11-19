@@ -62,7 +62,7 @@ void main() {
     );
 
     expect(find.text('Framing crew'), findsOneWidget);
-    expect(find.textContaining(r'10 h · $48.00/hr'), findsOneWidget);
+    expect(find.textContaining(r'10 h · $48.00/h'), findsOneWidget);
     expect(find.text(r'$480.00'), findsOneWidget);
   });
 
