@@ -57,6 +57,7 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
           deliveryFee: data.deliveryFee,
           changeInEstimateTotal: data.changeInEstimateTotal,
           hasUnsavedChanges: data.hasUnsavedChanges,
+          isEditingExistingLine: data.isEditingExistingLine,
           deleteFailed: switch (state) {
             EquipmentCostFormFailure(whileDeleting: true) => true,
             _ => false,
