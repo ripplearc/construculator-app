@@ -57,7 +57,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
               state is MaterialCostFormSubmitting ||
               state is MaterialCostFormSuccess,
           errorMessage: state is MaterialCostFormFailure
-              ? l10n.addToEstimatePhoneSaveFailedError
+              ? l10n.addToEstimateFailedError
               : null,
           onAdd: () => context.read<MaterialCostFormBloc>().add(
             MaterialCostFormSubmitted(estimateId: estimateId),

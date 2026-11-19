@@ -111,10 +111,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.byKey(AddToEstimateFooter.errorKey),
       );
-      expect(
-        semantics.label,
-        contains('Could not save on this phone. Try again.'),
-      );
+      expect(semantics.label, contains('This cost was not added. Try again.'));
       expect(semantics.flagsCollection.isLiveRegion, isTrue);
       handle.dispose();
     });

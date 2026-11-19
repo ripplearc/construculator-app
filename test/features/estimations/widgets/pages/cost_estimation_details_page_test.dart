@@ -39,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/toast_test_utils.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -1447,8 +1448,10 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
       });
 
-      testWidgets('a save that fails after the sheet was dismissed still shows '
-          'the error', (tester) async {
+      testWidgets('a save that fails after the sheet was dismissed shows a red '
+          'alert that stays until it is closed', (tester) async {
+        CoreToast.enableTimers();
+        addTearDown(CoreToast.disableTimers);
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
         database.costItems.writeGate = Completer();
@@ -1461,11 +1464,15 @@ void main() {
         database.costItems.writeGate!.complete();
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(l10n.addToEstimatePhoneSaveFailedError),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
         expect(find.text('Added to Bedroom 2'), findsNothing);
+        await tester.pump(kToastDismissDuration);
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+
+        await tester.tap(find.text(l10n.closeLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
       });
 
       testWidgets('a swipe down on the form with a name typed asks to discard '
@@ -1543,10 +1550,7 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('Interior paint'), findsOneWidget);
-        expect(
-          find.text(l10n.addToEstimatePhoneSaveFailedError),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
         expect(find.text('Added to Bedroom 2'), findsNothing);
 
         database.costItems.executeError = null;
@@ -1635,7 +1639,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(AddToEstimateFooter.errorKey),
-            matching: find.text(l10n.addToEstimatePhoneSaveFailedError),
+            matching: find.text(l10n.addToEstimateFailedError),
           ),
           findsOneWidget,
         );
@@ -1646,7 +1650,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
-        expect(find.text(l10n.addToEstimatePhoneSaveFailedError), findsNothing);
+        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
       });
 
       testWidgets('a second tap on Add while saving does not save twice', (
