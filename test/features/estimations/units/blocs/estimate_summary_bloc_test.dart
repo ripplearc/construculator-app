@@ -109,7 +109,8 @@ void main() {
     );
 
     blocTest<EstimateSummaryBloc, EstimateSummaryState>(
-      'counts the lines on this phone when the server cannot be reached',
+      'emits the connection failure, not a total of the phone lines, when the '
+      'estimate is read but the lines cannot be read from the server',
       setUp: () {
         seedEstimate();
         phone.seedRow({
@@ -128,10 +129,10 @@ void main() {
       act: (bloc) => bloc.add(const EstimateSummaryRequested(estimateId)),
       expect: () => [
         isA<EstimateSummaryLoading>(),
-        isA<EstimateSummaryLoaded>().having(
-          (s) => s.estimate.totalCost,
-          'total',
-          156.0,
+        isA<EstimateSummaryFailure>().having(
+          (s) => s.failure,
+          'failure',
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
         ),
       ],
     );

@@ -8,10 +8,12 @@ abstract class CostItemRepository {
   /// The sum of the totals of every cost item in an estimate, in dollars.
   ///
   /// Counts each line once by id: the lines on the server and the lines saved
-  /// on this phone, including those the server has not received yet. When the
-  /// server and this phone both have a line, the phone's total counts. With no
-  /// signal it counts only the lines on this phone. Each item total is
-  /// already rounded to the cent.
+  /// on this phone, including those the server has not received yet and those
+  /// it refused for good. When the server and this phone both have a line, the
+  /// phone's total counts. When the server cannot be read (a weak signal or no
+  /// signal) this returns the failure, so the page shows its normal error with
+  /// Try again, and never a total made of the phone's lines alone. Each item
+  /// total is already rounded to the cent.
   Future<Either<Failure, double>> getEstimateItemsTotal(String estimateId);
 
   /// Every cost item of an estimate, oldest first.

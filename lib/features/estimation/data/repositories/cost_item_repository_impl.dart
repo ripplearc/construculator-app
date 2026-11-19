@@ -102,7 +102,13 @@ class CostItemRepositoryImpl implements CostItemRepository {
     final Map<String, double> onThisPhone;
     try {
       final lines = await localDataSource.loadCostItemsByEstimateId(estimateId);
-      onThisPhone = {for (final line in lines) line.id: line.itemTotalCost};
+      final refused = await localDataSource.loadRefusedLineTotalsByEstimateId(
+        estimateId,
+      );
+      onThisPhone = {
+        ...refused,
+        for (final line in lines) line.id: line.itemTotalCost,
+      };
     } catch (_) {
       return const Left(_phoneStorageFailure);
     }
@@ -114,25 +120,9 @@ class CostItemRepositoryImpl implements CostItemRepository {
         return _rowLimitFailure(estimateId);
       }
       return Right(_sumToCent({...onServer, ...onThisPhone}));
-    } on TimeoutException catch (e) {
-      return _totalFromThisPhone(onThisPhone, e);
-    } on SocketException catch (e) {
-      return _totalFromThisPhone(onThisPhone, e);
     } catch (e) {
       return _handleError(e, 'summing cost items');
     }
-  }
-
-  Either<Failure, double> _totalFromThisPhone(
-    Map<String, double> onThisPhone,
-    Object reason,
-  ) {
-    // TODO: [CA-648] read every line from the phone once a sync stream delivers cost_items. https://ripplearc.youtrack.cloud/issue/CA-648
-    _logger.warning(
-      'Server unreachable ($reason), so the total counts only the '
-      '${onThisPhone.length} lines on this phone',
-    );
-    return Right(_sumToCent(onThisPhone));
   }
 
   static double _sumToCent(Map<String, double> totalsById) =>

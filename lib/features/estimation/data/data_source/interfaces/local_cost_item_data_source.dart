@@ -28,6 +28,20 @@ abstract class LocalCostItemDataSource {
   /// Throws an exception if the read fails.
   Future<List<CostItemDto>> loadCostItemsByEstimateId(String estimateId);
 
+  /// Loads the totals of the lines of [estimateId] that the server refused for
+  /// good and whose phone row was kept in a refusal record, by line id. Each
+  /// total is the `item_total_cost` the line had on the phone, and is 0 when
+  /// the line had none.
+  ///
+  /// A line the server refuses stays in the estimate's total until the user
+  /// moves or discards it, and the next sync checkpoint removes its row from
+  /// the phone, so the refusal record is where its total is still found.
+  ///
+  /// Throws an exception if the read fails.
+  Future<Map<String, double>> loadRefusedLineTotalsByEstimateId(
+    String estimateId,
+  );
+
   /// Watches the ids of the lines of [estimateId] on the phone whose upload to
   /// the server is still waiting.
   ///
