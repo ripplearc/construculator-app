@@ -40,6 +40,18 @@
         <regex pattern="for \(final row in rows\) row\[DatabaseConstants\.idColumn\] as String," id="local_cost_item.pending.wrong_ids">
             <mutation text="for (final row in rows) 'x',"/>
         </regex>
+        <regex pattern="FROM \$\{DatabaseConstants\.costItemRefusalsTable\}" dotAll="false" id="local_cost_item.refused.wrong_table">
+            <mutation text="FROM ${DatabaseConstants.costItemsTable}"/>
+        </regex>
+        <regex pattern="row\[DatabaseConstants\.idColumn\] as String: _itemTotalCostOf\(" dotAll="false" id="local_cost_item.refused.wrong_ids">
+            <mutation text="'x': _itemTotalCostOf("/>
+        </regex>
+        <regex pattern="line\[DatabaseConstants\.itemTotalCostColumn\]" dotAll="false" id="local_cost_item.refused.wrong_total_key">
+            <mutation text="line['x']"/>
+        </regex>
+        <regex pattern="\?\.toDouble\(\) \?\?\s*0" dotAll="false" id="local_cost_item.refused.missing_total_not_zero">
+            <mutation text="?.toDouble() ?? 1"/>
+        </regex>
     </rules>
 
     <commands>
