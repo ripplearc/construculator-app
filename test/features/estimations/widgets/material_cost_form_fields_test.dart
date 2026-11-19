@@ -844,7 +844,6 @@ void main() {
 
     Future<void> pickSample(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('lookup_rate_button')));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       final row = find.byKey(const Key('sample_rate_row_proclassic'));
       await tester.ensureVisible(row);
