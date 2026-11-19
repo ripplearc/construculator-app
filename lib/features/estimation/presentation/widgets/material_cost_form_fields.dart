@@ -351,8 +351,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 key: const Key('saved_as_default_helper_text'),
                 text: l10n.materialSavedToYourRatesHint(
                   l10n.yourRatesName,
-                  state.data.itemName.trim().toLowerCase(),
+                  state.data.nameToFindRateBy.toLowerCase(),
                 ),
+                emphasis: l10n.yourRatesName,
               ),
             const SizedBox(height: CoreSpacing.space4),
           ],
