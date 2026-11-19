@@ -23,12 +23,12 @@
         </regex>
 
         <!-- RULE 3 (S1c 4/5, CA-1089): the red Alert is never drawn -->
-        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.never_shown">
+        <regex pattern="if \(state\.toast case final toast\?\s+when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.never_shown">
             <mutation text="if (state.toast case final toast? when false)"/>
         </regex>
 
         <!-- RULE 4: the Alert stays drawn after its ✕ closed it -->
-        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.shown_after_close">
+        <regex pattern="if \(state\.toast case final toast\?\s+when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.shown_after_close">
             <mutation text="if (state.toast case final toast?)"/>
         </regex>
 
@@ -84,11 +84,21 @@
             <mutation text="child: state.dimensions.length &lt; 0 ? const SizedBox.shrink()"/>
         </regex>
 
-        <!-- RULE 9: the display keeps its half of the page under the fold,
-             so the strip and the panel hang below a gap -->
-        <regex pattern="flex: _showsDetailPanel \? 0 : 1," dotAll="true" id="calculator_page.detail_panel.display_keeps_its_room">
-            <mutation text="flex: 1,"/>
+        <!-- RULE 9: under the fold the display keeps all the room, the panel
+             is sized past the keys, or the strip sits on top of the display -->
+        <regex pattern="showsPanel\s*\?\s*BoxConstraints\(minWidth: width, maxWidth: width, maxHeight: room\)\s*:\s*BoxConstraints\.tightFor\(width: width, height: room\)," dotAll="true" id="calculator_page.detail_panel.display_keeps_its_room">
+            <mutation text="BoxConstraints.tightFor(width: width, height: room),"/>
         </regex>
+        <regex pattern="BoxConstraints\.tightFor\(width: width, height: room - display\.height\)," dotAll="true" id="calculator_page.detail_panel.panel_too_tall">
+            <mutation text="BoxConstraints.tightFor(width: width, height: room),"/>
+        </regex>
+        <regex pattern="positionChild\(_PageSlot\.strip, Offset\(0, display\.height\)\);" dotAll="true" id="calculator_page.detail_panel.strip_on_top">
+            <mutation text="positionChild(_PageSlot.strip, Offset.zero);"/>
+        </regex>
+        <!-- Not a rule: shouldRelayout returning false is an equivalent
+             mutant. Every change of showsPanel adds or removes the panel
+             child, and a CustomMultiChildLayout lays out again whenever its
+             children change, so no test can tell the two apart. -->
 
         <!-- RULE 10: CoreUI's Attachments heading is drawn, and the Expand
              and Collapse buttons trade their names -->
