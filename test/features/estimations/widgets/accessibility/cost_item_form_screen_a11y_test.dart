@@ -1,9 +1,16 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -11,6 +18,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -163,5 +171,60 @@ void main() {
       );
     });
 
+    testWidgets('a11y: the material sheet with the number pad up meets tap '
+        'target, label and contrast guidelines in both themes', (tester) async {
+      setUpAuthenticatedUser();
+      await setupA11yTest(tester);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
+
+      Widget makeSheetApp(ThemeData theme) {
+        return MaterialApp(
+          key: ValueKey(theme.brightness),
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                key: const Key('open_sheet'),
+                onPressed: () => GuardedQuickSheet.show<void>(
+                  context: context,
+                  backgroundColor: theme.coreColors.pageBackground,
+                  child: BlocProvider<MaterialCostFormBloc>(
+                    create: (_) => Modular.get<MaterialCostFormBloc>(),
+                    child: CostItemFormScreen(
+                      type: CostItemType.material,
+                      estimationId: testEstimationId,
+                      router: FakeAppRouter(),
+                      yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+                      clock: clock,
+                      presentAsSheet: true,
+                      estimate: CostEstimate.defaultEstimate(
+                        estimateName: 'Bedroom 2',
+                        totalCost: 2093.02,
+                      ),
+                    ),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        );
+      }
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeSheetApp,
+        find.byType(CoreNumberKeypad),
+        setupAfterPump: (t) async {
+          await t.tap(find.byKey(const Key('open_sheet')));
+          await t.pumpAndSettle();
+          await t.tap(find.byKey(const Key('material_quantity_field')));
+          await t.pumpAndSettle();
+        },
+      );
+    });
   });
 }
