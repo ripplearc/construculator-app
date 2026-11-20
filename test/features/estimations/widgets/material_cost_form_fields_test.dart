@@ -1081,6 +1081,24 @@ void main() {
       expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
     });
 
+    testWidgets('a failed save is read out by a screen reader as it appears', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await openVerify(tester);
+      database.executeError = StateError('disk full');
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        tester.getSemantics(find.text(l10n.yourRatesSaveFailedError)),
+        isSemantics(isLiveRegion: true),
+      );
+      handle.dispose();
+    });
+
     testWidgets('a second try after a failure saves the rate', (tester) async {
       await openVerify(tester);
       database.executeError = StateError('disk full');
