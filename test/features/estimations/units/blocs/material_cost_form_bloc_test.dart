@@ -665,6 +665,15 @@ void main() {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves the line tagged as a sample rate and marks no saved rate as '
         'used',
+        setUp: () => database.seedRow({
+          'id': 'paint-rate',
+          'company_id': 'company-1',
+          'category': 'material',
+          'item_name': 'Interior paint',
+          'rate_amount': 40.0,
+          'rate_currency': 'USD',
+          'saved_at': '2026-01-10T00:00:00.000Z',
+        }),
         build: () => bloc,
         act: (b) => b
           ..add(MaterialRateLookedUp(_lookedUpRate))
