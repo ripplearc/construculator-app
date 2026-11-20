@@ -862,6 +862,34 @@ void main() {
       );
     });
 
+    testWidgets('a typed search lists only matching materials, never '
+        'equipment', (tester) async {
+      seedMaterials(2);
+      database.seedRows([
+        materialRow('paint-lift', 'Paint sprayer', rate: 90, daysAgo: 0)
+          ..['category'] = 'equipment'
+          ..['equipment_method'] = 'day',
+      ]);
+      await openSheet(
+        tester,
+        category: CostItemType.material,
+        searchAtOnce: true,
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('your_rates_search_field')),
+          matching: find.byType(EditableText),
+        ),
+        'paint',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rate_row_paint-1')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_paint-2')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_paint-lift')), findsNothing);
+    });
+
     testWidgets('a typed name offers to create it as a new material cost, '
         'and tapping it returns that name', (tester) async {
       seedMaterials(1);
