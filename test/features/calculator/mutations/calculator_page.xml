@@ -136,6 +136,19 @@
         <regex pattern="CalculatorLabelFormatter\.basicGeometryGroupId =&gt;\s*colors\.keyboardGroupGeometry," dotAll="true" id="calculator_page.group_dots.geometry_takes_trig">
             <mutation text="CalculatorLabelFormatter.basicGeometryGroupId =&gt; colors.keyboardGroupTrigonometry,"/>
         </regex>
+        <!-- T2a 2/3 (CA-1095): the sheet table of the detail panel -->
+        <regex pattern="onDeleted: \(id\) =&gt; _bloc\.add\(CalculatorSizeRowDeleted\(id\)\)," dotAll="true" id="calculator_page.sheet_table.delete_goes_nowhere">
+            <mutation text="onDeleted: (id) {},"/>
+        </regex>
+        <regex pattern="child: state\.hasDetails\s*\?" dotAll="true" id="calculator_page.detail_panel.tiles_only">
+            <mutation text="child: state.dimensions.isNotEmpty ?"/>
+        </regex>
+        <regex pattern="if \(state\.sizeTable case final table\?\) _sheetTable\(labels, table\)," dotAll="true" id="calculator_page.sheet_table.not_drawn">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="values: \[row\.sizeText, row\.countText\]" dotAll="true" id="calculator_page.sheet_table.count_column_shows_the_size">
+            <mutation text="values: [row.sizeText, row.sizeText]"/>
+        </regex>
     </rules>
 
     <commands>

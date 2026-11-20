@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- DELETE MATERIAL SIZE USE CASE MUTATION TESTING (CA-1095, T2a 2/3) -->
+    <!-- Targets: which stored size a deleted row of the sheet table removes. -->
+
+    <files>
+        <file>lib/features/calculator/domain/usecases/delete_material_size_usecase.dart</file>
+    </files>
+
+    <rules>
+        <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="delete_material_size.store.always_sheets">
+            <mutation text=".watchSizes(SizeStore.sheet, system)"/>
+        </regex>
+        <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="delete_material_size.system.always_imperial">
+            <mutation text=".watchSizes(trade.sizeStore, MeasurementSystem.imperial)"/>
+        </regex>
+        <regex pattern="height: stored\.height\) == size\)" dotAll="true" id="delete_material_size.match.any_other_size">
+            <mutation text="height: stored.height) != size)"/>
+        </regex>
+        <regex pattern="return _repository\.deleteSize\(stored\);" dotAll="true" id="delete_material_size.match.not_deleted">
+            <mutation text="continue;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="delete_material_size" expected-return="0">flutter test test/features/calculator/units/domain/usecases/delete_material_size_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

@@ -181,3 +181,18 @@ class CalculatorMaterialCountsArrived extends CalculatorEvent {
   @override
   List<Object?> get props => [counts];
 }
+
+/// A row of the detail panel's sheet table was deleted, by its trash
+/// button or a swipe (Section 1.4). The row and its chip leave at once and
+/// the size is removed from the store; a delete the store refuses puts
+/// them back, unless the store has answered since. Not a key: the tape and
+/// what the last key said stay.
+class CalculatorSizeRowDeleted extends CalculatorEvent {
+  /// The [CalculatorSizeRow.id] of the row.
+  final String rowId;
+
+  const CalculatorSizeRowDeleted(this.rowId);
+
+  @override
+  List<Object?> get props => [rowId];
+}

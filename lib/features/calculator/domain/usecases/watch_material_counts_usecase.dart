@@ -33,15 +33,10 @@ class WatchMaterialCountsUseCase {
     required Area area,
     required MeasurementSystem system,
   }) => _repository
-      .watchSizes(_storeOf(trade), system)
+      .watchSizes(trade.sizeStore, system)
       .map(
         (sizes) => _trades.countsFor(trade, area, sizes.map(_pieceOf).toList()),
       );
-
-  SizeStore _storeOf(Trade trade) => switch (trade) {
-    Trade.drywall => SizeStore.sheet,
-    Trade.masonry => SizeStore.masonry,
-  };
 
   PieceSize _pieceOf(StoredSize size) =>
       PieceSize(width: size.width, height: size.height);

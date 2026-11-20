@@ -665,5 +665,89 @@ void main() {
         }
       },
     );
+
+    testWidgets(
+      'the sheet table under the folded keypad: each trash button is read '
+      'as "Delete" and its size, is at least 48 x 48, and the table meets '
+      'the label and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        // TODO: [CA-1521] A table with no pencil merges the trash button
+        // into its row's node in coreui 0.106.0, so the button's words are
+        // found inside the row's reading.
+        // https://ripplearc.youtrack.cloud/issue/CA-1521
+        final deleteFirst = find.bySemanticsLabel(
+          RegExp(
+            RegExp.escape(
+              l10n.calculatorSheetTableDeleteSemantics('48in x 96in'),
+            ),
+          ),
+        );
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          BlocProvider.of<CalculatorBloc>(
+              tester.element(find.byType(CoreKeyboard)),
+            )
+            ..add(const CalculatorDigitPressed('1'))
+            ..add(const CalculatorDigitPressed('8'))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorUnitSelected(Unit.foot));
+          await tester.pump();
+          await tester.tap(
+            find.bySemanticsLabel(l10n.calculatorKeyboardHandleSemantics),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            deleteFirst,
+            checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          expect(
+            tester
+                .getSemantics(deleteFirst)
+                .getSemanticsData()
+                .customSemanticsActionIds,
+            isNotEmpty,
+            reason: 'the row offers Delete to a screen reader',
+          );
+          final button = tester.getSize(
+            find.byKey(
+              CoreGeometryArea.deleteRowKey(
+                'sheet-quantities',
+                '48in x 96in#0',
+              ),
+            ),
+          );
+          expect(button.width, greaterThanOrEqualTo(48));
+          expect(button.height, greaterThanOrEqualTo(48));
+          for (final text in [
+            l10n.calculatorSheetTableTitle('180ft²'),
+            l10n.calculatorSheetTableCountColumn,
+            '48in x 96in',
+            '5.63',
+          ]) {
+            await _expectLightThemeContrastOf(
+              tester,
+              theme,
+              find.descendant(
+                of: find.byKey(const Key('calculator_detail_panel')),
+                matching: find.text(text),
+              ),
+            );
+          }
+        }
+      },
+    );
   });
 }
