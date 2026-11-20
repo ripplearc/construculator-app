@@ -120,6 +120,18 @@ void main() {
     expect(database.insertedRows.single['entry_label'], 'Supplier B');
   });
 
+  testWidgets('asks for a label when only spaces are typed, and saves '
+      'nothing', (tester) async {
+    await openDialog(tester);
+
+    await tester.enterText(field, '   ');
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.yourRatesEntryLabelRequiredError), findsOneWidget);
+    expect(database.insertedRows, isEmpty);
+  });
+
   testWidgets('asks for a label when none is typed, and stays open', (
     tester,
   ) async {
