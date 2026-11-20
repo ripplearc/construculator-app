@@ -4087,6 +4087,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Equipment'**
   String get costSectionEquipment;
+
+  /// Outlined button on the left under the app's own number pad when the field was empty when the pad opened; tapping it closes the pad and leaves the field empty
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get numberPadClearButton;
+
+  /// Outlined button on the left under the app's own number pad, naming the value the field held when the pad opened with its sign and no unit word, for example 'Back to 25' or 'Back to $52'; tapping it puts that value back and closes the pad
+  ///
+  /// In en, this message translates to:
+  /// **'Back to {value}'**
+  String numberPadPutBackButton(String value);
+
+  /// A rate as the put-back button names it: the currency sign in front of the number the field held, with no cents added, for example '$52'
+  ///
+  /// In en, this message translates to:
+  /// **'\${value}'**
+  String numberPadRateValue(String value);
 }
 
 class _AppLocalizationsDelegate
