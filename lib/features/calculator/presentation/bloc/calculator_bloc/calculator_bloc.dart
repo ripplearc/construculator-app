@@ -111,6 +111,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorUnitSystemChanged event,
     Emitter<CalculatorState> emit,
   ) {
+    if (!state.tape.isEmpty) return;
     final system = switch (event.unitSystem) {
       UnitSystem.imperial => MeasurementSystem.imperial,
       UnitSystem.metric => MeasurementSystem.metric,

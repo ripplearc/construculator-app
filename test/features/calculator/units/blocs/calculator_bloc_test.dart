@@ -441,6 +441,60 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
+        'R3 (review of 18 Nov): the toggle is refused once a result is on '
+        'the tape, so 12ft + 1m = keeps reading 15ft 3-3/8in under Imperial '
+        'and never claims Metric (Section 1.1: the toggle shows only while '
+        'the tape is empty)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorUnitSelected(Unit.metre))
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorUnitSystemChanged(UnitSystem.metric)),
+        skip: 6,
+        expect: () => [tapeState(pressed('1 2 ft + 1 m ='))],
+        verify: (bloc) {
+          expect(bloc.state.currentUnitSystem, UnitSystem.imperial);
+          expect(bloc.state.valueText, '15ft 3-3/8in');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'R3: the toggle is refused while a value is being typed, and the '
+        'value stays typed',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSystemChanged(UnitSystem.metric)),
+        expect: () => [tapeState(pressed('5'))],
+        verify: (bloc) =>
+            expect(bloc.state.currentUnitSystem, UnitSystem.imperial),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'R3: after C the tape is empty again, so the toggle works',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorUnitSystemChanged(UnitSystem.metric)),
+        skip: 2,
+        expect: () => [
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+              ),
+            ),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
         'C and a reset keep the System of units and the group',
         build: () => bloc,
         act: (bloc) => bloc
