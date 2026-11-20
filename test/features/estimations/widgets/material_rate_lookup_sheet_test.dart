@@ -168,5 +168,16 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_screws')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
     });
+
+    testWidgets('leaves out the YOUR RATES heading when no rate matches', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, 'epoxy grout');
+
+      expect(find.text('YOUR RATES'), findsNothing);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
+    });
   });
 }
