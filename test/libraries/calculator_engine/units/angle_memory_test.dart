@@ -17,6 +17,7 @@ void main() {
     'COS' => tape.pressTrigKey(TrigFunction.cosine),
     'TAN' => tape.pressTrigKey(TrigFunction.tangent),
     'ASIN' => tape.pressTrigKey(TrigFunction.arcsine),
+    'ACOS' => tape.pressTrigKey(TrigFunction.arccosine),
     'ATAN' => tape.pressTrigKey(TrigFunction.arctangent),
     'ft' => tape.pressUnit(Unit.foot),
     'in' => tape.pressUnit(Unit.inch),
@@ -996,6 +997,104 @@ void main() {
           filedAnswerOf(const Angle(-0.0000001)).limit,
           AngleDrawerLimit.belowSmallest,
         );
+      });
+
+      test('an angle a billionth of a degree off 0 or 90 is not exact '
+          '(review of 19 Nov, nit 4): ASIN 0.00000000001 and ACOS '
+          '0.00000000001 name their limits, and as D:M:S its seconds read '
+          'it', () {
+        Angle answerOf(String keys) =>
+            (press(const Tape(), keys).chips.last as ResultChip).value as Angle;
+        final arcsine = answerOf('0 . 0 0 0 0 0 0 0 0 0 0 1 ASIN');
+        expect(arcsine.degrees, closeTo(5.729577951308232e-10, 1e-22));
+        final tiny = filedAnswerOf(arcsine);
+        expect(tiny.entry.text, '0');
+        expect(tiny.limit, AngleDrawerLimit.belowSmallest);
+
+        final arccosine = answerOf('0 . 0 0 0 0 0 0 0 0 0 0 1 ACOS');
+        expect(arccosine.degrees, closeTo(89.99999999942705, 1e-12));
+        final nearlyRight = filedAnswerOf(arccosine);
+        expect(nearlyRight.entry.text, '90');
+        expect(nearlyRight.limit, AngleDrawerLimit.aboveLargest);
+
+        final asSeconds = filedAnswerOf(
+          Angle(arcsine.degrees, spelling: AngleSpelling.degreesMinutesSeconds),
+        );
+        expect(asSeconds.entry.text, '0°00\'00.000002"');
+        expect(asSeconds.limit, isNull);
+      });
+
+      test('a negative angle names a limit by its size (review of 19 Nov, '
+          'nit 1): ATAN of -1000000000 is -89.999999943° and files as -90 '
+          'Over 89.999999°', () {
+        final negative = filedAnswerOf(const Angle(-89.999999943));
+        expect(negative.entry.text, '-90');
+        expect(negative.limit, AngleDrawerLimit.aboveLargest);
+        expect(
+          filedAnswerOf(const Angle(90.0000001)).limit,
+          AngleDrawerLimit.aboveLargest,
+          reason: 'just over 90 is within 0.000001° of it too',
+        );
+      });
+
+      test('a limit angle and an angle that is exactly 0 or 90 are two '
+          'entries, whichever is filed first (review of 19 Nov, nit 5)', () {
+        List<String> drawer(List<Angle> answersOldestFirst) {
+          var memory = const AngleMemory();
+          for (final answer in answersOldestFirst) {
+            memory = memory.filedAnswer(answer, formatter: formatter);
+          }
+          return [
+            for (final angle in memory.remembered)
+              '${angle.entry.text} ${switch (angle.limit) {
+                final limit? => limit.name,
+                null => 'exact',
+              }}',
+          ];
+        }
+
+        const asinOfABillionth = Angle(5.729577951308232e-8);
+        const acosOfATenBillionth = Angle(89.9999999942704);
+        const asinOfAHundredBillionth = Angle(5.729577951308232e-10);
+        expect(drawer([asinOfABillionth, const Angle(0)]), [
+          '0 exact',
+          '0 belowSmallest',
+        ]);
+        expect(drawer([const Angle(0), asinOfABillionth]), [
+          '0 belowSmallest',
+          '0 exact',
+        ]);
+        expect(drawer([acosOfATenBillionth, const Angle(90)]), [
+          '90 exact',
+          '90 aboveLargest',
+        ]);
+        expect(
+          drawer([const Angle(0), asinOfAHundredBillionth]),
+          ['0 belowSmallest', '0 exact'],
+          reason: 'within the drawer\'s billionth of 0, still two angles',
+        );
+        expect(
+          drawer([
+            const Angle(0),
+            const Angle(0, spelling: AngleSpelling.degreesMinutesSeconds),
+          ]),
+          ['0°00\'00" exact'],
+          reason: 'two spellings of an exact 0 are still one entry',
+        );
+      });
+
+      test('a limit angle is still one entry with the same angle typed out, '
+          'and two limit angles that read alike are one entry', () {
+        const tenMillionth = Angle(0.0000001);
+        final limit = filedAnswerOf(tenMillionth);
+        const typed = RememberedAngle(
+          entry: EntryBuffer([Token(digits: '0.0000001')]),
+          value: tenMillionth,
+        );
+        expect(AngleMemory.of([typed, limit]).remembered, [typed]);
+        expect(AngleMemory.of([limit, typed]).remembered, [limit]);
+        final otherLimit = filedAnswerOf(const Angle(0.0000002));
+        expect(AngleMemory.of([otherLimit, limit]).remembered, [otherLimit]);
       });
 
       test('an angle that is 0 or 90 reads so, with no limit, and a double '

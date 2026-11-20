@@ -13,10 +13,12 @@ import 'package:equatable/equatable.dart';
 /// it as "Under 0.000001°" or "Over 89.999999°" rather than a number that
 /// lies. The words are the screen's; the engine says only which.
 enum AngleDrawerLimit {
-  /// Above 0 and under 0.000001°.
+  /// Its size is above 0 and under 0.000001°, so it reads 0 at six
+  /// decimals.
   belowSmallest,
 
-  /// Over 89.999999° and under 90°.
+  /// Its size is within 0.000001° of 90°, on either side, so it reads 90
+  /// (or -90) at six decimals.
   aboveLargest,
 }
 
@@ -46,10 +48,20 @@ final class RememberedAngle extends Equatable {
   /// whichever was filed first, and so are 31.45 and 31°26'56" when both
   /// are one answer). The same means within [AngleMemory.sameAngleTolerance]
   /// of each other, so 38.02 and 38°01'12" are one entry although a double
-  /// reads the second as 38.019999999999996.
+  /// reads the second as 38.019999999999996. A limit angle is never the
+  /// same entry as an angle that is exactly 0 or 90, although both read 0
+  /// or 90: "Under 0.000001°" and 0 are two angles that read differently.
   bool isSameEntryAs(RememberedAngle other) =>
-      _isSameAngle(_degreesItReadsAs, other._degreesItReadsAs) ||
-      _isSameAngle(value.degrees, other.value.degrees);
+      !_isALimitBesideAnExactAngle(other) &&
+      (_isSameAngle(_degreesItReadsAs, other._degreesItReadsAs) ||
+          _isSameAngle(value.degrees, other.value.degrees));
+
+  bool _isALimitBesideAnExactAngle(RememberedAngle other) =>
+      (limit != null || other.limit != null) &&
+      (_isExactlyZeroOrRightAngle || other._isExactlyZeroOrRightAngle);
+
+  bool get _isExactlyZeroOrRightAngle =>
+      AngleMemory._isZeroOrRightAngle(value.degrees);
 
   double get _degreesItReadsAs =>
       entry.tokens.firstOrNull?.value ?? value.degrees;
@@ -193,15 +205,16 @@ class AngleMemory extends Equatable {
 
   /// The entry the drawer files an angle answer as (rule 4.16): the
   /// [formatter]'s own spelling at two decimals, and, when that would read
-  /// 0.00° or 90.00° for an angle that is not 0 or 90, one decimal more at
-  /// a time up to six (ASIN 0.00001 files as 0.001°, ACOS 0.00001 as
-  /// 89.999°, Pitch 9999999 Inch as 89.9999°). A D:M:S answer keeps its
-  /// three fields and only its seconds take the decimals, by the same rule
-  /// (0.00001° files as 0°00'00.04", 89.99999° as 89°59'59.96"). An angle
-  /// that still reads 0 or 90 at six decimals keeps that spelling and
-  /// names the [AngleDrawerLimit] it fell past, "Under 0.000001°" or "Over
-  /// 89.999999°". `null` for a spelling the formatter does not write as a
-  /// plain number or a D:M:S angle.
+  /// 0.00° or 90.00° for an angle that is not exactly 0 or 90, one decimal
+  /// more at a time up to six (ASIN 0.00001 files as 0.001°, ACOS 0.00001
+  /// as 89.999°, Pitch 9999999 Inch as 89.9999°). Exactly means as the
+  /// double holds it: ASIN 1 is 90.0, while ASIN 0.00000000001 is 5.7e-10°
+  /// and not 0. A D:M:S answer keeps its three fields and only its seconds
+  /// take the decimals, by the same rule (0.00001° files as 0°00'00.04",
+  /// 89.99999° as 89°59'59.96"). An angle that still reads 0 or 90 at six
+  /// decimals keeps that spelling and names the [AngleDrawerLimit] it fell
+  /// past, "Under 0.000001°" or "Over 89.999999°". `null` for a spelling
+  /// the formatter does not write as a plain number or a D:M:S angle.
   static ({EntryBuffer entry, AngleDrawerLimit? limit})? spelledForDrawer(
     Angle angle, {
     required QuantityFormatter formatter,
@@ -240,11 +253,8 @@ class AngleMemory extends Equatable {
 
   static const double _halfOfARightAngle = 45;
 
-  // Whether [degrees] is 0 or ±90, within the drawer's own tolerance for
-  // one angle, so that a double's rounding noise never passes for a limit.
   static bool _isZeroOrRightAngle(double degrees) =>
-      degrees.abs() <= sameAngleTolerance ||
-      (degrees.abs() - 90).abs() <= sameAngleTolerance;
+      degrees == 0 || degrees.abs() == 90;
 
   /// The entry an angle answer reads as, taken off [formatter]'s own text
   /// (53.13, or 31°26'56" for an answer spelled that way), the one the
