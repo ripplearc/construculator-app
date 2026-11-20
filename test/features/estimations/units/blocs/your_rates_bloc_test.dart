@@ -197,6 +197,36 @@ void main() {
           expect(database.insertedRows, isEmpty);
         },
       );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a save that names the saved row to replace changes its price instead '
+        'of asking again',
+        setUp: () async {
+          await goOffline();
+          database.seedRows([row(id: 'r1')]);
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(
+            YourRatesSaveRequested(
+              entry().copyWith(rate: const Money(amount: 300.0)),
+              replacesRateId: 'r1',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+        },
+        expect: () => [
+          isA<YourRatesSaving>(),
+          isA<YourRatesSaveSucceeded>(),
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having(
+            (s) => s.recents.map((e) => (e.id, e.rate.amount)).toList(),
+            'recents',
+            [('r1', 300.0)],
+          ),
+        ],
+      );
     });
 
     group('YourRatesRefreshRecents', () {
