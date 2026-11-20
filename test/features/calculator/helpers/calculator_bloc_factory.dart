@@ -1,3 +1,4 @@
+import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
@@ -6,11 +7,13 @@ import 'package:construculator/features/calculator/testing/fake_trade_stores_rep
 /// trade-stores repository showing Appendix B's defaults unless the test
 /// hands in its own — so the page and replay tests see the sheet counts
 /// the module's chain would read, with no database behind them.
-CalculatorBloc calculatorBlocForTests({FakeTradeStoresRepository? stores}) =>
+CalculatorBloc calculatorBlocForTests({FakeTradeStoresRepository? stores}) {
+  final repository = stores ?? FakeTradeStoresRepository();
+  // ignore: no_direct_instantiation
+  return CalculatorBloc(
     // ignore: no_direct_instantiation
-    CalculatorBloc(
-      // ignore: no_direct_instantiation
-      materialCounts: WatchMaterialCountsUseCase(
-        repository: stores ?? FakeTradeStoresRepository(),
-      ),
-    );
+    materialCounts: WatchMaterialCountsUseCase(repository: repository),
+    // ignore: no_direct_instantiation
+    deleteMaterialSize: DeleteMaterialSizeUseCase(repository: repository),
+  );
+}

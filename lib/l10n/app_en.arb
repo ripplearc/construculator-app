@@ -3144,6 +3144,34 @@
   "@calculatorDetailCollapseButton": {
     "description": "Button in the calculator detail panel that goes back to the first dimension tiles"
   },
+  "calculatorSheetTableTitle": "Sheet quantities for {area}",
+  "@calculatorSheetTableTitle": {
+    "description": "Title of the sheet table in the calculator detail panel, naming the area every row counts sheets for",
+    "placeholders": {
+      "area": {
+        "type": "String",
+        "example": "180ft²"
+      }
+    }
+  },
+  "calculatorSheetTableSizeColumn": "Size",
+  "@calculatorSheetTableSizeColumn": {
+    "description": "Header of the column of stored sheet sizes in the calculator detail panel's sheet table"
+  },
+  "calculatorSheetTableCountColumn": "No. of sheet",
+  "@calculatorSheetTableCountColumn": {
+    "description": "Header of the column of sheet counts in the calculator detail panel's sheet table"
+  },
+  "calculatorSheetTableDeleteSemantics": "Delete {size}",
+  "@calculatorSheetTableDeleteSemantics": {
+    "description": "Screen reader label of the delete button on a row of the calculator detail panel's sheet table",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "48in x 96in"
+      }
+    }
+  },
   "calculatorLabelValue": "Value",
   "@calculatorLabelValue": {
     "description": "Head of the calculator label row for a value typed under no function key"

@@ -191,6 +191,27 @@
         <regex pattern="BracketChip\(:final inner\) =&gt; '\(\$\{inner\.map\(_valueTextOf\)\.join\(\)\}\)'," dotAll="true" id="calculator_state.toast.bracket_named">
             <mutation text="BracketChip(:final inner) =&gt; '',"/>
         </regex>
+        <!-- T2a 2/3 (CA-1095): the sheet table of the detail panel -->
+        <regex pattern="if \(area == null\) return null;\s*final seenSizes" dotAll="true" id="calculator_state.size_table.without_an_area">
+            <mutation text="if (area == null) return const CalculatorSizeTable(areaText: '', rows: []); final seenSizes"/>
+        </regex>
+        <regex pattern="if \(count\.area == area\) _sizeRow\(count, seenSizes\)," dotAll="true" id="calculator_state.size_table.counts_of_another_area">
+            <mutation text="_sizeRow(count, seenSizes),"/>
+        </regex>
+        <regex pattern="final before = seenSizes\[sizeText\] \?\? 0;" dotAll="true" id="calculator_state.size_table.twins_share_an_id">
+            <mutation text="const before = 0;"/>
+        </regex>
+        <regex pattern="seenSizes\[sizeText\] = before \+ 1;" dotAll="true" id="calculator_state.size_table.twins_not_counted">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="countText: tape\.formatter\.format\(count\.value\)," dotAll="true" id="calculator_state.size_table.raw_count">
+            <mutation text="countText: '${count.count}',"/>
+        </regex>
+        <regex pattern="dimensions\.isNotEmpty \|\| sizeTable != null;" dotAll="true" id="calculator_state.has_details.one_part_only">
+            <mutation text="dimensions.isNotEmpty;"/>
+            <mutation text="sizeTable != null;"/>
+            <mutation text="dimensions.isNotEmpty &amp;&amp; sizeTable != null;"/>
+        </regex>
     </rules>
 
     <commands>

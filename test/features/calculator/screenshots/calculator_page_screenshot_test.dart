@@ -303,8 +303,8 @@ void main() {
     });
 
     testWidgets('renders the detail panel under the folded keypad: the '
-        'tiles of what Area 180ft² left unasked (Section 1.4, walkthrough '
-        '11.3)', (tester) async {
+        'tiles of what Area 180ft² left unasked and the sheet table (Section '
+        '1.4, walkthrough 11.3)', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);

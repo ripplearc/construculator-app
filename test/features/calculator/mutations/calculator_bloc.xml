@@ -387,6 +387,22 @@
         <regex pattern="\) =&gt; _press\(emit, \(tape\) =&gt; tape\.pressPercent\(\)\);" dotAll="true" id="calculator_bloc.percent.presses_nothing">
             <mutation text=") =&gt; _press(emit, TapeChanged.new);"/>
         </regex>
+        <!-- T2a 2/3 (CA-1095): deleting a row of the sheet table -->
+        <regex pattern="on&lt;CalculatorSizeRowDeleted&gt;\(_onSizeRowDeleted\);" dotAll="true" id="calculator_bloc.size_row_deleted.unhandled">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\.where\(\(row\) =&gt; row\.id == event\.rowId\)" dotAll="true" id="calculator_bloc.size_row_deleted.wrong_row">
+            <mutation text=".where((row) =&gt; row.id != event.rowId)"/>
+        </regex>
+        <regex pattern="final remaining = \[\.\.\.counts\]\.\.remove\(row\.count\);" dotAll="true" id="calculator_bloc.size_row_deleted.row_kept_until_store_answers">
+            <mutation text="final remaining = [...counts];"/>
+        </regex>
+        <regex pattern="emit\(state\.copyWith\(materialCounts: remaining\)\);" dotAll="true" id="calculator_bloc.size_row_deleted.no_early_emit">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(deleted\.isLeft\(\) &amp;&amp;" dotAll="true" id="calculator_bloc.size_row_deleted.restores_on_success">
+            <mutation text="if (deleted.isRight() &amp;&amp;"/>
+        </regex>
     </rules>
 
     <commands>

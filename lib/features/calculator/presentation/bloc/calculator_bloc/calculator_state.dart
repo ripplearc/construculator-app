@@ -461,6 +461,40 @@ class CalculatorState extends Equatable {
     ];
   }
 
+  /// The sheet table of the detail panel (Section 1.4: "sheet sizes with
+  /// the count for each"; walkthrough 11.3): every count of
+  /// [materialCounts] for [areaForCounts], the ones already landed
+  /// included, since the table is the store and not the strip. `null`
+  /// while nothing on the display is an area.
+  CalculatorSizeTable? get sizeTable {
+    final area = areaForCounts;
+    if (area == null) return null;
+    final seenSizes = <String, int>{};
+    return CalculatorSizeTable(
+      areaText: tape.formatter.format(area),
+      rows: [
+        for (final count in materialCounts)
+          if (count.area == area) _sizeRow(count, seenSizes),
+      ],
+    );
+  }
+
+  CalculatorSizeRow _sizeRow(TradeCount count, Map<String, int> seenSizes) {
+    final sizeText = tape.formatter.formatPieceSize(count.size);
+    final before = seenSizes[sizeText] ?? 0;
+    seenSizes[sizeText] = before + 1;
+    return CalculatorSizeRow(
+      id: '$sizeText#$before',
+      sizeText: sizeText,
+      countText: tape.formatter.format(count.value),
+      count: count,
+    );
+  }
+
+  /// Whether the detail panel has anything to show: dimension tiles or the
+  /// sheet table.
+  bool get hasDetails => dimensions.isNotEmpty || sizeTable != null;
+
   /// The tiles of the detail panel (Section 1.4: "Diagonal, Perimeter and
   /// the other derived values of the current inputs"): every answer the
   /// rules compute from the named values, minus the ones already landed as
