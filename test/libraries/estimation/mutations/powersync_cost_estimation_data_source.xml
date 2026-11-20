@@ -146,6 +146,11 @@
         <regex pattern="\(await _wrapper\.getAll\(_buildSelectByIdSql\(\), \[id\]\)\)\.isNotEmpty" dotAll="true" id="ds.delete.row_check_inverted">
             <mutation text="(await _wrapper.getAll(_buildSelectByIdSql(), [id])).isEmpty"/>
         </regex>
+
+        <!-- Accept an id that is not a uuid, and reject a uuid -->
+        <regex pattern="if \(!_uuidPattern\.hasMatch\(id\)\)" dotAll="false" id="ds.insert.uuid_check_negated">
+            <mutation text="if (_uuidPattern.hasMatch(id))"/>
+        </regex>
     </rules>
 
     <commands>

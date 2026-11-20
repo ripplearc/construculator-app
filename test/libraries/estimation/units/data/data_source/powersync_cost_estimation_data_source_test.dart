@@ -413,25 +413,27 @@ void main() {
           .stubGetAll(selectByIdSql, [sqliteRow(id: id, locked: locked)]);
 
       group('insertEstimationRow', () {
+        const newRowId = '2f1c7a3e-5b9d-4e8a-9c41-0a6d3b7e8f12';
+
         test('writes one INSERT carrying every column of the row', () async {
           final stored = await dataSource.insertEstimationRow(
-            newEstimate(id: 'new-1'),
+            newEstimate(id: newRowId),
           );
 
           final call = fakeWrapper.executeCalls.single;
           expect(fakeWrapper.writeTransactionCallCount, 1);
           expect(call.sql, startsWith('INSERT INTO cost_estimates (id, '));
-          expect(call.parameters.first, 'new-1');
+          expect(call.parameters.first, newRowId);
           expect(
             call.sql.split('VALUES')[1].split('?').length - 1,
             call.parameters.length,
           );
-          expect(stored.id, 'new-1');
+          expect(stored.id, newRowId);
           expect(stored.estimateName, estimateNameDefault);
         });
 
         test('writes every column of the row with its value', () async {
-          final estimate = newEstimate(id: 'new-1', locked: true);
+          final estimate = newEstimate(id: newRowId, locked: true);
 
           await dataSource.insertEstimationRow(estimate);
 
@@ -444,10 +446,19 @@ void main() {
               columns[i]: call.parameters[i],
           };
           expect(written, {
-            'id': 'new-1',
+            'id': newRowId,
             ...estimate.toJson(),
             'is_locked': 1,
           });
+        });
+
+        test('rejects an id that is not a uuid and writes nothing', () async {
+          await expectLater(
+            dataSource.insertEstimationRow(newEstimate(id: 'not-a-uuid')),
+            throwsArgumentError,
+          );
+
+          expect(fakeWrapper.executeCalls, isEmpty);
         });
 
         test('mints an id when the row has none', () async {

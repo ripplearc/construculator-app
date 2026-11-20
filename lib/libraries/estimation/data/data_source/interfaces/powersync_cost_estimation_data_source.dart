@@ -62,10 +62,15 @@ abstract class PowerSyncCostEstimationDataSource {
   /// Writes [estimation] as a new row on the phone and queues it for upload.
   ///
   /// A row with an empty id gets a new one minted here; a row that already has
-  /// an id keeps it. Returns the row as stored.
+  /// an id keeps it, and that id must be a uuid, because the server column is a
+  /// uuid and an upload with any other id would fail on every retry. Throws an
+  /// [ArgumentError] for an id that is not a uuid. Returns the row as stored.
   Future<CostEstimateDto> insertEstimationRow(CostEstimateDto estimation);
 
   /// Changes only the name of the row with [id]; `updated_at` stays as it is.
+  /// The server sets `updated_at` to its own time on every update, so the phone
+  /// does not guess it; until the upload syncs back, a list sorted by last
+  /// change does not move this row.
   ///
   /// Returns the row as it now is on the phone, or null, writing nothing, when
   /// the phone has no row with [id]. A name the row already has writes nothing.
@@ -75,7 +80,8 @@ abstract class PowerSyncCostEstimationDataSource {
   });
 
   /// Changes only `is_locked` of the row with [id]; the server fills in who
-  /// locked it and when.
+  /// locked it and when, and sets `updated_at` to its own time, so until the
+  /// upload syncs back a list sorted by last change does not move this row.
   ///
   /// Returns the row as it now is on the phone, or null, writing nothing, when
   /// the phone has no row with [id]. A lock state the row already has writes

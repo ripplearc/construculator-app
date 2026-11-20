@@ -33,6 +33,11 @@ class PowerSyncCostEstimationDataSourceImpl
 
   static const _syncStreamName = 'user_cost_estimates';
 
+  static final _uuidPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+
   PowerSyncCostEstimationDataSourceImpl({required this._wrapper});
 
   @override
@@ -183,6 +188,9 @@ class PowerSyncCostEstimationDataSourceImpl
     CostEstimateDto estimation,
   ) async {
     final id = estimation.id.isEmpty ? uuid.v4() : estimation.id;
+    if (!_uuidPattern.hasMatch(id)) {
+      throw ArgumentError.value(id, 'estimation.id', 'must be a uuid');
+    }
     final row = {
       DatabaseConstants.idColumn: id,
       ...estimation.toJson(),
