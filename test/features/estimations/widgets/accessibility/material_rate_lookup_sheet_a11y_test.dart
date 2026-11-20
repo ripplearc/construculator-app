@@ -118,5 +118,18 @@ void main() {
         find.byKey(const Key('material_lookup_use_button')),
       );
     });
+
+    testWidgets('a11y: "Try again" on the failed-read row meets tap target '
+        'and label guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('your_rates_try_again_button')),
+        setupAfterPump: waitForSearch,
+      );
+    });
   });
 }
