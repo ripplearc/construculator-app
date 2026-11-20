@@ -852,9 +852,14 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await openSheet(tester);
-      // The sheet already overflows 58 dp on the right at 2.0 text scale with
-      // the pad down, on main too. This test checks the pad adds no overflow.
-      tester.takeException();
+      // The Rate placeholder alone is wider than the row at 2.0; it scrolls
+      // in its field instead of pushing the row off the screen.
+      expect(tester.takeException(), isNull);
+      final rateText = find.descendant(
+        of: find.byKey(const Key('material_rate_field')),
+        matching: find.byType(TextField),
+      );
+      expect(tester.getRect(rateText).right, lessThanOrEqualTo(412));
 
       await openPadOnQuantity(tester);
 
