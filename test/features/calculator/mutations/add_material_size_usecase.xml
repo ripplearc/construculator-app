@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- ADD MATERIAL SIZE USE CASE MUTATION TESTING (CA-1095, T2a 3/3): which store a size from "+ Add size" goes to -->
+
+    <files>
+        <file>lib/features/calculator/domain/usecases/add_material_size_usecase.dart</file>
+    </files>
+
+    <rules>
+        <regex pattern="store: trade\.sizeStore," dotAll="true" id="add_material_size.store.always_sheets">
+            <mutation text="store: SizeStore.sheet,"/>
+        </regex>
+        <regex pattern="height: height," dotAll="true" id="add_material_size.height.is_the_width">
+            <mutation text="height: width,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="add_material_size_usecase" expected-return="0">flutter test test/features/calculator/units/domain/usecases/add_material_size_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

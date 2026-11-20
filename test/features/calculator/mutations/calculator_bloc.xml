@@ -369,6 +369,19 @@
         <regex pattern="if \(deleted\.isLeft\(\) &amp;&amp;" dotAll="true" id="calculator_bloc.size_row_deleted.restores_on_success">
             <mutation text="if (deleted.isRight() &amp;&amp;"/>
         </regex>
+        <!-- T2a 3/3 (CA-1095): "+ Add size" -->
+        <regex pattern="on&lt;CalculatorSizeEditorClosed&gt;\(_onSizeEditorClosed\);" dotAll="true" id="calculator_bloc.size_added.unhandled">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="final height = state\.sizeEntryLength\(widthText\);" dotAll="true" id="calculator_bloc.size_added.square_of_the_length">
+            <mutation text="final height = state.sizeEntryLength(lengthText);"/>
+        </regex>
+        <regex pattern="if \(event\.fields case \[final lengthText, final widthText\]\)" dotAll="true" id="calculator_bloc.size_added.fields_swapped">
+            <mutation text="if (event.fields case [final widthText, final lengthText])"/>
+        </regex>
+        <regex pattern="await _addMaterialSize\(\s*trade: Trade\.drywall," dotAll="true" id="calculator_bloc.size_added.to_masonry">
+            <mutation text="await _addMaterialSize(trade: Trade.masonry,"/>
+        </regex>
     </rules>
 
     <commands>
