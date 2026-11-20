@@ -29,7 +29,6 @@ class AuthManagerImpl implements AuthManager {
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
-  /// The user the last session was started for, or null before the first.
   String? _sessionUserId;
 
   AuthManagerImpl({
