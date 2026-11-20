@@ -4310,6 +4310,12 @@ abstract class AppLocalizations {
   /// **'Unit: {unit}. Tap to change'**
   String unitPillSemanticLabel(String unit);
 
+  /// Screen reader label of one row of the Select unit sheet: the unit's symbol, then its name, for example 'gal, Gallon'
+  ///
+  /// In en, this message translates to:
+  /// **'{symbol}, {name}'**
+  String unitOptionSemanticLabel(String symbol, String name);
+
   /// Label above the material name on the New material cost sheet
   ///
   /// In en, this message translates to:

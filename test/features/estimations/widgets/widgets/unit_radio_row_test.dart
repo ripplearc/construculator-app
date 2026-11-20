@@ -66,6 +66,13 @@ void main() {
         hasTapAction: true,
       ),
     );
+    // The texts inside are not read again as their own nodes.
+    expect(
+      tester
+          .getSemantics(find.byKey(const Key('unit_option_feet')))
+          .childrenCount,
+      0,
+    );
     expect(
       tester.getSemantics(find.byKey(const Key('unit_option_inches'))),
       isSemantics(label: 'in, Inch', isChecked: false),
