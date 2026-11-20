@@ -124,19 +124,21 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               child: Row(
                 spacing: CoreSpacing.space2,
                 children: [
-                  _SheetTextField(
-                    key: const Key('material_quantity_field'),
-                    fitsText: true,
-                    readOnly: _isSaving(state),
-                    controller: _quantityController,
-                    focusNode: _quantityFocus,
-                    label: l10n.materialQuantityLabel,
-                    hintText: l10n.materialQuantityPlaceholder,
-                    keyboardType: _numberKeyboard,
-                    onTap: _selectAll(_quantityController),
-                    inputFormatters: [_quantityFormatter],
-                    onChanged: (value) =>
-                        bloc.add(MaterialQuantityUpdated(value)),
+                  Flexible(
+                    child: _SheetTextField(
+                      key: const Key('material_quantity_field'),
+                      fitsText: true,
+                      readOnly: _isSaving(state),
+                      controller: _quantityController,
+                      focusNode: _quantityFocus,
+                      label: l10n.materialQuantityLabel,
+                      hintText: l10n.materialQuantityPlaceholder,
+                      keyboardType: _numberKeyboard,
+                      onTap: _selectAll(_quantityController),
+                      inputFormatters: [_quantityFormatter],
+                      onChanged: (value) =>
+                          bloc.add(MaterialQuantityUpdated(value)),
+                    ),
                   ),
                   UnitPill(
                     key: const Key('material_unit_pill'),
@@ -155,19 +157,22 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               child: Row(
                 spacing: CoreSpacing.space1,
                 children: [
-                  _SheetTextField(
-                    key: const Key('material_rate_field'),
-                    fitsText: true,
-                    readOnly: _isSaving(state),
-                    controller: _rateController,
-                    focusNode: _rateFocus,
-                    label: l10n.materialRateLabel,
-                    hintText: l10n.materialRatePlaceholder,
-                    keyboardType: _numberKeyboard,
-                    onTap: _selectAll(_rateController),
-                    inputFormatters: [_rateFormatter],
-                    // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
-                    onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
+                  Flexible(
+                    child: _SheetTextField(
+                      key: const Key('material_rate_field'),
+                      fitsText: true,
+                      readOnly: _isSaving(state),
+                      controller: _rateController,
+                      focusNode: _rateFocus,
+                      label: l10n.materialRateLabel,
+                      hintText: l10n.materialRatePlaceholder,
+                      keyboardType: _numberKeyboard,
+                      onTap: _selectAll(_rateController),
+                      inputFormatters: [_rateFormatter],
+                      // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
+                      onChanged: (value) =>
+                          bloc.add(MaterialRateUpdated(value)),
+                    ),
                   ),
                   if (state.data.unit case final unit?)
                     Text(
@@ -280,7 +285,12 @@ class _SheetTextField extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) =>
+        _buildField(context, constraints.maxWidth),
+  );
+
+  Widget _buildField(BuildContext context, double maxWidth) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final textStyle = textTheme.bodyLargeRegular.copyWith(
@@ -289,7 +299,11 @@ class _SheetTextField extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final width = fitsText ? _textWidth(context, textStyle) : null;
+        // Never wider than the row leaves, so large text scrolls in the field
+        // instead of pushing the row off the screen.
+        final width = fitsText
+            ? math.min(_textWidth(context, textStyle), maxWidth)
+            : null;
         return SizedBox(
           height: _drawnHeight,
           width: width,
