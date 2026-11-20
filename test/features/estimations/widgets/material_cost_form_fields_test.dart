@@ -4,7 +4,6 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
-import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -100,14 +99,13 @@ void main() {
   MaterialCostFormData dataOf() => bloc.state.data;
 
   group('layout from Figma', () {
-    Size rowSize(WidgetTester tester, String label) => tester.getSize(
-      find.ancestor(of: find.text(label), matching: find.byType(SheetFieldRow)),
-    );
+    Size rowSize(WidgetTester tester, String field) =>
+        tester.getSize(find.byKey(Key('material_${field}_row')));
 
     testWidgets('the name row is 67 dp tall with its divider', (tester) async {
       await pumpFields(tester);
 
-      expect(rowSize(tester, 'Material').height, 66 + 1);
+      expect(rowSize(tester, 'name').height, 66 + 1);
     });
 
     testWidgets('the quantity row is 74 dp tall as in the storyboard, so the '
@@ -116,7 +114,7 @@ void main() {
     ) async {
       await pumpFields(tester);
 
-      expect(rowSize(tester, 'Quantity').height, 73 + 1);
+      expect(rowSize(tester, 'quantity').height, 73 + 1);
     });
 
     testWidgets('the unit button is drawn 32 dp tall', (tester) async {
@@ -728,10 +726,7 @@ void main() {
       FocusScope.of(tester.element(nameField)).unfocus();
       await tester.pump();
 
-      final row = find.ancestor(
-        of: quantityField,
-        matching: find.byType(SheetFieldRow),
-      );
+      final row = find.byKey(const Key('material_quantity_row'));
       await tester.tapAt(tester.getTopLeft(row) + const Offset(30, 10));
       await tester.pump();
 
