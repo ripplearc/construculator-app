@@ -1,3 +1,4 @@
+import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
@@ -15,5 +16,7 @@ CalculatorBloc calculatorBlocForTests({FakeTradeStoresRepository? stores}) {
     materialCounts: WatchMaterialCountsUseCase(repository: repository),
     // ignore: no_direct_instantiation
     deleteMaterialSize: DeleteMaterialSizeUseCase(repository: repository),
+    // ignore: no_direct_instantiation
+    addMaterialSize: AddMaterialSizeUseCase(repository: repository),
   );
 }

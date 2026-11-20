@@ -3772,6 +3772,36 @@ abstract class AppLocalizations {
   /// **'Delete {size}'**
   String calculatorSheetTableDeleteSemantics(String size);
 
+  /// Action of the calculator detail panel's sheet table that opens the size editor to add a sheet size, and the title of that editor
+  ///
+  /// In en, this message translates to:
+  /// **'Add size'**
+  String get calculatorSheetTableAddButton;
+
+  /// First field of the calculator's size editor: the width of the sheet size being added
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get calculatorSizeEditorLengthField;
+
+  /// Second field of the calculator's size editor: the height of the sheet size being added
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get calculatorSizeEditorWidthField;
+
+  /// Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calculatorSizeEditorAddButton;
+
+  /// Error under a field of the calculator's size editor when the field holds no size, or a size of zero
+  ///
+  /// In en, this message translates to:
+  /// **'Size must be more than zero.'**
+  String get calculatorSizeEditorSizeError;
+
   /// Head of the calculator label row for a value typed under no function key
   ///
   /// In en, this message translates to:

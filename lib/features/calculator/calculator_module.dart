@@ -9,6 +9,7 @@ import 'package:construculator/features/calculator/data/repositories/trade_store
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
@@ -82,8 +83,15 @@ class CalculatorModule extends Module {
     i.add<DeleteMaterialSizeUseCase>(
       () => DeleteMaterialSizeUseCase(repository: i()),
     );
+    i.add<AddMaterialSizeUseCase>(
+      () => AddMaterialSizeUseCase(repository: i()),
+    );
     i.add<CalculatorBloc>(
-      () => CalculatorBloc(materialCounts: i(), deleteMaterialSize: i()),
+      () => CalculatorBloc(
+        materialCounts: i(),
+        deleteMaterialSize: i(),
+        addMaterialSize: i(),
+      ),
     );
   }
 

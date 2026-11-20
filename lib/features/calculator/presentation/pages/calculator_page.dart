@@ -274,6 +274,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   CoreSizesTableData _sheetTable(
     CalculatorLabelFormatter labels,
+    CalculatorState state,
     CalculatorSizeTable table,
   ) => CoreSizesTableData(
     id: _sheetTableId,
@@ -289,7 +290,31 @@ class _CalculatorPageState extends State<CalculatorPage> {
     deleteRowSemanticsLabelBuilder: (row) =>
         labels.l10n.calculatorSheetTableDeleteSemantics(row.values.first),
     onDeleted: (id) => _bloc.add(CalculatorSizeRowDeleted(id)),
+    addLabel: labels.l10n.calculatorSheetTableAddButton,
+    onAdd: () => _addSize(labels, state),
   );
+
+  Future<void> _addSize(
+    CalculatorLabelFormatter labels,
+    CalculatorState state,
+  ) async {
+    final entry = await CoreValueEditorSheet.show(
+      context: context,
+      titles: [
+        labels.l10n.calculatorSizeEditorLengthField,
+        labels.l10n.calculatorSizeEditorWidthField,
+      ],
+      addSizeTitle: labels.l10n.calculatorSheetTableAddButton,
+      editSizeTitle: labels.l10n.calculatorSheetTableAddButton,
+      resultLabel: labels.l10n.calculatorSizeEditorAddButton,
+      keyboardSemantics: labels.keyboardSemantics,
+      keyboardLabels: labels.keyboardLabels,
+      validator: (text) => state.sizeEntryLength(text) == null
+          ? labels.l10n.calculatorSizeEditorSizeError
+          : null,
+    );
+    _bloc.add(CalculatorSizeEditorClosed(entry?.values ?? const []));
+  }
 
   Widget _detailPanel(CalculatorLabelFormatter labels, CalculatorState state) =>
       SingleChildScrollView(
@@ -301,7 +326,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
           attachmentsTitleLabel: _attachmentsHeadingLeftBlank,
           dimensions: _dimensionTiles(labels, state.dimensions),
           tables: [
-            if (state.sizeTable case final table?) _sheetTable(labels, table),
+            if (state.sizeTable case final table?)
+              _sheetTable(labels, state, table),
           ],
         ),
       );

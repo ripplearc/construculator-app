@@ -370,5 +370,49 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the size editor opened from "+ Add size" over the '
+        'folded keypad, 4 [Feet] typed in Length (Section 1.5; walkthrough '
+        '11.4)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      blocOf(tester)
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('8'))
+        ..add(const CalculatorDigitPressed('0'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorUnitSelected(Unit.foot));
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Keyboard drag handle'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(
+        find.bySemanticsLabel(
+          AppLocalizationsEn().calculatorSheetTableAddButton,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      for (final key in const ['calc_key_four', 'calc_key_feet']) {
+        await tester.tap(
+          find.descendant(
+            of: find.byType(CoreValueEditorSheet),
+            matching: find.byKey(ValueKey(key)),
+          ),
+        );
+        await tester.pump();
+      }
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_add_size_editor$suffix.png',
+        ),
+      );
+    });
   });
 }

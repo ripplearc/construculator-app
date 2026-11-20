@@ -491,6 +491,13 @@ class CalculatorState extends Equatable {
     );
   }
 
+  /// The length a field of the size editor spells under the unit system in
+  /// force (term 2.18: Length and Width for a size), or `null` for a field
+  /// that spells no size or a size of zero, which the editor refuses
+  /// ("Size must be more than zero."; term 2.16).
+  Length? sizeEntryLength(String text) =>
+      const SizeEntryParser().lengthOf(text, tape.preferences.system);
+
   /// Whether the detail panel has anything to show: dimension tiles or the
   /// sheet table.
   bool get hasDetails => dimensions.isNotEmpty || sizeTable != null;
