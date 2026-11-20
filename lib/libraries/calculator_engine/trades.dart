@@ -204,10 +204,10 @@ class Trades extends Equatable {
 
   /// The concrete of [length] at each of [crossSections], in their order.
   /// A length of zero or less takes no concrete at all, so that the screen
-  /// can refuse the key ("Size must be more than zero"; decision tree row
-  /// 371); a cross-section with no face — see [PieceSize.hasFace] — is
-  /// left out. A length is always finite ([Length.computed] refuses the
-  /// rest), so that is the one guard.
+  /// can refuse the key with the red Alert "Length must be more than zero"
+  /// (design doc 21.3, "Keys that must also answer"); a cross-section with
+  /// no face — see [PieceSize.hasFace] — is left out. A length is always
+  /// finite ([Length.computed] refuses the rest), so that is the one guard.
   List<FootingVolume> footingVolumesFor(
     Length length,
     List<PieceSize> crossSections, {
