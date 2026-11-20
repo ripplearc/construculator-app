@@ -41,7 +41,11 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Future<void> openSheet(WidgetTester tester, ThemeData theme) async {
+  Future<void> openSheet(
+    WidgetTester tester,
+    ThemeData theme, {
+    Size size = size,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -181,6 +185,9 @@ void main() {
       await enter(tester, 'material_quantity_field', '3');
       await pickUnit(tester, Unit.liters);
       await enter(tester, 'material_rate_field', '52');
+      // A tap on the title closes the number pad, which hides the button.
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_to_estimate_button')));
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'save_failed', suffix);
@@ -205,6 +212,45 @@ void main() {
       await tester.tap(find.byKey(SheetHeader.backButtonKey));
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'discard_question', suffix);
+    });
+
+    // Keeps focus, so the pad stays up, with a caret that does not blink.
+    Future<void> expectPadGolden(WidgetTester tester, String name) async {
+      EditableText.debugDeterministicCursor = true;
+      addTearDown(() => EditableText.debugDeterministicCursor = false);
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/material_cost_sheet/$name$suffix.png'),
+      );
+    }
+
+    Future<void> padUpOnQuantity(WidgetTester tester, Size size) async {
+      await openSheet(tester, theme, size: size);
+      await enter(tester, 'material_name_field', 'Interior paint');
+      await enter(tester, 'material_quantity_field', '25');
+      await pickUnit(tester, Unit.liters);
+      await enter(tester, 'material_rate_field', '14.75');
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_quantity_field')));
+    }
+
+    testWidgets('number pad up on the quantity', (tester) async {
+      await padUpOnQuantity(tester, size);
+      await expectPadGolden(tester, 'pad_up_quantity');
+    });
+
+    testWidgets('number pad up on an empty rate', (tester) async {
+      await openSheet(tester, theme);
+      await tester.tap(find.byKey(const Key('material_rate_field')));
+      await expectPadGolden(tester, 'pad_up_empty_rate');
+    });
+
+    testWidgets('number pad up on a 667 dp phone, card scrolled with the '
+        'form', (tester) async {
+      await padUpOnQuantity(tester, const Size(375, 667));
+      await expectPadGolden(tester, 'pad_up_short_phone');
     });
   });
 }
