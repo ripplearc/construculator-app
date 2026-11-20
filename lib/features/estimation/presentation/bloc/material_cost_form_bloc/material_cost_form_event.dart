@@ -45,7 +45,7 @@ class MaterialRateUpdated extends MaterialCostFormEvent {
 
 /// Fired when a saved price is attached to the line. Its unit becomes the
 /// line's unit.
-// TODO: [CA-1185] fire this when a price is picked from Your rates. https://ripplearc.youtrack.cloud/issue/CA-1185
+// TODO: [CA-1527] fire this when a rate is put on the form from Your recents, the look-up or a sample cost file. https://ripplearc.youtrack.cloud/issue/CA-1527
 class MaterialPriceAttached extends MaterialCostFormEvent {
   const MaterialPriceAttached({
     required this.rate,
