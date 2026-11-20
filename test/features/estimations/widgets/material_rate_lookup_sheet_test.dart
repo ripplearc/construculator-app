@@ -338,6 +338,20 @@ void main() {
 
       expect(find.byKey(const Key('your_rates_load_error')), findsNothing);
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_screws')), findsNothing);
+    });
+
+    testWidgets('a failed search replaces the rows of the last one with the '
+        'error row', (tester) async {
+      await openSheet(tester);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
+
+      database.getAllError = StateError('database locked');
+      await typeQuery(tester, 'interior');
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
+      expect(find.byKey(useButton), findsNothing);
     });
   });
 }
