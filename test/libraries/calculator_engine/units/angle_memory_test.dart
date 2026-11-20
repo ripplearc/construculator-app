@@ -1014,6 +1014,51 @@ void main() {
         expect(entries(memory), ['26.57']);
       });
 
+      test('R1: a rise ending in a fraction after whole inches is filed when '
+          'C is pressed on it, as the Inch key would close it: [Pitch] 6 '
+          '[Inch] 1 [/] 2 files 28.44', () {
+        final active = activeOf(press(const Tape(), '[Pitch] 6 in 1 / 2'));
+        expect(active.entry.endsWithFractionAfterWholeInches, isTrue);
+        final closed = filedTyped(const AngleMemory(), '[Pitch] 6 in 1 / 2 in');
+        final memory = const AngleMemory().filed(
+          active,
+          parser: parser,
+          formatter: formatter,
+        );
+        expect(entries(memory), ['28.44']);
+        expect(memory, closed);
+        expect(
+          memory.remembered.single.value.degrees,
+          closeTo(28.442928624363347, 1e-12),
+        );
+      });
+
+      test('R1: a fraction after feet still wants its unit, so [Pitch] 6 '
+          '[Feet] 1 [/] 2 with C pressed files nothing', () {
+        final active = activeOf(press(const Tape(), '[Pitch] 6 ft 1 / 2'));
+        expect(active.entry.endsWithFractionAfterWholeInches, isFalse);
+        expect(active.filedAngle(parser), isNull);
+        expect(
+          const AngleMemory().filed(
+            active,
+            parser: parser,
+            formatter: formatter,
+          ),
+          const AngleMemory(),
+        );
+      });
+
+      test('R1: the drawer reads a rise as the strip does: Angle.ofRise is '
+          'the pitch of that many inches over 12in of run', () {
+        const rise = Length(6 * Length.ticksPerInch, unit: Unit.inch);
+        expect(Angle.ofRise(rise), Angle.ofRisePerFoot(6));
+        expect(Angle.ofRise(rise).spelling, AngleSpelling.risePerFoot);
+        expect(
+          activeOf(press(const Tape(), '[Pitch] 6 in')).filedAngle(parser),
+          Angle.ofRise(rise),
+        );
+      });
+
       test('a length under any other key, and a fraction over twelve under '
           'a key that does not read degrees, are not filed', () {
         for (final keys in ['[Width] 8 ft', '[Length] 1 2 in', '[Sides] 6']) {

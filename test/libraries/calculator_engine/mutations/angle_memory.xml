@@ -15,6 +15,7 @@
         <file>lib/libraries/calculator_engine/tape.dart</file>
         <file>lib/libraries/calculator_engine/models/token.dart</file>
         <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+        <file>lib/libraries/calculator_engine/models/quantity.dart</file>
     </files>
 
     <rules>
@@ -39,18 +40,30 @@
             <mutation text="final angle = chip.filedAngle(parser) ?? const Angle(0);"/>
         </regex>
 
-        <!-- RULE 3b: a pitch typed in inches of rise is not filed, is filed
-             as degrees equal to its inches, or over its ticks (CA-1366) -->
-        <regex pattern="final Length rise =&gt; Angle\.ofRisePerFoot\(\s*rise\.preciseTicks / Length\.ticksPerInch,\s*\)," dotAll="true" id="chip.filed_angle.pitch_length">
+        <!-- RULE 3b: a pitch typed in inches of rise is not filed, or is
+             filed as degrees equal to its inches (CA-1366); R1: the one
+             reading of a rise forgets the inches or the arctangent -->
+        <regex pattern="final Length rise =&gt; Angle\.ofRise\(rise\)," dotAll="true" id="chip.filed_angle.pitch_length">
             <mutation text="Length() =&gt; null,"/>
             <mutation text="final Length rise =&gt; Angle(rise.preciseTicks / Length.ticksPerInch),"/>
-            <mutation text="final Length rise =&gt; Angle.ofRisePerFoot(rise.preciseTicks),"/>
+        </regex>
+        <regex pattern="factory Angle\.ofRise\(Length rise\) =&gt;\s*Angle\.ofRisePerFoot\(rise\.preciseTicks / Length\.ticksPerInch\);" dotAll="true" id="angle.of_rise">
+            <mutation text="factory Angle.ofRise(Length rise) =&gt; Angle.ofRisePerFoot(rise.preciseTicks.toDouble());"/>
+            <mutation text="factory Angle.ofRise(Length rise) =&gt; Angle(rise.preciseTicks / Length.ticksPerInch);"/>
         </regex>
         <!-- RULE 3c: a length under a key that does not read degrees is
-             filed as a rise, or no length is -->
-        <regex pattern="if \(!readsDegrees \|\| trigFunction != null\) return null;\s*return switch \(value\(parser\)\) \{" dotAll="true" id="chip.filed_angle.guard">
-            <mutation text="if (trigFunction != null) return null; return switch (value(parser)) {"/>
-            <mutation text="return null; return switch (value(parser)) {"/>
+             filed as a rise; R1: a rise ending in a fraction after whole
+             inches is read unclosed when C files it, so nothing is filed -->
+        <regex pattern="if \(!readsDegrees \|\| trigFunction != null\) return null;\s*final closed = copyWith\(entry: entry\.withFractionClosedAsInches\);" dotAll="true" id="chip.filed_angle.guard">
+            <mutation text="if (trigFunction != null) return null; final closed = copyWith(entry: entry.withFractionClosedAsInches);"/>
+            <mutation text="if (!readsDegrees || trigFunction != null) return null; final closed = this;"/>
+        </regex>
+        <!-- RULE 3d (R1): the closing closes any unitless fraction, a
+             fraction after feet included, or never closes -->
+        <regex pattern="if \(!endsWithFractionAfterWholeInches\) return this;\s*return switch \(closeWith\(Unit\.inch\)\) \{\s*EntryChanged\(:final buffer\) =&gt; buffer," dotAll="true" id="entry_buffer.fraction_closed_as_inches">
+            <mutation text="return switch (closeWith(Unit.inch)) { EntryChanged(:final buffer) =&gt; buffer,"/>
+            <mutation text="if (!endsWithUnitlessFraction) return this; return switch (closeWith(Unit.inch)) { EntryChanged(:final buffer) =&gt; buffer,"/>
+            <mutation text="if (!endsWithFractionAfterWholeInches) return this; return switch (closeWith(Unit.inch)) { EntryChanged() =&gt; this,"/>
         </regex>
         <!-- RULE 3d: the bare fraction over twelve is not filed -->
         <regex pattern="Angle\(spelling: AngleSpelling\.risePerFoot\) &amp;&amp; final pitch =&gt; pitch,\s*_ =&gt; null," dotAll="true" id="chip.filed_angle.fraction_over_twelve">
