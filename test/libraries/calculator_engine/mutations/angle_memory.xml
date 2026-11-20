@@ -94,13 +94,28 @@
              the entry is compared by its text instead of what it reads as
              (the order bug of the review of 18 Nov), by its value alone, by
              what it reads as alone, by its text alone, or by the whole Angle
-             with its spelling -->
-        <regex pattern="_isSameAngle\(_degreesItReadsAs, other\._degreesItReadsAs\) \|\|\s*_isSameAngle\(value\.degrees, other\.value\.degrees\);" dotAll="true" id="angle_memory.same_entry">
-            <mutation text="entry.text == other.entry.text || _isSameAngle(value.degrees, other.value.degrees);"/>
-            <mutation text="_isSameAngle(value.degrees, other.value.degrees);"/>
-            <mutation text="_isSameAngle(_degreesItReadsAs, other._degreesItReadsAs);"/>
-            <mutation text="entry.text == other.entry.text;"/>
-            <mutation text="value == other.value;"/>
+             with its spelling; R1 of CA-1367 (review of 19 Nov, nit 5): a
+             limit angle and an exact 0 or 90 are one entry again, or any
+             two entries with different limits are two, so a limit and the
+             same angle typed out stop being one -->
+        <regex pattern="!_isALimitBesideAnExactAngle\(other\) &amp;&amp;\s*\(_isSameAngle\(_degreesItReadsAs, other\._degreesItReadsAs\) \|\|\s*_isSameAngle\(value\.degrees, other\.value\.degrees\)\);" dotAll="true" id="angle_memory.same_entry">
+            <mutation text="!_isALimitBesideAnExactAngle(other) &amp;&amp; (entry.text == other.entry.text || _isSameAngle(value.degrees, other.value.degrees));"/>
+            <mutation text="!_isALimitBesideAnExactAngle(other) &amp;&amp; _isSameAngle(value.degrees, other.value.degrees);"/>
+            <mutation text="!_isALimitBesideAnExactAngle(other) &amp;&amp; _isSameAngle(_degreesItReadsAs, other._degreesItReadsAs);"/>
+            <mutation text="!_isALimitBesideAnExactAngle(other) &amp;&amp; entry.text == other.entry.text;"/>
+            <mutation text="!_isALimitBesideAnExactAngle(other) &amp;&amp; value == other.value;"/>
+            <mutation text="(_isSameAngle(_degreesItReadsAs, other._degreesItReadsAs) || _isSameAngle(value.degrees, other.value.degrees));"/>
+            <mutation text="limit == other.limit &amp;&amp; (_isSameAngle(_degreesItReadsAs, other._degreesItReadsAs) || _isSameAngle(value.degrees, other.value.degrees));"/>
+        </regex>
+        <!-- RULE 4c (R1 of CA-1367, nit 5): the limit is looked for on one
+             side only, the exact angle on one side only, or the limit is
+             not looked for, so two spellings of an exact 0 are two -->
+        <regex pattern="\(limit != null \|\| other\.limit != null\) &amp;&amp;\s*\(_isExactlyZeroOrRightAngle \|\| other\._isExactlyZeroOrRightAngle\);" dotAll="true" id="angle_memory.limit_beside_exact">
+            <mutation text="limit != null &amp;&amp; (_isExactlyZeroOrRightAngle || other._isExactlyZeroOrRightAngle);"/>
+            <mutation text="other.limit != null &amp;&amp; (_isExactlyZeroOrRightAngle || other._isExactlyZeroOrRightAngle);"/>
+            <mutation text="(limit != null || other.limit != null) &amp;&amp; _isExactlyZeroOrRightAngle;"/>
+            <mutation text="(limit != null || other.limit != null) &amp;&amp; other._isExactlyZeroOrRightAngle;"/>
+            <mutation text="_isExactlyZeroOrRightAngle || other._isExactlyZeroOrRightAngle;"/>
         </regex>
 
         <!-- RULE 4b (R1 of CA-1368, review of 18 Nov): an entry is compared
@@ -247,7 +262,9 @@
              degrees; it stops a decimal short; an angle that is 0 or 90
              gets decimals it does not need, or every angle is taken as
              exact; the limit names the wrong end; 90 is not a limit;
-             decimal seconds are not read back -->
+             decimal seconds are not read back; R1 (review of 19 Nov, nit
+             4): an angle a billionth off 0 or 90 is taken as exact again,
+             0 is not exact, or -90 is not a right angle -->
         <regex pattern="var decimals = isDegreesMinutesSeconds \? 0 : drawerDecimals;" dotAll="true" id="angle_memory.drawer.start_decimals">
             <mutation text="var decimals = drawerDecimals;"/>
             <mutation text="var decimals = 0;"/>
@@ -262,8 +279,11 @@
         <regex pattern="limit: angle\.degrees\.abs\(\) &lt; _halfOfARightAngle" dotAll="true" id="angle_memory.drawer.limit_end">
             <mutation text="limit: angle.degrees.abs() &gt; _halfOfARightAngle"/>
         </regex>
-        <regex pattern="\(degrees\.abs\(\) - 90\)\.abs\(\) &lt;= sameAngleTolerance;" dotAll="true" id="angle_memory.drawer.ninety_not_a_limit">
-            <mutation text="false;"/>
+        <regex pattern="degrees == 0 \|\| degrees\.abs\(\) == 90;" dotAll="true" id="angle_memory.drawer.ninety_not_a_limit">
+            <mutation text="degrees == 0;"/>
+            <mutation text="degrees.abs() == 90;"/>
+            <mutation text="degrees == 0 || degrees == 90;"/>
+            <mutation text="degrees.abs() &lt;= sameAngleTolerance || (degrees.abs() - 90).abs() &lt;= sameAngleTolerance;"/>
         </regex>
         <regex pattern="'\^\(-\?\\\\d\+\)°\(\\\\d\+\)\\'\(\\\\d\+\(\?:\\\\\.\\\\d\+\)\?\)&quot;\\\$'," dotAll="true" id="angle_memory.spelled.whole_seconds_only">
             <mutation text="'^(-?\\d+)°(\\d+)\'(\\d+)&quot;\$',"/>

@@ -201,10 +201,10 @@
         <regex pattern="\} on RationalOverflow \{\s*return inches\.toDouble\(\) / unit\.inchesPer\.toDouble\(\);" dotAll="true" id="quantity.amount_in.no_fallback">
             <mutation text="} on RationalOverflow { rethrow;"/>
         </regex>
-        <!-- RULES (CA-1367, rule 4.16): decimal seconds — the half is not
-             added before the floor, so 59.964 to one decimal reads 59.9
-             and never carries; the minutes are truncated instead of taken
-             whole; whole seconds are written with a point -->
+        <!-- RULES (CA-1367, rule 4.16): decimal seconds — the minutes are
+             truncated instead of taken whole; whole seconds are written with
+             a point. The half not added before the floor (59.964 to one
+             decimal reading 59.9 and never carrying) is RULE 17 above -->
         <regex pattern="final minutes = \(\(rest - secondUnits\) / unitsPerMinute\)\.round\(\);" dotAll="true" id="quantity_formatter.dms.minutes_truncated">
             <mutation text="final minutes = ((rest - secondUnits) / unitsPerMinute).floor() - 1;"/>
         </regex>
