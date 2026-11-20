@@ -760,6 +760,17 @@ void main() {
           ..add(MaterialRateLookedUp(_lookedUpRate)),
         verify: (b) => expect(offers(b), isFalse),
       );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is not offered when a saved rate picked after a sample one is typed '
+        'over',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(MaterialRateLookedUp(_lookedUpRate))
+          ..add(const MaterialRateUpdated('60')),
+        verify: (b) => expect(offers(b), isFalse),
+      );
     });
 
     group('the name a later search finds the rate by', () {
