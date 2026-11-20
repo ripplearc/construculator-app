@@ -186,7 +186,8 @@ Codes: `MISSING_REQUIRED_FIELD`, `INVALID_ENUM`, `INVALID_BRANCH`, `GIT_ERROR`,
 `PARSE_ERROR`, `FILE_NOT_FOUND`, `INVALID_PR_NUMBER`, `PR_NOT_FOUND`, `AUTH_ERROR`,
 `GH_ERROR`. On a git/branch failure, return the branch names to verify; on
 `PR_NOT_FOUND`, check the PR number; on `AUTH_ERROR`, run `gh auth status`; on
-`GH_ERROR`, show `details.gh_error`. Or rerun without `pr_number`; oversized files are skipped and noted in `rules_skipped`; a missing
+`GH_ERROR`, show `details.gh_error`. In each of these three cases you can also rerun without `pr_number`, which skips rule 16.
+Oversized files are skipped and noted in `rules_skipped`; a missing
 rule module means the file was likely deleted.
 
 ## Notes
