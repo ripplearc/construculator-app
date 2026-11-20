@@ -168,15 +168,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
               )
             : NumberPadSheetLayout(
                 header: closesPad(_buildSheetHeader(context)),
-                form: (panelScrolls) => closesPad(
-                  _buildBody(
-                    context,
-                    trailing: panelScrolls
-                        ? footer(AddToEstimateFooterPart.panel)
-                        : null,
-                  ),
-                ),
-                panel: footer(AddToEstimateFooterPart.panel),
+                form: (scrollingPanel) =>
+                    closesPad(_buildBody(context, trailing: scrollingPanel)),
+                panel: closesPad(footer(AddToEstimateFooterPart.panel)),
                 controls: footer(AddToEstimateFooterPart.controls),
                 // About one field row stays in view above the pinned card.
                 minFormHeight: MediaQuery.textScalerOf(

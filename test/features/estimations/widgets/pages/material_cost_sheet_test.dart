@@ -714,6 +714,23 @@ void main() {
       expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
     });
 
+    testWidgets('a tap on the pinned card closes the pad and keeps the '
+        'number', (tester) async {
+      await openSheet(tester);
+      await openPadOnQuantity(tester);
+      await tapKey(tester, 'seven');
+      expect(
+        tester.getRect(panel).bottom + CoreSpacing.space4,
+        tester.getRect(numberPad).top,
+      );
+
+      await tester.tap(panel);
+      await tester.pumpAndSettle();
+
+      expect(numberPad, findsNothing);
+      expect(quantityText(tester), '7');
+    });
+
     testWidgets('the put-back key restores the opened value and closes the '
         'pad', (tester) async {
       await openSheet(tester);
