@@ -873,6 +873,9 @@ void main() {
     final name = find.byKey(const Key('material_name_field'));
     final panel = find.byKey(AddToEstimateFooter.panelKey);
     final scrolledLine = find.byKey(CostItemFormScreen.scrolledLineKey);
+    // A row's bottom edge is its underline.
+    final rateRow = find.byKey(const Key('material_rate_row'));
+    final nameRow = find.byKey(const Key('material_name_row'));
 
     Future<void> focus(WidgetTester tester, Finder field) async {
       await tester.showKeyboard(field);
@@ -903,7 +906,7 @@ void main() {
       final form = Scrollable.of(tester.element(rate)).context;
       final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
       expect(find.byType(CoreNumberKeypad), findsOneWidget);
-      expect(visibleEnd - tester.getRect(rate).bottom, 12);
+      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
       expect(tester.getRect(panel).top, visibleEnd + CoreSpacing.space4);
       expect(scrolledLine, findsOneWidget);
     });
@@ -916,7 +919,7 @@ void main() {
 
       final form = Scrollable.of(tester.element(rate)).context;
       final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
-      expect(visibleEnd - tester.getRect(rate).bottom, 12);
+      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
       expect(
         find.descendant(of: find.byWidget(form.widget), matching: panel),
         findsOneWidget,
@@ -953,6 +956,7 @@ void main() {
     ) async {
       await openSheet(tester, size: const Size(393, 780));
       await focus(tester, rate);
+      expect(scrolledLine, findsOneWidget);
 
       await tester.drag(quantity, const Offset(0, 300));
       await tester.pumpAndSettle();
@@ -978,7 +982,7 @@ void main() {
       final form = Scrollable.of(tester.element(name)).context;
       final visible = tester.getRect(find.byWidget(form.widget));
       expect(
-        tester.getRect(name).bottom,
+        tester.getRect(nameRow).bottom,
         lessThanOrEqualTo(visible.bottom - 12),
       );
       expect(tester.getRect(name).top, greaterThanOrEqualTo(visible.top));
