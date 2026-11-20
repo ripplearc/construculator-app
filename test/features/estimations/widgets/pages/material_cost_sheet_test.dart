@@ -867,4 +867,125 @@ void main() {
       );
     });
   });
+  group('keyboard layout rule', () {
+    final quantity = find.byKey(const Key('material_quantity_field'));
+    final rate = find.byKey(const Key('material_rate_field'));
+    final name = find.byKey(const Key('material_name_field'));
+    final panel = find.byKey(AddToEstimateFooter.panelKey);
+    final scrolledLine = find.byKey(CostItemFormScreen.scrolledLineKey);
+    // A row's bottom edge is its underline.
+    final rateRow = find.byKey(const Key('material_rate_row'));
+    final nameRow = find.byKey(const Key('material_name_row'));
+
+    Future<void> focus(WidgetTester tester, Finder field) async {
+      await tester.showKeyboard(field);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a field already in view does not scroll when the pad opens', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await focus(tester, quantity);
+
+      expect(find.byType(CoreNumberKeypad), findsOneWidget);
+      expect(Scrollable.of(tester.element(quantity)).position.pixels, 0);
+      expect(scrolledLine, findsNothing);
+    });
+
+    testWidgets('a field below the view scrolls to sit 12 above the pinned '
+        'card, and a line appears under the title', (tester) async {
+      await openSheet(tester);
+      expect(Scrollable.of(tester.element(rate)).position.pixels, 0);
+
+      await focus(tester, rate);
+
+      // The card's own 16 dp margin is part of what is pinned, as in the
+      // storyboard's CSS, so the 12 is measured from the form's visible end.
+      final form = Scrollable.of(tester.element(rate)).context;
+      final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
+      expect(find.byType(CoreNumberKeypad), findsOneWidget);
+      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
+      expect(tester.getRect(panel).top, visibleEnd + CoreSpacing.space4);
+      expect(scrolledLine, findsOneWidget);
+    });
+
+    testWidgets('on a short phone, where the card scrolls with the form, the '
+        'field still sits 12 above the pad', (tester) async {
+      await openSheet(tester, size: const Size(393, 780));
+
+      await focus(tester, rate);
+
+      final form = Scrollable.of(tester.element(rate)).context;
+      final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
+      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
+      expect(
+        find.descendant(of: find.byWidget(form.widget), matching: panel),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a long name scrolling its own field sideways draws no line', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await tester.enterText(name, 'a' * 80);
+      await tester.pumpAndSettle();
+
+      expect(Scrollable.of(tester.element(name)).position.pixels, 0);
+      expect(scrolledLine, findsNothing);
+    });
+
+    testWidgets('the line goes when closing the pad brings the form back to '
+        'the top', (tester) async {
+      await openSheet(tester);
+      await focus(tester, rate);
+      expect(scrolledLine, findsOneWidget);
+
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
+
+      expect(Scrollable.of(tester.element(rate)).position.pixels, 0);
+      expect(scrolledLine, findsNothing);
+    });
+
+    testWidgets('the line goes when the form is scrolled back to the top', (
+      tester,
+    ) async {
+      await openSheet(tester, size: const Size(393, 780));
+      await focus(tester, rate);
+      expect(scrolledLine, findsOneWidget);
+
+      await tester.drag(quantity, const Offset(0, 300));
+      await tester.pumpAndSettle();
+
+      expect(scrolledLine, findsNothing);
+    });
+
+    testWidgets('the phone keyboard on the name: no pad, the form button is '
+        'back between the card and the keyboard, and the name stays clear '
+        'of the card', (tester) async {
+      await openSheet(tester, size: const Size(393, 780));
+      await focus(tester, quantity);
+
+      await focus(tester, name);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreNumberKeypad), findsNothing);
+      final button = tester.getRect(find.byKey(AddToEstimateFooter.buttonKey));
+      expect(button.top, greaterThan(tester.getRect(panel).bottom));
+      expect(button.bottom, lessThanOrEqualTo(780 - 300));
+      final form = Scrollable.of(tester.element(name)).context;
+      final visible = tester.getRect(find.byWidget(form.widget));
+      expect(
+        tester.getRect(nameRow).bottom,
+        lessThanOrEqualTo(visible.bottom - 12),
+      );
+      expect(tester.getRect(name).top, greaterThanOrEqualTo(visible.top));
+    });
+  });
 }
