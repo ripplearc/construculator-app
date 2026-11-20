@@ -397,6 +397,19 @@ void main() {
       );
     });
 
+    testWidgets('a new search lists the sample rates for the new words', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      sampleRows = [paint('b', 38)];
+      await typeQuery(tester, 'premium');
+
+      expect(find.byKey(const Key('sample_rate_row_b')), findsOneWidget);
+      expect(find.byKey(const Key('sample_rate_row_a')), findsNothing);
+    });
+
     testWidgets('shows no sample heading and no notice without sample rates', (
       tester,
     ) async {
