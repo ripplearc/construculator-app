@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
@@ -1159,6 +1161,27 @@ void main() {
         findsOneWidget,
       );
       expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+    });
+
+    testWidgets('while the save runs the link reads as disabled, and a '
+        'second tap saves nothing more', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openVerify(tester);
+      database.insertGate = Completer<void>();
+
+      await tester.tap(link);
+      await tester.pump();
+      expect(
+        tester.getSemantics(link),
+        isSemantics(isButton: true, hasEnabledState: true, isEnabled: false),
+      );
+      await tester.tap(link);
+      await tester.pump();
+      database.insertGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(database.insertedRows, hasLength(1));
+      handle.dispose();
     });
 
     testWidgets('the saved line goes once the name is changed', (tester) async {
