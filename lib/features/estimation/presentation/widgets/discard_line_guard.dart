@@ -14,10 +14,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// above a form that does not scroll, or when it pulls a scrolling form down
 /// past its top.
 ///
-/// While the keyboard is up, the first of these only closes the keyboard, even
-/// when nothing was typed. After that, a sheet with something typed in it asks
-/// "Discard this line?". Tapping outside the dialog, or the back gesture on it,
-/// means keep editing.
+/// While the keyboard, or the app's own number pad, is up, the first of these
+/// only closes it and keeps what was typed, even when nothing was typed (the
+/// storyboard's CUJ 4 closing rules). After that, a sheet with something typed
+/// in it asks "Discard this line?". Tapping outside the dialog, or the back
+/// gesture on it, means keep editing.
 ///
 /// While a save runs ([isSaveRunning]), closing waits for the save to end and
 /// then asks as above, so the user sees how the save ended first. If a dialog
@@ -35,6 +36,10 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// Whether a save started from the form is still running in [state].
   final bool Function(S state) isSaveRunning;
 
+  /// Whether the app's own number pad is up. The phone's keyboard is read
+  /// from the view insets; the pad leaves them at zero.
+  final bool isOwnKeyboardUp;
+
   final Widget child;
 
   const DiscardLineGuard({
@@ -42,6 +47,7 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
     required this.hasUnsavedChanges,
     required this.itemNameOf,
     this.isSaveRunning = _neverRunning,
+    this.isOwnKeyboardUp = false,
     required this.child,
   });
 
@@ -66,7 +72,7 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
               widget.hasUnsavedChanges(current) ||
           widget.isSaveRunning(previous) != widget.isSaveRunning(current),
       builder: (context, state) {
-        final isKeyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+        final isKeyboardUp = _isKeyboardUp(context);
         final isSaving = widget.isSaveRunning(state);
         return PopScope(
           canPop:
@@ -119,6 +125,9 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
     return false;
   }
 
+  bool _isKeyboardUp(BuildContext context) =>
+      MediaQuery.viewInsetsOf(context).bottom > 0 || widget.isOwnKeyboardUp;
+
   Future<void> _askAfterSave(BuildContext context) async {
     final bloc = context.read<B>();
     if (widget.isSaveRunning(bloc.state)) {
@@ -128,8 +137,7 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       );
     }
     if (!context.mounted || ModalRoute.of(context)?.isCurrent != true) return;
-    final isKeyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
-    await _askBeforeClosing(context, isKeyboardUp);
+    await _askBeforeClosing(context, _isKeyboardUp(context));
   }
 
   Future<void> _askBeforeClosing(
