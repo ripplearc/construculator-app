@@ -467,5 +467,22 @@ void main() {
         ),
       );
     });
+
+    testWidgets('picking a second sample rate moves the pick to it', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52), paint('b', 38)];
+      await openSheet(tester);
+
+      for (final id in ['a', 'b']) {
+        final row = find.byKey(Key('sample_rate_row_$id'));
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+      }
+
+      expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
+    });
   });
 }
