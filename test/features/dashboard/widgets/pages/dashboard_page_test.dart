@@ -27,6 +27,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/dashboard_shell_test_module.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   late FakeClockImpl clock;
@@ -55,6 +56,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(DashboardShellTestModule(bootstrap));
+    startTestSession();
 
     Modular.replaceInstance<AuthNotifierController>(authNotifier);
     Modular.replaceInstance<AuthNotifier>(authNotifier);

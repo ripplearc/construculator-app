@@ -5,8 +5,11 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/owner/owner_library_module.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/tag/tag_library_module.dart';
@@ -32,8 +35,8 @@ class DashboardModule extends Module {
   void binds(Injector i) {
     i.add<DashboardBloc>(
       () => DashboardBloc(
-        projectRepository: i(),
-        currentProjectNotifier: i(),
+        projectRepository: Modular.get<ProjectRepository>(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
         authNotifier: i(),
         authManager: i(),
       ),
@@ -46,19 +49,16 @@ class DashboardModule extends Module {
         ownerRepository: i(),
       ),
     );
-    i.addLazySingleton<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(
-        projectRepository: i(),
-        authManager: i(),
-      ),
-    );
     i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
+      () => WatchRecentEstimationsUseCase(
+        i(),
+        Modular.get<CurrentProjectNotifier>(),
+      ),
     );
     i.add<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
         watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: i(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
   }
@@ -98,4 +98,21 @@ class DashboardModule extends Module {
       child: child,
     );
   }
+}
+
+/// Adds the dashboard objects that belong to one signed-in user: the project
+/// dropdown, which keeps the loaded projects and the selection.
+///
+/// Only the session module calls this, so a new dropdown is built for the next
+/// user and the old one is closed when the user signs out.
+void registerDashboardPerUserObjects(Injector i) => _registerPerUserObjects(i);
+
+void _registerPerUserObjects(Injector i) {
+  i.addLazySingleton<ProjectDropdownBloc>(
+    () => ProjectDropdownBloc(
+      projectRepository: i.get<ProjectRepository>(),
+      authManager: Modular.get<AuthManager>(),
+    ),
+    config: BindConfig(onDispose: (bloc) => bloc.close()),
+  );
 }

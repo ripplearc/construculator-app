@@ -10,9 +10,13 @@ import 'package:construculator/features/dashboard/presentation/bloc/recent_estim
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -25,6 +29,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   late FakeCurrentProjectNotifier fakeProjectNotifier;
@@ -62,6 +67,8 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(ShellModule(appBootstrap));
+    startTestSession();
+    Modular.unbindModule<DashboardModule>();
     Modular.bindModule(DashboardModule(appBootstrap));
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
     Modular.replaceInstance<ProjectUIProvider>(FakeProjectUIProvider());
@@ -134,6 +141,19 @@ void main() {
       tester,
     ) async {
       fakeProjectNotifier.setCurrentProjectId('project-1');
+      Modular.replaceInstance<ProjectRepository>(
+        FakeProjectRepository()
+          ..setAccessibleProjects([
+            Project(
+              id: 'project-1',
+              projectName: 'Project 1',
+              creatorUserId: 'fake-id',
+              createdAt: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 1),
+              status: ProjectStatus.active,
+            ),
+          ]),
+      );
 
       await tester.pumpWidget(makeApp());
       await tester.pump();

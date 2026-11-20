@@ -4,6 +4,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -20,6 +21,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/start_test_session.dart';
 
 const String _testUserId = 'user-project-search-screenshot-test';
 const String _testUserEmail = 'project-search-screenshot@test.com';
@@ -38,7 +40,7 @@ class _ProjectSearchPageScreenshotModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+      () => ProjectDropdownBloc(projectRepository: Modular.get<ProjectRepository>(), authManager: i()),
     );
   }
 }
@@ -57,6 +59,7 @@ void main() {
       supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
     );
     Modular.init(_ProjectSearchPageScreenshotModule(bootstrap));
+    startTestSession();
     final supabase = Modular.get<SupabaseWrapper>();
     expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;
