@@ -3619,6 +3619,18 @@
       }
     }
   },
+  "unitOptionSemanticLabel": "{symbol}, {name}",
+  "@unitOptionSemanticLabel": {
+    "description": "Screen reader label of one row of the Select unit sheet: the unit's symbol, then its name, for example 'gal, Gallon'",
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "materialNameLabel": "Material",
   "@materialNameLabel": {
     "description": "Label above the material name on the New material cost sheet",

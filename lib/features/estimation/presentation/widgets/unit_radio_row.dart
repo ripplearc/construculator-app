@@ -56,7 +56,7 @@ class _UnitRadioRowState extends State<UnitRadioRow> {
       focusable: true,
       inMutuallyExclusiveGroup: true,
       checked: isSelected,
-      label: '$symbol, $name',
+      label: l10n.unitOptionSemanticLabel(symbol, name),
       // The label already reads the symbol and the name, so the texts inside
       // would be read a second time.
       excludeSemantics: true,

@@ -2445,6 +2445,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String unitOptionSemanticLabel(String symbol, String name) {
+    return '$symbol, $name';
+  }
+
+  @override
   String get materialNameLabel => 'Material';
 
   @override
