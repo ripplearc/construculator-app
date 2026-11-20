@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   group('YourRatesBloc', () {
@@ -71,6 +72,7 @@ void main() {
           ),
         ),
       );
+      startTestSession();
       Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

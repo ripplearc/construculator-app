@@ -7,6 +7,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
+import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -38,7 +39,9 @@ class AuthLibraryModule extends Module {
         authNotifier: i(),
         sentryWrapper: appBootstrap.sentryWrapper,
         analyticsRepository: appBootstrap.analyticsRepository,
-        currentCompanyResolver: i<CurrentCompanyResolver>(),
+        currentCompanyResolver: () => Modular.tryGet<CurrentCompanyResolver>(),
+        clearKeptCompanyId: () =>
+            Modular.get<LocalCurrentCompanyDataSource>().clearCompanyId(),
         sessionService: appBootstrap.sessionService,
       ),
     );

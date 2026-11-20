@@ -375,6 +375,52 @@ void main() {
         expect(sessionService.startCount, 1);
       });
 
+      test('stops reacting to sign-in events once it is disposed', () async {
+        (authManager as Disposable).dispose();
+
+        supabaseWrapper.setCurrentUser(signedInUser());
+        await Future<void>.value();
+
+        expect(sessionService.startCount, 0);
+      });
+
+      test(
+        'clears the company id kept on the device on sign-out when no '
+        'session resolver exists',
+        () async {
+          (authManager as Disposable).dispose();
+          final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
+          await localDataSource.saveCompanyId(
+            userId: 'test-id',
+            companyId: 'company-1',
+          );
+          // ignore: no_direct_instantiation, reason: needs a manager that has no session resolver, as at start-up with an expired token
+          final managerWithoutSession = AuthManagerImpl(
+            wrapper: supabaseWrapper,
+            authRepository: authRepository,
+            authNotifier: authNotifier,
+            sentryWrapper: sentryWrapper,
+            analyticsRepository: analyticsRepository,
+            currentCompanyResolver: () => null,
+            clearKeptCompanyId: localDataSource.clearCompanyId,
+            sessionService: sessionService,
+          );
+          addTearDown(managerWithoutSession.dispose);
+          supabaseWrapper.setCurrentUser(signedInUser());
+          final signedOut = expectLater(
+            authNotifier.onAuthStateChanged,
+            emitsThrough(
+              predicate<AuthState>((s) => s.status == AuthStatus.unauthenticated),
+            ),
+          );
+
+          supabaseWrapper.setCurrentUser(null);
+          await signedOut;
+
+          expect(await localDataSource.loadCompanyId('test-id'), isNull);
+        },
+      );
+
       test('starts the session for a resumed login at app start', () {
         supabaseWrapper.setCurrentUser(signedInUser());
 
@@ -1818,7 +1864,8 @@ class _TestAppModule extends Module {
         authNotifier: i(),
         sentryWrapper: i<SentryWrapper>(),
         analyticsRepository: i<AnalyticsRepository>(),
-        currentCompanyResolver: i<CurrentCompanyResolver>(),
+        currentCompanyResolver: () => i<CurrentCompanyResolver>(),
+        clearKeptCompanyId: () async {},
         sessionService: i<SessionService>(),
       ),
     );

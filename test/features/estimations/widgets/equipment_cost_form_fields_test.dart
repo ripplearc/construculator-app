@@ -26,6 +26,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
+import '../../../utils/start_test_session.dart';
 import '../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
@@ -42,6 +43,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
