@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- CALCULATOR BLOC: THE UNIT KEY UNDER A LENGTH-ONLY KEY (S1a, CA-1087) -->
+    <!-- CALCULATOR BLOC: THE UNIT KEY UNDER A LENGTH-ONLY KEY, AND THE
+         SYSTEM OF UNITS TOGGLE ON AN EMPTY TAPE ONLY (S1a, CA-1087) -->
     <!-- Targets: the one flag the bloc reads off the chip being typed before
          a unit key reaches the tape, so Width 5 [Lbs] and Height 5 [Kg] are
          refused and Width 5ft [Feet] never raises to an area (Section 3,
@@ -19,6 +20,15 @@
         <!-- RULE 2: every key holds a length only, a bare number too -->
         <regex pattern="LengthOnlyKeys\.all\.contains\((tape\.beingTyped\?\.key|key)\)" dotAll="true" id="calculator_bloc.press_unit.always_length_only">
             <mutation text="true"/>
+        </regex>
+
+        <!-- RULE 3 (R3, review of 18 Nov): the System of units toggle is
+             taken on a tape that holds a result or a typed value, so 12ft +
+             1m = claims Metric while Calc still reads 15ft 3-3/8in; or it is
+             refused on an empty tape too (Section 1.1) -->
+        <regex pattern="if \(!state\.tape\.isEmpty\) return;" dotAll="true" id="calculator_bloc.unit_system.only_on_an_empty_tape">
+            <mutation text=""/>
+            <mutation text="if (state.tape.isEmpty) return;"/>
         </regex>
     </rules>
 
