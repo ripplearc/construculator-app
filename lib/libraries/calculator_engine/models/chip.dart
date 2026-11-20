@@ -181,16 +181,17 @@ final class ValueChip extends TapeChip {
   /// [typedAngle], or the pitch a length typed under Pitch stands for —
   /// [Pitch] 6 [Inch] is 6in of rise per 12in of run, 26.57°, and the bare
   /// [Pitch] 6/12 is the same pitch — in the rise spelling, read the way
-  /// the rules read it ([Angle.ofRisePerFoot] over the precise ticks, so
-  /// the drawer and the strip agree). `null` for a chip that files nothing:
-  /// a count, a grade, a ratio, or a length under any other key.
+  /// the rules read it ([Angle.ofRise], so the drawer and the strip agree).
+  /// A chip filed while still active reads as every leaving key closes it
+  /// ([EntryBuffer.withFractionClosedAsInches]): [Pitch] 6 [Inch] 1/2, C
+  /// pressed, files 6-1/2in of rise, 28.44°. `null` for a chip that files
+  /// nothing: a count, a grade, a ratio, or a length under any other key.
   Angle? filedAngle(QuantityParser parser) {
     if (typedAngle case final angle?) return angle;
     if (!readsDegrees || trigFunction != null) return null;
-    return switch (value(parser)) {
-      final Length rise => Angle.ofRisePerFoot(
-        rise.preciseTicks / Length.ticksPerInch,
-      ),
+    final closed = copyWith(entry: entry.withFractionClosedAsInches);
+    return switch (closed.value(parser)) {
+      final Length rise => Angle.ofRise(rise),
       Angle(spelling: AngleSpelling.risePerFoot) && final pitch => pitch,
       _ => null,
     };

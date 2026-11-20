@@ -853,15 +853,10 @@ class Tape extends Equatable {
 
   Tape _withFractionClosedAsInches() {
     final chip = active;
-    if (chip == null || !chip.entry.endsWithFractionAfterWholeInches) {
-      return this;
-    }
-    return switch (chip.entry.closeWith(Unit.inch)) {
-      EntryChanged(:final buffer) => _replaceActive(
-        chip.copyWith(entry: buffer),
-      ),
-      EntryOutcome() => this,
-    };
+    if (chip == null) return this;
+    final closed = chip.entry.withFractionClosedAsInches;
+    if (identical(closed, chip.entry)) return this;
+    return _replaceActive(chip.copyWith(entry: closed));
   }
 
   TapeOutcome? get _unfinished {

@@ -107,10 +107,13 @@
         </regex>
 
         <!-- RULE 26: a fraction after whole inches is never closed by itself,
-             or any fraction is -->
-        <regex pattern="if \(chip == null \|\| !chip\.entry\.endsWithFractionAfterWholeInches\) \{\s*return this;\s*\}" dotAll="true" id="tape.fraction.never_closed_as_inches">
-            <mutation text="if (true) { return this; }"/>
-            <mutation text="if (chip == null || !chip.entry.endsWithUnitlessFraction) { return this; }"/>
+             or a chip with nothing to close is replaced by an equal copy, so
+             a key can no longer tell that it closed nothing (which fractions
+             close is EntryBuffer.withFractionClosedAsInches, pinned in
+             angle_memory.xml since CA-1366 R1) -->
+        <regex pattern="if \(identical\(closed, chip\.entry\)\) return this;\s*return _replaceActive\(chip\.copyWith\(entry: closed\)\);" dotAll="true" id="tape.fraction.never_closed_as_inches">
+            <mutation text="return this;"/>
+            <mutation text="return _replaceActive(chip.copyWith(entry: closed));"/>
         </regex>
 
         <!-- RULE: = leaves the fraction it closed as inches open when there

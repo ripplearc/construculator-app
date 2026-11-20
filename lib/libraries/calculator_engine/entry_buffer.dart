@@ -200,6 +200,18 @@ class EntryBuffer extends Equatable {
       _isUnitlessFraction(tokens.last) &&
       _isWholeInches(tokens[tokens.length - 2]);
 
+  /// The buffer with a fraction typed right after whole inches closed as
+  /// inches, the way every key that leaves the chip closes it (Section 6;
+  /// [endsWithFractionAfterWholeInches]): 6in 1/2 becomes 6-1/2in. Any
+  /// other buffer comes back as it is, a fraction after feet included.
+  EntryBuffer get withFractionClosedAsInches {
+    if (!endsWithFractionAfterWholeInches) return this;
+    return switch (closeWith(Unit.inch)) {
+      EntryChanged(:final buffer) => buffer,
+      EntryOutcome() => this,
+    };
+  }
+
   static bool _isUnitlessFraction(Token token) =>
       token.unit == null && (token.denominator?.isNotEmpty ?? false);
 

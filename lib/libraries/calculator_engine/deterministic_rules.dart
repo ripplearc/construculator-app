@@ -573,9 +573,7 @@ class DeterministicRules extends Equatable {
   }
 
   Angle? _pitchAngleOf(Quantity value) => switch (value) {
-    final Length rise => Angle.ofRiseOverRun(
-      rise.preciseTicks / Length.ticksPerInch / Angle.inchesPerFootOfRun,
-    ).spelledAs(AngleSpelling.risePerFoot),
+    final Length rise => Angle.ofRise(rise),
     final Angle angle => angle,
     Scalar(:final value) => Angle(value),
     _ => null,

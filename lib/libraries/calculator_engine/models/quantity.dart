@@ -335,6 +335,13 @@ final class Angle extends Quantity {
     inches / inchesPerFootOfRun,
   ).spelledAs(AngleSpelling.risePerFoot);
 
+  /// The pitch a length typed under Pitch stands for, read as the [rise]
+  /// per 12in of run at its precise ticks: [Pitch] 6 [Inch] is 26.57°, in
+  /// the rise spelling. The one reading the angle drawer and the strip both
+  /// use, so the two always agree (rule 4.16).
+  factory Angle.ofRise(Length rise) =>
+      Angle.ofRisePerFoot(rise.preciseTicks / Length.ticksPerInch);
+
   /// Inches of run a pitch is quoted over: 6in/12in.
   static const int inchesPerFootOfRun = 12;
 
