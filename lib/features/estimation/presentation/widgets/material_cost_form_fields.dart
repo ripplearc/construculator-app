@@ -379,10 +379,17 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               _SaveAsDefaultHint(data: state.data),
             if (state.data.offersSaveAsDefault &&
                 _defaultSave == _DefaultSave.failed)
-              _FieldHint(
-                key: const Key('save_as_default_error'),
-                text: l10n.yourRatesSaveFailedError,
-                isError: true,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CoreSpacing.space5,
+                  CoreSpacing.space2,
+                  CoreSpacing.space5,
+                  0,
+                ),
+                child: CoreInlineErrorRow(
+                  key: const Key('save_as_default_error'),
+                  message: l10n.yourRatesSaveFailedError,
+                ),
               ),
             if (_defaultSave == _DefaultSave.saved &&
                 state.data.rateStatus == RateStatus.ownRateConfirmed &&
@@ -486,20 +493,14 @@ class _SaveAsDefaultLink extends StatelessWidget {
 class _FieldHint extends StatelessWidget {
   final String text;
   final String? emphasis;
-  final bool isError;
 
-  const _FieldHint({
-    super.key,
-    required this.text,
-    this.emphasis,
-    this.isError = false,
-  });
+  const _FieldHint({super.key, required this.text, this.emphasis});
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final style = context.textTheme.bodySmallRegular.copyWith(
-      color: isError ? colorTheme.textError : colorTheme.textBody,
+      color: colorTheme.textBody,
     );
     final emphasis = this.emphasis;
     final at = emphasis == null ? -1 : text.indexOf(emphasis);
@@ -515,9 +516,9 @@ class _FieldHint extends StatelessWidget {
         spacing: CoreSpacing.space2,
         children: [
           CoreIconWidget(
-            icon: isError ? CoreIcons.error : CoreIcons.info,
+            icon: CoreIcons.info,
             size: CoreIconSize.size16,
-            color: isError ? colorTheme.iconRed : colorTheme.iconGrayMid,
+            color: colorTheme.iconGrayMid,
           ),
           Expanded(
             child: emphasis == null || at < 0
