@@ -113,6 +113,26 @@
             <mutation text="!(result.data ?? true)"/> <!-- Inverts the boolean logic for data -->
         </regex>
 
+        <!-- Session start and end -->
+        <regex pattern="if \(_sessionUserId != userId\) _sessionService\.endSession\(\);" dotAll="false" id="session.different_user_flipped">
+            <mutation text="if (_sessionUserId == userId) _sessionService.endSession();"/>
+        </regex>
+        <regex pattern="if \(_sessionUserId != userId\) _sessionService\.endSession\(\);" dotAll="false" id="session.different_user_keeps_old_session">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_sessionUserId = userId;" dotAll="false" id="session.user_not_remembered">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_sessionService\.startSession\(\);\s*_sessionUserId = userId;" dotAll="false" id="session.not_started">
+            <mutation text="_sessionUserId = userId;"/>
+        </regex>
+        <regex pattern="await _wrapper\.signOut\(\);\s*_sessionService\.endSession\(\);" dotAll="false" id="session.logout_keeps_session">
+            <mutation text="await _wrapper.signOut();"/>
+        </regex>
+        <regex pattern="// logout or when a different user signs in\." dotAll="false" id="session.background_sign_out_ends_it">
+            <mutation text="// logout or when a different user signs in.
+          _sessionService.endSession();"/>
+        </regex>
     </rules>
 
     <commands>

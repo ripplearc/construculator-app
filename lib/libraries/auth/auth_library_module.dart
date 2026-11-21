@@ -39,6 +39,7 @@ class AuthLibraryModule extends Module {
         sentryWrapper: appBootstrap.sentryWrapper,
         analyticsRepository: appBootstrap.analyticsRepository,
         currentCompanyResolver: i<CurrentCompanyResolver>(),
+        sessionService: appBootstrap.sessionService,
       ),
     );
   }

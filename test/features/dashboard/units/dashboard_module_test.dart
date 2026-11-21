@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/dashboard_shell_test_module.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   group('DashboardModule.buildDashboardScope', () {
@@ -25,6 +26,7 @@ void main() {
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
         ),
       );
+      startTestSession();
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       Modular.replaceInstance<CostEstimationRepository>(
         FakeCostEstimationRepository(),

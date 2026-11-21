@@ -15,6 +15,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/start_test_session.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -29,7 +30,10 @@ class _TestModule extends Module {
   @override
   void binds(Injector i) {
     i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
+      () => WatchRecentEstimationsUseCase(
+        i(),
+        Modular.get<CurrentProjectNotifier>(),
+      ),
     );
   }
 }
@@ -48,6 +52,7 @@ void main() {
         initialProjectId: testProjectId,
       );
       Modular.init(_TestModule(FakeAppBootstrapFactory.create()));
+      startTestSession();
       Modular.replaceInstance<CostEstimationRepository>(repository);
       Modular.replaceInstance<CurrentProjectNotifier>(currentProjectNotifier);
       useCase = Modular.get<WatchRecentEstimationsUseCase>();

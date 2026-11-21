@@ -7,6 +7,8 @@ import 'package:construculator/features/dashboard/domain/usecases/watch_recent_e
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Minimal Modular module for widget tests that need [DashboardModule] and
@@ -47,17 +49,17 @@ class DashboardShellTestModule extends Module {
     // first the first test's stale singletons and bootstrap.
     i.addLazySingleton<ProjectDropdownBloc>(
       () => ProjectDropdownBloc(
-        projectRepository: i(),
+        projectRepository: Modular.get<ProjectRepository>(),
         authManager: i(),
       ),
     );
     i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
+      () => WatchRecentEstimationsUseCase(i(), Modular.get<CurrentProjectNotifier>()),
     );
     i.addLazySingleton<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
         watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: i(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
   }

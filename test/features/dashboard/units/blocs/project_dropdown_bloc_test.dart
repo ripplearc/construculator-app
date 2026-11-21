@@ -4,6 +4,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 // Minimal harness that provides ProjectDropdownBloc as a factory (i.add) so
 // blocTest can resolve a fresh instance per test via Modular.get without the
@@ -32,7 +34,10 @@ class _ProjectDropdownBlocTestModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+      () => ProjectDropdownBloc(
+        projectRepository: Modular.get<ProjectRepository>(),
+        authManager: i(),
+      ),
     );
   }
 }
@@ -49,6 +54,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
       Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
+      startTestSession();
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });
@@ -234,6 +240,7 @@ void main() {
           'emits empty projects when user is unauthenticated',
           build: () {
             fakeSupabaseWrapper.setCurrentUser(null);
+            startTestSession();
             return Modular.get<ProjectDropdownBloc>();
           },
           act: (bloc) async {
@@ -791,4 +798,3 @@ void main() {
     });
   });
 }
-

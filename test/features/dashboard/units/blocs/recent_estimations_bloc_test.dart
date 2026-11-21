@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -35,12 +36,15 @@ class _TestModule extends Module {
   @override
   void binds(Injector i) {
     i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
+      () => WatchRecentEstimationsUseCase(
+        i(),
+        Modular.get<CurrentProjectNotifier>(),
+      ),
     );
     i.add<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
         watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: i(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
   }
@@ -57,6 +61,7 @@ void main() {
   setUpAll(() {
     final bootstrap = FakeAppBootstrapFactory.create();
     Modular.init(_TestModule(bootstrap));
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   });
