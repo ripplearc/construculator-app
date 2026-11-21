@@ -79,16 +79,28 @@
              60 itself, or any value; a third digit is let in, or the two
              parts swap their words; the minutes close at 60 or more; the
              seconds seal unpadded -->
-        <regex pattern="if \(\(int\.tryParse\(part\) \?\? 0\) &gt;= Token\.minutesPerDegree\) \{" dotAll="true" id="entry_buffer.part.sixty_let_in">
-            <mutation text="if ((int.tryParse(part) ?? 0) &gt; Token.minutesPerDegree) {"/>
-            <mutation text="if (false) {"/>
+        <regex pattern="final isSixtyOrMore = \(int\.tryParse\(part\) \?\? 0\) &gt;= Token\.minutesPerDegree;" dotAll="true" id="entry_buffer.part.sixty_let_in">
+            <mutation text="final isSixtyOrMore = (int.tryParse(part) ?? 0) &gt; Token.minutesPerDegree;"/>
+            <mutation text="final isSixtyOrMore = false;"/>
         </regex>
-        <regex pattern="if \(part\.length &gt; partDigits\) \{\s*return isSeconds\s*\? EntryRefusal\.secondsHaveTwoDigits\s*: EntryRefusal\.minutesHaveTwoDigits;\s*\}" dotAll="true" id="entry_buffer.part.third_digit">
-            <mutation text="if (part.length &gt; partDigits + 1) { return isSeconds ? EntryRefusal.secondsHaveTwoDigits : EntryRefusal.minutesHaveTwoDigits; }"/>
-            <mutation text="if (part.length &gt; partDigits) { return isSeconds ? EntryRefusal.minutesHaveTwoDigits : EntryRefusal.secondsHaveTwoDigits; }"/>
-        </regex>
-        <regex pattern="if \(_partRefusal\(minutes, isSeconds: false\) case final refusal\?\) \{\s*return EntryRefused\(refusal\);\s*\}" dotAll="true" id="entry_buffer.minutes_close.unchecked">
+        <regex pattern="    if \(isSixtyOrMore\) return EntryRefusal\.partOfSixtyOrMore;" dotAll="true" id="entry_buffer.part.sixty_while_typing">
             <mutation text=""/>
+        </regex>
+        <!-- R1 (review of 19 Nov, F4): closing minutes of 60 or more by the
+             point or the D:M:S key says they are a third digit, naming the
+             key just refused; or a third digit typed says the minutes must
+             be under 60 -->
+        <regex pattern="if \(isClosing &amp;&amp; isSixtyOrMore\) return EntryRefusal\.partOfSixtyOrMore;" dotAll="true" id="entry_buffer.part.sixty_first_on_closing">
+            <mutation text=""/>
+            <mutation text="if (isSixtyOrMore) return EntryRefusal.partOfSixtyOrMore;"/>
+        </regex>
+        <regex pattern="if \(part\.length &gt; _partDigits\) \{\s*return isSeconds\s*\? EntryRefusal\.secondsHaveTwoDigits\s*: EntryRefusal\.minutesHaveTwoDigits;\s*\}" dotAll="true" id="entry_buffer.part.third_digit">
+            <mutation text="if (part.length &gt; _partDigits + 1) { return isSeconds ? EntryRefusal.secondsHaveTwoDigits : EntryRefusal.minutesHaveTwoDigits; }"/>
+            <mutation text="if (part.length &gt; _partDigits) { return isSeconds ? EntryRefusal.minutesHaveTwoDigits : EntryRefusal.secondsHaveTwoDigits; }"/>
+        </regex>
+        <regex pattern="if \(_partRefusal\(minutes, isSeconds: false, isClosing: true\)\s*case final refusal\?\) \{\s*return EntryRefused\(refusal\);\s*\}" dotAll="true" id="entry_buffer.minutes_close.unchecked">
+            <mutation text=""/>
+            <mutation text="if (_partRefusal(minutes, isSeconds: false) case final refusal?) { return EntryRefused(refusal); }"/>
         </regex>
         <regex pattern="seconds: _twoDigits\(seconds\),\s*\);\s*\}" dotAll="true" id="entry_buffer.seal.seconds_unpadded">
             <mutation text="seconds: seconds, ); }"/>
@@ -133,7 +145,7 @@
              seal's padding, or only one of its zeros, on the seconds; a plain
              buffer is reopened as an angle; the tape reactivates the chip as
              it was sealed -->
-        <regex pattern="final typed = angle\.seconds\?\.replaceFirst\(RegExp\('\^0\+'\), ''\);" dotAll="true" id="entry_buffer.reopened.padding_kept">
+        <regex pattern="final typed = angle\.seconds\?\.replaceFirst\(_leadingZeros, ''\);" dotAll="true" id="entry_buffer.reopened.padding_kept">
             <mutation text="final typed = angle.seconds;"/>
             <mutation text="final typed = angle.seconds?.replaceFirst(RegExp('^0'), '');"/>
         </regex>
@@ -153,8 +165,11 @@
         </regex>
 
         <!-- RULE 11: backspace skips a segment step -->
-        <regex pattern="if \(seconds\.isEmpty\) \{\s*return _replaceLast\(last\.copyWith\(seconds: \(\) =&gt; null\)\);\s*\}" dotAll="true" id="entry_buffer.backspace.seconds_stay_open">
+        <!-- R1 (review of 19 Nov, F1): the minutes the seconds reopen keep
+             the seal's 0, so 38 [D:M:S] + ⌫ ⌫ 4 5 refuses the 5 -->
+        <regex pattern="if \(seconds\.isEmpty\) \{\s*return _replaceLast\(\s*last\.copyWith\(\s*seconds: \(\) =&gt; null,\s*minutes: \(\) =&gt; last\.minutes\?\.replaceFirst\(_leadingZeros, ''\),\s*\),\s*\);\s*\}" dotAll="true" id="entry_buffer.backspace.seconds_stay_open">
             <mutation text="if (seconds.isEmpty) { return _replaceLast(last); }"/>
+            <mutation text="if (seconds.isEmpty) { return _replaceLast(last.copyWith(seconds: () =&gt; null)); }"/>
         </regex>
         <regex pattern="if \(minutes\.isEmpty\) return _replaceLast\(Token\(digits: last\.digits\)\);" dotAll="true" id="entry_buffer.backspace.minutes_stay_open">
             <mutation text="if (minutes.isEmpty) return _replaceLast(last);"/>

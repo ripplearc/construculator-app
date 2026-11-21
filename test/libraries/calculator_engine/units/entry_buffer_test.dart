@@ -514,6 +514,11 @@ void main() {
         );
         expect(
           typeAngle('30.600').typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.partOfSixtyOrMore),
+          reason: 'R1 (F4): closing minutes of 60 or more says so first',
+        );
+        expect(
+          typeAngle('30.059').typeDigit('.', readsAngles: true),
           const EntryRefused(EntryRefusal.minutesHaveTwoDigits),
         );
         expect(

@@ -332,7 +332,7 @@ class EntryBuffer extends Equatable {
   EntryBuffer get reopened {
     if (!isDegreesMinutesSeconds) return this;
     final angle = tokens.single;
-    final typed = angle.seconds?.replaceFirst(RegExp('^0+'), '');
+    final typed = angle.seconds?.replaceFirst(_leadingZeros, '');
     if (typed == null || typed == angle.seconds) return this;
     return EntryBuffer(
       List.unmodifiable([angle.copyWith(seconds: () => typed)]),
@@ -441,9 +441,6 @@ class EntryBuffer extends Equatable {
     return _promoted(last, closingMinutes: closingMinutes);
   }
 
-  // A plain number re-read as its segments: the decimals are the minutes,
-  // closed at once by a second point (23.16. is 23°16' with the seconds
-  // open) and left open by the key on a trailing point (38. then D:M:S).
   EntryOutcome _promoted(Token plain, {required bool closingMinutes}) {
     final (degrees, decimals) = _wholeAndDecimals(plain.digits);
     final minutes = decimals.isEmpty ? '' : decimals.substring(1);
@@ -457,14 +454,13 @@ class EntryBuffer extends Equatable {
     return _withMinutesClosed(degrees, minutes, typedAs: typedAs);
   }
 
-  // The minutes close as the seconds open, once they are a part a bearing
-  // can hold; nothing carries into the degrees.
   EntryOutcome _withMinutesClosed(
     String degrees,
     String minutes, {
     required String? typedAs,
   }) {
-    if (_partRefusal(minutes, isSeconds: false) case final refusal?) {
+    if (_partRefusal(minutes, isSeconds: false, isClosing: true)
+        case final refusal?) {
       return EntryRefused(refusal);
     }
     return _replaceLast(
@@ -485,21 +481,23 @@ class EntryBuffer extends Equatable {
     );
   }
 
-  /// The digits a minutes or a seconds part can hold.
-  static const int partDigits = 2;
+  static const int _partDigits = 2;
 
-  // Why a minutes or a seconds [part] cannot be typed or closed: a third
-  // digit, or a value of 60 or more (rule 4.10). `null` for a part a
-  // bearing can hold, the empty part included.
-  static EntryRefusal? _partRefusal(String part, {required bool isSeconds}) {
-    if (part.length > partDigits) {
+  static final RegExp _leadingZeros = RegExp('^0+');
+
+  static EntryRefusal? _partRefusal(
+    String part, {
+    required bool isSeconds,
+    bool isClosing = false,
+  }) {
+    final isSixtyOrMore = (int.tryParse(part) ?? 0) >= Token.minutesPerDegree;
+    if (isClosing && isSixtyOrMore) return EntryRefusal.partOfSixtyOrMore;
+    if (part.length > _partDigits) {
       return isSeconds
           ? EntryRefusal.secondsHaveTwoDigits
           : EntryRefusal.minutesHaveTwoDigits;
     }
-    if ((int.tryParse(part) ?? 0) >= Token.minutesPerDegree) {
-      return EntryRefusal.partOfSixtyOrMore;
-    }
+    if (isSixtyOrMore) return EntryRefusal.partOfSixtyOrMore;
     return null;
   }
 
@@ -635,7 +633,10 @@ class EntryBuffer extends Equatable {
   /// digit typed does; reopening a segment keeps the digits, so it keeps
   /// the way back. (A seconds digit was typed, which already cleared it;
   /// the padding the seal wrote is gone by the time ⌫ steps into the
-  /// field, [reopened].)
+  /// field, [reopened].) The minutes the seconds reopen lose the padding
+  /// too, so 38 [D:M:S] + ⌫ ⌫ leaves the minutes empty and 4 5 reads
+  /// 38°45′, never 38°04′ with the 5 refused; a zero typed ahead of a
+  /// digit goes with it, worth the same.
   EntryOutcome backspace() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null) return const EntryRefused(EntryRefusal.nothingToDelete);
@@ -647,7 +648,12 @@ class EntryBuffer extends Equatable {
     }
     if (last.seconds case final seconds?) {
       if (seconds.isEmpty) {
-        return _replaceLast(last.copyWith(seconds: () => null));
+        return _replaceLast(
+          last.copyWith(
+            seconds: () => null,
+            minutes: () => last.minutes?.replaceFirst(_leadingZeros, ''),
+          ),
+        );
       }
       return _replaceLast(
         last.copyWith(seconds: () => seconds.substring(0, seconds.length - 1)),

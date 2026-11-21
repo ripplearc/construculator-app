@@ -124,6 +124,26 @@ void main() {
         expect(activeText(closed), '30°59\'00"');
       });
 
+      test('R1 (review of 19 Nov, F4): the point that would close three '
+          'decimals of 60 or more as minutes says they must be under 60, '
+          'never that the point comes next: [Pitch] 38.755 then . twice', () {
+        final decimal = press(const Tape(), '[Pitch] 3 8 . 7 5 5');
+        expect(activeText(decimal), '38.755');
+        expect(
+          decimal.typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          decimal.pressDmsKey(),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          press(const Tape(), '[Pitch] 3 0 . 0 5 9').typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.minutesHaveTwoDigits),
+          reason: 'three decimals under 60 are still a third minutes digit',
+        );
+      });
+
       test('rule 4.10 (CA-1372): the digit that makes a part 60 or more, or '
           'a third digit, is refused and the chip stays (decision tree rows '
           '172 to 174, 177, 370)', () {
@@ -397,6 +417,23 @@ void main() {
         expect(
           activeText(press(const Tape(), '3 8 DMS 3 0 DMS 4 5 + ⌫')),
           '38°30\'45"',
+        );
+      });
+
+      test('R1 (review of 19 Nov, F1): 38 [D:M:S] + ⌫ ⌫ reopens the minutes '
+          'without the seal\'s 0, so 4 5 types 38°45\'00"; a zero typed '
+          'ahead of a digit goes with the padding, worth the same', () {
+        final reopened = press(const Tape(), '3 8 DMS + ⌫ ⌫');
+        expect(activeOf(reopened).entry.tokens.single.minutes, '');
+        expect(activeText(press(reopened, '4 5')), '38°45\'00"');
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 0 5 + ⌫ ⌫ 3')),
+          '38°53\'00"',
+        );
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 4 5 + ⌫ ⌫')),
+          '38°45\'00"',
+          reason: 'typed minutes come back as typed',
         );
       });
 
