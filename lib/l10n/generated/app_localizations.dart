@@ -4562,6 +4562,48 @@ abstract class AppLocalizations {
   /// **'Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.'**
   String get calculatorToastEditingGroup;
 
+  /// Title of the red Alert when a digit, or the point closing the minutes, would make the minutes or seconds of an angle 60 or more (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes must be under 60'**
+  String get calculatorToastPartUnderSixtyTitle;
+
+  /// Body of the 'Minutes must be under 60' Alert (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Press ⌫ and type the minutes again.'**
+  String get calculatorToastPartUnderSixtyBody;
+
+  /// Title of the red Alert when a third digit is typed into the minutes of an angle (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes have two digits'**
+  String get calculatorToastMinutesTwoDigitsTitle;
+
+  /// Body of the 'Minutes have two digits' Alert (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Press . to type the seconds, or = to finish the angle.'**
+  String get calculatorToastMinutesTwoDigitsBody;
+
+  /// Title of the red Alert when a third digit is typed into the seconds of an angle (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Seconds have two digits'**
+  String get calculatorToastSecondsTwoDigitsTitle;
+
+  /// Title of the red Alert when a point or the D:M:S key is pressed once the seconds of an angle are open (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'An angle has three parts'**
+  String get calculatorToastAngleThreePartsTitle;
+
+  /// Body shared by the 'Seconds have two digits' and 'An angle has three parts' Alerts (UX Design Doc rule 4.10)
+  ///
+  /// In en, this message translates to:
+  /// **'Press = or an operator to finish the angle.'**
+  String get calculatorToastFinishTheAngleBody;
+
   /// Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)
   ///
   /// In en, this message translates to:

@@ -3,7 +3,9 @@ import 'package:construculator/features/calculator/data/models/trade_store_seeds
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1638,6 +1640,133 @@ void main() {
         expect(chips[2].value, '5');
         expect(chips[2].inert, isTrue);
         expect(chips[3].inert, isFalse);
+      });
+    });
+
+    group('CA-1372 2/2: the red Alerts of an angle\'s parts (rule 4.10; '
+        'decision tree rows 172 to 177, 370)', () {
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'DMS' => const CalculatorKeySelected('DMS'),
+            'SIN' => const CalculatorKeySelected('SIN'),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '38 [D:M:S] 7 then 5 is refused with "Minutes must be under 60", the '
+        'chip stays 38°7′, and the Alert is raised once (rows 172, 177)',
+        build: () => bloc,
+        act: (bloc) => type(bloc, 'SIN 3 8 DMS 7 5'),
+        skip: 5,
+        expect: () => [
+          tapeState(pressed('[SIN] 3 8 [DMS] 7')).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, const CalculatorPartUnderSixtyToast());
+          expect(bloc.state.valueText, '38°7\'00"');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the point that would close 89 minutes is refused with the same '
+        'words, and 30.89 stays a decimal (row 370; S85)',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '[Pitch] 3 0 . 8 9 .'),
+        skip: 6,
+        expect: () => [
+          tapeState(pressed('[Pitch] 3 0 . 8 9')).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) =>
+            expect(bloc.state.toast, const CalculatorPartUnderSixtyToast()),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a third digit in the minutes reads "Minutes have two digits", in the '
+        'seconds "Seconds have two digits", and a point after the seconds '
+        '"An angle has three parts" (rows 173, 174, 176)',
+        build: () => bloc,
+        act: (bloc) => type(bloc, 'SIN 3 8 DMS 5 9 0 DMS 1 2 3 .'),
+        skip: 6,
+        expect: () => [
+          tapeState(pressed('[SIN] 3 8 [DMS] 5 9')).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.minutesHaveTwoDigits),
+            toastsRaised: 1,
+          ),
+          tapeState(
+            pressed('[SIN] 3 8 [DMS] 5 9 [DMS]'),
+          ).copyWith(toastsRaised: 1),
+          tapeState(
+            pressed('[SIN] 3 8 [DMS] 5 9 [DMS] 1'),
+          ).copyWith(toastsRaised: 1),
+          tapeState(
+            pressed('[SIN] 3 8 [DMS] 5 9 [DMS] 1 2'),
+          ).copyWith(toastsRaised: 1),
+          tapeState(pressed('[SIN] 3 8 [DMS] 5 9 [DMS] 1 2')).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.secondsHaveTwoDigits),
+            toastsRaised: 2,
+          ),
+          tapeState(pressed('[SIN] 3 8 [DMS] 5 9 [DMS] 1 2')).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.angleHasThreeParts),
+            toastsRaised: 3,
+          ),
+        ],
+        verify: (bloc) =>
+            expect(bloc.state.toast, const CalculatorAngleThreePartsToast()),
+      );
+
+      test('each Alert reads in the words of rule 4.10', () {
+        final labels = CalculatorLabelFormatter(AppLocalizationsEn());
+        final toasts = {
+          const CalculatorPartUnderSixtyToast(): (
+            EntryRefusal.partOfSixtyOrMore,
+            'Minutes must be under 60',
+            'Press ⌫ and type the minutes again.',
+          ),
+          const CalculatorMinutesTwoDigitsToast(): (
+            EntryRefusal.minutesHaveTwoDigits,
+            'Minutes have two digits',
+            'Press . to type the seconds, or = to finish the angle.',
+          ),
+          const CalculatorSecondsTwoDigitsToast(): (
+            EntryRefusal.secondsHaveTwoDigits,
+            'Seconds have two digits',
+            'Press = or an operator to finish the angle.',
+          ),
+          const CalculatorAngleThreePartsToast(): (
+            EntryRefusal.angleHasThreeParts,
+            'An angle has three parts',
+            'Press = or an operator to finish the angle.',
+          ),
+        };
+        for (final MapEntry(key: toast, value: (reason, title, body))
+            in toasts.entries) {
+          expect(
+            CalculatorState(
+              tape: pressed('[SIN] 3 8 [DMS] 5 9'),
+              refusal: TapeEntryRefused(reason),
+            ).toast,
+            toast,
+          );
+          expect(labels.toastTitle(toast), title);
+          expect(labels.toastBody(toast), body);
+        }
       });
     });
 
