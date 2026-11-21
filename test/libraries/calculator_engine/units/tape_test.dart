@@ -437,6 +437,114 @@ void main() {
     });
 
     group('digits and fractions', () {
+      group('R3 (review of 18 Nov)', () {
+        Tape bracket(Tape tape) => changed(tape.pressBracket());
+
+        test('B3: = leaves an inch part of 12 or more as typed and is '
+            'refused; Inch then carries it (rows 77, 79)', () {
+          final fiftyFive = press(const Tape(), '1 2 ft 5 5');
+          expect(
+            fiftyFive.pressEquals(),
+            const TapeRefused(TapeRefusal.finishThisValueFirst),
+          );
+          expect(texts(fiftyFive), ['12ft 55']);
+          final carried = fiftyFive.pressUnit(Unit.inch);
+          expect(
+            carried,
+            isA<TapeChanged>()
+                .having((outcome) => texts(outcome.tape), 'texts', ['16ft 7in'])
+                .having(
+                  (outcome) => outcome.notice,
+                  'notice',
+                  TapeNotice.carriedOver,
+                ),
+          );
+          expect(
+            press(const Tape(), '1 2 ft 1 2').pressEquals(),
+            const TapeRefused(TapeRefusal.finishThisValueFirst),
+          );
+          final typo = press(const Tape(), '1 2 ft 5');
+          expect(typo.pressOperator(Operator.add), isA<TapeRefused>());
+          final joined = press(typo, '1');
+          expect(texts(joined), ['12ft 51']);
+          expect(
+            joined.pressEquals(),
+            const TapeRefused(TapeRefusal.finishThisValueFirst),
+            reason: '12ft 5 + 1 = never lands Calc 16ft 3in',
+          );
+        });
+
+        test('B4: inside an open bracket = is refused and the inch part '
+            'stays as typed (row 28)', () {
+          final grouped = press(bracket(const Tape()), '1 2 ft 5');
+          expect(grouped.pressEquals(), isA<TapeRefused>());
+          final added = press(
+            bracket(press(const Tape(), '2 ft +')),
+            '1 2 ft 5',
+          );
+          expect(added.pressEquals(), isA<TapeRefused>());
+          expect(
+            texts(press(changed(grouped.pressUnit(Unit.inch)), '=')),
+            ['(12ft 5in)', 'Calc'],
+            reason: 'Inch closes the part, and then = lands',
+          );
+        });
+
+        test('B5: inside a bracket a digit after a closed inch fraction is '
+            'refused, so 2 + ( 3/4in 5 ) = never drops the 3/4in', () {
+          final fraction = press(
+            bracket(press(const Tape(), '2 +')),
+            '3 / 4 in',
+          );
+          expect(
+            fraction.typeDigit('5'),
+            const TapeRefused(TapeRefusal.addAnOperatorFirst),
+          );
+          expect(
+            texts(press(fraction, '+ 5')),
+            texts(press(bracket(press(const Tape(), '2 +')), '3 / 4 in + 5')),
+            reason: 'an operator first, and then the digit goes in',
+          );
+          expect(
+            texts(press(const Tape(), '3 / 4 in 5')),
+            ['3/4in', '5'],
+            reason: 'outside a bracket the digit starts a chip (row 84)',
+          );
+        });
+
+        test('B6: a closed bracket lands Calc only on its own; with values '
+            'before it = keeps Nothing to compute yet (rows 66, 107)', () {
+          final times = bracket(
+            press(bracket(press(const Tape(), '1 2 ft × 2')), '3'),
+          );
+          expect(
+            times.pressEquals(),
+            const TapeRefused(TapeRefusal.nothingToCompute),
+          );
+          final named = bracket(
+            press(bracket(press(const Tape(), '[Width] 5 ft')), '2'),
+          );
+          expect(
+            named.pressEquals(),
+            const TapeRefused(TapeRefusal.nothingToCompute),
+          );
+          expect(
+            texts(press(bracket(press(bracket(const Tape()), '1 2')), '=')),
+            ['(12)', 'Calc'],
+          );
+          expect(
+            texts(
+              press(
+                bracket(press(bracket(press(const Tape(), '5 +')), '2')),
+                '=',
+              ),
+            ),
+            ['5', '+(2)', 'Calc'],
+            reason: '5 + ( 2 ) = still lands Calc 7 through the chain',
+          );
+        });
+      });
+
       test('= closes the inch part of a compound still being typed and lands '
           'it as Calc: 12 [Feet] 5 = is Calc 12ft 5in (Section 6; decision '
           'tree row 79)', () {
@@ -446,9 +554,12 @@ void main() {
         final landed = press(const Tape(), '1 2 ft 5 =');
         expect(texts(landed), ['12ft 5in', 'Calc']);
         expect(calc(landed), 'Calc 12ft 5in');
-        final carried = press(const Tape(), '1 9 ft 1 3 =');
-        expect(texts(carried), ['20ft 1in', 'Calc']);
-        expect(calc(carried), 'Calc 20ft 1in');
+        final thirteen = press(const Tape(), '1 9 ft 1 3');
+        expect(
+          thirteen.pressEquals(),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+          reason: 'R3 (B3): an inch part of 12 or more is not closed by =',
+        );
         final named = press(const Tape(), '[Length] 1 2 ft 5').pressEquals();
         expect(
           named,
@@ -501,9 +612,11 @@ void main() {
           '10ft 8in',
         ]);
         final opened = changed(const Tape().pressBracket());
-        final grouped = press(opened, '1 2 ft 5 =');
-        expect(texts(grouped), ['(12ft 5in)', 'Calc']);
-        expect(calc(grouped), 'Calc 12ft 5in');
+        expect(
+          press(opened, '1 2 ft 5').pressEquals(),
+          isA<TapeRefused>(),
+          reason: 'R3 (B4): inside an open bracket = stays refused (row 28)',
+        );
         expect(
           press(opened, '1 2 ft 5').pressBracket(),
           isA<TapeRefused>(),
