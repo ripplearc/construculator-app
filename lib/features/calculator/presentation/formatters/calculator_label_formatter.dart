@@ -448,6 +448,38 @@ class CalculatorLabelFormatter {
         : l10n.calculatorNotePercentTakesOffSoFar(tip.percent);
   }
 
+  /// What the calculator keyboard says to a screen reader, from l10n
+  /// (CA-1198): every key, the fold handle, View all, the unit system switch
+  /// and a group's header and drag handle in the View all sheet.
+  CoreKeyboardSemantics get keyboardSemantics => CoreKeyboardSemantics(
+    digitLabel: (digit) => l10n.calculatorKeyDigitSemantics(digit.label),
+    operatorLabel: (operatorType) =>
+        l10n.calculatorKeyOperatorSemantics(operatorType.symbol),
+    unitLabel: (unit) => l10n.calculatorKeyUnitSemantics(unit.label),
+    controlLabel: (action) => switch (action) {
+      ControlAction.delete => l10n.calculatorKeyDeleteSemantics,
+      ControlAction.clearAll => l10n.calculatorKeyClearAllSemantics,
+      ControlAction.paren => l10n.calculatorBracketKeySemantics,
+      // ignore: deprecated_member_use
+      ControlAction.moreOptions => l10n.moreOptionsLabel,
+    },
+    controlHint: (action) => switch (action) {
+      ControlAction.delete => l10n.calculatorKeyDeleteHint,
+      ControlAction.clearAll => l10n.calculatorKeyClearAllHint,
+      ControlAction.paren => l10n.calculatorBracketKeyHint,
+      // ignore: deprecated_member_use
+      ControlAction.moreOptions => '',
+    },
+    resultLabel: l10n.calculatorKeyResultSemantics,
+    resultHint: l10n.calculatorKeyResultHint,
+    dragHandle: l10n.calculatorKeyboardHandleSemantics,
+    viewAllLabel: l10n.calculatorViewAllSemantics,
+    viewAllHint: l10n.calculatorViewAllHint,
+    unitSystemSwitch: l10n.calculatorUnitSystemSwitchSemantics,
+    groupHeader: l10n.calculatorGroupHeaderSemantics,
+    reorderHandle: l10n.calculatorReorderGroupSemantics,
+  );
+
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,

@@ -121,6 +121,10 @@
         <regex pattern="suggestionAreaPlaceholder:\s*l10n\.calculatorStripPlaceholder," dotAll="true" id="calculator_page.strip_note.placeholder_dropped">
             <mutation text="suggestionAreaPlaceholder: '',"/>
         </regex>
+        <!-- CA-1198: the keyboard keeps CoreUI's own English -->
+        <regex pattern="semantics: labels\.keyboardSemantics," dotAll="true" id="calculator_page.keyboard.semantics_dropped">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>
