@@ -113,10 +113,12 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         },
       );
 
-  Future<void> _openMaterialSheet() =>
+  Future<void> _openMaterialSheet(YourRateEntry? entry, {String? name}) =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
         asksBeforeClosing: true,
+        entry: entry,
+        name: name,
         blocFactory: widget.materialCostFormBlocFactory,
         addedItemIdOf: (state) =>
             state is MaterialCostFormSuccess ? state.createdItem.id : null,
@@ -342,7 +344,13 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => unawaited(_openRecentsThenEquipmentForm(context)),
+        onPressed: () => unawaited(
+          _openRecentsThenForm(
+            context,
+            CostItemType.equipment,
+            _openEquipmentSheet,
+          ),
+        ),
       ),
       CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),
@@ -351,15 +359,26 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: _openMaterialSheet,
+        onPressed: () => unawaited(
+          _openRecentsThenForm(
+            context,
+            CostItemType.material,
+            _openMaterialSheet,
+          ),
+        ),
       ),
     };
   }
 
-  Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
+  Future<void> _openRecentsThenForm(
+    BuildContext context,
+    CostItemType category,
+    Future<void> Function(YourRateEntry? entry, {String? name}) openForm,
+  ) async {
     final result = await YourRatesRecentsSheet.show(
       context: context,
       clock: widget.clock,
+      category: category,
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (!context.mounted) return;
@@ -367,9 +386,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       case YourRatesRecentsDismissed():
         return;
       case YourRatesRecentsPicked(:final entry):
-        await _openEquipmentSheet(entry);
-      case YourRatesRecentsNewEquipmentCost(:final name):
-        await _openEquipmentSheet(null, name: name);
+        await openForm(entry);
+      case YourRatesRecentsNewCost(:final name):
+        await openForm(null, name: name);
     }
   }
 }
