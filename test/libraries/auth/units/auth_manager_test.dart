@@ -923,6 +923,67 @@ void main() {
         expect(result.isSuccess, true);
       });
 
+      test('sendOtp to an email sends the email and no phone', () async {
+        await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        final call = supabaseWrapper.getMethodCallsFor('signInWithOtp').single;
+        expect(call['email'], testEmail);
+        expect(call['phone'], isNull);
+      });
+
+      test('sendOtp to a phone sends the phone and no email', () async {
+        await authManager.sendOtp('+1234567890', OtpReceiver.phone);
+
+        final call = supabaseWrapper.getMethodCallsFor('signInWithOtp').single;
+        expect(call['phone'], '+1234567890');
+        expect(call['email'], isNull);
+      });
+
+      test(
+        'verifyOtp for an email verifies the email as an email OTP',
+        () async {
+          await authManager.verifyOtp(testEmail, '123456', OtpReceiver.email);
+
+          final call = supabaseWrapper.getMethodCallsFor('verifyOTP').single;
+          expect(call['email'], testEmail);
+          expect(call['phone'], isNull);
+          expect(call['type'], supabase.OtpType.email);
+        },
+      );
+
+      test('verifyOtp for a phone verifies the phone as an sms OTP', () async {
+        await authManager.verifyOtp('+1234567890', '123456', OtpReceiver.phone);
+
+        final call = supabaseWrapper.getMethodCallsFor('verifyOTP').single;
+        expect(call['phone'], '+1234567890');
+        expect(call['email'], isNull);
+        expect(call['type'], supabase.OtpType.sms);
+      });
+
+      test('a signup the server refuses is logged as a warning, not sent to '
+          'Sentry as an error', () async {
+        AppLogger.setSentryWrapper(sentryWrapper);
+        supabaseWrapper.shouldThrowOnOtp = true;
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.registrationFailure;
+
+        final result = await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        expect(result.errorType, AuthErrorType.registrationFailure);
+        expect(sentryWrapper.exceptions, isEmpty);
+      });
+
+      test('a timeout is sent to Sentry as an error', () async {
+        AppLogger.setSentryWrapper(sentryWrapper);
+        supabaseWrapper.shouldThrowOnOtp = true;
+        supabaseWrapper.authErrorCode = SupabaseAuthErrorCode.timeout;
+
+        final result = await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        expect(result.errorType, AuthErrorType.timeout);
+        expect(sentryWrapper.exceptions, hasLength(1));
+      });
+
       test('verifyOtp should accept valid OTP format', () async {
         final result = await authManager.verifyOtp(
           'test@example.com',
