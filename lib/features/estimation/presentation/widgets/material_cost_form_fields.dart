@@ -50,12 +50,16 @@ class MaterialCostFormFields extends StatefulWidget {
   /// rate sheet.
   final Clock clock;
 
+  /// The sample cost file rates the Look up a rate sheet lists for a search.
+  final List<SampleRateRow> Function(String query) sampleRatesFor;
+
   const MaterialCostFormFields({
     super.key,
     this.initialRateEntry,
     this.initialName,
     required this.yourRatesBlocFactory,
     required this.clock,
+    this.sampleRatesFor = noSampleRates,
   });
 
   @override
@@ -90,15 +94,27 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       initialQuery: _nameController.text.trim(),
       clock: widget.clock,
       blocFactory: widget.yourRatesBlocFactory,
-      sampleRatesFor: noSampleRates,
+      sampleRatesFor: widget.sampleRatesFor,
     );
-    if (pick is! MaterialLookupYourRate || !mounted) return;
-    final entry = pick.entry;
-    if (_nameController.text.trim().isEmpty) {
-      _nameController.text = entry.itemName;
+    if (pick == null || !mounted) return;
+    _rateController.text = editableNumberText(pick.rate.amount);
+    final bloc = context.read<MaterialCostFormBloc>();
+    switch (pick) {
+      case MaterialLookupYourRate(:final entry):
+        if (_nameController.text.trim().isEmpty) {
+          _nameController.text = entry.itemName;
+        }
+        bloc.add(MaterialRateLookedUp(entry));
+      case MaterialLookupSampleRate(:final row):
+        _nameController.text = row.materialNameAfter(_nameController.text);
+        bloc.add(
+          MaterialSampleRatePicked(
+            itemName: _nameController.text,
+            rate: row.rate.amount,
+            unit: row.unit,
+          ),
+        );
     }
-    _rateController.text = editableNumberText(entry.rate.amount);
-    context.read<MaterialCostFormBloc>().add(MaterialRateLookedUp(entry));
   }
 
   @override

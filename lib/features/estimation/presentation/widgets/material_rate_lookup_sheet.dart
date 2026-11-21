@@ -23,7 +23,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// to create an entry here.
 ///
 /// The matching sample cost file rates follow under FROM SAMPLE COST FILE,
-/// with the "Not your own rates" notice that has no close control.
+/// with the "Not your own rates" notice that has no close control. When every
+/// sample row states its coverage in one takeoff unit, each also shows its
+/// price per that unit, with a footnote saying why; otherwise neither shows.
 class MaterialRateLookupSheet extends StatefulWidget {
   /// The material name typed in the form, searched as the sheet opens.
   final String initialQuery;
@@ -260,6 +262,7 @@ class _SampleGroup extends StatelessWidget {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    final columnUnit = SampleRateRow.sharedCoverageUnit(rows);
     return Column(
       key: const Key('material_lookup_sample_group'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -290,11 +293,42 @@ class _SampleGroup extends StatelessWidget {
             ),
           ),
         ),
+        if (columnUnit != null)
+          Row(
+            key: const Key('material_lookup_price_per_unit_footnote'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: CoreSpacing.space1,
+            children: [
+              CoreIconWidget(
+                icon: CoreIcons.info,
+                size: CoreIconSize.size16,
+                color: colorTheme.iconGrayMid,
+              ),
+              Expanded(
+                child: Text(
+                  l10n.materialLookupPricePerUnitFootnote(
+                    columnUnit.displayName(l10n),
+                  ),
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                ),
+              ),
+            ],
+          ),
         for (final row in rows)
           CoreListRow.selectable(
             key: Key('sample_rate_row_${row.id}'),
             title: row.productName,
-            subtitle: row.details,
+            // TODO: [CA-1510] show the price per unit as a second line under the price once CoreListRow has one. https://ripplearc.youtrack.cloud/issue/CA-1510
+            subtitle: [
+              ?row.details,
+              if (columnUnit != null)
+                l10n.materialLookupPricePerUnit(
+                  DisplayFormatter.currency.format(row.pricePerCoverageUnit),
+                  unitSuffix(columnUnit) ?? '',
+                ),
+            ].join(' · '),
             value: DisplayFormatter.currency.format(row.rate.amount),
             unit: unitSuffix(row.unit),
             selected: selected == MaterialLookupSampleRate(row),

@@ -30,6 +30,25 @@ class MaterialRateLookedUp extends MaterialCostFormEvent {
   final YourRateEntry entry;
 }
 
+/// Fired when a sample cost file rate is picked on the Look up a rate sheet.
+/// The rate arrives tagged Sample rate until it is saved as the user's own.
+class MaterialSampleRatePicked extends MaterialCostFormEvent {
+  const MaterialSampleRatePicked({
+    required this.itemName,
+    required this.rate,
+    this.unit,
+  });
+
+  /// The material name with the picked product appended.
+  final String itemName;
+
+  /// The sample price of one unit.
+  final double rate;
+
+  /// The unit [rate] is the price of, or null to keep the picked unit.
+  final Unit? unit;
+}
+
 /// Fired when the user changes the material name.
 class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   const MaterialCostItemTypeChanged(this.value);
