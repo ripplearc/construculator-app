@@ -128,5 +128,40 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders a sample rate to verify: tag and save helper', (
+      tester,
+    ) async {
+      await pumpFields(tester, theme);
+      await tester.enterText(
+        find.byKey(const Key('material_name_field')),
+        'Interior paint · ProClassic',
+      );
+      await tester.enterText(
+        find.byKey(const Key('material_quantity_field')),
+        '7',
+      );
+      await tester.enterText(
+        find.byKey(const Key('material_rate_field')),
+        '52',
+      );
+      bloc.add(
+        const MaterialSampleRatePicked(
+          itemName: 'Interior paint · ProClassic',
+          rate: 52,
+          unit: Unit.liters,
+          typedName: 'Interior paint',
+        ),
+      );
+      FocusManager.instance.primaryFocus!.unfocus();
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialCostFormFields),
+        matchesGoldenFile(
+          'goldens/material_cost_form_fields/material_sample_rate$suffix.png',
+        ),
+      );
+    });
   });
 }

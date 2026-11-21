@@ -4136,6 +4136,22 @@ abstract class AppLocalizations {
   /// **'{amount}{unit}'**
   String materialLookupPricePerUnit(String amount, String unit);
 
+  /// Tag beside the Rate label of the material form while the rate is a sample cost file price, not yet saved as the user's own
+  ///
+  /// In en, this message translates to:
+  /// **'Sample rate'**
+  String get materialSampleRateBadge;
+
+  /// Helper line under the material Rate row while Save as my default is offered; price is the pre-formatted currency followed by materialRatePerUnitSuffix when the form has a unit, yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case
+  ///
+  /// In en, this message translates to:
+  /// **'Saves {price} to {yourRates} — it auto-fills next time you add {itemName}.'**
+  String materialSaveAsDefaultHelperText(
+    String price,
+    String yourRates,
+    String itemName,
+  );
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:
