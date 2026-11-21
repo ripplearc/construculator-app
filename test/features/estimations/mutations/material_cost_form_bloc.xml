@@ -121,6 +121,38 @@
         <regex pattern="_opened = MaterialCostFormData\(unit: rememberedUnit\);" dotAll="false" id="bloc.dirty.baseline_unit">
             <mutation text="_opened = const MaterialCostFormData();"/>
         </regex>
+        <!-- UNFINISHED LINE (CA-1287) -->
+        <regex pattern="next\.hasUnsavedChanges\n        \? _keepUnfinishedLine\(next\)\n        : _removeUnfinishedLine\(\);" dotAll="true" id="material_form.unfinished.swap_keep_remove">
+            <mutation text="_keepUnfinishedLine(next);"/>
+            <mutation text="_removeUnfinishedLine();"/>
+        </regex>
+        <regex pattern="if \(!_keepsUnfinishedLine\) return;" dotAll="false" id="material_form.unfinished.remove_only_own">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="    _keepsUnfinishedLine = true;\n" dotAll="true" id="material_form.unfinished.mark_kept">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_estimateId = event\.estimateId;" dotAll="false" id="material_form.unfinished.estimate_id">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="        _removeUnfinishedLine\(\);\n        emit\(MaterialCostFormSuccess" dotAll="true" id="material_form.unfinished.keep_after_add">
+            <mutation text="        emit(MaterialCostFormSuccess"/>
+        </regex>
+        <regex pattern="on&lt;MaterialCostFormDiscarded&gt;\(\(_, _\) => _removeUnfinishedLine\(\)\);" dotAll="false" id="material_form.unfinished.discard_ignored">
+            <mutation text="on&lt;MaterialCostFormDiscarded&gt;((_, _) {});"/>
+        </regex>
+        <regex pattern="category: CostItemType\.material," dotAll="false" id="material_form.unfinished.category">
+            <mutation text="category: CostItemType.labor,"/>
+        </regex>
+        <regex pattern="          quantity: data\.quantity,\n" dotAll="true" id="material_form.unfinished.quantity">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="          unit: data\.unit,\n" dotAll="true" id="material_form.unfinished.unit">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="          rate: data\.rate,\n" dotAll="true" id="material_form.unfinished.rate">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

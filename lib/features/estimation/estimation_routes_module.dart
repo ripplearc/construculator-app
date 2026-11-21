@@ -53,7 +53,7 @@ class EstimationRoutesModule extends Module {
               Modular.get<EquipmentCostFormBloc>(),
           materialCostFormBlocFactory: () =>
               Modular.get<MaterialCostFormBloc>()
-                ..add(const MaterialCostFormStarted()),
+                ..add(MaterialCostFormStarted(estimateId: estimationId)),
           estimateSummaryBlocFactory: () => Modular.get<EstimateSummaryBloc>(),
           yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           clock: Modular.get<Clock>(),
