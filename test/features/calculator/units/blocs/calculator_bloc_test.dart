@@ -2027,6 +2027,135 @@ void main() {
       );
     });
 
+    group('CA-1376 3/3: the percent tip (Section 1.8, "A percent tip"; '
+        'Section 7, "Percent")', () {
+      final labels = CalculatorLabelFormatter(AppLocalizationsEn());
+      String? tipOf(String keys) =>
+          switch (CalculatorState(tape: pressed(keys)).stripNote) {
+            final CalculatorPercentTipNote tip => labels.stripText(tip),
+            _ => null,
+          };
+
+      test('the tip says what the percent adds or takes off, of the total or '
+          'of the bracket, in the total\'s unit (rows 386, 387, 389, 390, '
+          '393)', () {
+        expect(
+          tipOf('1 0 0 0 + 5 0 0 + 1 0 %'),
+          'Adds 10% of the total 1,500 = 150.',
+        );
+        expect(
+          tipOf('1 0 0 0 − 1 0 %'),
+          'Takes off 10% of the total 1,000 = 100.',
+        );
+        expect(tipOf('5 0 + 1 0 %'), 'Adds 10% of the total 50 = 5.');
+        expect(
+          tipOf('5 0 + 1 0 % + 1 0 %'),
+          'Adds 10% of the total 55 = 5.5.',
+          reason: 'each % follows its own +, so two tips show',
+        );
+        expect(
+          tipOf('1 3 7 ft ft + 1 0 %'),
+          'Adds 10% of the total 137ft² = 13.7ft².',
+        );
+        expect(tipOf('5 ft + 1 0 %'), 'Adds 10% of the total 5ft = 6in.');
+        expect(
+          tipOf('1 0 ft + 1 0 %'),
+          'Adds 10% of the total 10ft = 1ft.',
+          reason: 'only a length shorter than a foot is spelled in inches',
+        );
+        expect(
+          tipOf('( 1 0 0 0 + 5 0 0 + 1 0 %'),
+          'Adds 10% of the bracket 1,500 = 150.',
+        );
+        expect(
+          tipOf('( 1 0 0 0 − 1 0 %'),
+          'Takes off 10% of the bracket 1,000 = 100.',
+        );
+        expect(
+          tipOf('2 0 0 + ( 5 + 5 ( %'),
+          'Adds (5+5)% of the total 200 = 20.',
+        );
+      });
+
+      test('no tip after × or ÷, where the percent is only the number ÷ 100 '
+          '(row 388)', () {
+        expect(tipOf('2 0 0 ÷ 1 0 %'), isNull);
+        expect(tipOf('2 0 0 × 1 0 %'), isNull);
+        expect(
+          CalculatorState(tape: pressed('2 0 0 ÷ 1 0 %')).stripNote,
+          isNull,
+        );
+      });
+
+      test('the tip closes on the next key: =, +, ⌫ and C, and a refused '
+          'digit; a warning wins over it (row 392)', () {
+        expect(tipOf('5 0 + 1 0 % ='), isNull);
+        expect(tipOf('5 0 + 1 0 % +'), isNull);
+        expect(tipOf('5 0 + 1 0 % ⌫'), isNull);
+        expect(tipOf('5 0 + 1 0 % ✕'), isNull);
+        expect(
+          CalculatorState(
+            tape: pressed('5 0 + 1 0 %'),
+            refusal: const TapeRefused(TapeRefusal.alreadyAPercent),
+          ).stripNote,
+          isNull,
+          reason: 'a refused key is the next key too',
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Pitch] 9 5 [Run] 1 0 ft + 1 0 %'),
+          ).stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        );
+      });
+
+      test('a tip over 52 characters shows its short form (Section 1.8)', () {
+        const tip = CalculatorPercentTipNote(
+          addsToTheTotal: true,
+          percent: '12.5%',
+          total: '1,234,567,890',
+          amount: '154,320,986.25',
+          ofTheBracket: false,
+        );
+        expect(
+          AppLocalizationsEn()
+              .calculatorNotePercentAddsOfTheTotal(
+                tip.percent,
+                tip.total,
+                tip.amount,
+              )
+              .length,
+          greaterThan(CalculatorLabelFormatter.longestNote),
+        );
+        expect(labels.stripText(tip), 'Adds 12.5% of the total so far.');
+        expect(
+          labels.stripText(
+            const CalculatorPercentTipNote(
+              addsToTheTotal: false,
+              percent: '12.5%',
+              total: '123,456,789',
+              amount: '15,432,098.63',
+              ofTheBracket: true,
+            ),
+          ),
+          'Takes off 12.5% of the total so far.',
+        );
+        expect(
+          labels.stripText(
+            const CalculatorPercentTipNote(
+              addsToTheTotal: true,
+              percent: '10%',
+              total: '1,234,567,890',
+              amount: '1',
+              ofTheBracket: false,
+            ),
+          ),
+          'Adds 10% of the total 1,234,567,890 = 1.',
+          reason: 'a tip within the limit is shown whole',
+        );
+      });
+    });
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,

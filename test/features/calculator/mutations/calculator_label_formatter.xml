@@ -108,8 +108,28 @@
         <regex pattern="CalculatorRangeWarningToast\(\) =&gt; l10n\.calculatorToastEditThePitchChipBody," dotAll="true" id="calculator_label_formatter.toast.pitch_body">
             <mutation text="CalculatorRangeWarningToast() =&gt; l10n.calculatorToastEditTheSlopeChipBody,"/>
         </regex>
-        <!-- CA-1376 (rule 4.12): the percent Alerts read in another
-             Alert's words -->
+        <!-- CA-1376 (Section 1.8): the tip reads the wrong sign or side, its
+             short form starts one character early or never, and the percent
+             Alerts read in another Alert's words -->
+        <regex pattern="if \(full\.length &lt;= longestNote\) return full;" dotAll="true" id="calculator_label_formatter.tip.limit">
+            <mutation text="if (full.length &lt; longestNote) return full;"/>
+            <mutation text="return full;"/>
+        </regex>
+        <regex pattern="\? l10n\.calculatorNotePercentAddsSoFar\(tip\.percent\)\s*: l10n\.calculatorNotePercentTakesOffSoFar\(tip\.percent\);" dotAll="true" id="calculator_label_formatter.tip.short_sign">
+            <mutation text="? l10n.calculatorNotePercentTakesOffSoFar(tip.percent) : l10n.calculatorNotePercentAddsSoFar(tip.percent);"/>
+        </regex>
+        <regex pattern="\(true, false\) =&gt; l10n\.calculatorNotePercentAddsOfTheTotal\(" dotAll="true" id="calculator_label_formatter.tip.adds_total">
+            <mutation text="(true, false) =&gt; l10n.calculatorNotePercentAddsOfTheBracket("/>
+        </regex>
+        <regex pattern="\(true, true\) =&gt; l10n\.calculatorNotePercentAddsOfTheBracket\(" dotAll="true" id="calculator_label_formatter.tip.adds_bracket">
+            <mutation text="(true, true) =&gt; l10n.calculatorNotePercentAddsOfTheTotal("/>
+        </regex>
+        <regex pattern="\(false, false\) =&gt; l10n\.calculatorNotePercentTakesOffOfTheTotal\(" dotAll="true" id="calculator_label_formatter.tip.takes_off_total">
+            <mutation text="(false, false) =&gt; l10n.calculatorNotePercentAddsOfTheTotal("/>
+        </regex>
+        <regex pattern="\(false, true\) =&gt; l10n\.calculatorNotePercentTakesOffOfTheBracket\(" dotAll="true" id="calculator_label_formatter.tip.takes_off_bracket">
+            <mutation text="(false, true) =&gt; l10n.calculatorNotePercentTakesOffOfTheTotal("/>
+        </regex>
         <regex pattern="CalculatorPercentNeedsANumberToast\(\) =&gt;\s*l10n\.calculatorToastTypeANumberFirstTitle," dotAll="true" id="calculator_label_formatter.toast.percent_number_title">
             <mutation text="CalculatorPercentNeedsANumberToast() =&gt; l10n.calculatorToastPercentNeedsAnOperatorTitle,"/>
         </regex>

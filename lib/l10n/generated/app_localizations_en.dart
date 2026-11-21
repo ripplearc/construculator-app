@@ -2199,6 +2199,52 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sides needs a whole number, 3 or more.';
 
   @override
+  String calculatorNotePercentAddsOfTheTotal(
+    String percent,
+    String total,
+    String amount,
+  ) {
+    return 'Adds $percent of the total $total = $amount.';
+  }
+
+  @override
+  String calculatorNotePercentAddsOfTheBracket(
+    String percent,
+    String total,
+    String amount,
+  ) {
+    return 'Adds $percent of the bracket $total = $amount.';
+  }
+
+  @override
+  String calculatorNotePercentTakesOffOfTheTotal(
+    String percent,
+    String total,
+    String amount,
+  ) {
+    return 'Takes off $percent of the total $total = $amount.';
+  }
+
+  @override
+  String calculatorNotePercentTakesOffOfTheBracket(
+    String percent,
+    String total,
+    String amount,
+  ) {
+    return 'Takes off $percent of the bracket $total = $amount.';
+  }
+
+  @override
+  String calculatorNotePercentAddsSoFar(String percent) {
+    return 'Adds $percent of the total so far.';
+  }
+
+  @override
+  String calculatorNotePercentTakesOffSoFar(String percent) {
+    return 'Takes off $percent of the total so far.';
+  }
+
+  @override
   String get calculatorNotePitchHasNoDms =>
       'Pitch has no D:M:S. Press Pitch for other readings.';
 
