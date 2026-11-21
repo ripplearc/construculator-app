@@ -955,6 +955,101 @@ void main() {
       );
     });
 
+    group('S1c 3/5: a tap on a chip of the tape (rule 4.8)', () {
+      Tape lengthWidthArea() {
+        final typed = pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in');
+        final area = const DeterministicRules()
+            .answersFor(typed.namedValues)
+            .firstWhere((answer) => answer.key == 'Area');
+        return (typed.landAnswer('Area', area.value) as TapeChanged).tape;
+      }
+
+      test('the equals key reads Update while a chip is edited and the tape '
+          'has a result, and the = sign while it has none, where the press '
+          'still lands what the strip offers (B1; product decision of 13 '
+          'November 2026)', () {
+        final landed = lengthWidthArea();
+        expect(CalculatorState(tape: landed).equalsKeyId, isNull);
+        final edited = (landed.tapChip(1) as TapeChanged).tape;
+        expect(
+          CalculatorState(tape: edited).equalsKeyId,
+          CalculatorState.updateKey,
+        );
+        final typed = pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in');
+        expect(
+          CalculatorState(tape: typed).equalsKeyId,
+          DeterministicRules.areaKey,
+        );
+        final editedFirst = (typed.tapChip(0) as TapeChanged).tape;
+        final state = CalculatorState(tape: editedFirst);
+        expect(state.equalsKeyId, isNull);
+        expect(state.equalsLands, isNotNull);
+        expect(
+          state.equalsLands!.key,
+          DeterministicRules.areaKey,
+          reason: '= still lands Area while the key shows the = sign',
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a tapped chip reaches the tape as tapChip, and nothing else',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: lengthWidthArea()),
+        act: (bloc) => bloc.add(const CalculatorChipTapped(0)),
+        expect: () => [
+          tapeState((lengthWidthArea().tapChip(0) as TapeChanged).tape),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.tape.editing!.index, 0);
+          expect(bloc.state.labelKeyId, 'Length');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a tap the tape refuses is carried as the refusal',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: lengthWidthArea()),
+        act: (bloc) => bloc.add(const CalculatorChipTapped(2)),
+        expect: () => [
+          CalculatorState(
+            tape: lengthWidthArea(),
+            refusal: const TapeRefused(TapeRefusal.chipCannotBeEdited),
+          ),
+        ],
+      );
+
+      test('while a chip is edited the results after it are drawn dashed, '
+          'the edited chip active, and the results before it stay results', () {
+        final tape = pressed('3 × 4 = × 2 =');
+        expect(tape.chips, hasLength(5));
+        final editing = (tape.tapChip(3) as TapeChanged).tape;
+
+        final faces = [
+          for (final chip in CalculatorState(tape: editing).chipsList)
+            chip.type,
+        ];
+        expect(faces, [
+          CoreCalculatorChipType.editable,
+          CoreCalculatorChipType.editable,
+          CoreCalculatorChipType.result,
+          CoreCalculatorChipType.active,
+          CoreCalculatorChipType.dashed,
+        ]);
+
+        final sealed = (editing.pressEquals() as TapeChanged).tape;
+        expect([
+          for (final chip in CalculatorState(tape: sealed).chipsList) chip.type,
+        ], everyElement(isNot(CoreCalculatorChipType.dashed)));
+      });
+
+      test('a chip being typed at the end leaves no result dashed', () {
+        final tape = pressed('3 × 4 = × 2');
+        expect([
+          for (final chip in CalculatorState(tape: tape).chipsList) chip.type,
+        ], isNot(contains(CoreCalculatorChipType.dashed)));
+      });
+    });
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,

@@ -2079,6 +2079,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorEqualsAns => 'Ans';
 
   @override
+  String get calculatorEqualsUpdate => 'Update';
+
+  @override
   String get calculatorStripPlaceholder =>
       'Here you can see smart suggestions from us';
 
@@ -2505,6 +2508,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String calculatorReorderGroupSemantics(String group) {
     return 'Drag to move the $group group';
   }
+
+  @override
+  String get calculatorChipTapToEdit => 'Edit';
+
+  @override
+  String get calculatorChipTapToFinish => 'Finish editing';
 
   @override
   String unitNamePieces(num count) {

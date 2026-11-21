@@ -714,4 +714,47 @@ void main() {
       }
     }
   });
+
+  testWidgets('a tap on an input chip reopens it, the result after it is '
+      'drawn dashed, and a second tap seals it again (rule 4.8)', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_two',
+      'calc_key_two',
+      'calc_key_feet',
+      'calc_key_Width',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+    await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+    await settle(tester);
+    expect(bloc.state.labelKeyId, 'Area');
+
+    CoreCalculatorChipType faceOf(int index) => tester
+        .widget<CoreCalculatorChip>(find.byKey(ValueKey('calc_chip_$index')))
+        .type;
+    final length = find.byKey(const ValueKey('calc_chip_0'));
+    await tester.tap(length);
+    await settle(tester);
+
+    expect(bloc.state.tape.editing!.index, 0);
+    expect(faceOf(0), CoreCalculatorChipType.active);
+    expect(faceOf(2), CoreCalculatorChipType.dashed);
+    expect(bloc.state.valueText, '22ft');
+
+    await tester.tap(length);
+    await settle(tester);
+
+    expect(bloc.state.tape.editing, isNull);
+    expect(faceOf(0), CoreCalculatorChipType.editable);
+    expect(faceOf(2), CoreCalculatorChipType.result);
+  });
 }

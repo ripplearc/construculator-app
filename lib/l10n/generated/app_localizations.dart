@@ -3658,6 +3658,12 @@ abstract class AppLocalizations {
   /// **'Ans'**
   String get calculatorEqualsAns;
 
+  /// Face of the calculator equals key while a tape chip is reopened for edit and the tape has a result: the press finishes the edit and recomputes the result
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get calculatorEqualsUpdate;
+
   /// Text of the calculator suggestion strip when nothing applies yet
   ///
   /// In en, this message translates to:
@@ -4411,6 +4417,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to move the {group} group'**
   String calculatorReorderGroupSemantics(String group);
+
+  /// Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get calculatorChipTapToEdit;
+
+  /// Screen reader hint of a tap on the chip being typed or edited on the calculator tape: the tap seals the chip, as = does (UX Design Doc rule 4.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Finish editing'**
+  String get calculatorChipTapToFinish;
 
   /// Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit
   ///

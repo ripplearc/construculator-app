@@ -133,6 +133,43 @@ void main() {
       );
     });
 
+    testWidgets('renders a chip reopened by a tap with the result after it '
+        'dashed (rule 4.8)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      blocOf(tester)
+        ..add(const CalculatorKeySelected('Length'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorKeySelected('Width'))
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('8'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorEqualsPressed())
+        ..add(const CalculatorChipTapped(1));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        [for (final chip in blocOf(tester).state.chipsList) chip.type],
+        [
+          CoreCalculatorChipType.editable,
+          CoreCalculatorChipType.active,
+          CoreCalculatorChipType.dashed,
+        ],
+      );
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_tape_editing$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders the "View all" sheet over the page', (tester) async {
       tester.view.physicalSize = sheetSize;
       tester.view.devicePixelRatio = ratio;
