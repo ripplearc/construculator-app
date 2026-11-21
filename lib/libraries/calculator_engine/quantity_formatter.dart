@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
+import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
@@ -137,31 +138,31 @@ class QuantityFormatter extends Equatable {
   String _length(Length value, bool group) => switch (value.unit) {
     Unit.inch => _wholeInchesAndFraction(value.inches, group),
     Unit.footInch => _feetAndInches(value.inches),
-    Unit.metre => _decimalLength(
-      value,
-      preferences.metreDisplay.decimals,
-      group,
-    ),
-    Unit.millimetre => _decimalLength(value, 0, group),
-    _ => _decimalLength(value, resultDecimals, group),
+    _ => '${_decimalLengthNumber(value, group)}${value.unit.suffix}',
   };
 
-  String _decimalLength(Length value, int decimals, bool group) =>
-      '${_localeNumber(value.amountIn(value.unit), decimals, group)}'
-      '${value.unit.suffix}';
+  String _decimalLengthNumber(Length value, bool group) =>
+      _localeNumber(value.amountIn(value.unit), switch (value.unit) {
+        Unit.metre => preferences.metreDisplay.decimals,
+        Unit.millimetre => 0,
+        _ => resultDecimals,
+      }, group);
 
   String _wholeInchesAndFraction(Rational inches, bool group) {
     final negative = inches.numerator < 0;
-    final magnitude = negative ? -inches : inches;
-    var whole = magnitude.floor();
-    final fraction = _fractionOfInch(magnitude - Rational(whole));
-    whole += fraction.carry;
+    final (:whole, :fraction) = _inchParts(negative ? -inches : inches);
     final text =
         '${_localeNumber(whole.toDouble(), 0, group)}'
         '${fraction.text}${Unit.inch.suffix}';
     return negative && (whole != 0 || fraction.text.isNotEmpty)
         ? '-$text'
         : text;
+  }
+
+  ({int whole, _InchFraction fraction}) _inchParts(Rational magnitude) {
+    final whole = magnitude.floor();
+    final fraction = _fractionOfInch(magnitude - Rational(whole));
+    return (whole: whole + fraction.carry, fraction: fraction);
   }
 
   String _feetAndInches(Rational inches) {
@@ -183,54 +184,155 @@ class QuantityFormatter extends Equatable {
         : text;
   }
 
-  ({String text, int carry}) _fractionOfInch(Rational remainderInches) {
+  _InchFraction _fractionOfInch(Rational remainderInches) {
     final steps = preferences.fractionResolution.denominator;
     var numerator = _jsMathRound(
       (remainderInches * Rational(steps)).toDouble(),
     );
-    if (numerator == 0) return (text: '', carry: 0);
-    if (numerator == steps) return (text: '', carry: 1);
+    if (numerator == 0) {
+      return (text: '', carry: 0, numerator: 0, denominator: 0);
+    }
+    if (numerator == steps) {
+      return (text: '', carry: 1, numerator: 0, denominator: 0);
+    }
     var denominator = steps;
     while (numerator.isEven) {
       numerator ~/= 2;
       denominator ~/= 2;
     }
-    return (text: '-$numerator/$denominator', carry: 0);
+    return (
+      text: '-$numerator/$denominator',
+      carry: 0,
+      numerator: numerator,
+      denominator: denominator,
+    );
   }
 
-  String _area(Area value, bool group) {
+  /// The tokens a conversion chip's value is read by on the tape, written
+  /// the way [format] writes the chip, ungrouped: a ft-in reading as
+  /// [footInchTokens], inches as whole inches and the fraction of an inch
+  /// at the Fractional resolution setting (39-3/8in), every other unit as
+  /// the number [format] writes under it, with the unit's power (0.83ft³,
+  /// 1777.78yd², 0.91m, 0.03ton). So a chip accepted from the strip reads
+  /// on the tape as it read on the strip, never a respelling of the same
+  /// value (Section 1.2; decision tree row 201), where the unit key alone
+  /// would read 39.37in or 0.8333ft³ ([QuantitySpeller]). The tokens are
+  /// only how the value is read; the caller keeps the exact quantity beside
+  /// them (rule 4.15). An angle or a scalar is never offered as a
+  /// conversion and has no tokens here.
+  List<Token> tokens(Quantity value) => switch (value) {
+    Length(unit: Unit.footInch) => footInchTokens(value),
+    Length(unit: Unit.inch) => _inchTokens(value.inches),
+    Length(:final unit) => [
+      Token(digits: _decimalLengthNumber(value, false), unit: unit),
+    ],
+    Area(:final unit) => [
+      Token(
+        digits: _areaNumber(value, false),
+        unit: unit,
+        power: unit == Unit.acre ? 1 : 2,
+      ),
+    ],
+    Volume(:final unit) => [
+      Token(
+        digits: _volumeNumber(value, false),
+        unit: unit,
+        power: unit == Unit.boardFoot ? 1 : 3,
+      ),
+    ],
+    Weight(:final unit) => [
+      Token(digits: _weightNumber(value, false), unit: unit),
+    ],
+    Angle() || Scalar() => const [],
+  };
+
+  List<Token> _inchTokens(Rational inches) {
+    final (:whole, :fraction) = _inchParts(
+      inches.numerator < 0 ? -inches : inches,
+    );
+    return [
+      Token(digits: '$whole', unit: Unit.inch),
+      if (fraction.denominator != 0)
+        Token(
+          digits: '${fraction.numerator}',
+          denominator: '${fraction.denominator}',
+          unit: Unit.inch,
+        ),
+    ];
+  }
+
+  /// The tokens a ft-in reading is typed as, written the way [format] writes
+  /// it: whole feet, whole inches and the fraction of an inch at the
+  /// Fractional resolution setting, so 1m accepted from the strip reads
+  /// 3ft 3-3/8in on its chip as on the strip chip (Section 2.1, "the chip
+  /// keeps what was typed"). The tokens are only how the value is read;
+  /// the caller keeps the exact quantity beside them (rule 4.15).
+  List<Token> footInchTokens(Length value) {
+    final magnitude = value.inches.numerator < 0 ? -value.inches : value.inches;
+    var feet = (magnitude / Unit.foot.inchesPer).floor();
+    final remainder = magnitude - Rational(feet) * Unit.foot.inchesPer;
+    var wholeInches = remainder.floor();
+    final fraction = _fractionOfInch(remainder - Rational(wholeInches));
+    wholeInches += fraction.carry;
+    if (wholeInches == 12) {
+      feet += 1;
+      wholeInches = 0;
+    }
+    return [
+      Token(digits: '$feet', unit: Unit.foot),
+      Token(digits: '$wholeInches', unit: Unit.inch),
+      if (fraction.denominator != 0)
+        Token(
+          digits: '${fraction.numerator}',
+          denominator: '${fraction.denominator}',
+          unit: Unit.inch,
+        ),
+    ];
+  }
+
+  String _area(Area value, bool group) => switch (value.unit) {
+    Unit.acre => '${_areaNumber(value, group)}${Unit.acre.suffix}',
+    final unit => '${_areaNumber(value, group)}${unit.suffix}²',
+  };
+
+  String _areaNumber(Area value, bool group) {
     if (value.unit == Unit.acre) {
       final acres = value.squareFeet / Area.squareFeetPerAcre;
-      return '${_jsRoundedNumber(acres, acreDecimals, group)}${Unit.acre.suffix}';
+      return _jsRoundedNumber(acres, acreDecimals, group);
     }
     final ticksPerUnit = value.unit.ticksPerUnit;
     final inUnit = value.squareTicks / ticksPerUnit / ticksPerUnit;
-    return '${_localeNumber(inUnit, resultDecimals, group)}${value.unit.suffix}²';
+    return _localeNumber(inUnit, resultDecimals, group);
   }
 
-  String _volume(Volume value, bool group) {
+  String _volume(Volume value, bool group) => switch (value.unit) {
+    Unit.boardFoot => '${_volumeNumber(value, group)}${Unit.boardFoot.suffix}',
+    final unit => '${_volumeNumber(value, group)}${unit.suffix}³',
+  };
+
+  String _volumeNumber(Volume value, bool group) {
     if (value.unit == Unit.boardFoot) {
-      return '${_jsRoundedNumber(value.boardFeet, resultDecimals, group)}'
-          '${Unit.boardFoot.suffix}';
+      return _jsRoundedNumber(value.boardFeet, resultDecimals, group);
     }
     final feetPerUnit = Length.ticksPerFoot / value.unit.ticksPerUnit;
     final inUnit = value.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
-    return '${_jsRoundedNumber(inUnit, resultDecimals, group)}${value.unit.suffix}³';
+    return _jsRoundedNumber(inUnit, resultDecimals, group);
   }
 
-  String _weight(Weight value, bool group) {
+  String _weight(Weight value, bool group) => switch (value.unit) {
+    Unit.ton => '${_weightNumber(value, group)} ${Unit.ton.suffix}',
+    final unit => '${_weightNumber(value, group)}${unit.suffix}',
+  };
+
+  String _weightNumber(Weight value, bool group) {
     final perUnit = value.unit.hundredthsOfPoundPer(
       poundsPerTon: preferences.poundsPerTon,
     );
-    final number = _localeNumber(
+    return _localeNumber(
       value.hundredthsOfPound / perUnit,
       resultDecimals,
       group,
     );
-    return switch (value.unit) {
-      Unit.ton => '$number ${Unit.ton.suffix}',
-      _ => '$number${value.unit.suffix}',
-    };
   }
 
   String _angle(Angle value, bool group) => switch (value.spelling) {
@@ -400,3 +502,10 @@ class QuantityFormatter extends Equatable {
   @override
   List<Object?> get props => [preferences];
 }
+
+typedef _InchFraction = ({
+  String text,
+  int carry,
+  int numerator,
+  int denominator,
+});

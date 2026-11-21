@@ -17,8 +17,8 @@
     <rules>
         <!-- RULE 1: a remainder that rounds to a whole inch reads 16/16
              instead of carrying -->
-        <regex pattern="if \(numerator == steps\) return \(text: '', carry: 1\);" dotAll="true" id="quantity_formatter.fraction.no_carry">
-            <mutation text="if (false) return (text: '', carry: 1);"/>
+        <regex pattern="if \(numerator == steps\) \{\s*return \(text: '', carry: 1, numerator: 0, denominator: 0\);\s*\}" dotAll="true" id="quantity_formatter.fraction.no_carry">
+            <mutation text="if (false) { return (text: '', carry: 1, numerator: 0, denominator: 0); }"/>
         </regex>
 
         <!-- RULE 2: fractions are not reduced, so 8/16 stays 8/16 -->
@@ -32,8 +32,13 @@
         </regex>
 
         <!-- RULE 4: twelve inches no longer carry into a foot -->
-        <regex pattern="if \(wholeInches == 12\) \{" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
-            <mutation text="if (false) {"/>
+        <regex pattern="wholeInches \+= fraction\.carry;\s*if \(wholeInches == 12\) \{\s*feet \+= 1;\s*wholeInches = 0;\s*\}\s*final text" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
+            <mutation text="wholeInches += fraction.carry; if (false) { feet += 1; wholeInches = 0; } final text"/>
+        </regex>
+        <!-- RULE 4b (X33): twelve inches no longer carry into a foot in the
+             ft-in tokens -->
+        <regex pattern="wholeInches \+= fraction\.carry;\s*if \(wholeInches == 12\) \{\s*feet \+= 1;\s*wholeInches = 0;\s*\}\s*return \[" dotAll="true" id="quantity_formatter.foot_inch_tokens.no_carry">
+            <mutation text="wholeInches += fraction.carry; if (false) { feet += 1; wholeInches = 0; } return ["/>
         </regex>
 
         <!-- RULE 5: a ratio below 0.1 is shown to two decimals, so 1 ÷ 78
@@ -68,8 +73,8 @@
         </regex>
 
         <!-- RULE 11: the ton setting is ignored at display -->
-        <regex pattern="poundsPerTon: preferences\.poundsPerTon,\s*\);\s*final number" dotAll="true" id="quantity_formatter.weight.ignore_ton_setting">
-            <mutation text="poundsPerTon: 2000); final number"/>
+        <regex pattern="poundsPerTon: preferences\.poundsPerTon,\s*\);\s*return _localeNumber" dotAll="true" id="quantity_formatter.weight.ignore_ton_setting">
+            <mutation text="poundsPerTon: 2000); return _localeNumber"/>
         </regex>
 
         <!-- RULE 12: a stored size under Metric is shown in inches -->
@@ -84,8 +89,8 @@
 
         <!-- RULE 14: a fraction that rounds up to a whole inch is taken off
              instead of carried -->
-        <regex pattern="whole \+= fraction\.carry;\s*final text =" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
-            <mutation text="whole -= fraction.carry; final text ="/>
+        <regex pattern="return \(whole: whole \+ fraction\.carry, fraction: fraction\);" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
+            <mutation text="return (whole: whole - fraction.carry, fraction: fraction);"/>
         </regex>
 
         <!-- RULE 15: a stored size under Metric divides by the millimetres
@@ -95,8 +100,8 @@
         </regex>
 
         <!-- RULE 16: a zero remainder carries a whole inch -->
-        <regex pattern="if \(numerator == 0\) return \(text: '', carry: 0\);" dotAll="true" id="quantity_formatter.fraction.zero_carries">
-            <mutation text="if (numerator == 0) return (text: '', carry: 1);"/>
+        <regex pattern="if \(numerator == 0\) \{\s*return \(text: '', carry: 0, numerator: 0, denominator: 0\);\s*\}" dotAll="true" id="quantity_formatter.fraction.zero_carries">
+            <mutation text="if (numerator == 0) { return (text: '', carry: 1, numerator: 0, denominator: 0); }"/>
         </regex>
 
         <!-- RULE 17: the angle is truncated to whole seconds instead of
@@ -148,8 +153,8 @@
 
         <!-- RULE 24: a length is rounded to a tick before a decimal
              rendering, a compound rendering or a stored size reads it -->
-        <regex pattern="'\$\{_localeNumber\(value\.amountIn\(value\.unit\), decimals, group\)\}'" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
-            <mutation text="'${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'"/>
+        <regex pattern="_localeNumber\(\s*value\.amountIn\(value\.unit\)," dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
+            <mutation text="_localeNumber(value.ticks / value.unit.ticksPerUnit,"/>
         </regex>
         <regex pattern="Unit\.inch =&gt; _wholeInchesAndFraction\(value\.inches, group\),\s*Unit\.footInch =&gt; _feetAndInches\(value\.inches\)," dotAll="true" id="quantity_formatter.length.compound_from_whole_ticks">
             <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(Rational(value.ticks, Length.ticksPerInch), group), Unit.footInch =&gt; _feetAndInches(value.inches),"/>
@@ -210,6 +215,36 @@
         </regex>
         <regex pattern="if \(decimals == 0\) return _twoDigits\(whole\);" dotAll="true" id="quantity_formatter.dms.whole_seconds_with_point">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE X33: the ft-in tokens leave out the fraction, or write one
+             for a whole number of inches -->
+        <regex pattern="Token\(digits: '\$wholeInches', unit: Unit\.inch\),\s*if \(fraction\.denominator != 0\)\s*Token\(" dotAll="true" id="formatter.foot_inch_tokens.fraction">
+            <mutation text="Token(digits: '$wholeInches', unit: Unit.inch), if (false) Token("/>
+            <mutation text="Token(digits: '$wholeInches', unit: Unit.inch), if (true) Token("/>
+        </regex>
+
+        <!-- RULE R3a (CA-1088 3/6): the inch tokens leave out the fraction, or
+             write one for a whole number of inches -->
+        <regex pattern="Token\(digits: '\$whole', unit: Unit\.inch\),\s*if \(fraction\.denominator != 0\)" dotAll="true" id="formatter.tokens.inch_fraction">
+            <mutation text="Token(digits: '$whole', unit: Unit.inch), if (false)"/>
+            <mutation text="Token(digits: '$whole', unit: Unit.inch), if (true)"/>
+        </regex>
+
+        <!-- RULE R3b: an area or a volume token forgets its power, or an acre
+             and a board foot are raised -->
+        <regex pattern="power: unit == Unit\.acre \? 1 : 2," dotAll="true" id="formatter.tokens.area_power">
+            <mutation text="power: 1,"/>
+            <mutation text="power: 2,"/>
+        </regex>
+        <regex pattern="power: unit == Unit\.boardFoot \? 1 : 3," dotAll="true" id="formatter.tokens.volume_power">
+            <mutation text="power: 1,"/>
+            <mutation text="power: 3,"/>
+        </regex>
+
+        <!-- RULE R3c: a token is written grouped, as the strip chip is -->
+        <regex pattern="Token\(digits: _decimalLengthNumber\(value, false\), unit: unit\)," dotAll="true" id="formatter.tokens.grouped_length">
+            <mutation text="Token(digits: _decimalLengthNumber(value, true), unit: unit),"/>
         </regex>
     </rules>
 

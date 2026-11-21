@@ -169,11 +169,13 @@ void main() {
         );
       });
 
-      test('a zero whole part is left out: 0in 1/2 reads 1/2in', () {
+      test('a zero whole part is written as the strip writes it: 0in 1/2 '
+          'reads 0-1/2in, as 0ft 0-7/16in accepted from the strip does '
+          '(walkthrough 21.2, step 18)', () {
         final zeroInches = changed(type('0').closeWith(Unit.inch));
         expect(
           changed(type('1/2', zeroInches).closeWith(Unit.inch)).text,
-          '1/2in',
+          '0-1/2in',
         );
         final feetAndZero = changed(
           type(
@@ -183,7 +185,7 @@ void main() {
         );
         expect(
           changed(type('1/2', feetAndZero).closeWith(Unit.inch)).text,
-          '5ft 1/2in',
+          '5ft 0-1/2in',
         );
         expect(zeroInches.text, '0in');
       });
