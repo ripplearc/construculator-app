@@ -240,6 +240,35 @@ void main() {
         isA<CostItemsFailure>(),
       ],
     );
+    blocTest<CostItemsBloc, CostItemsState>(
+      'counts the loads that fail in a row and starts again after one works',
+      setUp: () {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.socket;
+      },
+      build: () => Modular.get<CostItemsBloc>(),
+      act: (bloc) async {
+        bloc.add(const CostItemsRequested(estimateId));
+        await bloc.stream.firstWhere((s) => s is CostItemsFailure);
+        bloc.add(const CostItemsRefreshed());
+        await bloc.stream.firstWhere(
+          (s) => s is CostItemsFailure && s.failedLoads == 2,
+        );
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = false;
+        bloc.add(const CostItemsRefreshed());
+        await bloc.stream.firstWhere((s) => s is CostItemsLoaded);
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        bloc.add(const CostItemsRefreshed());
+      },
+      expect: () => [
+        isA<CostItemsLoading>(),
+        isA<CostItemsFailure>().having((s) => s.failedLoads, 'failedLoads', 1),
+        isA<CostItemsFailure>().having((s) => s.failedLoads, 'failedLoads', 2),
+        isA<CostItemsLoaded>(),
+        isA<CostItemsFailure>().having((s) => s.failedLoads, 'failedLoads', 1),
+      ],
+    );
   });
 
   group('CostItems events and states', () {
@@ -326,6 +355,10 @@ void main() {
       );
 
       expect(const CostItemsFailure(failure), const CostItemsFailure(failure));
+      expect(
+        const CostItemsFailure(failure),
+        isNot(const CostItemsFailure(failure, failedLoads: 2)),
+      );
       expect(
         const CostItemsFailure(failure),
         isNot(
