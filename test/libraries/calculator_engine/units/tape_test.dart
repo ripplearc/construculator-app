@@ -414,18 +414,49 @@ void main() {
         }
       });
 
-      test('a number typed at the limit is a value, not Too large, until a '
-          'step writes above it', () {
-        for (final unit in ['mm', 'in', 'ft']) {
-          final typed = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 $unit');
-          expect(typed.runningTotal, isA<ChainValue>(), reason: unit);
-          expect(typed.pressEquals(), isA<TapeRefused>(), reason: unit);
-        }
-        final stepUp = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 mm + 1 mm');
+      test('a number typed at the limit is a value, not Too large, while '
+          'the number it writes is under the limit, and a step that writes '
+          'above it is Too large', () {
+        final typed = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 ft');
+        expect(typed.runningTotal, isA<ChainValue>());
+        expect(typed.pressEquals(), isA<TapeRefused>());
+        final stepUp = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 ft + 1 ft');
         expect(
           press(stepUp, '=').chips.last,
           const ErrorChip(CalculationError.outOfRange),
         );
+      });
+
+      test('R9 (review of 18 Nov, B13): Too large is decided by the number '
+          'the screen writes (Section 5.3, doc edit #83): 19999999ft '
+          '11.95in writes 19999999ft 11-15/16in and computes, while '
+          '19999999.6mm and 19999999.99mm write 20,000,000mm, and '
+          '19999999.99in writes 20,000,000in at 1/16in', () {
+        const formatter = QuantityFormatter();
+        final compound = press(const Tape(), '1 9 9 9 9 9 9 9 ft 1 1 . 9 5 in');
+        expect(compound.runningTotal, isA<ChainValue>());
+        final sum = press(compound, '+ 0 ft =');
+        expect(sum.chips.last, isA<ResultChip>());
+        final times = press(compound, '× 1 =');
+        expect(
+          formatter.format((times.chips.last as ResultChip).value),
+          '19999999ft 11-15/16in',
+        );
+        for (final keys in [
+          '1 9 9 9 9 9 9 9 . 6 mm',
+          '1 9 9 9 9 9 9 9 . 9 9 mm',
+          '1 9 9 9 9 9 9 9 . 9 9 in',
+        ]) {
+          expect(
+            press(const Tape(), keys).runningTotal,
+            isA<ChainFailed>().having(
+              (failed) => failed.error,
+              'error',
+              CalculationError.outOfRange,
+            ),
+            reason: keys,
+          );
+        }
       });
 
       test('a carried compound part comes with a notice (CA-1234)', () {

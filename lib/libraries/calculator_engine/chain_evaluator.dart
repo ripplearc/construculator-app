@@ -318,7 +318,7 @@ class ChainEvaluator extends Equatable {
     if (operator != null && running.failure != null) return running;
     final total = running.total;
     if (total == null || operator == null) {
-      if (formatter.isAboveTheLimit(value)) {
+      if (formatter.isTooLarge(value)) {
         return (
           total: null,
           steps: stepsInside,

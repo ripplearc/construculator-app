@@ -234,15 +234,12 @@
             <mutation text=""/>
         </regex>
 
-        <!-- RULE CA-1236: the first value is judged on the number it writes,
-             so 19,999,999.99mm typed at the limit reads Too large -->
-        <regex pattern="if \(formatter\.isAboveTheLimit\(value\)\) \{" dotAll="true" id="chain_evaluator.joined.first_value_by_written_number">
-            <mutation text="if (formatter.isTooLarge(value)) {"/>
-        </regex>
-
-        <!-- RULE CA-1236: a value exactly at the limit is above it -->
-        <regex pattern="!\(_amountShown\(value\)\.abs\(\) &lt;= Quantity\.largestShown\);" dotAll="true" id="quantity_formatter.above_the_limit.edge">
-            <mutation text="!(_amountShown(value).abs() &lt; Quantity.largestShown);"/>
+        <!-- RULE CA-1236 (R9, review of 18 Nov, B13): the first value is
+             judged by the number the screen writes (doc edit #83), so
+             19999999ft 11.95in computes and 19,999,999.6mm is Too large; the
+             check is never skipped -->
+        <regex pattern="if \(formatter\.isTooLarge\(value\)\) \{\s*return \(\s*total: null," dotAll="true" id="chain_evaluator.joined.first_value_by_written_number">
+            <mutation text="if (false) { return (total: null,"/>
         </regex>
     </rules>
 

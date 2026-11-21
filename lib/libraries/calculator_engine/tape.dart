@@ -169,10 +169,11 @@ enum TapeRefusal {
   noBracketToClose,
 
   /// A digit, [/], a unit key, an operator, = or [( )] while the inside of
-  /// the open bracket ends with the Too large chip ("The bracket holds Too
-  /// large" / "Press ⌫ to fix it, or C to start again."; Section 5.3, "An
-  /// error inside a bracket"; rule 4.12: inside an open bracket a digit
-  /// after Too large does not start a clean tape). ⌫ repairs the inside.
+  /// the open bracket ends with the Too large chip (the red Alert "Over
+  /// 19,999,999.99" / "Press ⌫ to change the numbers in the bracket.";
+  /// Section 5.3, "An error inside a bracket", doc edit #83; rule 4.12:
+  /// inside an open bracket a digit after Too large does not start a clean
+  /// tape). ⌫ repairs the inside.
   bracketHoldsTooLarge,
 
   /// The D:M:S key on a pitch answer, in any of its three spellings
