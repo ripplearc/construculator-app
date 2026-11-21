@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
+part 'calculator_setting.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 
@@ -30,11 +31,16 @@ part 'calculator_state.dart';
 /// The settings (W1, CA-1103) are the signed-in user's, watched from the
 /// [CalculatorPreferencesRepository]: the tape renders under whatever
 /// arrives (rule 4.14, "a setting re-renders a value; it never changes
-/// what was typed"), the System of units pill re-renders at once and then
-/// saves, so the tape and the keyboard agree on one value, and a save that
-/// fails says so without taking the choice back. The four setting sheets
-/// save the same way (2/4). Settings that arrive are not a key: what the
-/// last key said stays.
+/// what was typed"), the System of units pill and a setting sheet's Update
+/// re-render at once and then save, so the tape, the keyboard and the
+/// sheet agree on one value, and a save that fails says so without taking
+/// the choice back. The toast after Update is raised from the save
+/// ([CalculatorState.settingSaved]), not from a toast queue (S2b); Update
+/// on the choice already in force closes the sheet with no save and no
+/// toast, and the pill's save raises none. A sheet opening or closing is
+/// not a key either: the Alert of the last key stays under the sheet and
+/// is still there when it closes, as settings that arrive leave what the
+/// last key said alone (decided 1 November 2026).
 ///
 /// A save sends the change, never the whole row: the repository applies it
 /// to the settings it holds once the signed-in profile has been read, so a
@@ -52,10 +58,14 @@ part 'calculator_state.dart';
 /// equals what the stream last sent is never echoed, since the distinct
 /// stream never repeats itself and the repository holds back the older
 /// echoes, so that save and every older one still in flight leave the list
-/// as it returns. The bloc never guesses what the stream will send: two
-/// quick taps on the pill, metric then imperial, leave nothing in flight,
-/// so a later change from another device is shown as the profile holds it
-/// (round 2 blocker).
+/// as it returns. What the stream last sent is what it delivered, not what
+/// the bloc has handled: the echo of an older save can be delivered while
+/// a newer save is on its way and handled only after that save returned,
+/// and a save compared with the arrival before it would end itself too
+/// soon and let that echo take its choice back for a moment. The bloc
+/// never guesses what the stream will send: two quick taps on the pill,
+/// metric then imperial, leave nothing in flight, so a later change from
+/// another device is shown as the profile holds it (round 2 blocker).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final CalculatorPreferencesRepository _preferencesRepository;
 
@@ -63,7 +73,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   final List<_SaveInFlight> _savesInFlight = [];
 
-  CalculatorPreferences _lastArrived = CalculatorPreferences.defaults;
+  CalculatorPreferences _lastStreamed = CalculatorPreferences.defaults;
 
   CalculatorBloc({
     required CalculatorPreferencesRepository preferencesRepository,
@@ -71,6 +81,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
        super(CalculatorState.initial()) {
     on<CalculatorPreferencesArrived>(_onPreferencesArrived);
     on<CalculatorUnitSystemToggled>(_onUnitSystemToggled);
+    on<CalculatorSettingSheetOpened>(_onSettingSheetOpened);
+    on<CalculatorSettingSheetClosed>(_onSettingSheetClosed);
+    on<CalculatorSettingUpdated>(_onSettingUpdated);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -82,9 +95,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
-    _preferencesSubscription = preferencesRepository.watchPreferences().listen(
-      (preferences) => add(CalculatorPreferencesArrived(preferences)),
-    );
+    _preferencesSubscription = preferencesRepository.watchPreferences().listen((
+      preferences,
+    ) {
+      _lastStreamed = preferences;
+      add(CalculatorPreferencesArrived(preferences));
+    });
   }
 
   @override
@@ -97,7 +113,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorPreferencesArrived event,
     Emitter<CalculatorState> emit,
   ) {
-    _lastArrived = event.preferences;
     final echoed = _savesInFlight.indexWhere(
       (save) => save.saved == event.preferences,
     );
@@ -117,10 +132,45 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     MeasurementSystem.metric => MeasurementSystem.imperial,
   });
 
+  void _onSettingSheetOpened(
+    CalculatorSettingSheetOpened event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(openSettingSheet: () => event.setting));
+
+  void _onSettingSheetClosed(
+    CalculatorSettingSheetClosed event,
+    Emitter<CalculatorState> emit,
+  ) {
+    if (state.openSettingSheet == null) return;
+    emit(state.copyWith(openSettingSheet: () => null));
+  }
+
+  Future<void> _onSettingUpdated(
+    CalculatorSettingUpdated event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    if (event.setting.selectedOptionId(state.tape.preferences) ==
+        event.optionId) {
+      return emit(state.copyWith(openSettingSheet: () => null));
+    }
+    CalculatorPreferences change(CalculatorPreferences current) =>
+        event.setting.applied(current, event.optionId);
+    emit(
+      state.copyWith(
+        tape: state.tape.withPreferences(change(state.tape.preferences)),
+        openSettingSheet: () => null,
+        settingSaved: () => null,
+        settingSaveFailure: () => null,
+      ),
+    );
+    await _saved(emit, change, setting: event.setting);
+  }
+
   Future<void> _saved(
     Emitter<CalculatorState> emit,
-    CalculatorPreferences Function(CalculatorPreferences) change,
-  ) async {
+    CalculatorPreferences Function(CalculatorPreferences) change, {
+    CalculatorSetting? setting,
+  }) async {
     final save = _SaveInFlight(change);
     _savesInFlight.add(save);
     final result = await _preferencesRepository.updatePreferences(change);
@@ -131,12 +181,14 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
           return state.copyWith(settingSaveFailure: () => failure);
         },
         (saved) {
-          if (saved == _lastArrived) {
+          if (saved == _lastStreamed) {
             _savesInFlight.removeRange(0, _savesInFlight.indexOf(save) + 1);
           } else {
             save.saved = saved;
           }
-          return state;
+          return setting == null
+              ? state
+              : state.copyWith(settingSaved: () => setting);
         },
       ),
     );
@@ -261,8 +313,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorPreferences change(CalculatorPreferences current) =>
         current.copyWith(system: system);
     emit(
-      state.silenced.copyWith(
+      state.copyWith(
         tape: state.tape.withPreferences(change(state.tape.preferences)),
+        settingSaveFailure: () => null,
       ),
     );
     await _saved(emit, change);
