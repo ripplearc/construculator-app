@@ -21,6 +21,15 @@ abstract class CalculatorPreferencesRepository {
     CalculatorPreferences preferences,
   );
 
+  /// Writes [change] applied to the settings this repository holds once the
+  /// signed-in profile has been read, and answers with what was saved, or
+  /// a [Failure] as [savePreferences] does. A change made before the
+  /// profile arrives therefore never writes the defaults over the settings
+  /// the user saved: only the setting it changes is written anew.
+  Future<Either<Failure, CalculatorPreferences>> updatePreferences(
+    CalculatorPreferences Function(CalculatorPreferences current) change,
+  );
+
   /// Ends the profile subscription. Streams handed out by
   /// [watchPreferences] end with it.
   void dispose();

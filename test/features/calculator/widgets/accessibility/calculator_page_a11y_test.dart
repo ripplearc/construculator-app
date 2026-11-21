@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../utils/calculator_test_harness.dart';
 
 void main() {
   setUpAll(() async {
@@ -18,7 +19,7 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const CalculatorPage(),
+      home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
     );
   }
 

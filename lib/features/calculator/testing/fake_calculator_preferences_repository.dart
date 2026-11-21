@@ -44,6 +44,11 @@ class FakeCalculatorPreferencesRepository
     return Right(preferences);
   }
 
+  @override
+  Future<Either<Failure, CalculatorPreferences>> updatePreferences(
+    CalculatorPreferences Function(CalculatorPreferences current) change,
+  ) => savePreferences(change(current));
+
   /// Makes every watcher see [preferences], as a change synced from another
   /// device would.
   void emit(CalculatorPreferences preferences) {

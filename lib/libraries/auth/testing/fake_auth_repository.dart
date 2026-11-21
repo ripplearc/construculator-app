@@ -35,6 +35,16 @@ class FakeAuthRepository implements AuthRepository {
   /// fetch is in flight and get back the profile as it was read.
   Completer<void>? getUserProfileGate;
 
+  /// When set, [updateUserProfile] waits for this to complete before it
+  /// writes, so a test can hold one or more saves in flight; the held
+  /// saves then land in the order they were made.
+  Completer<void>? updateUserProfileGate;
+
+  final _profileUpdates = StreamController<User>.broadcast(sync: true);
+
+  /// Every profile written by [updateUserProfile], as it lands.
+  Stream<User> get profileUpdates => _profileUpdates.stream;
+
   /// List of get user profile calls
   final List<String> getUserProfileCalls = [];
 
@@ -68,6 +78,7 @@ class FakeAuthRepository implements AuthRepository {
     shouldThrowOnGetUserProfile = false;
     exceptionMessage = 'Test exception';
     getUserProfileGate = null;
+    updateUserProfileGate = null;
     getUserProfileCalls.clear();
     createProfileCalls.clear();
     updateProfileCalls.clear();
@@ -225,8 +236,10 @@ class FakeAuthRepository implements AuthRepository {
       return null;
     }
 
+    if (updateUserProfileGate case final gate?) await gate.future;
     final updatedUser = user.copyWith(updatedAt: _clock.now());
     _userProfiles[credentialId] = updatedUser;
+    _profileUpdates.add(updatedUser);
     return updatedUser;
   }
 }
