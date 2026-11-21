@@ -85,10 +85,13 @@ void main() {
     expect(bloc.state, equals(CalculatorState.initial()));
   });
 
-  testWidgets('÷ reaches the tape as a division, and % presses nothing until '
-      'CA-1088', (tester) async {
+  testWidgets('÷ reaches the tape as a division, and % after a result is '
+      'refused with a red Alert (CA-1376; rule 4.12)', (tester) async {
     await pumpPage(tester);
     final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
 
     await press(tester, 'calc_key_eight');
     await press(tester, 'calc_key_divide');
@@ -99,9 +102,45 @@ void main() {
     await tester.pump();
     expect(bloc.state.valueText, '4');
 
-    final settled = bloc.state;
+    final tape = bloc.state.tape;
     await press(tester, 'calc_key_percent');
-    expect(bloc.state, equals(settled));
+    await settle(tester);
+    expect(bloc.state.tape, tape);
+    expect(
+      find.text(l10n.calculatorToastPercentNeedsAnOperatorTitle),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the % key marks a percent on the tape, "+10%", and = lands '
+      'the total (CA-1376; decision tree row 386)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    for (final key in const [
+      'calc_key_one',
+      'calc_key_zero',
+      'calc_key_zero',
+      'calc_key_zero',
+      'calc_key_add',
+      'calc_key_five',
+      'calc_key_zero',
+      'calc_key_zero',
+      'calc_key_add',
+      'calc_key_one',
+      'calc_key_zero',
+      'calc_key_percent',
+    ]) {
+      await press(tester, key);
+    }
+
+    expect(
+      [for (final chip in bloc.state.chipsList) chip.value],
+      ['1000', '+500', '+10%'],
+    );
+
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    expect(bloc.state.valueText, '1,650');
   });
 
   testWidgets('a swipe on the function-key strip selects the next group', (

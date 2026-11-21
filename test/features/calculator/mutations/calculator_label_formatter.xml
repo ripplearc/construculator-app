@@ -108,6 +108,20 @@
         <regex pattern="CalculatorRangeWarningToast\(\) =&gt; l10n\.calculatorToastEditThePitchChipBody," dotAll="true" id="calculator_label_formatter.toast.pitch_body">
             <mutation text="CalculatorRangeWarningToast() =&gt; l10n.calculatorToastEditTheSlopeChipBody,"/>
         </regex>
+        <!-- CA-1376 (rule 4.12): the percent Alerts read in another
+             Alert's words -->
+        <regex pattern="CalculatorPercentNeedsANumberToast\(\) =&gt;\s*l10n\.calculatorToastTypeANumberFirstTitle," dotAll="true" id="calculator_label_formatter.toast.percent_number_title">
+            <mutation text="CalculatorPercentNeedsANumberToast() =&gt; l10n.calculatorToastPercentNeedsAnOperatorTitle,"/>
+        </regex>
+        <regex pattern="CalculatorPercentNeedsAnOperatorToast\(insideABracket: true\) =&gt;\s*l10n\.calculatorToastPercentNeedsAnOperatorInBracketBody," dotAll="true" id="calculator_label_formatter.toast.percent_bracket_body">
+            <mutation text="CalculatorPercentNeedsAnOperatorToast(insideABracket: true) =&gt; l10n.calculatorToastPercentNeedsAnOperatorBody,"/>
+        </regex>
+        <regex pattern="CalculatorPercentTakesNoUnitToast\(\) =&gt;\s*l10n\.calculatorToastPercentTakesNoUnitBody," dotAll="true" id="calculator_label_formatter.toast.takes_no_unit_body">
+            <mutation text="CalculatorPercentTakesNoUnitToast() =&gt; l10n.calculatorToastPercentHasNoUnitBody,"/>
+        </regex>
+        <regex pattern="CalculatorPercentDividesByZeroToast\(:final bracket\) =&gt;\s*l10n\.calculatorToastPercentBracketIsZeroBody\(bracket\)," dotAll="true" id="calculator_label_formatter.toast.bracket_body">
+            <mutation text="CalculatorPercentDividesByZeroToast(:final bracket) =&gt; l10n.calculatorToastPercentBracketIsZeroBody(''),"/>
+        </regex>
     </rules>
 
     <commands>

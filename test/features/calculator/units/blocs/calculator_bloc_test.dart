@@ -64,6 +64,7 @@ void main() {
         '+' => current.pressOperator(Operator.add),
         '−' => current.pressOperator(Operator.subtract),
         '=' => current.pressEquals(),
+        '%' => current.pressPercent(),
         '⌫' => current.backspace(),
         '(' => current.pressBracket(),
         '[DMS]' => current.pressDmsKey(),
@@ -1904,6 +1905,126 @@ void main() {
           isNull,
         );
       });
+    });
+
+    group('CA-1376 2/3: the % key, its chip and its red Alerts (Section 7, '
+        '"Percent"; rule 4.12)', () {
+      final labels = CalculatorLabelFormatter(AppLocalizationsEn());
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the % key presses the percent on the tape',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: pressed('5 0 + 1 0')),
+        act: (bloc) => bloc.add(const CalculatorPercentPressed()),
+        expect: () => [CalculatorState(tape: pressed('5 0 + 1 0 %'))],
+      );
+
+      test('the chip reads "+10%", and a bracket "(5+5)%" (row 386)', () {
+        expect(
+          [
+            for (final chip in CalculatorState(
+              tape: pressed('1 0 0 0 + 5 0 0 + 1 0 %'),
+            ).chipsList)
+              chip.value,
+          ],
+          ['1000', '+500', '+10%'],
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('2 0 0 + ( 5 + 5 ( %'),
+          ).chipsList.last.value,
+          '(5+5)%',
+          reason: 'the bracket chip draws its operator as its factor',
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('2 0 0 + ( 5 + 5 ( %'),
+          ).chipsList.last.type,
+          CoreCalculatorChipType.editable,
+          reason: 'the closed-bracket chip has no place for a % after its )',
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('2 0 0 + ( 5 + 5 ('),
+          ).chipsList.last.type,
+          CoreCalculatorChipType.bracketClosed,
+        );
+      });
+
+      test('each refusal raises its red Alert in the words of rule 4.12', () {
+        final cases = {
+          '1 2 +': (
+            TapeRefusal.percentNeedsANumber,
+            const CalculatorPercentNeedsANumberToast(operator: '+'),
+            'Type a number first',
+            'Type the number after +, then press %.',
+          ),
+          '( 1 2': (
+            TapeRefusal.percentNeedsAnOperator,
+            const CalculatorPercentNeedsAnOperatorToast(insideABracket: true),
+            '% needs an operator first',
+            'Press ) and +, −, × or ÷, then the percent.',
+          ),
+          '1 2': (
+            TapeRefusal.percentNeedsAnOperator,
+            const CalculatorPercentNeedsAnOperatorToast(insideABracket: false),
+            '% needs an operator first',
+            'Press +, −, × or ÷, then the percent.',
+          ),
+          '2 0 0 × 1 0 %': (
+            TapeRefusal.alreadyAPercent,
+            const CalculatorAlreadyAPercentToast(),
+            'Already a percent',
+            'Press +, −, × or ÷ to go on, or ⌫ to remove the %.',
+          ),
+          '5 0 + 1 0 %': (
+            TapeRefusal.percentTakesNoUnit,
+            const CalculatorPercentTakesNoUnitToast(),
+            'That number is a percent',
+            'A percent has no unit. Press +, −, × or ÷ to go on.',
+          ),
+          '5 ft + 1 0 ft': (
+            TapeRefusal.percentHasNoUnit,
+            const CalculatorPercentHasNoUnitToast(),
+            'A percent has no unit',
+            'Press ⌫ to remove the unit, then press %.',
+          ),
+          '5 ÷ ( 2 − 2 (': (
+            TapeRefusal.percentDividesByZero,
+            const CalculatorPercentDividesByZeroToast(bracket: '(2−2)'),
+            'Cannot divide by zero',
+            'The bracket (2−2) is 0. Press ⌫ to change the bracket.',
+          ),
+        };
+        for (final MapEntry(key: keys, value: (reason, toast, title, body))
+            in cases.entries) {
+          final state = CalculatorState(
+            tape: pressed(keys),
+            refusal: TapeRefused(reason),
+          );
+          expect(state.toast, toast, reason: keys);
+          expect(labels.toastTitle(toast), title, reason: keys);
+          expect(labels.toastBody(toast), body, reason: keys);
+        }
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '5 ÷ ( 2 − 2 ) then % is refused and the Alert names the bracket',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: pressed('5 ÷ ( 2 − 2 (')),
+        act: (bloc) => bloc.add(const CalculatorPercentPressed()),
+        expect: () => [
+          CalculatorState(
+            tape: pressed('5 ÷ ( 2 − 2 ('),
+            refusal: const TapeRefused(TapeRefusal.percentDividesByZero),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorPercentDividesByZeroToast(bracket: '(2−2)'),
+        ),
+      );
     });
 
     group('T1b: the order of the function-key groups (Section 1.5)', () {

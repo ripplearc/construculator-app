@@ -3917,6 +3917,70 @@
   "@calculatorToastEditThePitchChipBody": {
     "description": "Body of the red Alert when = is pressed while a strip note says the pitch cannot be used (UX Design Doc Section 1.8)"
   },
+  "calculatorToastTypeANumberFirstTitle": "Type a number first",
+  "@calculatorToastTypeANumberFirstTitle": {
+    "description": "Red Alert title when % is pressed on an operator still waiting for its number (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentAfterOperatorBody": "Type the number after {operator}, then press %.",
+  "@calculatorToastPercentAfterOperatorBody": {
+    "description": "Red Alert body when % is pressed on an operator still waiting for its number (UX Design Doc rule 4.12; Section 7, \"Percent\")",
+    "placeholders": {
+      "operator": {
+        "type": "String",
+        "example": "+"
+      }
+    }
+  },
+  "calculatorToastPercentNeedsAnOperatorTitle": "% needs an operator first",
+  "@calculatorToastPercentNeedsAnOperatorTitle": {
+    "description": "Red Alert title when % is pressed on a number no operator leads (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentNeedsAnOperatorInBracketBody": "Press ) and +, −, × or ÷, then the percent.",
+  "@calculatorToastPercentNeedsAnOperatorInBracketBody": {
+    "description": "Red Alert body when % is pressed on a number no operator leads inside an open bracket (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentNeedsAnOperatorBody": "Press +, −, × or ÷, then the percent.",
+  "@calculatorToastPercentNeedsAnOperatorBody": {
+    "description": "Red Alert body when % is pressed on a number no operator leads, outside a bracket (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastAlreadyAPercentTitle": "Already a percent",
+  "@calculatorToastAlreadyAPercentTitle": {
+    "description": "Red Alert title when % or a typing key is pressed on a percent (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastAlreadyAPercentBody": "Press +, −, × or ÷ to go on, or ⌫ to remove the %.",
+  "@calculatorToastAlreadyAPercentBody": {
+    "description": "Red Alert body when % or a typing key is pressed on a percent (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentTakesNoUnitTitle": "That number is a percent",
+  "@calculatorToastPercentTakesNoUnitTitle": {
+    "description": "Red Alert title when a unit key is pressed on a percent (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentTakesNoUnitBody": "A percent has no unit. Press +, −, × or ÷ to go on.",
+  "@calculatorToastPercentTakesNoUnitBody": {
+    "description": "Red Alert body when a unit key is pressed on a percent (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentHasNoUnitTitle": "A percent has no unit",
+  "@calculatorToastPercentHasNoUnitTitle": {
+    "description": "Red Alert title when % is pressed on a number with a unit (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentHasNoUnitBody": "Press ⌫ to remove the unit, then press %.",
+  "@calculatorToastPercentHasNoUnitBody": {
+    "description": "Red Alert body when % is pressed on a number with a unit (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastCannotDivideByZeroTitle": "Cannot divide by zero",
+  "@calculatorToastCannotDivideByZeroTitle": {
+    "description": "Red Alert title when % is pressed on a bracket worth 0 after ÷ (UX Design Doc rule 4.12; Section 7, \"Percent\")"
+  },
+  "calculatorToastPercentBracketIsZeroBody": "The bracket {bracket} is 0. Press ⌫ to change the bracket.",
+  "@calculatorToastPercentBracketIsZeroBody": {
+    "description": "Red Alert body when % is pressed on a bracket worth 0 after ÷ (UX Design Doc rule 4.12; Section 7, \"Percent\")",
+    "placeholders": {
+      "bracket": {
+        "type": "String",
+        "example": "(2−2)"
+      }
+    }
+  },
   "calculatorToastEditTheSlopeChipBody": "Edit the Slope chip.",
   "@calculatorToastEditTheSlopeChipBody": {
     "description": "Body of the red Alert when = is pressed while the strip note says the slope cannot be used (UX Design Doc Section 1.8)"

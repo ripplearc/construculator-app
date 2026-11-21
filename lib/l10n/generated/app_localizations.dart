@@ -4628,6 +4628,84 @@ abstract class AppLocalizations {
   /// **'Edit the Pitch chip.'**
   String get calculatorToastEditThePitchChipBody;
 
+  /// Red Alert title when % is pressed on an operator still waiting for its number (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Type a number first'**
+  String get calculatorToastTypeANumberFirstTitle;
+
+  /// Red Alert body when % is pressed on an operator still waiting for its number (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Type the number after {operator}, then press %.'**
+  String calculatorToastPercentAfterOperatorBody(String operator);
+
+  /// Red Alert title when % is pressed on a number no operator leads (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'% needs an operator first'**
+  String get calculatorToastPercentNeedsAnOperatorTitle;
+
+  /// Red Alert body when % is pressed on a number no operator leads inside an open bracket (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Press ) and +, −, × or ÷, then the percent.'**
+  String get calculatorToastPercentNeedsAnOperatorInBracketBody;
+
+  /// Red Alert body when % is pressed on a number no operator leads, outside a bracket (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Press +, −, × or ÷, then the percent.'**
+  String get calculatorToastPercentNeedsAnOperatorBody;
+
+  /// Red Alert title when % or a typing key is pressed on a percent (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Already a percent'**
+  String get calculatorToastAlreadyAPercentTitle;
+
+  /// Red Alert body when % or a typing key is pressed on a percent (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Press +, −, × or ÷ to go on, or ⌫ to remove the %.'**
+  String get calculatorToastAlreadyAPercentBody;
+
+  /// Red Alert title when a unit key is pressed on a percent (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'That number is a percent'**
+  String get calculatorToastPercentTakesNoUnitTitle;
+
+  /// Red Alert body when a unit key is pressed on a percent (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'A percent has no unit. Press +, −, × or ÷ to go on.'**
+  String get calculatorToastPercentTakesNoUnitBody;
+
+  /// Red Alert title when % is pressed on a number with a unit (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'A percent has no unit'**
+  String get calculatorToastPercentHasNoUnitTitle;
+
+  /// Red Alert body when % is pressed on a number with a unit (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Press ⌫ to remove the unit, then press %.'**
+  String get calculatorToastPercentHasNoUnitBody;
+
+  /// Red Alert title when % is pressed on a bracket worth 0 after ÷ (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot divide by zero'**
+  String get calculatorToastCannotDivideByZeroTitle;
+
+  /// Red Alert body when % is pressed on a bracket worth 0 after ÷ (UX Design Doc rule 4.12; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'The bracket {bracket} is 0. Press ⌫ to change the bracket.'**
+  String calculatorToastPercentBracketIsZeroBody(String bracket);
+
   /// Body of the red Alert when = is pressed while the strip note says the slope cannot be used (UX Design Doc Section 1.8)
   ///
   /// In en, this message translates to:

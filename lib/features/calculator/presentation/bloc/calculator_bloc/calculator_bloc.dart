@@ -77,6 +77,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorFractionPressed>(_onFractionPressed);
     on<CalculatorUnitSelected>(_onUnitSelected);
     on<CalculatorOperatorPressed>(_onOperatorPressed);
+    on<CalculatorPercentPressed>(_onPercentPressed);
     on<CalculatorEqualsPressed>(_onEqualsPressed);
     on<CalculatorSuggestionAccepted>(_onSuggestionAccepted);
     on<CalculatorReadAsAccepted>(_onReadAsAccepted);
@@ -245,6 +246,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorOperatorPressed event,
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) => tape.pressOperator(event.operator));
+
+  void _onPercentPressed(
+    CalculatorPercentPressed event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.pressPercent());
 
   void _onEqualsPressed(
     CalculatorEqualsPressed event,

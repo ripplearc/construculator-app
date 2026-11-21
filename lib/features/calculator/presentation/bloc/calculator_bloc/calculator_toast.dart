@@ -187,3 +187,68 @@ final class CalculatorRangeWarningToast extends CalculatorToast {
   @override
   List<Object?> get props => [warning];
 }
+
+/// "Type a number first" / "Type the number after +, then press %.": % on
+/// an operator still waiting for its number (rule 4.12; CA-1376).
+final class CalculatorPercentNeedsANumberToast extends CalculatorToast {
+  /// The operator waiting for its number, as the key shows it: "+".
+  final String operator;
+
+  const CalculatorPercentNeedsANumberToast({required this.operator});
+
+  @override
+  List<Object?> get props => [operator];
+}
+
+/// "% needs an operator first": % on a number no operator leads, inside an
+/// open bracket (( 12 then %, rule 4.12) or on its own (CA-1376).
+final class CalculatorPercentNeedsAnOperatorToast extends CalculatorToast {
+  /// Whether the number is inside an open bracket, so ) comes first.
+  final bool insideABracket;
+
+  const CalculatorPercentNeedsAnOperatorToast({required this.insideABracket});
+
+  @override
+  List<Object?> get props => [insideABracket];
+}
+
+/// "Already a percent" / "Press +, −, × or ÷ to go on, or ⌫ to remove the
+/// %.": a second %, or a key that would type into the percent (rule 4.12;
+/// CA-1376).
+final class CalculatorAlreadyAPercentToast extends CalculatorToast {
+  const CalculatorAlreadyAPercentToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "That number is a percent" / "A percent has no unit. Press +, −, × or ÷
+/// to go on.": a unit key on a percent (rule 4.12; row 394; CA-1376).
+final class CalculatorPercentTakesNoUnitToast extends CalculatorToast {
+  const CalculatorPercentTakesNoUnitToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "A percent has no unit" / "Press ⌫ to remove the unit, then press %.":
+/// % on a number with a unit (rule 4.12; row 394; CA-1376).
+final class CalculatorPercentHasNoUnitToast extends CalculatorToast {
+  const CalculatorPercentHasNoUnitToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "Cannot divide by zero" / "The bracket (2−2) is 0. Press ⌫ to change
+/// the bracket.": % on a closed bracket a ÷ leads that is worth 0 (rule
+/// 4.12; Section 5, "Division by zero"; CA-1376).
+final class CalculatorPercentDividesByZeroToast extends CalculatorToast {
+  /// The bracket as the tape writes it, "(2−2)".
+  final String bracket;
+
+  const CalculatorPercentDividesByZeroToast({required this.bracket});
+
+  @override
+  List<Object?> get props => [bracket];
+}
