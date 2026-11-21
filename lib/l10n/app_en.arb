@@ -3492,6 +3492,25 @@
       }
     }
   },
+  "materialSaveAsDefaultLink": "Save as my default",
+  "@materialSaveAsDefaultLink": {
+    "description": "Text link at the right end of the material Rate row that saves the rate to Your rates under the material name",
+    "context": "Storyboard CUJ 4, sub-flow E, Verify; build note Badge placement"
+  },
+  "materialSavedToYourRatesHint": "Saved to {yourRates} — auto-fills next time you add {itemName}.",
+  "@materialSavedToYourRatesHint": {
+    "description": "Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 5 Verify, build note Helper text (after)",
+    "placeholders": {
+      "yourRates": {
+        "type": "String"
+      },
+      "itemName": {
+        "type": "String",
+        "example": "interior paint"
+      }
+    }
+  },
   "newMaterialCostSheetTitle": "New material cost",
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",

@@ -114,5 +114,49 @@ void main() {
         contains('Needs a name before it can total'),
       );
     });
+
+    Future<void> showSampleRate(WidgetTester tester) async {
+      await tester.enterText(
+        find.byKey(const Key('material_name_field')),
+        'Interior paint',
+      );
+      await tester.enterText(
+        find.byKey(const Key('material_rate_field')),
+        '52',
+      );
+      BlocProvider.of<MaterialCostFormBloc>(
+        tester.element(find.byType(MaterialCostFormFields)),
+      ).add(
+        const MaterialSampleRatePicked(itemName: 'Interior paint', rate: 52),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a11y: Save as my default meets tap target and label '
+        'guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('save_as_default_link')),
+        setupAfterPump: showSampleRate,
+        // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card. https://ripplearc.youtrack.cloud/issue/CA-1257
+        checkTextContrast: false,
+      );
+    });
+
+    testWidgets('a11y: the search button meets tap target and label '
+        'guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('lookup_rate_button')),
+        // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card. https://ripplearc.youtrack.cloud/issue/CA-1257
+        checkTextContrast: false,
+      );
+    });
   });
 }

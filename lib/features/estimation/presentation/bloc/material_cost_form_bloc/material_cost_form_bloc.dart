@@ -62,6 +62,17 @@ class MaterialCostFormBloc
         ),
       ),
     );
+    on<MaterialRateSavedAsDefault>(
+      (e, emit) => _emit(
+        emit,
+        (d) => d.rate == e.rate
+            ? d.copyWith(
+                rateStatus: RateStatus.ownRateConfirmed,
+                isFromSampleFile: false,
+              )
+            : d,
+      ),
+    );
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,

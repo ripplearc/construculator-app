@@ -4152,6 +4152,18 @@ abstract class AppLocalizations {
     String itemName,
   );
 
+  /// Text link at the right end of the material Rate row that saves the rate to Your rates under the material name
+  ///
+  /// In en, this message translates to:
+  /// **'Save as my default'**
+  String get materialSaveAsDefaultLink;
+
+  /// Line under the material Rate row after Save as my default saved the rate; yourRates is yourRatesName, drawn semibold, and itemName is the name typed before a sample product was appended (else the whole material name) in lower case
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {yourRates} — auto-fills next time you add {itemName}.'**
+  String materialSavedToYourRatesHint(String yourRates, String itemName);
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:

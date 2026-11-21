@@ -8,8 +8,11 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +21,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
@@ -28,6 +32,7 @@ void main() {
   late FakeStorageService storage;
   late FakeAuthRepository auth;
   late MaterialCostFormBloc bloc;
+  late FakeYourRatesDatabase database;
 
   setUpAll(() {
     final clock = FakeClockImpl();
@@ -41,6 +46,8 @@ void main() {
     );
     Modular.replaceInstance<StorageService>(storage);
     Modular.replaceInstance<AuthRepository>(auth);
+    database = FakeYourRatesDatabase();
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
@@ -49,6 +56,12 @@ void main() {
     fakeSupabase.reset();
     storage.reset();
     auth.reset();
+    database.reset();
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     auth.setCurrentCredentials(
       UserCredential(
         id: 'account-1',
@@ -129,10 +142,7 @@ void main() {
       );
     });
 
-    testWidgets('renders a sample rate to verify: tag and save helper', (
-      tester,
-    ) async {
-      await pumpFields(tester, theme);
+    Future<void> showSampleRate(WidgetTester tester) async {
       await tester.enterText(
         find.byKey(const Key('material_name_field')),
         'Interior paint · ProClassic',
@@ -155,13 +165,29 @@ void main() {
       );
       FocusManager.instance.primaryFocus!.unfocus();
       await tester.pumpAndSettle();
+    }
 
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/material_sample_rate$suffix.png',
-        ),
-      );
+    Future<void> expectGolden(String name, String suffix) => expectLater(
+      find.byType(MaterialCostFormFields),
+      matchesGoldenFile('goldens/material_cost_form_fields/$name$suffix.png'),
+    );
+
+    testWidgets('renders a sample rate to verify: tag, link and save helper', (
+      tester,
+    ) async {
+      await pumpFields(tester, theme);
+      await showSampleRate(tester);
+
+      await expectGolden('material_sample_rate', suffix);
+    });
+
+    testWidgets('renders a sample rate saved as the default', (tester) async {
+      await pumpFields(tester, theme);
+      await showSampleRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_default_link')));
+      await tester.pumpAndSettle();
+
+      await expectGolden('material_saved_as_default', suffix);
     });
   });
 }
