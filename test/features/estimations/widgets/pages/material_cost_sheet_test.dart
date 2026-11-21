@@ -43,6 +43,8 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(412, 917),
     TargetPlatform? platform,
+    YourRateEntry? initialRateEntry,
+    String? initialName,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -71,6 +73,8 @@ void main() {
                     yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
                     clock: FakeClockImpl(),
                     presentAsSheet: true,
+                    initialRateEntry: initialRateEntry,
+                    initialName: initialName,
                     estimate: CostEstimate.defaultEstimate(
                       estimateName: 'Bedroom 2',
                       totalCost: 2093.02,
@@ -636,6 +640,47 @@ void main() {
       await tapBack(tester);
 
       expect(dialogTitle(), findsOneWidget);
+    });
+  });
+
+  group('opened from Your recents', () {
+    String fieldText(WidgetTester tester, String key) => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.byKey(Key(key)),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .controller
+        .text;
+
+    testWidgets('a picked saved rate opens the form with its name and rate', (
+      tester,
+    ) async {
+      await openSheet(
+        tester,
+        initialRateEntry: YourRateEntry(
+          id: 'paint-rate',
+          companyId: 'company-1',
+          itemName: 'Interior paint',
+          category: CostItemType.material,
+          rate: const Money(amount: 52),
+          unit: Unit.liters,
+          savedAt: DateTime.utc(2026, 1, 10),
+        ),
+      );
+
+      expect(fieldText(tester, 'material_name_field'), 'Interior paint');
+      expect(fieldText(tester, 'material_rate_field'), '52');
+    });
+
+    testWidgets('a name typed on the search opens the form with that name', (
+      tester,
+    ) async {
+      await openSheet(tester, initialName: 'primer');
+
+      expect(fieldText(tester, 'material_name_field'), 'primer');
+      expect(fieldText(tester, 'material_rate_field'), isEmpty);
     });
   });
 }

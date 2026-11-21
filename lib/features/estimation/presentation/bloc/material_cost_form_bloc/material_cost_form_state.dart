@@ -88,6 +88,7 @@ class MaterialCostFormData extends Equatable {
     this.isValid = false,
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
+    this.recalledRateId,
   });
 
   /// The material name entered by the user.
@@ -116,6 +117,12 @@ class MaterialCostFormData extends Equatable {
   /// Whether any of name, quantity, unit or rate differs from how the form
   /// opened. Typing a value and then restoring the original clears it.
   final bool hasUnsavedChanges;
+
+  /// The id of the Your rates entry the name and rate came from, or null when
+  /// the user typed them. Editing the name or the rate clears it, so adding
+  /// the line marks the saved rate as used only while it is still the one
+  /// picked.
+  final String? recalledRateId;
 
   /// Quantity times rate rounded to the cent, or 0 while either is missing or
   /// unusable.
@@ -159,6 +166,7 @@ class MaterialCostFormData extends Equatable {
     bool? isValid,
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
+    Object? recalledRateId = _unset,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -169,6 +177,9 @@ class MaterialCostFormData extends Equatable {
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
+      recalledRateId: recalledRateId == _unset
+          ? this.recalledRateId
+          : recalledRateId as String?,
     );
   }
 
@@ -182,6 +193,7 @@ class MaterialCostFormData extends Equatable {
     isValid,
     fieldErrors,
     hasUnsavedChanges,
+    recalledRateId,
   ];
 }
 

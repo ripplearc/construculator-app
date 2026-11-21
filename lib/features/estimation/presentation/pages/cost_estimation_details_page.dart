@@ -157,7 +157,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
                 ? summary.estimate
                 : null,
             initialRateEntry: entry,
-            initialEquipmentName: name,
+            initialName: name,
           ),
         ),
       );

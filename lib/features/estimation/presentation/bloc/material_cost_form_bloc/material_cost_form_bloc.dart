@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
@@ -20,6 +21,7 @@ class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
+  final YourRatesRepository _yourRatesRepository;
   final Clock _clock;
 
   MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
@@ -27,11 +29,16 @@ class MaterialCostFormBloc
   MaterialCostFormBloc({
     required this._repository,
     required this._lastUsedUnitRepository,
+    required this._yourRatesRepository,
     required this._clock,
   }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
+    on<MaterialSavedRateRecalled>(_onSavedRateRecalled);
     on<MaterialCostItemTypeChanged>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(itemName: e.value)),
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(itemName: e.value, recalledRateId: null),
+      ),
     );
     on<MaterialQuantityUpdated>(
       (e, emit) =>
@@ -51,10 +58,32 @@ class MaterialCostFormBloc
     final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
-    _formValuesAtOpening = MaterialCostFormData(unit: rememberedUnit);
+    if (_formValuesAtOpening.unit == null) {
+      _formValuesAtOpening = _formValuesAtOpening.copyWith(
+        unit: rememberedUnit,
+      );
+    }
     if (rememberedUnit != null && _current().unit == null) {
       _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
     }
+  }
+
+  void _onSavedRateRecalled(
+    MaterialSavedRateRecalled event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final entry = event.entry;
+    _emit(emit, (d) {
+      final recalled = d.copyWith(
+        itemName: entry.itemName,
+        rate: entry.rate.amount,
+        unit: entry.unit ?? d.unit,
+        rateStatus: RateStatus.ownRateConfirmed,
+        recalledRateId: entry.id,
+      );
+      _formValuesAtOpening = recalled;
+      return recalled;
+    });
   }
 
   void _onRateUpdated(
@@ -69,6 +98,7 @@ class MaterialCostFormBloc
         rateStatus: rate == null
             ? RateStatus.missing
             : RateStatus.ownRateUnconfirmed,
+        recalledRateId: null,
       ),
     );
   }
@@ -124,6 +154,9 @@ class MaterialCostFormBloc
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
       (created) async {
         await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
+        if (draft.recalledRateId case final rateId?) {
+          await _yourRatesRepository.recordRateUse(rateId);
+        }
         emit(MaterialCostFormSuccess(draft, created));
       },
     );

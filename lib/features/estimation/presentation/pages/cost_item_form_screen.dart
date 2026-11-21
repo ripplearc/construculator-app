@@ -39,15 +39,15 @@ class CostItemFormScreen extends StatefulWidget {
   /// default (false) is the current state, not the design.
   final bool presentAsSheet;
 
-  /// A rate already picked on the Equipment "Your recents" screen before
-  /// this form opened. Forwarded to [EquipmentCostFormFields]. Ignored for
-  /// [CostItemType.material] and [CostItemType.labor].
+  /// A rate already picked on the "Your recents" screen before this form
+  /// opened. Forwarded to [EquipmentCostFormFields] or
+  /// [MaterialCostFormFields]. Ignored for [CostItemType.labor].
   final YourRateEntry? initialRateEntry;
 
   /// A name typed on the Your recents search before this form opened.
-  /// Forwarded to [EquipmentCostFormFields]. Ignored for
-  /// [CostItemType.material] and [CostItemType.labor].
-  final String? initialEquipmentName;
+  /// Forwarded to [EquipmentCostFormFields] or [MaterialCostFormFields].
+  /// Ignored for [CostItemType.labor].
+  final String? initialName;
 
   /// Backs the equipment form's "Save as my rate" timestamp. Same
   /// not-a-module-file reasoning as [yourRatesBlocFactory].
@@ -66,7 +66,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
     this.initialRateEntry,
-    this.initialEquipmentName,
+    this.initialName,
     required this.clock,
     this.estimate,
   });
@@ -283,7 +283,10 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => const MaterialCostFormFields(),
+      CostItemType.material => MaterialCostFormFields(
+        initialRateEntry: widget.initialRateEntry,
+        initialName: widget.initialName,
+      ),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,
         onTotalChanged: onTotalChanged,
@@ -298,7 +301,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         clock: widget.clock,
         showRecalledRateHeader: !widget.presentAsSheet,
         initialRateEntry: widget.initialRateEntry,
-        initialEquipmentName: widget.initialEquipmentName,
+        initialEquipmentName: widget.initialName,
       ),
     };
   }
