@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
@@ -304,11 +305,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   Expanded(
                     child: Stack(
                       children: [
-                        Column(
+                        CustomMultiChildLayout(
+                          delegate: _DisplayStripPanelLayout(
+                            showsPanel: _showsDetailPanel,
+                          ),
                           children: [
-                            Flexible(
-                              flex: _showsDetailPanel ? 0 : 1,
-                              fit: FlexFit.tight,
+                            LayoutId(
+                              id: _PageSlot.display,
                               child: SingleChildScrollView(
                                 physics:
                                     _currentStage != DisplayAreaStage.collapsed
@@ -353,40 +356,44 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                 ),
                               ),
                             ),
-                            CoreSuggestionArea(
-                              layout: CoreSuggestionLayout.twoRows,
-                              // TODO: [CA-1094] Draw a strip note in the warning
-                              // colour, as Section 1.8 asks, once the strip has a
-                              // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
-                              suggestionAreaPlaceholder: labels.stripText(
-                                state.stripNote,
+                            LayoutId(
+                              id: _PageSlot.strip,
+                              child: CoreSuggestionArea(
+                                layout: CoreSuggestionLayout.twoRows,
+                                // TODO: [CA-1094] Draw a strip note in the warning
+                                // colour, as Section 1.8 asks, once the strip has a
+                                // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
+                                suggestionAreaPlaceholder: labels.stripText(
+                                  state.stripNote,
+                                ),
+                                aiSuggestions: _stripRow(
+                                  labels,
+                                  bloc,
+                                  state.suggestions,
+                                ),
+                                conversionSuggestions: _stripRow(
+                                  labels,
+                                  bloc,
+                                  state.conversions,
+                                ),
+                                hiddenChipsTextBuilder:
+                                    l10n.calculatorStripHiddenChips,
+                                expandToggleSemanticsLabelBuilder:
+                                    l10n.calculatorStripExpandSemantics,
+                                collapseToggleSemanticsLabel:
+                                    l10n.calculatorStripCollapseSemantics,
+                                toggleSemanticsLabel:
+                                    l10n.calculatorStripToggleSemantics,
+                                conversionsRowTagLabel:
+                                    l10n.calculatorStripConversionsTag,
+                                conversionsRowSemanticsLabel:
+                                    l10n.calculatorStripConversionsSemantics,
+                                secondRowHidden: dependentKeys.isNotEmpty,
                               ),
-                              aiSuggestions: _stripRow(
-                                labels,
-                                bloc,
-                                state.suggestions,
-                              ),
-                              conversionSuggestions: _stripRow(
-                                labels,
-                                bloc,
-                                state.conversions,
-                              ),
-                              hiddenChipsTextBuilder:
-                                  l10n.calculatorStripHiddenChips,
-                              expandToggleSemanticsLabelBuilder:
-                                  l10n.calculatorStripExpandSemantics,
-                              collapseToggleSemanticsLabel:
-                                  l10n.calculatorStripCollapseSemantics,
-                              toggleSemanticsLabel:
-                                  l10n.calculatorStripToggleSemantics,
-                              conversionsRowTagLabel:
-                                  l10n.calculatorStripConversionsTag,
-                              conversionsRowSemanticsLabel:
-                                  l10n.calculatorStripConversionsSemantics,
-                              secondRowHidden: dependentKeys.isNotEmpty,
                             ),
                             if (_showsDetailPanel)
-                              Expanded(
+                              LayoutId(
+                                id: _PageSlot.panel,
                                 child: state.dimensions.isEmpty
                                     ? const SizedBox.shrink()
                                     : _detailPanel(labels, state.dimensions),
@@ -516,4 +523,47 @@ class _CalculatorPageState extends State<CalculatorPage> {
       ),
     );
   }
+}
+
+enum _PageSlot { display, strip, panel }
+
+// Lays the display, the strip and, under the fold, the detail panel out top
+// to bottom. With the keys up the display takes all the room the strip
+// leaves. Under the fold the display keeps its own height and the panel takes
+// the rest; while the keys are still folding away the three can need more
+// than the room for a frame, and then the display gives the difference up
+// (it scrolls) where a Column would overflow.
+class _DisplayStripPanelLayout extends MultiChildLayoutDelegate {
+  final bool showsPanel;
+
+  _DisplayStripPanelLayout({required this.showsPanel});
+
+  @override
+  void performLayout(Size size) {
+    final width = size.width;
+    final strip = layoutChild(
+      _PageSlot.strip,
+      BoxConstraints(minWidth: width, maxWidth: width, maxHeight: size.height),
+    );
+    final room = math.max(0.0, size.height - strip.height);
+    final display = layoutChild(
+      _PageSlot.display,
+      showsPanel
+          ? BoxConstraints(minWidth: width, maxWidth: width, maxHeight: room)
+          : BoxConstraints.tightFor(width: width, height: room),
+    );
+    positionChild(_PageSlot.display, Offset.zero);
+    positionChild(_PageSlot.strip, Offset(0, display.height));
+    if (hasChild(_PageSlot.panel)) {
+      layoutChild(
+        _PageSlot.panel,
+        BoxConstraints.tightFor(width: width, height: room - display.height),
+      );
+      positionChild(_PageSlot.panel, Offset(0, display.height + strip.height));
+    }
+  }
+
+  @override
+  bool shouldRelayout(_DisplayStripPanelLayout oldDelegate) =>
+      oldDelegate.showsPanel != showsPanel;
 }
