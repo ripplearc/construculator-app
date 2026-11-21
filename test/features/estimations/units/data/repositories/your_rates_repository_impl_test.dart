@@ -494,6 +494,127 @@ void main() {
       );
     });
 
+    group('getByItemNameAndLabel', () {
+      Future<YourRateEntry?> lookup({
+        String itemName = 'Excavator',
+        EquipmentPricingMethod? method = EquipmentPricingMethod.day,
+        String label = 'Supplier A',
+        String companyId = testCompanyId,
+      }) async {
+        final result = await repository.getByItemNameAndLabel(
+          itemName,
+          CostItemType.equipment,
+          method: method,
+          label: label,
+          companyId: companyId,
+        );
+        return result.getRightOrNull();
+      }
+
+      test('returns the row that has the label', () async {
+        seed([
+          row(id: 'a', entryLabel: 'Supplier A', rateAmount: 100),
+          row(id: 'b', entryLabel: 'Supplier B', rateAmount: 200),
+        ]);
+
+        final found = await lookup(label: 'Supplier B');
+
+        expect(found!.id, 'b');
+        expect(found.rate.amount, 200);
+      });
+
+      test(
+        'ignores capital letters and extra spaces in name and label',
+        () async {
+          seed([row(id: 'a', entryLabel: 'Supplier A')]);
+
+          final found = await lookup(
+            itemName: '  EXCAVATOR ',
+            label: ' supplier   a',
+          );
+
+          expect(found!.id, 'a');
+        },
+      );
+
+      test('returns null when no row has the label', () async {
+        seed([row(id: 'a', entryLabel: 'Supplier A')]);
+
+        expect(await lookup(label: 'Supplier Z'), isNull);
+      });
+
+      test('returns null for an unlabeled row', () async {
+        seed([row(id: 'a')]);
+
+        expect(await lookup(label: 'Supplier A'), isNull);
+      });
+
+      test(
+        'does not match the same label under the other pricing method',
+        () async {
+          seed([
+            row(id: 'a', entryLabel: 'Supplier A', equipmentMethod: 'job'),
+          ]);
+
+          expect(await lookup(method: EquipmentPricingMethod.day), isNull);
+          expect((await lookup(method: EquipmentPricingMethod.job))!.id, 'a');
+        },
+      );
+
+      test('does not match the same label on another name', () async {
+        seed([row(id: 'a', itemName: 'Backhoe', entryLabel: 'Supplier A')]);
+
+        expect(await lookup(), isNull);
+      });
+
+      test('does not match another company\'s row', () async {
+        seed([row(id: 'a', companyId: 'company-2', entryLabel: 'Supplier A')]);
+
+        expect(await lookup(), isNull);
+      });
+
+      test('agrees with save on which label is taken', () async {
+        seed([row(id: 'a', entryLabel: 'Supplier A')]);
+
+        final saved = await repository.save(
+          buildEntry(entryLabel: 'supplier a'),
+        );
+
+        expect(
+          saved.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateLabel,
+          ),
+        );
+        expect((await lookup(label: 'supplier a'))!.id, 'a');
+      });
+
+      test(
+        'fails with permissionDenied and reads nothing for a blank company',
+        () async {
+          final result = await repository.getByItemNameAndLabel(
+            'Excavator',
+            CostItemType.equipment,
+            method: EquipmentPricingMethod.day,
+            label: 'Supplier A',
+            companyId: ' ',
+          );
+
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.permissionDenied,
+            ),
+          );
+          expect(database.getAllCalls, isEmpty);
+        },
+      );
+    });
+
     group('a blank company id', () {
       test('search returns a failure and reads nothing', () async {
         final result = await repository.search('', companyId: '  ');

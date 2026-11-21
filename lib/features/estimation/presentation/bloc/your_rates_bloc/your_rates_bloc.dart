@@ -225,16 +225,32 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       within: saveTimeLimit - _clock.now().difference(startedAt),
       replacesRateId: event.replacesRateId,
     );
-    result.fold((failure) {
-      final errorType = failure is EstimationFailure ? failure.errorType : null;
-      switch (errorType) {
-        case EstimationErrorType.duplicateEntry:
-          emit(YourRatesSaveCollision(entry));
-        case EstimationErrorType.duplicateLabel:
-          emit(YourRatesSaveLabelTaken(entry));
-        default:
-          emit(YourRatesSaveFailed(failure));
-      }
-    }, (_) => emit(YourRatesSaveSucceeded()));
+    final failure = result.getLeftOrNull();
+    if (failure == null) {
+      emit(YourRatesSaveSucceeded());
+      return;
+    }
+    final errorType = failure is EstimationFailure ? failure.errorType : null;
+    switch (errorType) {
+      case EstimationErrorType.duplicateEntry:
+        emit(YourRatesSaveCollision(entry));
+      case EstimationErrorType.duplicateLabel:
+        emit(
+          YourRatesSaveLabelTaken(entry, takenBy: await _rowWithLabel(entry)),
+        );
+      default:
+        emit(YourRatesSaveFailed(failure));
+    }
+  }
+
+  Future<YourRateEntry?> _rowWithLabel(YourRateEntry entry) async {
+    final result = await _repository.getByItemNameAndLabel(
+      entry.itemName,
+      entry.category,
+      method: entry.equipmentMethod,
+      label: entry.entryLabel ?? '',
+      companyId: entry.companyId,
+    );
+    return result.getRightOrNull();
   }
 }

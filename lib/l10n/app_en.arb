@@ -2544,13 +2544,6 @@
       "amount": {"type": "String", "example": "$450.00"}
     }
   },
-  "equipmentRecalledAmountSavedSecondPriceHint": "Saved as a second price. Your default stays {amount}.",
-  "@equipmentRecalledAmountSavedSecondPriceHint": {
-    "description": "Confirmation under the Job amount of a recalled saved price after the edited amount was saved under its own name, so the saved default did not change; amount is the pre-formatted default that stays",
-    "placeholders": {
-      "amount": {"type": "String", "example": "$400.00"}
-    }
-  },
   "equipmentRecalledAmountSaveFailedError": "Your default was not saved. Try again.",
   "@equipmentRecalledAmountSaveFailedError": {
     "description": "Error line under the 'Save as my default' button of a recalled saved price when the save fails (CUJ 6, Default not saved); it names the default because the price on this line is not affected"

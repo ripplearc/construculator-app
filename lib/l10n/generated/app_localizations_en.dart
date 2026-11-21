@@ -1636,11 +1636,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String equipmentRecalledAmountSavedSecondPriceHint(String amount) {
-    return 'Saved as a second price. Your default stays $amount.';
-  }
-
-  @override
   String get equipmentRecalledAmountSaveFailedError =>
       'Your default was not saved. Try again.';
 

@@ -3642,9 +3642,125 @@ void main() {
       },
     );
 
+    Future<void> saveBackhoeUnderLabel(
+      WidgetTester tester,
+      String label,
+    ) async {
+      await seedRate(
+        itemName: 'Backhoe',
+        amount: 100,
+        method: EquipmentPricingMethod.day,
+        entryLabel: 'Supplier A',
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await typeSavableRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('entry_label_field')), label);
+      await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<double>> savedBackhoePrices() async {
+      final saved = await Modular.get<YourRatesRepository>().search(
+        'Backhoe',
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
+      return saved.fold(
+        (_) => <double>[],
+        (entries) => entries.map((e) => e.rate.amount).toList()..sort(),
+      );
+    }
+
     testWidgets(
-      'a label the name already uses keeps the dialog open with a line and '
-      'replaces nothing',
+      'a label the name already uses asks to replace that saved price',
+      (tester) async {
+        await saveBackhoeUnderLabel(tester, 'supplier   a');
+
+        expect(find.text(l10n.replaceSavedRateDialogTitle), findsOneWidget);
+        expect(
+          find.text(
+            l10n.replaceSavedRateDialogBody(
+              'Backhoe',
+              '\$100.00 ${l10n.yourRatesDaySuffix}',
+              '\$150.00 ${l10n.yourRatesDaySuffix}',
+            ),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+        expect(await savedBackhoePrices(), [100.0]);
+      },
+    );
+
+    testWidgets(
+      'Go back on that question keeps the label dialog open with the label '
+      'taken line and replaces nothing',
+      (tester) async {
+        await saveBackhoeUnderLabel(tester, 'supplier   a');
+
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.replaceSavedRateDialogTitle), findsNothing);
+        expect(
+          find.byKey(const Key('entry_label_dialog_title')),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.yourRatesEntryLabelTakenError), findsOneWidget);
+        expect(await savedBackhoePrices(), [100.0]);
+
+        await tester.enterText(
+          find.byKey(const Key('entry_label_field')),
+          'Supplier B',
+        );
+        await tester.tap(
+          find.byKey(const Key('entry_label_dialog_save_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+        expect(await savedBackhoePrices(), [100.0, 150.0]);
+      },
+    );
+
+    testWidgets(
+      'Replace writes the new price over the row with that label and closes '
+      'both dialogs',
+      (tester) async {
+        await saveBackhoeUnderLabel(tester, 'supplier   a');
+
+        await tester.tap(find.byKey(ConfirmationDialog.primaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.replaceSavedRateDialogTitle), findsNothing);
+        expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+        expect(await savedBackhoePrices(), [150.0]);
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+      },
+    );
+
+    testWidgets('Replace leaves the other labeled prices of the name alone', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Backhoe',
+        amount: 90,
+        method: EquipmentPricingMethod.day,
+      );
+      await saveBackhoeUnderLabel(tester, 'Supplier A');
+
+      await tester.tap(find.byKey(ConfirmationDialog.primaryButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(await savedBackhoePrices(), [90.0, 150.0]);
+    });
+
+    testWidgets(
+      'a label whose saved row cannot be read keeps the label dialog open '
+      'with the taken line and asks nothing',
       (tester) async {
         await seedRate(
           itemName: 'Backhoe',
@@ -3657,51 +3773,40 @@ void main() {
         await typeSavableRate(tester);
         await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
         await tester.pumpAndSettle();
-
         await tester.enterText(
           find.byKey(const Key('entry_label_field')),
-          'supplier   a',
+          'Supplier A',
         );
+        database.failYourRatesReadNumber(3);
+
         await tester.tap(
           find.byKey(const Key('entry_label_dialog_save_button')),
         );
         await tester.pumpAndSettle();
 
+        expect(find.text(l10n.replaceSavedRateDialogTitle), findsNothing);
         expect(
           find.byKey(const Key('entry_label_dialog_title')),
           findsOneWidget,
         );
         expect(find.text(l10n.yourRatesEntryLabelTakenError), findsOneWidget);
-        final repository = Modular.get<YourRatesRepository>();
-        final unchanged = await repository.search(
-          'Backhoe',
-          category: CostItemType.equipment,
-          companyId: 'company-1',
-        );
-        expect(unchanged.fold((_) => null, (e) => e.single.rate.amount), 100);
+        expect(await savedBackhoePrices(), [100.0]);
+      },
+    );
 
-        await tester.enterText(
-          find.byKey(const Key('entry_label_field')),
-          'Supplier B',
-        );
-        await tester.tap(
-          find.byKey(const Key('entry_label_dialog_save_button')),
-        );
+    testWidgets(
+      'a saved row that is gone when Replace is tapped closes both dialogs '
+      'and saves the price as a new row',
+      (tester) async {
+        await saveBackhoeUnderLabel(tester, 'Supplier A');
+        database.reset();
+
+        await tester.tap(find.byKey(ConfirmationDialog.primaryButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
-        final both = await repository.search(
-          'Backhoe',
-          category: CostItemType.equipment,
-          companyId: 'company-1',
-        );
-        expect(
-          both.fold(
-            (_) => null,
-            (e) => e.map((entry) => entry.rate.amount).toSet(),
-          ),
-          {100, 150},
-        );
+        expect(find.byKey(const Key('save_as_my_rate_error')), findsNothing);
+        expect(await savedBackhoePrices(), [150.0]);
       },
     );
 

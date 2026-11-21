@@ -66,11 +66,16 @@ class YourRatesSaveCollision extends YourRatesState {
 
 /// State after a labeled [YourRatesSaveRequested] is rejected because the same
 /// name and pricing method already have that label. Nothing was written, and
-/// [entry] is the entry the caller submitted, so the user can pick another
-/// label for it.
+/// [entry] is the entry the caller submitted. The caller either asks to replace
+/// the price of the row in [takenBy] with [entry]'s, or lets the user pick
+/// another label for it.
 class YourRatesSaveLabelTaken extends YourRatesState {
-  const YourRatesSaveLabelTaken(this.entry);
+  const YourRatesSaveLabelTaken(this.entry, {this.takenBy});
   final YourRateEntry entry;
+
+  /// The saved row that already has the label, so the caller can offer to
+  /// replace its price. Null when the lookup found no such row or failed.
+  final YourRateEntry? takenBy;
 }
 
 /// State after [YourRatesSaveRequested] fails for any other reason.
