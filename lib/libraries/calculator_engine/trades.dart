@@ -1,5 +1,8 @@
+import 'dart:math';
+
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
@@ -169,19 +172,156 @@ final class FootingVolume extends Equatable {
   List<Object?> get props => [length, crossSection, system];
 }
 
+/// The posts and rails a length of fence needs (Section 9, "Fence":
+/// sections = ceil(length ÷ O.C.), at least 1; posts = sections + 1;
+/// rails = sections × rails per section; seeds O.C. 8ft, 3 rails per
+/// section). The Posts result carries the O.C. and Rails/section pills,
+/// and the rails are offered as a suggestion beside it (requirement R8). A
+/// recount after a pill is edited goes through [recount], which keeps the
+/// length the fence was counted for.
+final class FenceCount extends Equatable {
+  /// The key the accepted posts are labelled by.
+  static const String postsKey = 'Fence posts';
+
+  /// The key the strip labels the rails offer by.
+  static const String railsOfferKey = 'Rails';
+
+  /// The key the accepted rails are labelled by.
+  static const String railsKey = 'Fence rails';
+
+  /// The run of fence.
+  final Length length;
+
+  /// The post spacing, on centre.
+  final Length onCentre;
+
+  /// Rails between two posts.
+  final int railsPerSection;
+
+  /// A run of fence of [length] with posts [onCentre] and [railsPerSection]
+  /// rails between them. A spacing of zero or less has no sections, so a
+  /// caller counts through [Trades.fenceFor] or [recount], which refuse it.
+  const FenceCount({
+    required this.length,
+    required this.onCentre,
+    required this.railsPerSection,
+  });
+
+  /// Sections of fence: the length over the spacing, rounded up, computed
+  /// exactly over the inches so that 24m at 2.4m is ten sections and not
+  /// eleven. A length within one part of a tick ([Length.partsPerTick]) of a
+  /// whole number of spacings is that many, because a computed length is
+  /// kept only to that part: Calc 24m from 57.6m² ÷ 2.4m is ten sections
+  /// too, as the screen reads it. A length above zero always has at least
+  /// one, and lengths too long for exact sums are counted in ticks.
+  int get sections => _spacingsIn(length, onCentre);
+
+  /// One post more than there are sections.
+  int get posts => sections + 1;
+
+  /// The rails of every section.
+  int get rails => sections * railsPerSection;
+
+  /// The posts as the whole number the result chip holds.
+  Scalar get postsValue => Scalar(posts.toDouble(), decimals: 0);
+
+  /// The rails as the whole number the result chip holds.
+  Scalar get railsValue => Scalar(rails.toDouble(), decimals: 0);
+
+  /// The same length of fence at another spacing or with other rails per
+  /// section, as the pills recompute it, or `null` for a spacing of zero
+  /// or less or rails below zero, which are refused so that the caller
+  /// keeps the last good pill.
+  FenceCount? recount({Length? onCentre, int? railsPerSection}) {
+    final spacing = onCentre ?? this.onCentre;
+    final rails = railsPerSection ?? this.railsPerSection;
+    if (!_isAboveZero(spacing) || rails < 0) return null;
+    return FenceCount(
+      length: length,
+      onCentre: spacing,
+      railsPerSection: rails,
+    );
+  }
+
+  @override
+  List<Object?> get props => [length, onCentre, railsPerSection];
+}
+
+/// The members along a span at one on-centre spacing (Section 9, "Quantity
+/// at on-centre spacing": members = ceil(length ÷ spacing) + 1 for each
+/// stored spacing, 16in and 24in): the offer the strip makes per spacing
+/// and, once accepted, the result that carries its O.C. pill (requirement
+/// R8). A recount after the pill is edited goes through [recount], which
+/// keeps the span: 22ft 8-3/4in at 19.5in gives 15.
+final class SpacingCount extends Equatable {
+  /// The key the strip labels the offer by.
+  static const String offerKey = 'Qty';
+
+  /// The key the accepted count is labelled by.
+  static const String resultKey = 'Quantity';
+
+  /// The span the members are laid along.
+  final Length span;
+
+  /// The spacing, on centre.
+  final Length spacing;
+
+  /// Members along [span] at [spacing] on centre. A spacing of zero or
+  /// less has no members, so a caller counts through
+  /// [Trades.spacingCountsFor] or [recount], which leave it out.
+  const SpacingCount({required this.span, required this.spacing});
+
+  /// The members: the span over the spacing, rounded up as
+  /// [FenceCount.sections] rounds it, plus the one that closes the span.
+  int get members => _spacingsIn(span, spacing) + 1;
+
+  /// The members as the whole number the result chip holds.
+  Scalar get value => Scalar(members.toDouble(), decimals: 0);
+
+  /// The same span at another spacing, as the pill recomputes it, or
+  /// `null` for a spacing of zero or less, which is refused so that the
+  /// caller keeps the last good one.
+  SpacingCount? recount(Length spacing) {
+    if (!_isAboveZero(spacing)) return null;
+    return SpacingCount(span: span, spacing: spacing);
+  }
+
+  @override
+  List<Object?> get props => [span, spacing];
+}
+
 const int _squareTicksPerSquareFoot =
     Area.squareTicksPerSquareInch * Area.squareInchesPerSquareFoot;
 
 bool _isAboveZero(Length length) => length.preciseTicks > 0;
 
+const Rational _onePartOfATick = Rational(
+  1,
+  Length.ticksPerInch * Length.partsPerTick,
+);
+
+int _spacingsIn(Length length, Length spacing) {
+  try {
+    final whole = (length.inches / spacing.inches).floor();
+    final over = length.inches - spacing.inches * Rational(whole);
+    if (whole > 0 && over.compareTo(_onePartOfATick) <= 0) return whole;
+    return whole + 1;
+  } on RationalOverflow {
+    final ticksOver = length.preciseTicks - 1 / Length.partsPerTick;
+    return max(1, (ticksOver / spacing.preciseTicks).ceil());
+  }
+}
+
 /// The material rules of UX Design Doc Section 9: an area on the tape
 /// becomes a sheet count for every stored drywall size, or a piece count
 /// for every stored masonry size, one offer per size in the store's order;
-/// a length becomes concrete for every stored footing cross-section. The
-/// port of the prototype's `materials` and `footingChips`, over what the
-/// trade-stores repository holds; which value earns the offers, and when,
-/// is the arbiter's, and so are the follow-on offers after a trade result
-/// (Cost, Weight), which are rules of their own.
+/// a length becomes concrete for every stored footing cross-section, posts
+/// and rails at the stored fence spacing, or members at every stored
+/// on-centre spacing. The port of the prototype's `materials`,
+/// `footingChips`, `fenceCalc` and `qtyOcChips`, over what the trade-stores
+/// repository holds; which value earns the offers, and when, is the
+/// arbiter's, and so are the follow-on offers after a trade result (Cost,
+/// Weight), which are rules of their own.
 class Trades extends Equatable {
   const Trades();
 
@@ -222,6 +362,38 @@ class Trades extends Equatable {
             crossSection: crossSection,
             system: system,
           ),
+    ];
+  }
+
+  /// The fence along [length] with posts [onCentre] and [railsPerSection]
+  /// rails between them; `null` for a length of zero or less, a spacing of
+  /// zero or less, or rails below zero, none of which the screen lets
+  /// through.
+  FenceCount? fenceFor(
+    Length length, {
+    required Length onCentre,
+    required int railsPerSection,
+  }) {
+    if (!_isAboveZero(length) ||
+        !_isAboveZero(onCentre) ||
+        railsPerSection < 0) {
+      return null;
+    }
+    return FenceCount(
+      length: length,
+      onCentre: onCentre,
+      railsPerSection: railsPerSection,
+    );
+  }
+
+  /// The members along [span] at each of [spacings], in their order. A span
+  /// of zero or less has no members at all; a spacing of zero or less is
+  /// left out.
+  List<SpacingCount> spacingCountsFor(Length span, List<Length> spacings) {
+    if (!_isAboveZero(span)) return const [];
+    return [
+      for (final spacing in spacings)
+        if (_isAboveZero(spacing)) SpacingCount(span: span, spacing: spacing),
     ];
   }
 
