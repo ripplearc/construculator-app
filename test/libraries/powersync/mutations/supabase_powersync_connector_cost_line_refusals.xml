@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SUPABASE POWERSYNC CONNECTOR MUTATION TESTING (keeping a refused or malformed cost line) -->
+
+    <files>
+        <file>lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="operation\.table == DatabaseConstants\.costItemsTable &amp;&amp;\s*error\.code == '42501';" id="cost_line.refused.any_table_counts">
+            <mutation text="operation.table != DatabaseConstants.costItemsTable &amp;&amp; error.code == '42501';"/>
+        </regex>
+        <regex pattern="error\.code == '42501';" id="cost_line.refused.any_code_counts">
+            <mutation text="error.code != '42501';"/>
+        </regex>
+        <regex pattern="if \(operation\.table != DatabaseConstants\.costItemsTable\) rethrow;" id="cost_line.format.other_table_swallowed">
+            <mutation text="if (operation.table == DatabaseConstants.costItemsTable) rethrow;"/>
+        </regex>
+        <regex pattern="_calculationNotJsonReason,\n" id="cost_line.format.reason_blank">
+            <mutation text="'',&#10;"/>
+        </regex>
+        <regex pattern="'\$\{error\.code\}'," id="cost_line.refused.reason_blank">
+            <mutation text="'',"/>
+        </regex>
+        <regex pattern="if \(operation\.op == UpdateType\.delete\) return;" id="cost_line.record.delete_recorded">
+            <mutation text="if (operation.op != UpdateType.delete) return;"/>
+        </regex>
+        <regex pattern="if \(line == null\) return;" id="cost_line.record.missing_row_recorded">
+            <mutation text="if (line != null) return;"/>
+        </regex>
+        <regex pattern="operation\.id,\s*line\[DatabaseConstants\.estimateIdColumn\]," id="cost_line.record.wrong_id">
+            <mutation text="'', line[DatabaseConstants.estimateIdColumn],"/>
+        </regex>
+        <regex pattern="line\[DatabaseConstants\.estimateIdColumn\]," id="cost_line.record.wrong_estimate">
+            <mutation text="'',"/>
+        </regex>
+        <regex pattern="jsonEncode\(line\)," id="cost_line.record.empty_line">
+            <mutation text="'{}',"/>
+        </regex>
+        <regex pattern="_clock\.now\(\)\.toUtc\(\)\.toIso8601String\(\),\s*\],\s*\);\s*\}" id="cost_line.record.time_blank">
+            <mutation text="'',&#10;      ],&#10;    );&#10;  }"/>
+        </regex>
+        <regex pattern="if \(operation\.table == DatabaseConstants\.costItemsTable\) \{\s*await database\.execute\(" id="cost_line.forget.skipped_for_cost_lines">
+            <mutation text="if (operation.table != DatabaseConstants.costItemsTable) {&#10;      await database.execute("/>
+        </regex>
+        <regex pattern="await _recordCostLineRefusalWithoutBlocking\(\s*database,\s*operation,\s*'\$\{error\.code\}',\s*\);" id="cost_line.refused.not_recorded">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _recordCostLineRefusalWithoutBlocking\(\s*database,\s*operation,\s*_calculationNotJsonReason,\s*\);" id="cost_line.format.not_recorded">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_line_refusals" expected-return="0" timeout="300">flutter test test/libraries/powersync/units/connectors/supabase_powersync_connector_test.dart</command>
+    </commands>
+</mutations>

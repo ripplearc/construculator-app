@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -30,21 +32,43 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// one id per default on every phone, so this is a safety net, not the path
 /// a change normally takes.
 ///
+/// A `cost_items` row is sent with its `calculation` decoded for the same
+/// reason: sent as text, the jsonb column would hold a JSON string instead of
+/// an object. PowerSync leaves a null column out of a queued PUT, so a PUT of
+/// a `cost_items` row sends every column of the table, null where the row has
+/// no value. A resend can clear a field the server still holds, and also
+/// reverts any edit another phone made to those columns in the meantime.
+///
 /// When two phones save the same Your rates entry, the later upload overwrites
 /// the earlier one. Two entries are the same when the item name, pricing
 /// method and label match, where a name or label matches ignoring capital
 /// letters and extra spaces. That copies the server rule behind the
 /// `item_name_key` column: trim, collapse runs of spaces to one, lower-case.
 /// If the server rule changes, change `YourRateRefusalKey.normalizeName` with it.
+///
+/// A `cost_items` change the server refuses with 42501, and a `cost_items`
+/// change whose `calculation` text is not JSON, are skipped the same way. The
+/// phone's row is saved as JSON in the local-only `cost_item_refusals` table
+/// first, because the next checkpoint removes the row from the phone while no
+/// sync stream holds `cost_items`.
 class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
+  final Clock _clock;
   static final _logger = AppLogger().tag('SupabasePowerSyncConnector');
+
+  static const _calculationNotJsonReason = 'calculation is not JSON';
+
+  static const _jsonTextColumnByTable = {
+    DatabaseConstants.userCalculatorStoresTable: DatabaseConstants.valuesColumn,
+    DatabaseConstants.costItemsTable: DatabaseConstants.calculationColumn,
+  };
 
   /// Creates a connector for syncing PowerSync with Supabase.
   SupabasePowerSyncConnector({
     required this._supabaseWrapper,
     required this._envLoader,
+    required this._clock,
   });
 
   /// Fetches the current PowerSync credentials from Supabase.
@@ -116,6 +140,19 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       await _processOperation(operation);
       await _forgetRefusalWithoutBlocking(database, operation);
     } on supabase.PostgrestException catch (error) {
+      if (_isRefusedCostLine(error, operation)) {
+        _logger.warning(
+          'The server refused a cost_items change (code ${error.code}): '
+          '${error.message}. Keeping the line on this phone and skipping the '
+          'change so the queue is not blocked.',
+        );
+        await _recordCostLineRefusalWithoutBlocking(
+          database,
+          operation,
+          '${error.code}',
+        );
+        return;
+      }
       if (_isDuplicateDefault(error, operation)) {
         if (await _overwroteDefaultWithSameSeed(operation)) return;
         _logger.warning(
@@ -137,7 +174,74 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         '${error.message}. Skipping it so the queue is not blocked.',
       );
       await _recordRefusalWithoutBlocking(database, operation);
+    } on FormatException catch (error, stackTrace) {
+      if (operation.table != DatabaseConstants.costItemsTable) rethrow;
+      _logger.error(
+        'The calculation of ${operation.table} row ${operation.id} is not '
+        'JSON. Keeping the line on this phone and skipping the change so the '
+        'queue is not blocked.',
+        error,
+        stackTrace,
+      );
+      await _recordCostLineRefusalWithoutBlocking(
+        database,
+        operation,
+        _calculationNotJsonReason,
+      );
     }
+  }
+
+  bool _isRefusedCostLine(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) =>
+      operation.table == DatabaseConstants.costItemsTable &&
+      error.code == '42501';
+
+  Future<void> _recordCostLineRefusalWithoutBlocking(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+    String reason,
+  ) async {
+    try {
+      await _recordCostLineRefusal(database, operation, reason);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not record the refused ${operation.table} row '
+        '${operation.id}; the line may be lost from this phone',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  // TODO: [CA-1291] Show this record as the red card and let the user move or discard the line.
+  // https://ripplearc.youtrack.cloud/issue/CA-1291
+  Future<void> _recordCostLineRefusal(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+    String reason,
+  ) async {
+    if (operation.op == UpdateType.delete) return;
+    final line = await database.getOptional(
+      'SELECT * FROM ${DatabaseConstants.costItemsTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?',
+      [operation.id],
+    );
+    if (line == null) return;
+    await database.execute(
+      'INSERT OR REPLACE INTO ${DatabaseConstants.costItemRefusalsTable} '
+      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.estimateIdColumn}, '
+      '${DatabaseConstants.lineColumn}, ${DatabaseConstants.reasonColumn}, '
+      '${DatabaseConstants.refusedAtColumn}) VALUES (?, ?, ?, ?, ?)',
+      [
+        operation.id,
+        line[DatabaseConstants.estimateIdColumn],
+        jsonEncode(line),
+        reason,
+        _clock.now().toUtc().toIso8601String(),
+      ],
+    );
   }
 
   Future<void> _recordRefusalWithoutBlocking(
@@ -176,6 +280,14 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     PowerSyncDatabase database,
     CrudEntry operation,
   ) async {
+    if (operation.table == DatabaseConstants.costItemsTable) {
+      await database.execute(
+        'DELETE FROM ${DatabaseConstants.costItemRefusalsTable} '
+        'WHERE ${DatabaseConstants.idColumn} = ?',
+        [operation.id],
+      );
+      return;
+    }
     if (operation.table != DatabaseConstants.yourRatesTable) return;
     if (_refusedRateAmount(operation) == null) return;
     final userId = _supabaseWrapper.currentUser?.id;
@@ -345,7 +457,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   Future<bool> _overwroteDefaultWithSameSeed(CrudEntry operation) async {
     final sent = operation.opData;
     if (sent == null) return false;
-    final row = _withDecodedValues(operation.table, sent);
+    final row = _withDecodedJsonColumn(operation.table, sent);
     final userId = row[DatabaseConstants.userIdColumn];
     final kind = row[DatabaseConstants.storeKindColumn];
     final seed = _seedOf(row);
@@ -417,7 +529,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         await _supabaseWrapper.upsert(
           table: operation.table,
           data: {
-            ..._withDecodedValues(operation.table, putData),
+            ..._withNullsForOmittedColumns(
+              operation.table,
+              _withDecodedJsonColumn(operation.table, putData),
+            ),
             'id': operation.id,
           },
           onConflict: 'id',
@@ -431,7 +546,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.update(
           table: operation.table,
-          data: _withDecodedValues(operation.table, patchData),
+          data: _withDecodedJsonColumn(operation.table, patchData),
           filterColumn: 'id',
           filterValue: operation.id,
         );
@@ -444,14 +559,26 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
-  Map<String, dynamic> _withDecodedValues(
+  Map<String, dynamic> _withNullsForOmittedColumns(
     String table,
     Map<String, dynamic> row,
   ) {
-    if (table != DatabaseConstants.userCalculatorStoresTable) return row;
-    final values = row[DatabaseConstants.valuesColumn];
-    if (values is! String) return row;
-    return {...row, DatabaseConstants.valuesColumn: jsonDecode(values)};
+    if (table != DatabaseConstants.costItemsTable) return row;
+    final columns = schema.tables
+        .singleWhere((candidate) => candidate.name == table)
+        .columns;
+    return {for (final column in columns) column.name: null, ...row};
+  }
+
+  Map<String, dynamic> _withDecodedJsonColumn(
+    String table,
+    Map<String, dynamic> row,
+  ) {
+    final column = _jsonTextColumnByTable[table];
+    if (column == null) return row;
+    final text = row[column];
+    if (text is! String) return row;
+    return {...row, column: jsonDecode(text)};
   }
 
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code
