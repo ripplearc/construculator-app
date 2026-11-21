@@ -27,10 +27,10 @@
 
         <!-- RULE 3: an error chip empties the whole tape instead of ending
              its own chain -->
-        <regex pattern="case ErrorChip\(\):\s*if \(!_continuesAfter\(chips, index\)\) running = _nothing;" dotAll="true" id="chain_evaluator.fold.error_empties_tape">
-            <mutation text="case ErrorChip(): return const ChainEmpty();"/>
-            <mutation text="case ErrorChip(): running = _nothing;"/>
-            <mutation text="case ErrorChip(): break;"/>
+        <regex pattern="case ErrorChip\(\):\s*if \(!_continuesAfter\(chips, index\)\) \{\s*running = _nothing;" dotAll="true" id="chain_evaluator.fold.error_empties_tape">
+            <mutation text="case ErrorChip(): if (true) { running = _nothing;"/>
+            <mutation text="case ErrorChip(): if (!_continuesAfter(chips, index)) {"/>
+            <mutation text="case ErrorChip(): if (false) { running = _nothing;"/>
         </regex>
 
         <!-- RULE: a result chip or a second error chip right after an error
@@ -41,8 +41,8 @@
 
         <!-- RULE: a chain continues through any error chip, or through any
              operator after ÷ 0, not only the reopened ÷ -->
-        <regex pattern="chips\[index\] == const ErrorChip\(CalculationError\.divisionByZero\) &amp;&amp;\s*index \+ 1 &lt; chips\.length &amp;&amp;" dotAll="true" id="chain_evaluator.continues_after.any_error">
-            <mutation text="index + 1 &lt; chips.length &amp;&amp;"/>
+        <regex pattern="bool _continuesAfter\(List&lt;TapeChip&gt; chips, int index\) =&gt;\s*chips\[index\] == const ErrorChip\(CalculationError\.divisionByZero\) &amp;&amp;\s*index \+ 1 &lt; chips\.length &amp;&amp;" dotAll="true" id="chain_evaluator.continues_after.any_error">
+            <mutation text="bool _continuesAfter(List&lt;TapeChip&gt; chips, int index) =&gt; index + 1 &lt; chips.length &amp;&amp;"/>
         </regex>
         <regex pattern="BracketChip\(:final operator\) =&gt; operator == Operator\.divide," dotAll="true" id="chain_evaluator.continues_after.any_operator">
             <mutation text="BracketChip(:final operator) =&gt; operator != null,"/>
