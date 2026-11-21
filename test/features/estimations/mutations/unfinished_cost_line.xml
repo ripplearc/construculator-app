@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- UNFINISHED COST LINE RECORD MUTATION TESTING -->
+    <!-- Targets: reading the record back from JSON -->
+
+    <files>
+        <file>lib/features/estimation/domain/entities/unfinished_cost_line.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="@override" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="category == null \|\| estimateId is! String \|\| updatedAt == null" dotAll="false" id="unfinished_line.json.required">
+            <mutation text="category == null || updatedAt == null"/>
+            <mutation text="category == null || estimateId is! String"/>
+            <mutation text="estimateId is! String || updatedAt == null"/>
+        </regex>
+        <regex pattern="unit: Unit\.values\.where\(\(unit\) => unit\.name == json\['unit'\]\)\.firstOrNull," dotAll="false" id="unfinished_line.json.unit_fallback">
+            <mutation text="unit: Unit.fromJson('${json['unit']}'),"/>
+        </regex>
+        <regex pattern="value is num \? value\.toDouble\(\) : null" dotAll="false" id="unfinished_line.json.number">
+            <mutation text="null"/>
+        </regex>
+        <regex pattern="updatedAt: updatedAt\.toLocal\(\)," dotAll="false" id="unfinished_line.json.local_time">
+            <mutation text="updatedAt: updatedAt,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="unfinished_cost_line" expected-return="0">flutter test test/features/estimations/units/domain/entities/unfinished_cost_line_test.dart</command>
+    </commands>
+
+    <threshold failure="80">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
