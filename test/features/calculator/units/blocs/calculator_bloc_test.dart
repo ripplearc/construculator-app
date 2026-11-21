@@ -1,18 +1,22 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
+import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/errors/calculator_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Test module that provides [CalculatorBloc] as a factory (`i.add`) over
-/// the real [WatchMaterialCountsUseCase] and a fake trade-stores repository
+/// the real [WatchMaterialCountsUseCase] and [DeleteMaterialSizeUseCase]
+/// and a fake trade-stores repository
 /// showing Appendix B's defaults, as the production module wires it, so
 /// each test resolves a fresh instance via `Modular.get`.
 class _CalculatorBlocTestModule extends Module {
@@ -25,7 +29,12 @@ class _CalculatorBlocTestModule extends Module {
     i.add<WatchMaterialCountsUseCase>(
       () => WatchMaterialCountsUseCase(repository: stores),
     );
-    i.add<CalculatorBloc>(() => CalculatorBloc(materialCounts: i()));
+    i.add<DeleteMaterialSizeUseCase>(
+      () => DeleteMaterialSizeUseCase(repository: stores),
+    );
+    i.add<CalculatorBloc>(
+      () => CalculatorBloc(materialCounts: i(), deleteMaterialSize: i()),
+    );
   }
 }
 
@@ -4142,6 +4151,203 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.materialCounts, isEmpty);
           expect(bloc.state.suggestions, isEmpty);
+        },
+      );
+    });
+
+    group('T2a 2/3: the sheet table of the detail panel (Section 1.4, '
+        '"sheet sizes with the count for each")', () {
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'ft' => const CalculatorUnitSelected(Unit.foot),
+            '=' => const CalculatorEqualsPressed(),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      List<String> rows(CalculatorState state) => [
+        for (final row in state.sizeTable!.rows)
+          '${row.sizeText} ${row.countText}',
+      ];
+
+      const appendixBRows = [
+        '48in x 96in 5.63',
+        '48in x 108in 5.00',
+        '48in x 120in 4.50',
+      ];
+
+      late Tape landedTape;
+
+      Future<List<StoredSize>> storedSheets() =>
+          stores.watchSizes(SizeStore.sheet, MeasurementSystem.imperial).first;
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'after Area 180ft² the table counts the area at every stored size, '
+        'the one accepted from the strip included (walkthrough 11.3)',
+        build: () => bloc,
+        act: (bloc) async {
+          type(bloc, '[Length] 2 0 ft [Height] 9 ft =');
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc.add(CalculatorSuggestionAccepted(bloc.state.suggestions.first));
+        },
+        verify: (bloc) {
+          expect(bloc.state.sizeTable!.areaText, '180ft²');
+          expect(rows(bloc.state), appendixBRows);
+          expect(bloc.state.hasDetails, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a typed 180ft² has no tiles but has the table, so the panel has '
+        'details',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '1 8 0 ft ft'),
+        verify: (bloc) {
+          expect(bloc.state.dimensions, isEmpty);
+          expect(rows(bloc.state), appendixBRows);
+          expect(bloc.state.hasDetails, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Radius 6ft has tiles and no table, and the panel has details',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '[Radius] 6 ft'),
+        verify: (bloc) {
+          expect(bloc.state.sizeTable, isNull);
+          expect(bloc.state.dimensions, isNotEmpty);
+          expect(bloc.state.hasDetails, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a length is not an area: no table and nothing in the panel',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '1 8 0 ft'),
+        verify: (bloc) {
+          expect(bloc.state.sizeTable, isNull);
+          expect(bloc.state.hasDetails, isFalse);
+        },
+      );
+
+      test('counts of an area no longer on the display are not rows: the '
+          'table waits for the store to answer for the new one', () {
+        final before = tapeState(pressed('1 8 0 ft ft'));
+        final after = tapeState(
+          pressed('4 1 0 ft ft'),
+        ).copyWith(materialCounts: sheetCountsOf(before));
+        expect(after.sizeTable!.areaText, '410ft²');
+        expect(after.sizeTable!.rows, isEmpty);
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a size the store holds twice gets a row each, told apart by the '
+        'rows before it',
+        build: () => bloc,
+        act: (bloc) async {
+          await stores.addSize((await storedSheets()).first);
+          type(bloc, '1 8 0 ft ft');
+        },
+        verify: (bloc) {
+          expect(bloc.state.sizeTable!.rows.map((row) => row.id), [
+            '48in x 96in#0',
+            '48in x 108in#0',
+            '48in x 120in#0',
+            '48in x 96in#1',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'deleting a row takes it off the table and the strip at once and '
+        'removes the size from the store; the tape stays',
+        build: () => bloc,
+        act: (bloc) async {
+          type(bloc, '1 8 0 ft ft');
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc.add(const CalculatorSizeRowDeleted('48in x 108in#0'));
+        },
+        verify: (bloc) async {
+          expect(rows(bloc.state), ['48in x 96in 5.63', '48in x 120in 4.50']);
+          expect(bloc.state.tape, pressed('1 8 0 ft ft'));
+          expect((await storedSheets()).map((size) => size.seed), [
+            'sheet_48x96in',
+            'sheet_48x120in',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a Drywall result already on the tape keeps its count when its size '
+        'is deleted (Section 1.4)',
+        build: () => bloc,
+        act: (bloc) async {
+          type(bloc, '1 8 0 ft ft');
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc.add(CalculatorSuggestionAccepted(bloc.state.suggestions.first));
+          await bloc.stream.firstWhere((state) => state.tape.endsWithResult);
+          landedTape = bloc.state.tape;
+          bloc.add(const CalculatorSizeRowDeleted('48in x 96in#0'));
+        },
+        verify: (bloc) {
+          expect(bloc.state.tape, landedTape);
+          expect(rows(bloc.state), ['48in x 108in 5.00', '48in x 120in 4.50']);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a delete the store refuses takes the row off at once, before the '
+        'store answers, then puts it back',
+        build: () => bloc,
+        act: (bloc) async {
+          type(bloc, '1 8 0 ft ft');
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          stores.writeFailure = const CalculatorFailure(
+            errorType: CalculatorErrorType.storageError,
+          );
+          bloc.add(const CalculatorSizeRowDeleted('48in x 108in#0'));
+        },
+        expect: () => predicate<List<CalculatorState>>(
+          (states) => equals([
+            ['48in x 96in 5.63', '48in x 120in 4.50'],
+            appendixBRows,
+          ]).matches(states.skip(states.length - 2).map(rows).toList(), {}),
+          'ends with the row taken off, then put back',
+        ),
+        verify: (bloc) async {
+          expect(await storedSheets(), hasLength(3));
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a row no longer on the table, deleted twice before the table '
+        'redrew, changes nothing more',
+        build: () => bloc,
+        act: (bloc) async {
+          type(bloc, '1 8 0 ft ft');
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc
+            ..add(const CalculatorSizeRowDeleted('48in x 108in#0'))
+            ..add(const CalculatorSizeRowDeleted('48in x 108in#0'));
+        },
+        verify: (bloc) async {
+          expect(rows(bloc.state), ['48in x 96in 5.63', '48in x 120in 4.50']);
+          expect(await storedSheets(), hasLength(2));
         },
       );
     });
