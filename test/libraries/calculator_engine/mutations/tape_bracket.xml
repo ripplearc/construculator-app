@@ -104,11 +104,6 @@
             <mutation text="ResultChip() =&gt; true, BracketChip() =&gt; false,"/>
         </regex>
 
-        <!-- RULE 12: ⌫ inside a bracket keeps the bare chip it emptied -->
-        <regex pattern="return TapeChanged\(_with\(tape\.chips\.sublist\(0, tape\.chips\.length - 1\)\)\);" dotAll="true" id="tape.backspace_inside.keep_emptied_chip">
-            <mutation text="return TapeChanged(_with(tape.chips.sublist(0, tape.chips.length)));"/>
-        </regex>
-
         <!-- RULE 13: an empty bracket after a value leaves the value sealed -->
         <regex pattern="if \(before\.isNotEmpty &amp;&amp; before\.last is ValueChip\) \{" dotAll="true" id="tape.remove_bracket.keep_value_sealed">
             <mutation text="if (false) {"/>
@@ -133,8 +128,8 @@
 
         <!-- RULE 17: ⌫ on a reopened bracket emptied by the edit does not
              remove it -->
-        <regex pattern="if \(bracket\.inner\.isEmpty\) return TapeChanged\(_removeBracket\(bracket\)\);" dotAll="true" id="tape.backspace.keep_reopened_empty">
-            <mutation text="if (bracket.inner.isEmpty &amp;&amp; bracket.original == null) return TapeChanged(_removeBracket(bracket));"/>
+        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return TapeChanged\(_removeBracket\(bracket\)\);\s*\}" dotAll="true" id="tape.backspace.keep_reopened_empty">
+            <mutation text="if (bracket.inner.every(_holdsNothingTyped) &amp;&amp; bracket.original == null) { return TapeChanged(_removeBracket(bracket)); }"/>
         </regex>
 
         <!-- RULE 18: [( )] under a name replaces the named chip silently -->

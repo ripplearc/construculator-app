@@ -75,7 +75,7 @@ enum TapeRefusal {
   /// value first"). A single bare number seals as a scalar instead.
   finishThisValueFirst,
 
-  /// [/] with no chip being typed.
+  /// [/] or ✕ with no chip being typed.
   nothingBeingTyped,
 
   /// ⌫ on an empty tape.
@@ -88,6 +88,11 @@ enum TapeRefusal {
   /// grade, not a length": "[Slope] takes a bare number — 7 means a 7%
   /// grade").
   slopeTakesAGrade,
+
+  /// Any unit on a number under Sides, which takes a count (Section 3,
+  /// "Takes: A count"): Sides 6 [Feet] would read 6ft, and a second press
+  /// 6ft², so the unit is refused and the 6 stays typed.
+  sidesTakesACount,
 
   /// A trig key on a value with a unit (38ft [SIN], 12ft ÷ 2 [ATAN]): "Sine
   /// needs a plain angle, not a length", "Arctangent needs a ratio, not a
@@ -167,6 +172,11 @@ enum TapeRefusal {
 
   /// [( )] to close with nothing open.
   noBracketToClose,
+
+  /// ✕ in an open bracket with nothing typed in it ("Nothing typed in this
+  /// group yet"; Section 12.9, key path 2 [+] [( )] ✕). With a chip typed
+  /// inside, ✕ clears it as it would outside.
+  nothingTypedInGroup,
 
   /// The D:M:S key on a pitch answer, in any of its three spellings
   /// (Pitch-rise per 12in run 6in/12in, Pitch-degrees 26.57°, Pitch-grade
@@ -1308,6 +1318,43 @@ class Tape extends Equatable {
     AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
 
+  /// ✕ on the display empties the value being typed and keeps its chip
+  /// open under its key and the operator that leads into it (Section 1.1,
+  /// "✕ button"; Section 5, "The value is empty — type a new value, or
+  /// backspace to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
+  /// 7 leaves "Length…"), so 22ft + 18 ✕ 20 [Feet] = is 42ft, Width 5 [Lbs]
+  /// (refused) ✕ 5 [Feet] is Width 5ft, and 2 + (3 × 4 ✕ 5) = is 17; inside
+  /// an open bracket it empties the chip being typed there, and on a bracket
+  /// with nothing typed in it yet, or nothing left after ✕ emptied its
+  /// chip, it is refused ([TapeRefusal.nothingTypedInGroup]). With nothing being typed — the
+  /// empty chip an operator just opened, the divisor ÷ 0 reopened, or a
+  /// finished tape — it is refused ([TapeRefusal.nothingBeingTyped]): ✕
+  /// "clears the value in progress when something is typed" (Section 5,
+  /// "Closes the calculator"), so 2 + (3 + ✕ 4) = is 9 and 5 ÷ 0 = ✕ 2 = is
+  /// 2.5, and on a finished tape the caller closes the calculator instead.
+  TapeOutcome clearActive() {
+    if (openBracket case final bracket?) {
+      if (bracket.inner.every(_holdsNothingTyped)) {
+        return const TapeRefused(TapeRefusal.nothingTypedInGroup);
+      }
+      return _inside(bracket, (inner) => inner.clearActive());
+    }
+    final chip = active;
+    if (chip == null || chip.entry.isEmpty) {
+      return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    }
+    return _replaceLast(
+      chip.copyWith(
+        entry: const EntryBuffer(),
+        exact: () => null,
+        poundsPerTon: () => null,
+      ),
+    );
+  }
+
+  static bool _holdsNothingTyped(TapeChip chip) =>
+      chip is ValueChip && chip.entry.isEmpty && chip.operator == null;
+
   /// [/] goes into the active chip. A recalled angle is a finished value
   /// (rule 4.16), so the key is refused on it as the unit keys are: 45
   /// recalled under Pitch never becomes the typed start of 45/2in.
@@ -1330,7 +1377,9 @@ class Tape extends Equatable {
   /// a key that can only hold a length. [takesAGrade] is true under
   /// Slope, whose bare number is a % grade: a length unit there is refused
   /// (Section 5.4, "A slope is a % grade, not a length"), so [Slope] 6
-  /// [Feet] cannot become a length the solver never reads. Pitch takes a
+  /// [Feet] cannot become a length the solver never reads. [takesACount] is
+  /// true under Sides, which takes a count, so every unit is refused there
+  /// and Sides 6 [Feet] [Feet] never reads 6ft². Pitch takes a
   /// length as inches of rise per 12in of run (rule 4.10). An angle typed
   /// as degrees, minutes and seconds is refused a unit under any key
   /// (Section 5.4, "That value is already an angle"), and so is an angle
@@ -1340,6 +1389,7 @@ class Tape extends Equatable {
     Unit unit, {
     bool holdsLengthOnly = false,
     bool takesAGrade = false,
+    bool takesACount = false,
   }) {
     if (openBracket case final bracket?) {
       return _inside(
@@ -1348,6 +1398,7 @@ class Tape extends Equatable {
           unit,
           holdsLengthOnly: holdsLengthOnly,
           takesAGrade: takesAGrade,
+          takesACount: takesACount,
         ),
       );
     }
@@ -1378,6 +1429,7 @@ class Tape extends Equatable {
     if (takesAGrade && unit.dimension == Dimension.length) {
       return const TapeRefused(TapeRefusal.slopeTakesAGrade);
     }
+    if (takesACount) return const TapeRefused(TapeRefusal.sidesTakesACount);
     if (chip.entry.isOpen) {
       return _entry(
         chip,
@@ -1569,11 +1621,13 @@ class Tape extends Equatable {
   ///
   /// Straight after ) it reopens the bracket in place, with the keypad
   /// typing into its last value again (Section 7, "Editing a bracket").
-  /// Inside a bracket a chip has no name, so a bare one emptied by ⌫ has
-  /// nothing left to show and is dropped, which makes the next ⌫ remove
-  /// the bracket itself ("on an empty bracket it removes the bracket"),
-  /// one that ⌫ reopened included; an emptied operator chip stays, since
-  /// it still holds the operator.
+  /// Inside a bracket a chip has no name, so once ⌫ or ✕ has emptied every
+  /// chip in it there is nothing left to show and the next ⌫ removes the
+  /// bracket itself ("on an empty bracket it removes the bracket"), one
+  /// that ⌫ reopened included: 2 + ( 3 ⌫ ⌫ and 2 + ( 3 ✕ ⌫ both remove
+  /// the bracket and the + waits again, as the first ⌫ on 2 + ( does. An
+  /// emptied operator chip beside a value stays, since it still holds the
+  /// operator.
   ///
   /// A value recalled from the drawer is removed whole, exact value and
   /// all, so the chip is empty under its key again and the drawer can be
@@ -1581,8 +1635,10 @@ class Tape extends Equatable {
   /// typed start that ⌫ edits into one digit at a time (rule 4.16).
   TapeOutcome backspace() {
     if (openBracket case final bracket?) {
-      if (bracket.inner.isEmpty) return TapeChanged(_removeBracket(bracket));
-      return _inside(bracket, (inner) => inner._backspaceInsideBracket());
+      if (bracket.inner.every(_holdsNothingTyped)) {
+        return TapeChanged(_removeBracket(bracket));
+      }
+      return _inside(bracket, (inner) => inner.backspace());
     }
     if (chips.isNotEmpty) {
       if (chips.last case final BracketChip closed) {
@@ -1608,17 +1664,6 @@ class Tape extends Equatable {
       final BracketChip closed => _with([...before, _reopened(closed)]),
       ResultChip() || ErrorChip() => _with(remaining),
     });
-  }
-
-  TapeOutcome _backspaceInsideBracket() {
-    final outcome = backspace();
-    if (outcome case TapeChanged(:final tape)) {
-      if (tape.active case final chip?
-          when chip.entry.isEmpty && chip.operator == null) {
-        return TapeChanged(_with(tape.chips.sublist(0, tape.chips.length - 1)));
-      }
-    }
-    return outcome;
   }
 
   /// [( )]: one key opens a bracket and, pressed again, closes it, so the
