@@ -79,7 +79,10 @@ enum EntryRefusal {
   /// A digit that would push the number being typed above
   /// [Quantity.largestShown], the bottom number of a fraction included
   /// ("Too large": "A number cannot be above 19,999,999.99. Press ⌫ to
-  /// change a number, or C to start again.").
+  /// change a number, or C to start again."). The tape answers the same
+  /// way to a unit key that would carry a finished value or a result above
+  /// the limit in the new unit (Section 5.1; CA-1365), and the value stays
+  /// in the unit it had.
   tooLarge,
 
   /// A sixteenth digit typed into one number ([EntryBuffer.maxDigits];
