@@ -16,7 +16,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// screen 4). Opens searched on [initialQuery] and lists the matching Your
 /// rates under YOUR RATES; the previous rows stay on screen while a search
 /// runs. Tapping a row only selects it; the button at the foot stays greyed
-/// out as "Use rate" until a row is picked, then returns that rate.
+/// out as "Use rate" until a row is picked, then returns that rate. A search
+/// with no match shows one "No matches" line and no button: there is no way
+/// to create an entry here.
 ///
 /// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here too, under a FROM SAMPLE COST FILE heading below YOUR RATES, once a real data source exists.
 class MaterialRateLookupSheet extends StatefulWidget {
@@ -92,6 +94,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
       builder: (context, state) {
         final entries = switch (state) {
           YourRatesSearchResults(:final results) => results,
+          YourRatesError() => const <YourRateEntry>[],
           _ => _shownEntries,
         };
         _shownEntries = entries;
@@ -127,6 +130,28 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                         ),
                         // TODO: [CA-1482] show CoreUI's progress bar here while a search runs, above the rows kept from the last search. https://ripplearc.youtrack.cloud/issue/CA-1482
                         const SizedBox(height: CoreSpacing.space4),
+                        if (state is YourRatesError)
+                          CoreInlineErrorRow(
+                            key: const Key('your_rates_load_error'),
+                            message: l10n.yourRatesLoadError,
+                            actionLabel: l10n.yourRatesTryAgain,
+                            actionKey: const Key('your_rates_try_again_button'),
+                            onAction: () => _search(_searchController.text),
+                          )
+                        else if (entries.isEmpty &&
+                            state is YourRatesSearchResults)
+                          Padding(
+                            key: const Key('material_lookup_no_match'),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: CoreSpacing.space6,
+                            ),
+                            child: Text(
+                              l10n.yourRatesNoMatchState(state.query),
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.bodyMediumRegular
+                                  .copyWith(color: context.colorTheme.textBody),
+                            ),
+                          ),
                         if (entries.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(
