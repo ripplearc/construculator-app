@@ -9,6 +9,7 @@
 
     <files>
         <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart</file>
+        <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_state.dart</file>
     </files>
 
     <rules>
@@ -41,6 +42,19 @@
              so Sides 6 [Feet] [Feet] reads 6ft² -->
         <regex pattern="takesACount: key == PlainNumberKeys\.sides," dotAll="true" id="calculator_bloc.press_unit.sides_takes_a_unit">
             <mutation text="takesACount: false,"/>
+        </regex>
+
+        <!-- RULE 4 (S1b 2/6, CA-1088): the silence after an error chip reaches
+             back past the chip that starts the chain, so the strip never
+             comes back until C -->
+        <regex pattern="case ValueChip\(:final operator\) \|\| BracketChip\(:final operator\):\s*if \(operator == null\) return false;" dotAll="true" id="calculator_state.strip_silent.error_silences_for_ever">
+            <mutation text="case ValueChip(:final operator) || BracketChip(:final operator): if (operator == null) continue;"/>
+        </regex>
+
+        <!-- RULE 5 (S1b 2/6): an open bracket after named values leaves the
+             strip on -->
+        <regex pattern="tape\.openBracket != null \|\|\s*switch \(tape\.runningTotal\) \{" dotAll="true" id="calculator_state.strip_silent.open_bracket_offers">
+            <mutation text="switch (tape.runningTotal) {"/>
         </regex>
     </rules>
 
