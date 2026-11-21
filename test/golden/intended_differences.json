@@ -212,6 +212,96 @@
    "checkpoint": "tapping it fills the pitch with the angle, D:M:S spelling intact",
    "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
    "dart": {"kind": "tape", "equals": ["Pitch38°03'00\""]}
+  },
+  {
+   "scenario": "S01",
+   "checkpoint": "material suggestion follows",
+   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Diagonal: 28.85ft"}
+  },
+  {
+   "scenario": "S16",
+   "checkpoint": "cost proposal on row 1, conversions on row 2",
+   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
+   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "6.67yd²"}]}
+  },
+  {
+   "scenario": "S25",
+   "checkpoint": "strip offers cost + area conversions",
+   "reason": "UX doc Section 6, 'Where conversions show': conversions sit on their own row as plain values and the 'Conv:' label is not used; the cost chip waits for G3 (CA-1074).",
+   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "0.01ft²"}]}
+  },
+  {
+   "scenario": "S26",
+   "checkpoint": "binding proposed first: \"Height: 8ft ?\"",
+   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Area: 120ft²"}
+  },
+  {
+   "scenario": "S27",
+   "checkpoint": "sheet counts offered directly",
+   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
+   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "20yd²"}]}
+  },
+  {
+   "scenario": "S48",
+   "checkpoint": "cost + weight proposals, both stating their basis",
+   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
+   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "297ft³"}]}
+  },
+  {
+   "scenario": "S08",
+   "checkpoint": "remaining outputs stay",
+   "reason": "UX doc walkthrough 18.5 (Arc): Rise and Run earn the three pitch spellings first with the diagonal and the arc behind the fold (\"overflow +4\"), so the row holds more than the two remaining pitch spellings the prototype shows.",
+   "dart": {"kind": "all", "checks": [{"kind": "stripAt", "index": 0, "equals": "Pitch-degrees: 26.57°"}, {"kind": "stripAt", "index": 1, "equals": "Pitch-grade: 50%"}]}
+  },
+  {
+   "scenario": "S42",
+   "checkpoint": "pitch reading offered in trade form",
+   "reason": "UX doc Section 8, 'Right triangle': the inches of rise are written as a fraction at the fractional resolution setting (a 7% grade reads 13/16in/12in), where the prototype writes 0.8in/12in.",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Pitch-rise per 12in run: 13/16in/12in"}
+  },
+  {
+   "scenario": "S29",
+   "checkpoint": "explicit × proposes the product",
+   "reason": "UX doc Section 7, 'Left to right' and the unit examples ('first operand's unit wins'): the engine keeps a step in the unit typed, 2in² × 3 is Calc 6in², where the prototype re-spells every area in square feet.",
+   "dart": {"kind": "all", "checks": [{"kind": "stripAt", "index": 0, "equals": "Calc: 6in²"}, {"kind": "equalsLabel", "equals": "Calc"}]}
+  },
+  {
+   "scenario": "S40",
+   "checkpoint": "[Rise] asks (doc-literal): 12.2ft lands, run stays",
+   "reason": "UX doc walkthroughs 12.3 and 14.6 ('Tap [Rise] — Label \"Rise…\"'): a function key opens an empty named chip; only the Pitch key takes the pitch answer the strip offers (Section 8). The prototype has the Rise key accept its own suggestion.",
+   "dart": {"kind": "all", "checks": [{"kind": "label", "equals": "Rise…"}, {"kind": "stripAt", "index": 0, "equals": "Rise: 12.2ft"}]}
+  },
+  {
+   "scenario": "S93",
+   "checkpoint": "7% of a 12ft run is 0.84ft of rise",
+   "reason": "UX doc walkthroughs 12.3 and 14.6 ('Tap [Rise] — Label \"Rise…\"'): a function key opens an empty named chip and the answer stays on the strip; the prototype has the Rise key accept its own suggestion.",
+   "dart": {"kind": "all", "checks": [{"kind": "label", "equals": "Rise…"}, {"kind": "stripAt", "index": 0, "equals": "Rise: 0.84ft"}]}
+  },
+  {
+   "scenario": "S22",
+   "checkpoint": "continuation tape",
+   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
+   "dart": {"kind": "tape", "equals": ["36ft", "÷12ft", "Calc3", "×4"]}
+  },
+  {
+   "scenario": "S22",
+   "checkpoint": "answer committed",
+   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
+   "dart": {"kind": "tapeAt", "index": 4, "equals": "Calc12"}
+  },
+  {
+   "scenario": "S17",
+   "checkpoint": "new session tape",
+   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
+   "dart": {"kind": "tape", "equals": ["36ft", "÷12ft", "Calc3", "×89"]}
+  },
+  {
+   "scenario": "S17",
+   "checkpoint": "committed 267",
+   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
+   "dart": {"kind": "tapeAt", "index": 4, "equals": "Calc267"}
   }
  ]
 }
