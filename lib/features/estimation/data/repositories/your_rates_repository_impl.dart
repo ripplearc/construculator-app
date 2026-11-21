@@ -34,7 +34,8 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   /// How long [save] waits for the phone before it reports a
   /// [EstimationErrorType.timeoutError]. A save that finishes after that is
-  /// deleted again, so the failure the user was shown stays true.
+  /// undone, so the failure the user was shown stays true: a new row is
+  /// deleted and a replaced row gets its old price back.
   final Duration saveTimeLimit;
 
   Future<void>? _pendingUndo;
@@ -109,52 +110,54 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, void>> save(
     YourRateEntry entry, {
     Duration? within,
+    String? replacesRateId,
   }) async {
-    final saving = _saveAfterPendingUndo(entry);
+    final saving = _saveAfterPendingUndo(entry, replacesRateId);
     final result = await saving.timeout(
       within ?? saveTimeLimit,
       onTimeout: () {
-        _pendingUndo = _deleteWhenSaved(saving);
+        _pendingUndo = _undoWhenSaved(saving);
         return const Left(
           EstimationFailure(errorType: EstimationErrorType.timeoutError),
         );
       },
     );
     final saved = result.getRightOrNull();
-    if (saved != null) await _forgetRefusalOf(saved);
+    if (saved != null) await _forgetRefusalOf(saved.entry);
     return result.fold(Left.new, (_) => const Right(null));
   }
 
-  Future<Either<Failure, YourRateEntry>> _saveAfterPendingUndo(
+  Future<Either<Failure, _SavedOnPhone>> _saveAfterPendingUndo(
     YourRateEntry entry,
+    String? replacesRateId,
   ) async {
     final pendingUndo = _pendingUndo;
     if (pendingUndo != null) await pendingUndo;
-    return _saveOnPhone(entry);
+    return _saveOnPhone(entry, replacesRateId);
   }
 
-  Future<void> _deleteWhenSaved(
-    Future<Either<Failure, YourRateEntry>> saving,
+  Future<void> _undoWhenSaved(
+    Future<Either<Failure, _SavedOnPhone>> saving,
   ) async {
     final saved = (await saving).getRightOrNull();
     if (saved == null) return;
     try {
-      await dataSource.deleteRateById(saved.id);
+      await saved.undo();
     } catch (_) {
       // The data source already logged this failure. The user was told the
       // rate was not saved and nothing more can be done here.
     }
   }
 
-  Future<Either<Failure, YourRateEntry>> _saveOnPhone(
+  Future<Either<Failure, _SavedOnPhone>> _saveOnPhone(
     YourRateEntry entry,
+    String? replacesRateId,
   ) async {
     if (entry.companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
-      final effectiveLabel = _normalizeLabel(entry.entryLabel);
       final normalizedEntry = entry.copyWith(
         itemName: entry.itemName.trim(),
-        entryLabel: effectiveLabel ?? clearField,
+        entryLabel: _normalizeLabel(entry.entryLabel) ?? clearField,
       );
 
       final existing =
@@ -171,35 +174,76 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
               )
               .toList();
 
-      if (existing.isEmpty) {
-        final inserted = await dataSource.insertRate(
-          YourRateEntryDto.fromEntity(normalizedEntry),
-        );
-        return Right(_toEntry(inserted));
-      }
-
-      if (effectiveLabel == null) {
-        return const Left(
-          EstimationFailure(errorType: EstimationErrorType.duplicateEntry),
-        );
-      }
-
-      final labelKey = _matchKey(effectiveLabel);
-      final labelAlreadyUsed = existing.any((candidate) {
-        final savedLabel = candidate.entryLabel;
-        return savedLabel != null && _matchKey(savedLabel) == labelKey;
-      });
-
-      if (labelAlreadyUsed) {
-        return const Left(
-          EstimationFailure(errorType: EstimationErrorType.duplicateLabel),
-        );
-      }
-
-      final inserted = await dataSource.insertRate(
-        YourRateEntryDto.fromEntity(normalizedEntry),
+      final lastAccepted = await _entriesNamed(
+        normalizedEntry.category,
+        normalizedEntry.itemName,
+        companyId: normalizedEntry.companyId,
       );
-      return Right(_toEntry(inserted));
+      final acceptedIds = lastAccepted.map((candidate) => candidate.id).toSet();
+      final neverAccepted = existing
+          .where((candidate) => !acceptedIds.contains(candidate.id))
+          .toList();
+      final accepted = existing
+          .where((candidate) => acceptedIds.contains(candidate.id))
+          .toList();
+
+      if (accepted.isNotEmpty) {
+        final failure = replacesRateId == null
+            ? _collisionFailure(accepted, normalizedEntry.entryLabel)
+            : _missingRowFailure(accepted, replacesRateId);
+        if (failure != null) return Left(failure);
+      }
+
+      await _deleteRows(neverAccepted);
+
+      if (accepted.isEmpty || replacesRateId == null) {
+        final inserted = _toEntry(
+          await dataSource.insertRate(
+            YourRateEntryDto.fromEntity(normalizedEntry),
+          ),
+        );
+        return Right((
+          entry: inserted,
+          undo: () => dataSource.deleteRateById(inserted.id),
+        ));
+      }
+
+      final replaced = accepted.firstWhere(
+        (candidate) => candidate.id == replacesRateId,
+      );
+      final priceTheServerHolds = lastAccepted
+          .firstWhere((candidate) => candidate.id == replaced.id)
+          .rate;
+      if (replaced.rate == normalizedEntry.rate &&
+          priceTheServerHolds != normalizedEntry.rate) {
+        // An update that changes no price sends no price. Writing the price the
+        // server holds first makes the new price a change the server receives.
+        await dataSource.updateRate(
+          replaced.id,
+          YourRateEntryDto.fromEntity(
+            replaced.copyWith(rate: priceTheServerHolds),
+          ),
+        );
+      }
+      final updated = _toEntry(
+        await dataSource.updateRate(
+          replaced.id,
+          YourRateEntryDto.fromEntity(
+            replaced.copyWith(
+              rate: normalizedEntry.rate,
+              unit: normalizedEntry.unit ?? clearField,
+              savedAt: normalizedEntry.savedAt,
+            ),
+          ),
+        ),
+      );
+      return Right((
+        entry: updated,
+        undo: () => dataSource.updateRate(
+          replaced.id,
+          YourRateEntryDto.fromEntity(replaced),
+        ),
+      ));
     } catch (e) {
       return Left(_handleError(e));
     }
@@ -263,6 +307,12 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e));
+    }
+  }
+
+  Future<void> _deleteRows(List<YourRateEntry> rows) async {
+    for (final row in rows) {
+      await dataSource.deleteRateById(row.id);
     }
   }
 
@@ -344,6 +394,37 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 
+  static EstimationFailure? _collisionFailure(
+    List<YourRateEntry> accepted,
+    String? label,
+  ) {
+    if (label == null) {
+      return const EstimationFailure(
+        errorType: EstimationErrorType.duplicateEntry,
+      );
+    }
+    final labelKey = _matchKey(label);
+    final labelAlreadyUsed = accepted.any((candidate) {
+      final savedLabel = candidate.entryLabel;
+      return savedLabel != null && _matchKey(savedLabel) == labelKey;
+    });
+    return labelAlreadyUsed
+        ? const EstimationFailure(errorType: EstimationErrorType.duplicateLabel)
+        : null;
+  }
+
+  static EstimationFailure? _missingRowFailure(
+    List<YourRateEntry> accepted,
+    String replacesRateId,
+  ) {
+    final rowIsSaved = accepted.any(
+      (candidate) => candidate.id == replacesRateId,
+    );
+    return rowIsSaved
+        ? null
+        : const EstimationFailure(errorType: EstimationErrorType.notFoundError);
+  }
+
   static YourRateEntry _toEntry(YourRateEntryDto dto) {
     try {
       return dto.toEntity();
@@ -365,3 +446,5 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     );
   }
 }
+
+typedef _SavedOnPhone = ({YourRateEntry entry, Future<void> Function() undo});

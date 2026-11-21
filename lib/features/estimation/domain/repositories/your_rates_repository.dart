@@ -86,13 +86,26 @@ abstract class YourRatesRepository {
   ///   existing row has the same label: inserts [entry] as a new, distinct
   ///   row.
   ///
-  /// So `save` never changes a saved row. It only inserts a row or reports why
-  /// it did not.
+  /// So a save without [replacesRateId] never changes a saved row. It only
+  /// inserts a row or reports why it did not.
+  ///
+  /// With [replacesRateId], the collision rule does not apply: the user agreed
+  /// to replace that saved row. The row keeps its id, name, method and label,
+  /// and takes [entry]'s price, unit and saved time. When the grouping has
+  /// saved rows and none has that id, it returns an
+  /// `EstimationErrorType.notFoundError` failure and nothing is written.
+  ///
+  /// A row the server refused and never accepted is deleted before a write.
+  /// When no accepted row is left, [entry] is saved as a new row under a new
+  /// id, because the change would otherwise go up as an edit to a row the
+  /// server has never seen. A successful save forgets the refusal recorded for
+  /// the item, so the price just saved is the one shown.
   ///
   /// A save that is not done after [within] (the repository's own limit when
   /// null) returns an `EstimationErrorType.timeoutError` failure. If the phone
-  /// finishes it later anyway, the new row is deleted again, so the failure
-  /// stays true. A save made while that undo is pending waits for it first.
+  /// finishes it later anyway, the save is undone so the failure stays true: a
+  /// new row is deleted, and a replaced row gets its old price back. A save
+  /// made while that undo is pending waits for it first.
   ///
   /// A row of the same name with the other pricing method is not in the
   /// grouping: a Day price and a Job price for one name are two rows, and
@@ -102,7 +115,11 @@ abstract class YourRatesRepository {
   /// whitespace-only) is treated exactly like `null` throughout this rule — a
   /// UI text field naturally hands back '' for an empty input, and this
   /// repository does not rely on callers to normalize that themselves.
-  Future<Either<Failure, void>> save(YourRateEntry entry, {Duration? within});
+  Future<Either<Failure, void>> save(
+    YourRateEntry entry, {
+    Duration? within,
+    String? replacesRateId,
+  });
 
   /// Records that a cost line was just added with the saved rate [rateId]:
   /// its [YourRateEntry.lastUsedAt] becomes the current time in UTC, so the

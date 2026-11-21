@@ -32,6 +32,10 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// without failing the save before it.
   bool failRowDeletes = false;
 
+  /// While true, inserting a saved rate throws, so a test can fail the write
+  /// after the clean-up in front of it has run.
+  bool failRowInserts = false;
+
   var _rowDeleted = Completer<void>();
 
   /// Completes once the next `DELETE` of a saved rate runs. Read it before the
@@ -58,6 +62,14 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// While set, every `INSERT` into the saved rates waits for it to complete,
   /// so a test can hold a save open past its time limit.
   Completer<void>? insertGate;
+
+  /// While set, an `UPDATE` of a saved rate waits for it to complete before it
+  /// changes the row, so a test can hold a replace past its time limit.
+  Completer<void>? updateGate;
+
+  /// While set, a `DELETE` of a saved rate waits for it to complete before it
+  /// removes the row, so a test can hold an undo that is still running.
+  Completer<void>? deleteGate;
 
   final List<Map<String, Object?>> _companyRows = [];
   final Map<String, Map<String, Object?>> _refusalRows = {};
@@ -169,6 +181,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       final refusal = _refusalRows[id];
       return refusal == null ? [] : _refusalWithSavedPrices(refusal);
     }
+
     return Stream.multi((listener) {
       _openRefusalWatchCount++;
       final opened = _refusalWatchOpened;
@@ -280,6 +293,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     _requireYourRatesTable(sql);
     if (sql.startsWith('INSERT')) {
       await insertGate?.future;
+      if (failRowInserts) throw StateError('disk full');
       final columns = _insertColumns
           .firstMatch(sql)!
           .group(1)!
@@ -298,6 +312,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       _requireKnownColumns([
         _singleFilterColumn.firstMatch(sql)!.group(1)!,
       ], sql);
+      await deleteGate?.future;
       _rows.removeWhere(
         (row) => row[DatabaseConstants.idColumn] == parameters.single,
       );
@@ -306,6 +321,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       _rowDeleted = Completer<void>();
       _refusalChanges.add(null);
     } else if (sql.startsWith('UPDATE')) {
+      await updateGate?.future;
       final assigned = _assignedColumns
           .allMatches(_updateAssignments.firstMatch(sql)!.group(1)!)
           .map((match) => match.group(1)!)
@@ -357,7 +373,10 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     _openRefusalWatchCount = 0;
     getAllGate = null;
     insertGate = null;
+    updateGate = null;
+    deleteGate = null;
     failRowDeletes = false;
+    failRowInserts = false;
     deletedRowIds.clear();
     insertedRows.clear();
     updatedRowIds.clear();
