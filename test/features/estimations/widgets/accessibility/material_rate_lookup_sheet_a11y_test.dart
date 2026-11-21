@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -72,6 +73,7 @@ void main() {
         child: MaterialRateLookupSheet(
           initialQuery: 'interior paint',
           clock: clock,
+          sampleRatesFor: noSampleRates,
         ),
       ),
     ),

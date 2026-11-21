@@ -4112,6 +4112,18 @@ abstract class AppLocalizations {
   /// **'Use rate'**
   String get materialLookupUseRateButton;
 
+  /// Heading, drawn in capitals, above the sample cost file rates on the material Look up a rate sheet, below YOUR RATES
+  ///
+  /// In en, this message translates to:
+  /// **'From sample cost file'**
+  String get materialLookupSampleHeading;
+
+  /// Message with no close control directly under the FROM SAMPLE COST FILE heading; shown whenever the sample group is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.'**
+  String get materialLookupSampleNotice;
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:

@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
@@ -20,7 +21,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// with no match shows one "No matches" line and no button: there is no way
 /// to create an entry here.
 ///
-/// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here too, under a FROM SAMPLE COST FILE heading below YOUR RATES, once a real data source exists.
+/// The matching sample cost file rates follow under FROM SAMPLE COST FILE,
+/// with the "Not your own rates" notice that has no close control.
 class MaterialRateLookupSheet extends StatefulWidget {
   /// The material name typed in the form, searched as the sheet opens.
   final String initialQuery;
@@ -28,10 +30,14 @@ class MaterialRateLookupSheet extends StatefulWidget {
   /// Dates the "Used …" and "Saved …" line under each saved rate.
   final Clock clock;
 
+  /// The sample cost file rates matching a search.
+  final List<SampleRateRow> Function(String query) sampleRatesFor;
+
   const MaterialRateLookupSheet({
     super.key,
     required this.initialQuery,
     required this.clock,
+    required this.sampleRatesFor,
   });
 
   @override
@@ -45,6 +51,7 @@ class MaterialRateLookupSheet extends StatefulWidget {
     required String initialQuery,
     required Clock clock,
     required YourRatesBloc Function() blocFactory,
+    required List<SampleRateRow> Function(String query) sampleRatesFor,
   }) {
     return CoreQuickSheet.show<YourRateEntry>(
       context: context,
@@ -54,6 +61,7 @@ class MaterialRateLookupSheet extends StatefulWidget {
         child: MaterialRateLookupSheet(
           initialQuery: initialQuery,
           clock: clock,
+          sampleRatesFor: sampleRatesFor,
         ),
       ),
     );
@@ -66,6 +74,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
   );
 
   List<YourRateEntry> _shownEntries = const [];
+  List<SampleRateRow> _sampleRows = const [];
   String? _selectedId;
 
   @override
@@ -80,9 +89,12 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     super.dispose();
   }
 
-  void _search(String query) => context.read<YourRatesBloc>().add(
-    YourRatesSearched(query, category: CostItemType.material),
-  );
+  void _search(String query) {
+    _sampleRows = widget.sampleRatesFor(query);
+    context.read<YourRatesBloc>().add(
+      YourRatesSearched(query, category: CostItemType.material),
+    );
+  }
 
   void _onRowTap(YourRateEntry entry) =>
       setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
@@ -126,7 +138,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                         SheetSearchField(
                           controller: _searchController,
                           hintText: l10n.yourRatesMaterialSearchHint,
-                          onChanged: _search,
+                          onChanged: (query) => setState(() => _search(query)),
                         ),
                         // TODO: [CA-1482] show CoreUI's progress bar here while a search runs, above the rows kept from the last search. https://ripplearc.youtrack.cloud/issue/CA-1482
                         const SizedBox(height: CoreSpacing.space4),
@@ -139,6 +151,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             onAction: () => _search(_searchController.text),
                           )
                         else if (entries.isEmpty &&
+                            _sampleRows.isEmpty &&
                             state is YourRatesSearchResults)
                           Padding(
                             key: const Key('material_lookup_no_match'),
@@ -174,9 +187,14 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             value: DisplayFormatter.currency.format(
                               entry.rate.amount,
                             ),
-                            unit: _unitSuffix(context, entry),
+                            unit: _unitSuffix(context, entry.unit),
                             selected: entry.id == selected?.id,
                             onTap: () => _onRowTap(entry),
+                          ),
+                        if (_sampleRows.isNotEmpty)
+                          _SampleGroup(
+                            rows: _sampleRows,
+                            unitSuffix: (unit) => _unitSuffix(context, unit),
                           ),
                       ],
                     ),
@@ -196,7 +214,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                                 DisplayFormatter.currency.format(
                                   selected.rate.amount,
                                 ),
-                                _unitSuffix(context, selected) ?? '',
+                                _unitSuffix(context, selected.unit) ?? '',
                               )
                               .trim(),
                     isDisabled: selected == null,
@@ -211,11 +229,64 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     );
   }
 
-  String? _unitSuffix(BuildContext context, YourRateEntry entry) =>
-      switch (entry.unit) {
-        final unit? => context.l10n.materialRatePerUnitSuffix(
-          unit.displayName(context.l10n),
+  String? _unitSuffix(BuildContext context, Unit? unit) => switch (unit) {
+    final unit? => context.l10n.materialRatePerUnitSuffix(
+      unit.displayName(context.l10n),
+    ),
+    null => null,
+  };
+}
+
+class _SampleGroup extends StatelessWidget {
+  final List<SampleRateRow> rows;
+  final String? Function(Unit? unit) unitSuffix;
+
+  const _SampleGroup({required this.rows, required this.unitSuffix});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Column(
+      key: const Key('material_lookup_sample_group'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: CoreSpacing.space2,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: CoreSpacing.space4),
+          child: Text(
+            l10n.materialLookupSampleHeading.toUpperCase(),
+            style: textTheme.bodySmallSemiBold.copyWith(
+              color: colorTheme.textBody,
+            ),
+          ),
         ),
-        null => null,
-      };
+        // TODO: [CA-1510] use CoreUI's inline notice once it exists. https://ripplearc.youtrack.cloud/issue/CA-1510
+        Container(
+          key: const Key('material_lookup_sample_notice'),
+          padding: const EdgeInsets.all(CoreSpacing.space4),
+          decoration: BoxDecoration(
+            color: colorTheme.backgroundOrangeLight,
+            border: Border.all(color: colorTheme.lineOrange),
+            borderRadius: BorderRadius.circular(CoreSpacing.space3),
+          ),
+          child: Text(
+            l10n.materialLookupSampleNotice,
+            style: textTheme.bodyMediumRegular.copyWith(
+              color: colorTheme.textHeadline,
+            ),
+          ),
+        ),
+        for (final row in rows)
+          CoreListRow(
+            key: Key('sample_rate_row_${row.id}'),
+            title: row.productName,
+            subtitle: row.details,
+            value: DisplayFormatter.currency.format(row.rate.amount),
+            unit: unitSuffix(row.unit),
+          ),
+      ],
+    );
+  }
 }

@@ -3435,6 +3435,16 @@
     "description": "Greyed-out button at the foot of the material Look up a rate sheet before a row is picked; once a row is picked it reads yourRatesUseButtonLabel instead",
     "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate; the storyboard leaves the unpicked label open, chosen by Sabona 2026-11-18"
   },
+  "materialLookupSampleHeading": "From sample cost file",
+  "@materialLookupSampleHeading": {
+    "description": "Heading, drawn in capitals, above the sample cost file rates on the material Look up a rate sheet, below YOUR RATES",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate"
+  },
+  "materialLookupSampleNotice": "Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.",
+  "@materialLookupSampleNotice": {
+    "description": "Message with no close control directly under the FROM SAMPLE COST FILE heading; shown whenever the sample group is shown",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate, build note Sample notice"
+  },
   "newMaterialCostSheetTitle": "New material cost",
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",
