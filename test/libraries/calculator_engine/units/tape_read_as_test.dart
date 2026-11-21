@@ -85,6 +85,25 @@ void main() {
 
   group('Tape Read-as pill (F2b)', () {
     group('under Pitch (walkthrough 17.4)', () {
+      test('a number that started with a point keeps '
+          'its mark through the pill, so the 0 the tape wrote stays '
+          'uncounted', () {
+        const tooMany = TapeEntryRefused(EntryRefusal.tooManyDigits);
+        final fourteenMore = List.filled(14, '1').join(' ');
+        final asRise = press(const Tape(), '[Pitch] . 5 pill');
+        expect(asRise.active!.entry.text, '0.5in');
+        final filled = press(asRise, fourteenMore);
+        expect(filled.active!.entry.text, '0.5${'1' * 14}');
+        expect(filled.typeDigit('1'), tooMany);
+        final asDegrees = press(const Tape(), '[Pitch] . 5 pill pill pill');
+        expect(asDegrees.active!.entry.text, '0.5');
+        expect(press(asDegrees, fourteenMore).typeDigit('1'), tooMany);
+        expect(
+          press(const Tape(), '[Pitch] . 5 $fourteenMore').typeDigit('1'),
+          tooMany,
+        );
+      });
+
       test('S86: every reading reachable, none guessed, and a full lap comes '
           'home to what was typed', () {
         var tape = press(const Tape(), '[Pitch] 8');
