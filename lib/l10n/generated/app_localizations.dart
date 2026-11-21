@@ -3652,6 +3652,24 @@ abstract class AppLocalizations {
   /// **'Cone'**
   String get calculatorAnswerCone;
 
+  /// Name of the sheet-count chip the calculator offers for an area on the suggestion strip, and of the equals key when it lands one
+  ///
+  /// In en, this message translates to:
+  /// **'Drywall'**
+  String get calculatorOfferDrywall;
+
+  /// Name of the calculator result chip and label row for an accepted drywall sheet count
+  ///
+  /// In en, this message translates to:
+  /// **'Number of sheets'**
+  String get calculatorAnswerNumberOfSheets;
+
+  /// Value of a sheet-count chip on the calculator's suggestion strip: the count to two decimals and the stored sheet size it assumed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sheets ({size})'**
+  String calculatorOfferSheetCount(String count, String size);
+
   /// Face of the calculator equals key while a chain continues from a previous result
   ///
   /// In en, this message translates to:
