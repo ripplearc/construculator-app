@@ -2,7 +2,6 @@ import 'package:construculator/features/calculator/presentation/bloc/calculator_
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
-import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -272,30 +271,19 @@ void main() {
         .widget<CoreButton>(find.byKey(CalculatorPage.unitsPillKey))
         .label!;
 
-    testWidgets('the panel behind the pill follows the display: rounded at '
-        'its foot in the collapsed stage, square and darker in full screen', (
+    testWidgets('the pill sits in the display area\'s own empty tape row, '
+        'not beside the display (CA-1375, acceptance criterion 1)', (
       tester,
     ) async {
       await pumpSignedIn(tester);
-      final colors = tester.element(find.byType(CoreDisplayArea)).colorTheme;
-      BoxDecoration panel() =>
-          tester
-                  .widget<DecoratedBox>(
-                    find.byKey(CalculatorPage.displayPanelKey),
-                  )
-                  .decoration
-              as BoxDecoration;
 
-      expect(panel().color, colors.backgroundBlueLight);
-      expect(panel().borderRadius, isNot(BorderRadius.zero));
-
-      tester
-          .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
-          .onStageChanged!(DisplayAreaStage.fullScreen);
-      await tester.pump();
-
-      expect(panel().color, colors.backgroundBlueMid);
-      expect(panel().borderRadius, BorderRadius.zero);
+      expect(
+        find.descendant(
+          of: find.byType(CoreDisplayArea),
+          matching: find.byKey(CalculatorPage.unitsPillKey),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the System of units pill reads Imperial on the empty tape '
@@ -355,6 +343,10 @@ void main() {
         (Size(320, 844), 1.0),
         (Size(390, 844), 1.3),
         (Size(360, 844), 1.5),
+        // TODO: [CA-1492] Add 320 x 844 at 2.0 once CoreDisplayArea's empty
+        // tape row grows to fit its placeholder there; today the last line is
+        // cut by 24 px. https://ripplearc.youtrack.cloud/issue/CA-1492
+        (Size(360, 844), 2.0),
       ]) {
         await pumpSignedIn(tester, size: size, textScale: textScale);
         final l10n = l10nOf(tester);
