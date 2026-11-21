@@ -37,8 +37,8 @@ class ConfirmationDialog extends StatelessWidget {
   /// emphasise amounts or names.
   final InlineSpan body;
 
-  /// Label of the outlined secondary button, which carries the destructive
-  /// answer.
+  /// Label of the outlined secondary button: the destructive answer, or the
+  /// one that backs out without changing anything.
   final String secondaryLabel;
 
   /// Label of the filled primary button.

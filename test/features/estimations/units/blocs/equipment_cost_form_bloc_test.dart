@@ -342,6 +342,105 @@ void main() {
         ],
       );
 
+      group('the saved row an edited price would replace', () {
+        const recalledJob = EquipmentSavedRateRecalledEvent(
+          rateId: 'rate-1',
+          method: EquipmentPricingMethod.job,
+          rate: 400,
+          fromRecents: true,
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is the row the line was opened from, with its saved price',
+          build: () => bloc,
+          act: (bloc) => bloc.add(recalledJob),
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.recalledRowToReplace,
+              'recalledRowToReplace',
+              (id: 'rate-1', price: 400.0, method: EquipmentPricingMethod.job),
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is none for a rate recalled from the look-up sheet',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: false,
+            ),
+          ),
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.recalledRowToReplace,
+              'recalledRowToReplace',
+              isNull,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is none once another rate is recalled from the look-up sheet',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(
+              const EquipmentSavedRateRecalledEvent(
+                rateId: 'rate-2',
+                method: EquipmentPricingMethod.job,
+                rate: 500,
+                fromRecents: false,
+              ),
+            ),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.recalledRowToReplace,
+              'recalledRowToReplace',
+              isNull,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is none once the pricing method no longer matches the row',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day),
+            ),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.recalledRowToReplace,
+              'recalledRowToReplace',
+              isNull,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is none once the equipment name is edited',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentCostItemTypeChanged('Skid steer')),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.recalledRowToReplace,
+              'recalledRowToReplace',
+              isNull,
+            ),
+          ],
+        );
+      });
+
       group('an edited recalled Job amount', () {
         const recalledJob = EquipmentSavedRateRecalledEvent(
           rateId: 'rate-1',

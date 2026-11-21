@@ -4,10 +4,13 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/money_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -40,6 +43,27 @@ TextSpan _withBold(
       TextSpan(text: text.substring(start + boldPart.length)),
     ],
   );
+}
+
+const _boldMarkers = ['\uE000', '\uE001', '\uE002'];
+
+TextSpan _withBoldPlaceholders(
+  String Function(String first, String second, String third) format,
+  List<String> values,
+  TextStyle bold,
+) {
+  final template = format(_boldMarkers[0], _boldMarkers[1], _boldMarkers[2]);
+  final spans = <TextSpan>[];
+  var cursor = 0;
+  for (final marker in RegExp('[\uE000-\uE002]').allMatches(template)) {
+    final valueIndex = template.codeUnitAt(marker.start) - 0xE000;
+    spans
+      ..add(TextSpan(text: template.substring(cursor, marker.start)))
+      ..add(TextSpan(text: values[valueIndex], style: bold));
+    cursor = marker.end;
+  }
+  spans.add(TextSpan(text: template.substring(cursor)));
+  return TextSpan(children: spans);
 }
 
 /// Form fields for adding an equipment cost item.
@@ -150,6 +174,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   bool _savedUnderLabel = false;
   bool _rateEditedWhileSaving = false;
   double? _amountBeingSaved;
+  ({String id, double price, EquipmentPricingMethod method})?
+  _recalledRateBeingSaved;
+  String? _goneRecalledRateId;
 
   @override
   void initState() {
@@ -513,6 +540,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _onRateEdited();
     _savedUnderLabel = false;
     _rateEditedWhileSaving = false;
+    final recalledRate = data.recalledRowToReplace;
+    _recalledRateBeingSaved = recalledRate?.id == _goneRecalledRateId
+        ? null
+        : recalledRate;
     final entry = _buildYourRateEntry(data);
     _amountBeingSaved = entry.rate.amount;
     _yourRatesBloc.add(YourRatesSaveRequested(entry));
@@ -545,24 +576,26 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       _reportRateSaveRunning(context, isRunning: isSaveRunning);
     }
     switch (state) {
-      // TODO: [CA-1336] a recalled price that collides should ask "Replace your saved rate?" and write over the saved row, not add a second price
       case YourRatesSaving():
         setState(() => _rateSaveStatus = _RateSaveStatus.saving);
       case YourRatesSaveCollision(:final entry):
         _rateEditedWhileSaving = false;
         setState(() => _rateSaveStatus = _RateSaveStatus.idle);
+        final recalledRate = _recalledRateBeingSaved;
+        if (recalledRate != null) {
+          unawaited(_askToReplaceSavedRate(context, entry, recalledRate));
+          return;
+        }
         _savedUnderLabel = true;
         unawaited(_promptEntryLabel(context, entry));
       case YourRatesSaveLabelTaken():
         _rateEditedWhileSaving = false;
         setState(() => _rateSaveStatus = _RateSaveStatus.idle);
-      case YourRatesSaveFailed():
+      case YourRatesSaveFailed(:final failure):
+        _forgetRecalledRateWhenGone(failure);
+        _showRateSaveFailed();
       case YourRatesSaveNoCompany():
-        setState(
-          () => _rateSaveStatus = _rateEditedWhileSaving
-              ? _RateSaveStatus.idle
-              : _RateSaveStatus.failed,
-        );
+        _showRateSaveFailed();
       case YourRatesSaveSucceeded():
         setState(
           () => _rateSaveStatus = _rateEditedWhileSaving
@@ -583,12 +616,58 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     }
   }
 
+  void _showRateSaveFailed() => setState(
+    () => _rateSaveStatus = _rateEditedWhileSaving
+        ? _RateSaveStatus.idle
+        : _RateSaveStatus.failed,
+  );
+
+  void _forgetRecalledRateWhenGone(Failure failure) {
+    final recalledRate = _recalledRateBeingSaved;
+    if (recalledRate != null &&
+        failure is EstimationFailure &&
+        failure.errorType == EstimationErrorType.notFoundError) {
+      _goneRecalledRateId = recalledRate.id;
+    }
+  }
+
   void _reportRateSaveRunning(
     BuildContext context, {
     required bool isRunning,
   }) => context.read<EquipmentCostFormBloc>().add(
     EquipmentRateSaveRunningChangedEvent(isRunning: isRunning),
   );
+
+  Future<void> _askToReplaceSavedRate(
+    BuildContext context,
+    YourRateEntry entry,
+    ({String id, double price, EquipmentPricingMethod method}) savedRate,
+  ) async {
+    final l10n = context.l10n;
+    final textTheme = context.textTheme;
+    final colorTheme = context.colorTheme;
+    final unit = _rateUnitSuffix(context, savedRate.method);
+    final savedPrice =
+        '${DisplayFormatter.currency.format(savedRate.price)} $unit';
+    final newPrice =
+        '${DisplayFormatter.currency.format(entry.rate.amount)} $unit';
+    final replace = await ConfirmationDialog.show(
+      context,
+      title: l10n.replaceSavedRateDialogTitle,
+      body: _withBoldPlaceholders(
+        l10n.replaceSavedRateDialogBody,
+        [entry.itemName, savedPrice, newPrice],
+        textTheme.bodyLargeSemiBold.copyWith(color: colorTheme.textBody),
+      ),
+      secondaryLabel: l10n.replaceSavedRateGoBackButton,
+      primaryLabel: l10n.replaceSavedRateReplaceButton,
+    );
+    if (replace != true || !mounted) return;
+    _rateEditedWhileSaving = false;
+    _yourRatesBloc.add(
+      YourRatesSaveRequested(entry, replacesRateId: savedRate.id),
+    );
+  }
 
   Future<void> _promptEntryLabel(BuildContext context, YourRateEntry entry) {
     return showDialog<void>(
