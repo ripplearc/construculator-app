@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- COST SECTIONS LIST MUTATION TESTING -->
-    <!-- Targets: empty-estimate versus empty-section placeholders, section order -->
+    <!-- Targets: scroll to the line just added, empty-estimate versus empty-section placeholders, section order -->
 
     <files>
         <file>lib/features/estimation/presentation/widgets/cost_sections_list.dart</file>
@@ -12,6 +12,37 @@
     </exclude>
 
     <rules>
+        <regex pattern="(if \(id == null\) \{)" dotAll="true" id="list.scroll.skip_null_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <regex pattern="(_scrolledToItemId = null;)" dotAll="true" id="list.scroll.keep_scrolled_id_when_cleared">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(id == _scrolledToItemId\) return;)" dotAll="true" id="list.scroll.always_rescroll">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(id == _scrolledToItemId\) return;)" dotAll="true" id="list.scroll.never_scroll">
+            <mutation text="if (true) return;"/>
+        </regex>
+
+        <regex pattern="(if \(!mounted \|\| lineContext == null\) return;)" dotAll="true" id="list.scroll.ignore_missing_line">
+            <mutation text="if (!mounted) return;"/>
+        </regex>
+
+        <regex pattern="(_scrolledToItemId = id;)" dotAll="true" id="list.scroll.never_remember_scroll">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(await Scrollable\.ensureVisible\(\s*lineContext,\s*duration: _scrollDuration,\s*alignmentPolicy: ScrollPositionAlignmentPolicy\.keepVisibleAtEnd,\s*\);)" dotAll="true" id="list.scroll.never_reveal_line_below_fold">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(await Scrollable\.ensureVisible\(\s*lineContext,\s*duration: _scrollDuration,\s*alignmentPolicy: ScrollPositionAlignmentPolicy\.keepVisibleAtStart,\s*\);)" dotAll="true" id="list.scroll.never_reveal_line_above_top">
+            <mutation text=""/>
+        </regex>
 
         <regex pattern="(final isEmpty = costs\.items\.isEmpty;)" dotAll="true" id="list.empty.always_empty">
             <mutation text="final isEmpty = true;"/>
@@ -29,11 +60,11 @@
             <mutation text="if (lines.isNotEmpty)"/>
         </regex>
 
-        <regex pattern="(isHighlighted: line\.id == highlightedItemId,)" dotAll="true" id="list.row.never_highlight">
+        <regex pattern="(isHighlighted: line\.id == widget\.highlightedItemId,)" dotAll="true" id="list.row.never_highlight">
             <mutation text="isHighlighted: false,"/>
         </regex>
 
-        <regex pattern="(onTap: \(\) =&gt; onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
+        <regex pattern="(onTap: \(\) =&gt; widget\.onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
             <mutation text="onTap: null,"/>
         </regex>
 
@@ -57,8 +88,8 @@
             <mutation text="CostItemType.material =&gt; l10n.costSectionEmptyEquipment"/>
         </regex>
 
-        <regex pattern="(if \(lines\.isEmpty\)\s+_emptySection\(context, type\))" dotAll="true" id="list.placeholder.never_shown">
-            <mutation text="if (false) _emptySection(context, type)"/>
+        <regex pattern="(else if \(lines\.isEmpty\)\s+_emptySection\(context, type\))" dotAll="true" id="list.placeholder.never_shown">
+            <mutation text="else if (false) _emptySection(context, type)"/>
         </regex>
 
         <regex pattern="(CoreSpacing\.space7,)" dotAll="true" id="list.spacing.no_bottom_gap">
@@ -73,7 +104,7 @@
             <mutation text="costs.equipmentLines,"/>
         </regex>
 
-        <regex pattern="(onPressed: onAddFirstCost,)" dotAll="true" id="list.first_cost.drop_handler">
+        <regex pattern="(onPressed: widget\.onAddFirstCost,)" dotAll="true" id="list.first_cost.drop_handler">
             <mutation text="onPressed: null,"/>
         </regex>
 
