@@ -228,6 +228,23 @@ void main() {
         expect(press(fine, '÷ 1 0 0 0 =').chips.last, isA<ResultChip>());
       });
 
+      test('CA-1201: after 89.999999995 [TAN] every chip on the tape can be '
+          'written, because the Too large chip stands where the answer the '
+          'formatter refuses would have been', () {
+        final landed = press(const Tape(), '8 9 . 9 9 9 9 9 9 9 9 5 TAN');
+        expect(landed.chips.last, const ErrorChip(CalculationError.outOfRange));
+        for (final chip in landed.chips) {
+          if (chip case ResultChip(:final value)) {
+            expect(() => formatter.format(value), returnsNormally);
+          }
+        }
+        expect(
+          () => formatter.format(const Scalar(11459124782.664587, decimals: 6)),
+          throwsRangeError,
+          reason: 'the answer itself is one the formatter refuses',
+        );
+      });
+
       test('a fraction with no unit still wants its unit key', () {
         expect(
           press(const Tape(), '7 / 1 6').pressTrigKey(TrigFunction.sine),
