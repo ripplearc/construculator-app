@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
@@ -241,7 +242,7 @@ void main() {
       addTearDown(tester.view.reset);
       await pumpCalculatorPage(tester: tester, theme: theme);
 
-      await tester.tap(find.text('View all'));
+      await tester.tap(find.text(AppLocalizationsEn().calculatorViewAllButton));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
@@ -264,7 +265,7 @@ void main() {
         tester,
       ).add(const CalculatorGroupsReordered(oldIndex: 4, newIndex: 0));
       await tester.pump();
-      await tester.tap(find.text('View all'));
+      await tester.tap(find.text(AppLocalizationsEn().calculatorViewAllButton));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 

@@ -2630,6 +2630,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get calculatorViewAllButton => 'View all';
+
+  @override
+  String get calculatorFunctionKeysTitle => 'Function keys';
+
+  @override
+  String calculatorGroupHeader(String group) {
+    return '$group group';
+  }
+
+  @override
+  String get calculatorMeasurementSystem => 'Measurement System';
+
+  @override
+  String get calculatorUnitSystemImperial => 'Imperial';
+
+  @override
+  String get calculatorUnitSystemMetric => 'Metric';
+
+  @override
   String get calculatorChipTapToEdit => 'Edit';
 
   @override

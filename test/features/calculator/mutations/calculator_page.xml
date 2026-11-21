@@ -125,6 +125,10 @@
         <regex pattern="semantics: labels\.keyboardSemantics," dotAll="true" id="calculator_page.keyboard.semantics_dropped">
             <mutation text=""/>
         </regex>
+        <!-- CA-1370: the keyboard keeps coreui's own English words -->
+        <regex pattern="labels: labels\.keyboardLabels," dotAll="true" id="calculator_page.keyboard.labels_dropped">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

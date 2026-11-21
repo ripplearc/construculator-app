@@ -220,8 +220,8 @@ class BlocScenarioDriver implements ScenarioDriver {
       },
       bracketOpen: state.tape.openBracket != null,
       unitToggleLabel: state.currentUnitSystem == UnitSystem.metric
-          ? 'Metric'
-          : 'Imperial',
+          ? _labels.l10n.calculatorUnitSystemMetric
+          : _labels.l10n.calculatorUnitSystemImperial,
       system: state.currentUnitSystem == UnitSystem.metric
           ? 'metric'
           : 'imperial',

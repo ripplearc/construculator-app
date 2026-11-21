@@ -4590,6 +4590,42 @@ abstract class AppLocalizations {
   /// **'Function group header for {group}'**
   String calculatorGroupHeaderSemantics(String group);
 
+  /// Face of the button on the calculator's function-key strip that opens every function key; keep it to a word or two and inside calculatorViewAllSemantics (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get calculatorViewAllButton;
+
+  /// Title of the calculator's View all sheet (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'Function keys'**
+  String get calculatorFunctionKeysTitle;
+
+  /// Header of a function-key group on the calculator's strip and in the View all sheet; keep it inside calculatorGroupHeaderSemantics (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'{group} group'**
+  String calculatorGroupHeader(String group);
+
+  /// Label of the unit system row in the calculator's View all sheet (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement System'**
+  String get calculatorMeasurementSystem;
+
+  /// Face of the unit system switch in the calculator's View all sheet while it is off; one short word, the track is a fixed width (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get calculatorUnitSystemImperial;
+
+  /// Face of the unit system switch in the calculator's View all sheet while it is on; one short word, the track is a fixed width (UX Design Doc Section 1.3; CA-1370)
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get calculatorUnitSystemMetric;
+
   /// Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)
   ///
   /// In en, this message translates to:
