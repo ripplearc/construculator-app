@@ -314,6 +314,12 @@
    "checkpoint": "fixed (5ft) → closes, Area follows",
    "reason": "As above: one face for a finished value (UX doc term 2.2), so the sealed chip reads t-input; the recomputed Area is checked as the prototype checks it.",
    "dart": {"kind": "all", "checks": [{"kind": "tapeKindAt", "index": 1, "equals": "t-input"}, {"kind": "tapeAt", "index": 2, "equals": "Area110ft²"}]}
+  },
+  {
+   "scenario": "S67",
+   "checkpoint": "switching chips blocked too — Width still the active edit",
+   "reason": "The prototype reads the untouched Length chip as t-editable here where it reads a finished chip as t-input elsewhere; the design has one face for a finished value (UX doc term 2.2). The guard itself is checked as the prototype checks it: the toast shows and Width stays the active edit.",
+   "dart": {"kind": "all", "checks": [{"kind": "toastShown", "equals": true}, {"kind": "tapeKindAt", "index": 1, "equals": "t-active"}, {"kind": "tapeKindAt", "index": 0, "equals": "t-input"}]}
   }
  ]
 }

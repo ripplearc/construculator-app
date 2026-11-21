@@ -54,6 +54,15 @@
         <regex pattern="CoreCalculatorChipType\.editable \|\| CoreCalculatorChipType\.active\s*when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.result_taps_back">
             <mutation text="_ when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>
         </regex>
+        <!-- RULE 4 (S1c 4/5 R1): two removed results are named as one, or
+             the count of the rest is off by one -->
+        <regex pattern="CalculatorResultRemovedToast\(keys: \[final first, final second\]\) =>\s*l10n\.calculatorToastResultsRemovedBoth\(\s*displayLabel\(first\),\s*displayLabel\(second\),\s*\)," dotAll="true" id="calculator_label_formatter.toast.second_unnamed">
+            <mutation text="CalculatorResultRemovedToast(keys: [final first, final _]) => l10n.calculatorToastResultRemoved(displayLabel(first)),"/>
+        </regex>
+        <regex pattern="l10n\.calculatorToastResultsRemovedMore\(displayLabel\(first\), more\.length\)," dotAll="true" id="calculator_label_formatter.toast.rest_miscounted">
+            <mutation text="l10n.calculatorToastResultsRemovedMore(displayLabel(first), more.length + 1),"/>
+        </regex>
+
     </rules>
 
     <commands>
