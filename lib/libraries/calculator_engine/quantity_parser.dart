@@ -30,10 +30,11 @@ class QuantityParser extends Equatable {
 
   /// The exact inches one length token stands for. A token whose number
   /// cannot be kept exactly — a fraction over zero, or more digits than a
-  /// [Rational] holds — is a programming error here; [parse] answers `null`
-  /// for it, as it does for an open token. A number whose inches outgrow a
-  /// [Rational] (1,844,674,407,370,955 ft) is a [RationalOverflow], which
-  /// [parse] answers `null` for too.
+  /// [Rational] holds, which a typed number never has
+  /// ([EntryBuffer.maxDigits]) — is a programming error here; [parse]
+  /// answers `null` for both, as it does for an open token. A number whose
+  /// inches outgrow a [Rational] (1,844,674,407,370,955 ft) is a
+  /// [RationalOverflow], which [parse] answers `null` for too.
   Rational inchesOf(Token token) {
     final exact = exactValueOf(token);
     if (exact == null) {
@@ -47,10 +48,11 @@ class QuantityParser extends Equatable {
 
   /// The quantity the tokens spell, or `null` while any token is still open
   /// or the tokens cannot be one value (a length beside a weight, a raised
-  /// unit inside a compound, a fraction over zero, a length too long to keep
-  /// exactly), so that the caller shows the error it already has. Only a
-  /// length is kept exactly: a weight, an area and a volume stay in double
-  /// math, so a number too long for a [Rational] is still a weight.
+  /// unit inside a compound, a fraction over zero, a length past the tick
+  /// limit), so that the caller shows the error it already has. A length is
+  /// kept exactly as typed, which a [Rational] always holds since a typed
+  /// number has at most fifteen digits ([EntryBuffer.maxDigits]); a weight,
+  /// an area and a volume stay in double math.
   ///
   /// A single token pressed twice or three times is an area or a volume in
   /// that unit; a single board-foot token is a volume; weight tokens add up
@@ -88,8 +90,9 @@ class QuantityParser extends Equatable {
           return null;
         }
         if (unit.dimension == Dimension.length) {
-          if (exactValueOf(token) == null) return null;
-          inches += inchesOf(token);
+          final tokenInches = _exactInchesOf(token, tokenUnit);
+          if (tokenInches == null) return null;
+          inches += tokenInches;
         } else {
           hundredthsOfPound +=
               token.value *
@@ -106,6 +109,12 @@ class QuantityParser extends Equatable {
       inches,
       unit: _footInchForImperialCompound(tokens, unit),
     );
+  }
+
+  Rational? _exactInchesOf(Token token, Unit unit) {
+    final exact = exactValueOf(token);
+    if (exact == null) return null;
+    return exact * unit.inchesPer;
   }
 
   /// The number [token] spells, exactly: its digits over the fraction's
