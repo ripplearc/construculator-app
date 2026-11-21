@@ -151,6 +151,14 @@
         <regex pattern="if \(!_uuidPattern\.hasMatch\(id\)\)" dotAll="false" id="ds.insert.uuid_check_negated">
             <mutation text="if (_uuidPattern.hasMatch(id))"/>
         </regex>
+
+        <!-- loadEstimationById: a missing row is null, a found row is returned -->
+        <regex pattern="return rows\.isEmpty \? null : CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.load.return_nothing">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="return rows\.isEmpty \? null : CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.load.invert_empty_check">
+            <mutation text="return rows.isNotEmpty ? null : CostEstimateDto.fromRow(rows.first);"/>
+        </regex>
     </rules>
 
     <commands>
