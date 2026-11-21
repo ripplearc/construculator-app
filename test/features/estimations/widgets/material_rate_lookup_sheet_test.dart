@@ -24,7 +24,7 @@ void main() {
   late FakeYourRatesDatabase database;
   late FakeClockImpl clock;
   late AppLocalizations l10n;
-  YourRateEntry? result;
+  MaterialLookupPick? result;
   List<SampleRateRow> sampleRows = const [];
   var closed = false;
 
@@ -240,7 +240,11 @@ void main() {
       expect(closed, isTrue);
       expect(
         result,
-        isA<YourRateEntry>().having((entry) => entry.id, 'id', 'signature'),
+        isA<MaterialLookupYourRate>().having(
+          (pick) => pick.entry.id,
+          'id',
+          'signature',
+        ),
       );
     });
 
@@ -427,6 +431,7 @@ void main() {
       expect(sampleGroup, findsOneWidget);
       expect(find.text('YOUR RATES'), findsNothing);
       expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
+      expect(find.byKey(useButton), findsOneWidget);
     });
 
     testWidgets('keeps the sample group when Your rates cannot be read', (
@@ -438,6 +443,46 @@ void main() {
 
       expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
       expect(notice, findsOneWidget);
+    });
+
+    testWidgets('a picked sample rate is returned as a sample rate, and the '
+        'button names its price', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+      expect(useButtonWidget(tester).label, r'Use $52.00 /Liters');
+      await tester.tap(find.byKey(useButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        result,
+        isA<MaterialLookupSampleRate>().having(
+          (pick) => pick.row.id,
+          'id',
+          'a',
+        ),
+      );
+    });
+
+    testWidgets('picking a second sample rate moves the pick to it', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52), paint('b', 38)];
+      await openSheet(tester);
+
+      for (final id in ['a', 'b']) {
+        final row = find.byKey(Key('sample_rate_row_$id'));
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+      }
+
+      expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
     });
   });
 }
