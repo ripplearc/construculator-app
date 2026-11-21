@@ -19,6 +19,9 @@ class SheetFieldRow extends StatelessWidget {
   /// The value area: a text field, a unit pill, or read-only text.
   final Widget child;
 
+  /// Drawn right after the label, such as a status tag.
+  final Widget? labelTrailing;
+
   /// The space between the label and the value.
   final double valueGap;
 
@@ -34,6 +37,7 @@ class SheetFieldRow extends StatelessWidget {
     super.key,
     required this.label,
     required this.child,
+    this.labelTrailing,
     this.valueGap = CoreSpacing.space1,
     this.bottomPadding = CoreSpacing.space3,
     this.onTap,
@@ -62,13 +66,19 @@ class SheetFieldRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: valueGap,
               children: [
-                ExcludeSemantics(
-                  child: Text(
-                    label,
-                    style: textTheme.bodyMediumRegular.copyWith(
-                      color: colorTheme.textBody,
+                Row(
+                  spacing: CoreSpacing.space2,
+                  children: [
+                    ExcludeSemantics(
+                      child: Text(
+                        label,
+                        style: textTheme.bodyMediumRegular.copyWith(
+                          color: colorTheme.textBody,
+                        ),
+                      ),
                     ),
-                  ),
+                    ?labelTrailing,
+                  ],
                 ),
                 child,
               ],
