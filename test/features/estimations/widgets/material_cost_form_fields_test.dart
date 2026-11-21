@@ -1037,18 +1037,23 @@ void main() {
       );
     });
 
-    testWidgets('a failed save keeps the tag and the link', (tester) async {
+    testWidgets('a failed save keeps the tag and the link and says the rate '
+        'was not saved', (tester) async {
       await openVerify(tester);
       database.executeError = StateError('disk full');
 
       await tester.tap(link);
       await tester.pumpAndSettle();
 
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(badge, findsOneWidget);
       expect(link, findsOneWidget);
       expect(
-        find.byKey(const Key('saved_as_default_helper_text')),
-        findsNothing,
+        find.descendant(
+          of: find.byKey(const Key('save_as_default_error')),
+          matching: find.text(l10n.yourRatesSaveFailedError),
+        ),
+        findsOneWidget,
       );
       expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
     });
@@ -1063,13 +1068,13 @@ void main() {
       await tester.tap(link);
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const Key('save_as_default_error')), findsNothing);
       expect(badge, findsNothing);
       expect(await savedMaterials(), hasLength(1));
     });
 
-    testWidgets('a name and unit already in Your rates is not saved again', (
-      tester,
-    ) async {
+    testWidgets('a name and unit already in Your rates asks for a label and '
+        'saves the rate under it', (tester) async {
       database.seedRow({
         'id': 'old-paint',
         'company_id': 'company-1',
@@ -1085,10 +1090,18 @@ void main() {
 
       await tester.tap(link);
       await tester.pumpAndSettle();
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('entry_label_field')),
+        'Supplier A',
+      );
+      await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
+      await tester.pumpAndSettle();
 
-      expect(badge, findsOneWidget);
-      expect(link, findsOneWidget);
-      expect(await savedMaterials(), hasLength(1));
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+      expect(badge, findsNothing);
+      final labels = (await savedMaterials()).map((e) => e.entryLabel);
+      expect(labels, containsAll(['liters', 'Supplier A']));
     });
 
     testWidgets('the link is not offered for a rate picked from Your rates', (
