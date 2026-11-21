@@ -10,9 +10,11 @@ import '../../helpers/cost_line_test_items.dart';
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
+  var firstCostTaps = 0;
   final tappedLines = <String>[];
 
   setUp(() {
+    firstCostTaps = 0;
     tappedLines.clear();
   });
 
@@ -33,6 +35,7 @@ void main() {
         costs: costs,
         highlightedItemId: highlightedItemId,
         onLineTap: (line) => tappedLines.add(line.id),
+        onAddFirstCost: () => firstCostTaps++,
       ),
     ),
   );
@@ -158,6 +161,11 @@ void main() {
       find.byKey(CostSectionsList.emptySectionKey(CostItemType.material)),
       findsNothing,
     );
+    for (final type in CostItemType.values) {
+      expect(find.byKey(CostSectionsList.examplesKey(type)), findsNothing);
+    }
+    expect(find.byKey(CostSectionsList.addFirstCostButtonKey), findsNothing);
+    expect(find.byKey(CostSectionsList.emptyEstimateTitleKey), findsNothing);
   });
 
   testWidgets(
@@ -171,14 +179,14 @@ void main() {
   );
 
   testWidgets(
-    'shows every section placeholder while the estimate holds no line',
+    'shows no section placeholder while the whole estimate is empty',
     (tester) async {
       await tester.pumpWidget(app(loaded(const [])));
 
       for (final type in CostItemType.values) {
         expect(
           find.byKey(CostSectionsList.emptySectionKey(type)),
-          findsOneWidget,
+          findsNothing,
         );
       }
     },
@@ -203,6 +211,23 @@ void main() {
     expect(second.top - first.bottom, CoreSpacing.space3);
     expect(next.dy - second.bottom, CoreSpacing.space7);
   });
+
+  testWidgets(
+    'shows examples and the first-cost button when everything is empty',
+    (tester) async {
+      await tester.pumpWidget(app(loaded(const [])));
+
+      expect(find.text(l10n.costSectionExamplesMaterial), findsOneWidget);
+      expect(find.text(l10n.costSectionExamplesLabor), findsOneWidget);
+      expect(find.text(l10n.costSectionExamplesEquipment), findsOneWidget);
+      expect(find.text(l10n.emptyEstimateTitle), findsOneWidget);
+      expect(find.text(l10n.emptyEstimateBody), findsOneWidget);
+
+      await tester.tap(find.byKey(CostSectionsList.addFirstCostButtonKey));
+
+      expect(firstCostTaps, 1);
+    },
+  );
 
   testWidgets('reports which line was tapped', (tester) async {
     await tester.pumpWidget(app(loaded([materialLine(id: 'm7')])));

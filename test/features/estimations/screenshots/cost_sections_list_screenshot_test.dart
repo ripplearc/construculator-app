@@ -37,6 +37,7 @@ void main() {
               costs: costs,
               highlightedItemId: highlightedItemId,
               onLineTap: (_) {},
+              onAddFirstCost: () {},
             ),
           ),
         ),
@@ -46,6 +47,26 @@ void main() {
   }
 
   screenshotThemeGroups('Cost sections list Screenshot Tests', (theme, suffix) {
+    testWidgets('an empty estimate shows examples and the first-cost button', (
+      tester,
+    ) async {
+      await pumpList(
+        tester,
+        theme,
+        const CostItemsLoaded(
+          items: [],
+          materialsSubtotal: 0,
+          laborSubtotal: 0,
+          equipmentSubtotal: 0,
+        ),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/cost_sections_list/empty$suffix.png'),
+      );
+    });
+
     testWidgets('one line per section', (tester) async {
       await pumpList(
         tester,
