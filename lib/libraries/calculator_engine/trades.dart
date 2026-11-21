@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
@@ -197,7 +199,8 @@ final class FenceCount extends Equatable {
   final int railsPerSection;
 
   /// A run of fence of [length] with posts [onCentre] and [railsPerSection]
-  /// rails between them.
+  /// rails between them. A spacing of zero or less has no sections, so a
+  /// caller counts through [Trades.fenceFor] or [recount], which refuse it.
   const FenceCount({
     required this.length,
     required this.onCentre,
@@ -206,8 +209,12 @@ final class FenceCount extends Equatable {
 
   /// Sections of fence: the length over the spacing, rounded up, computed
   /// exactly over the inches so that 24m at 2.4m is ten sections and not
-  /// eleven. A length above zero always has at least one.
-  int get sections => _ceil(length.inches / onCentre.inches);
+  /// eleven. A length within one part of a tick ([Length.partsPerTick]) of a
+  /// whole number of spacings is that many, because a computed length is
+  /// kept only to that part: Calc 24m from 57.6m² ÷ 2.4m is ten sections
+  /// too, as the screen reads it. A length above zero always has at least
+  /// one, and lengths too long for exact sums are counted in ticks.
+  int get sections => _spacingsIn(length, onCentre);
 
   /// One post more than there are sections.
   int get posts => sections + 1;
@@ -259,12 +266,14 @@ final class SpacingCount extends Equatable {
   /// The spacing, on centre.
   final Length spacing;
 
-  /// Members along [span] at [spacing] on centre.
+  /// Members along [span] at [spacing] on centre. A spacing of zero or
+  /// less has no members, so a caller counts through
+  /// [Trades.spacingCountsFor] or [recount], which leave it out.
   const SpacingCount({required this.span, required this.spacing});
 
-  /// The members: the span over the spacing, rounded up, computed exactly
-  /// over the inches, plus the one that closes the span.
-  int get members => _ceil(span.inches / spacing.inches) + 1;
+  /// The members: the span over the spacing, rounded up as
+  /// [FenceCount.sections] rounds it, plus the one that closes the span.
+  int get members => _spacingsIn(span, spacing) + 1;
 
   /// The members as the whole number the result chip holds.
   Scalar get value => Scalar(members.toDouble(), decimals: 0);
@@ -286,7 +295,22 @@ const int _squareTicksPerSquareFoot =
 
 bool _isAboveZero(Length length) => length.preciseTicks > 0;
 
-int _ceil(Rational ratio) => ratio.isWhole ? ratio.floor() : ratio.floor() + 1;
+const Rational _onePartOfATick = Rational(
+  1,
+  Length.ticksPerInch * Length.partsPerTick,
+);
+
+int _spacingsIn(Length length, Length spacing) {
+  try {
+    final whole = (length.inches / spacing.inches).floor();
+    final over = length.inches - spacing.inches * Rational(whole);
+    if (whole > 0 && over.compareTo(_onePartOfATick) <= 0) return whole;
+    return whole + 1;
+  } on RationalOverflow {
+    final ticksOver = length.preciseTicks - 1 / Length.partsPerTick;
+    return max(1, (ticksOver / spacing.preciseTicks).ceil());
+  }
+}
 
 /// The material rules of UX Design Doc Section 9: an area on the tape
 /// becomes a sheet count for every stored drywall size, or a piece count

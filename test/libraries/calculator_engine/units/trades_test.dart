@@ -481,6 +481,133 @@ void main() {
         );
       });
 
+      group('R1 (review of 19 Nov): a Calc length made by a division', () {
+        const arithmetic = ChainArithmetic();
+        Quantity combined(Quantity left, Operator operator, Quantity right) =>
+            switch (arithmetic.combine(left, operator, right)) {
+              ArithmeticValue(:final value) => value,
+              final outcome => throw StateError('expected a value: $outcome'),
+            };
+        Length calcMetres(double metresLong, double by) =>
+            combined(
+                  combined(
+                    metres(metresLong * by),
+                    Operator.multiply,
+                    metres(1),
+                  ),
+                  Operator.divide,
+                  metres(by),
+                )
+                as Length;
+
+        test('blocker 1: Calc 24m from 57.6m² ÷ 2.4m at 2.4m is 10 '
+            'sections, 11 posts and 30 rails, as a typed 24m is', () {
+          final calc24 = calcMetres(24, 2.4);
+          expect(formatter.format(calc24), '24m');
+          expect(
+            calc24.inches,
+            isNot(metres(24).inches),
+            reason: 'a computed length is kept to 1/512 of a tick',
+          );
+          final fence = trades.fenceFor(
+            calc24,
+            onCentre: metres(2.4),
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 10);
+          expect(fence.posts, 11);
+          expect(fence.rails, 30);
+          expect(
+            trades.spacingCountsFor(calc24, [metres(2.4)]).single.members,
+            11,
+          );
+        });
+
+        test('the other runs of the review read as typed: Calc 2.4m at 0.4m '
+            'is 7 posts, Calc 0.9m at 0.3m is 4, Calc 4.8m at 0.4m is 13, '
+            'and Qty@OC the same', () {
+          for (final (long, by, spacing, posts) in [
+            (2.4, 2.4, 0.4, 7),
+            (0.9, 2.4, 0.3, 4),
+            (4.8, 2.4, 0.4, 13),
+            (24.0, 2.4, 2.4, 11),
+          ]) {
+            final calc = calcMetres(long, by);
+            final fence = trades.fenceFor(
+              calc,
+              onCentre: metres(spacing),
+              railsPerSection: 1,
+            )!;
+            expect(fence.posts, posts, reason: 'Calc ${long}m at ${spacing}m');
+            expect(
+              trades.spacingCountsFor(calc, [metres(spacing)]).single.members,
+              posts,
+              reason: 'Qty@OC on Calc ${long}m at ${spacing}m',
+            );
+          }
+        });
+
+        test('a length one part of a tick past a whole number of spacings '
+            'is that many, and two parts past is one more', () {
+          final twentyFour = metres(24);
+          Length plusParts(int parts) => Length.exact(
+            twentyFour.inches +
+                Rational(parts, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.metre,
+          );
+          FenceCount fenceOn(Length length) => trades.fenceFor(
+            length,
+            onCentre: metres(2.4),
+            railsPerSection: 1,
+          )!;
+          expect(fenceOn(plusParts(1)).sections, 10);
+          expect(fenceOn(plusParts(2)).sections, 11);
+        });
+
+        test('a length of one part of a tick is still one section', () {
+          final onePart = Length.exact(
+            Rational(1, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.inch,
+          );
+          final fence = trades.fenceFor(
+            onePart,
+            onCentre: eightFeet,
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 1);
+          expect(
+            trades.spacingCountsFor(onePart, [eightFeet]).single.members,
+            2,
+          );
+        });
+
+        test('nit 1: a length and a spacing too long for exact sums are '
+            'counted in ticks, never thrown: 123.456789012m at '
+            '0.4123456789m is 300 sections and 301 posts', () {
+          final long = Length.exact(
+            const Rational(1234567890120, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          final spacing = Length.exact(
+            const Rational(4123456789, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          expect(
+            () => long.inches / spacing.inches,
+            throwsA(isA<RationalOverflow>()),
+            reason: 'the exact ratio does not fit a Rational',
+          );
+          final fence = trades.fenceFor(
+            long,
+            onCentre: spacing,
+            railsPerSection: 1,
+          )!;
+          expect(fence.sections, 300);
+          expect(fence.posts, 301);
+          expect(trades.spacingCountsFor(long, [spacing]).single.members, 301);
+        });
+      });
+
       test('a length shorter than one spacing is one section: 1in at 8ft '
           'is 2 posts and 3 rails', () {
         final fence = trades.fenceFor(

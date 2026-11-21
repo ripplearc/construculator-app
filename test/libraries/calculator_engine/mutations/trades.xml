@@ -115,7 +115,7 @@
 
         <!-- RULE 11: the fence sections are rounded down, always up, or
              counted over doubles -->
-        <regex pattern="int get sections =&gt; _ceil\(length\.inches / onCentre\.inches\);" dotAll="true" id="trades.fence.sections">
+        <regex pattern="int get sections =&gt; _spacingsIn\(length, onCentre\);" dotAll="true" id="trades.fence.sections">
             <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor();"/>
             <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor() + 1;"/>
             <mutation text="int get sections =&gt; (length.preciseTicks / onCentre.preciseTicks).ceil();"/>
@@ -146,10 +146,10 @@
 
         <!-- RULE 14: the members forget the closing one, or are rounded
              down -->
-        <regex pattern="int get members =&gt; _ceil\(span\.inches / spacing\.inches\) \+ 1;" dotAll="true" id="trades.spacing.members">
-            <mutation text="int get members =&gt; _ceil(span.inches / spacing.inches);"/>
+        <regex pattern="int get members =&gt; _spacingsIn\(span, spacing\) \+ 1;" dotAll="true" id="trades.spacing.members">
+            <mutation text="int get members =&gt; _spacingsIn(span, spacing);"/>
             <mutation text="int get members =&gt; (span.inches / spacing.inches).floor() + 1;"/>
-            <mutation text="int get members =&gt; _ceil(span.inches / spacing.inches) + 2;"/>
+            <mutation text="int get members =&gt; _spacingsIn(span, spacing) + 2;"/>
         </regex>
 
         <!-- RULE 15: a spacing recount takes a spacing of zero, or forgets
@@ -167,12 +167,30 @@
             <mutation text="bool _isAboveZero(Length length) =&gt; length.ticks &gt; 0;"/>
         </regex>
 
-        <!-- RULE 17: the exact ceiling rounds down, always up, or to the
-             nearest -->
-        <regex pattern="int _ceil\(Rational ratio\) =&gt; ratio\.isWhole \? ratio\.floor\(\) : ratio\.floor\(\) \+ 1;" dotAll="true" id="trades.ceil">
-            <mutation text="int _ceil(Rational ratio) =&gt; ratio.floor();"/>
-            <mutation text="int _ceil(Rational ratio) =&gt; ratio.floor() + 1;"/>
-            <mutation text="int _ceil(Rational ratio) =&gt; ratio.round();"/>
+        <!-- RULE 17 (R1, review of 19 Nov, blocker 1): the count of
+             spacings in a length rounds a whole number up too, takes a
+             length of one part of a tick as no section, counts a Calc
+             length only when it is exact, puts the bound a part short, or
+             takes two parts past as whole -->
+        <regex pattern="if \(whole &gt; 0 &amp;&amp; over\.compareTo\(_onePartOfATick\) &lt;= 0\) return whole;" dotAll="true" id="trades.spacings.one_part_of_a_tick">
+            <mutation text=""/>
+            <mutation text="if (over.compareTo(_onePartOfATick) &lt;= 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.isZero) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_onePartOfATick) &lt; 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_onePartOfATick * const Rational(2)) &lt;= 0) return whole;"/>
+        </regex>
+        <regex pattern="return whole \+ 1;" dotAll="true" id="trades.spacings.rounds_up">
+            <mutation text="return whole;"/>
+        </regex>
+
+        <!-- RULE 17b (R1, nit 1): a length and a spacing too long for exact
+             sums throw instead of being counted in ticks, or are rounded
+             down there -->
+        <regex pattern="\} on RationalOverflow \{\s*final ticksOver" dotAll="true" id="trades.spacings.overflow_caught">
+            <mutation text="} on FormatException { final ticksOver"/>
+        </regex>
+        <regex pattern="return max\(1, \(ticksOver / spacing\.preciseTicks\)\.ceil\(\)\);" dotAll="true" id="trades.spacings.overflow_rounds_up">
+            <mutation text="return max(1, (ticksOver / spacing.preciseTicks).floor());"/>
         </regex>
 
         <!-- RULE 18: the footing, fence and spacing rules take a length of
