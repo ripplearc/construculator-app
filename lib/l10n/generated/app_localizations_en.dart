@@ -2119,6 +2119,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorStripConversionsSemantics => 'Convert to other units';
 
   @override
+  String get calculatorDetailDimensionsTitle => 'Dimensions';
+
+  @override
+  String get calculatorDetailExpandButton => 'Expand';
+
+  @override
+  String get calculatorDetailCollapseButton => 'Collapse';
+
+  @override
   String get calculatorLabelValue => 'Value';
 
   @override
