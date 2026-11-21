@@ -222,6 +222,10 @@ typedef ArctangentDivisor = ({double number, String text});
 /// 4.8), starts nothing: it folds to nothing until a chip with no operator
 /// starts a chain, so no number is computed from part of a broken chain.
 ///
+/// A percent is worth that percent of the running total after + or −, and
+/// the number ÷ 100 after × or ÷ ([ValueChip.isPercent]; Section 7,
+/// "Percent"): 1,000 + 500 + 10 % is 1,650 and 2 + 3 × 10 % is 0.5.
+///
 /// A trig chip is worth its answer, except an Arctangent whose number is
 /// followed by ÷ and bare numbers with no key: the ÷ builds the ratio for
 /// ATAN ([ArctangentReach]; Section 6, "Trig chips in a chain"). While that
@@ -270,7 +274,8 @@ class ChainEvaluator extends Equatable {
           }
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
-        case ValueChip(:final operator) || BracketChip(:final operator):
+        case ValueChip(:final operator, :final isPercent) ||
+            BracketChip(:final operator, :final isPercent):
           final reach = ArctangentReach.from(chips, index, evaluator: this);
           final ({Quantity value, int steps})? reading;
           if (reach != null && reach.end == chips.length && operator == null) {
@@ -285,7 +290,9 @@ class ChainEvaluator extends Equatable {
           running = _joined(
             running,
             operator,
-            reading.value,
+            isPercent
+                ? _percentOf(running, operator, reading.value)
+                : reading.value,
             stepsInside: reading.steps,
           );
       }
@@ -299,6 +306,34 @@ class ChainEvaluator extends Equatable {
   }
 
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
+
+  // What a percent is worth where it stands (UX Design Doc Section 7,
+  // "Percent"): after + or − that percent of the running total, so the
+  // total keeps its unit (5ft + 10 % adds 6in); after × or ÷, or with
+  // nothing before it, the number ÷ 100.
+  Quantity _percentOf(
+    _RunningChain running,
+    Operator? operator,
+    Quantity percent,
+  ) {
+    final fraction = switch (percent) {
+      Scalar(:final value) => Scalar(value / QuantityFormatter.percent),
+      _ => percent,
+    };
+    final total = running.total;
+    if (total == null || running.failure != null) return fraction;
+    return switch (operator) {
+      Operator.add || Operator.subtract => switch (arithmetic.combine(
+        total,
+        Operator.multiply,
+        fraction,
+      )) {
+        ArithmeticValue(:final value) => value,
+        ArithmeticFailed() => fraction,
+      },
+      Operator.multiply || Operator.divide || null => fraction,
+    };
+  }
 
   static bool _lostItsLeftValue(TapeChip chip) => switch (chip) {
     ValueChip(followsARemovedResult: true) ||

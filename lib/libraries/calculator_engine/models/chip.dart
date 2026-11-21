@@ -116,6 +116,16 @@ final class ValueChip extends TapeChip {
   /// edited back (product decision of 13 November 2026).
   final bool followsARemovedResult;
 
+  /// Whether the % key marked the number as a percent (UX Design Doc
+  /// Section 7, "Percent"): after + or − it is that percent of the running
+  /// total, after × or ÷ the number ÷ 100. The tape chip reads it with its
+  /// sign, "+10%" ([text]).
+  final bool isPercent;
+
+  /// The chip's number as the tape writes it: the entry, and a % sign when
+  /// [isPercent].
+  String get text => isPercent ? '${entry.text}%' : entry.text;
+
   /// Whether a second decimal point, or the D:M:S key, may read the chip's
   /// number as degrees, minutes and seconds (Section 5.4, "A second decimal
   /// point makes an angle"): a bare number, which the trig keys read as
@@ -135,6 +145,7 @@ final class ValueChip extends TapeChip {
     this.isActive = true,
     this.isEditing = false,
     this.followsARemovedResult = false,
+    this.isPercent = false,
   });
 
   /// The value the chip stands for: the exact quantity a conversion kept,
@@ -311,6 +322,7 @@ final class ValueChip extends TapeChip {
     bool? isActive,
     bool? isEditing,
     bool? followsARemovedResult,
+    bool? isPercent,
   }) {
     return ValueChip(
       key: key != null ? key() : this.key,
@@ -324,6 +336,7 @@ final class ValueChip extends TapeChip {
       isEditing: isEditing ?? this.isEditing,
       followsARemovedResult:
           followsARemovedResult ?? this.followsARemovedResult,
+      isPercent: isPercent ?? this.isPercent,
     );
   }
 
@@ -339,6 +352,7 @@ final class ValueChip extends TapeChip {
     isActive,
     isEditing,
     followsARemovedResult,
+    isPercent,
   ];
 }
 
@@ -398,12 +412,18 @@ final class BracketChip extends TapeChip {
   /// an edit, as [ValueChip.followsARemovedResult] says of a step.
   final bool followsARemovedResult;
 
+  /// Whether the % key marked the closed bracket as a percent, worth the
+  /// percent of what it folds to, as [ValueChip.isPercent] says of a
+  /// number.
+  final bool isPercent;
+
   const BracketChip({
     this.operator,
     this.inner = const [],
     this.isOpen = true,
     this.original,
     this.followsARemovedResult = false,
+    this.isPercent = false,
   });
 
   /// The bracket as the tape spells it, "+(3×4" while open and "+(3×4)"
@@ -411,10 +431,11 @@ final class BracketChip extends TapeChip {
   String get expression {
     final inside = [
       for (final chip in inner)
-        if (chip case ValueChip(:final operator, :final entry))
-          '${operator?.symbol ?? ''}${entry.text}',
+        if (chip case ValueChip(:final operator, :final text))
+          '${operator?.symbol ?? ''}$text',
     ].join();
-    return '${operator?.symbol ?? ''}($inside${isOpen ? '' : ')'}';
+    return '${operator?.symbol ?? ''}($inside${isOpen ? '' : ')'}'
+        '${isPercent ? '%' : ''}';
   }
 
   /// Returns a copy with the given fields replaced. [operator] and
@@ -426,6 +447,7 @@ final class BracketChip extends TapeChip {
     bool? isOpen,
     List<TapeChip>? Function()? original,
     bool? followsARemovedResult,
+    bool? isPercent,
   }) {
     return BracketChip(
       operator: operator != null ? operator() : this.operator,
@@ -434,6 +456,7 @@ final class BracketChip extends TapeChip {
       original: original != null ? original() : this.original,
       followsARemovedResult:
           followsARemovedResult ?? this.followsARemovedResult,
+      isPercent: isPercent ?? this.isPercent,
     );
   }
 
@@ -444,6 +467,7 @@ final class BracketChip extends TapeChip {
     isOpen,
     original,
     followsARemovedResult,
+    isPercent,
   ];
 }
 
