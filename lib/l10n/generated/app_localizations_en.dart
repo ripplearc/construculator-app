@@ -2327,6 +2327,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get materialRateLookupHint =>
+      'Never priced this? Use the search icon above to look it up in the cost file.';
+
+  @override
   String get materialLookupUseRateButton => 'Use rate';
 
   @override
