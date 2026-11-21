@@ -286,5 +286,47 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_screws')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
     });
+
+    testWidgets('a search with no match shows one line, no rows, no button '
+        'and no way to create an entry', (tester) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, 'epoxy grout');
+
+      expect(
+        find.text(l10n.yourRatesNoMatchState('epoxy grout')),
+        findsOneWidget,
+      );
+      expect(find.text('YOUR RATES'), findsNothing);
+      expect(find.byKey(useButton), findsNothing);
+      expect(find.textContaining('Create'), findsNothing);
+    });
+  });
+
+  group('MaterialRateLookupSheet – saved prices cannot be read', () {
+    testWidgets('shows the error row instead of saying nothing is saved', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
+      expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
+      expect(find.byKey(useButton), findsNothing);
+    });
+
+    testWidgets('Try again lists the rates once the read works', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      database.getAllError = null;
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsNothing);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
+    });
   });
 }

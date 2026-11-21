@@ -126,5 +126,20 @@ void main() {
 
       await expectGolden('results_picked', suffix);
     });
+
+    testWidgets('displays one no-match line and no button', (tester) async {
+      await pumpSheet(tester, theme, initialQuery: 'epoxy grout');
+
+      await expectGolden('no_match', suffix);
+    });
+
+    testWidgets('displays the error row when saved prices cannot be read', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await pumpSheet(tester, theme);
+
+      await expectGolden('load_error', suffix);
+    });
   });
 }
