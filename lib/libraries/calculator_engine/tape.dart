@@ -311,6 +311,11 @@ enum TapeNotice {
   /// was removed and every other chip kept tracking (Section 5.5, "A result
   /// that can no longer be computed"); [TapeChanged.removed] names it.
   resultRemoved,
+
+  /// A closed bracket was reopened in place, by a tap on its chip or by ⌫
+  /// straight after ) (Section 7, "Editing a bracket"): the toast says how
+  /// to close it, the first three times (Section 5.6, "Editing this group").
+  editingThisGroup,
 }
 
 /// What a key did to the tape.
@@ -544,11 +549,19 @@ class Tape extends Equatable {
 
   bool get _hasResult => chips.any((chip) => chip is ResultChip);
 
-  /// The bracket the keypad types into, or `null` when none is open.
-  BracketChip? get openBracket {
-    if (chips.isEmpty) return null;
-    if (chips.last case final BracketChip bracket when bracket.isOpen) {
-      return bracket;
+  /// The bracket the keypad types into, or `null` when none is open: the
+  /// one the key opened at the end of the tape, or a closed one reopened in
+  /// place by a tap or by ⌫ (Section 7, "Editing a bracket"), with the chips
+  /// after it waiting.
+  BracketChip? get openBracket => switch (openBracketIndex) {
+    final index? => chips[index] as BracketChip,
+    null => null,
+  };
+
+  /// Where [openBracket] sits on the tape, or `null`.
+  int? get openBracketIndex {
+    for (var index = chips.length - 1; index >= 0; index--) {
+      if (chips[index] case BracketChip(isOpen: true)) return index;
     }
     return null;
   }
@@ -1045,8 +1058,8 @@ class Tape extends Equatable {
   /// ([TapeRefusal.addAnOperatorFirst]) unless a chip before it is being
   /// edited, which the digit goes into.
   TapeOutcome typeDigit(String digit) {
-    if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.typeDigit(digit));
+    if (openBracketIndex case final index?) {
+      return _inside(index, (inner) => inner.typeDigit(digit));
     }
     if (editing == null && _endsWithClosedBracket) {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
@@ -1449,8 +1462,8 @@ class Tape extends Equatable {
 
   /// ✕ on the display empties the value being typed and keeps its chip
   /// open under its key and the operator that leads into it (Section 1.1,
-  /// "✕ button"; Section 5, "The value is empty — type a new value, or
-  /// backspace to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
+  /// "✕ button"; Section 5, "The value is empty. Type a new value, or press
+  /// ⌫ to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
   /// 7 leaves "Length…"), so 22ft + 18 ✕ 20 [Feet] = is 42ft, Width 5 [Lbs]
   /// (refused) ✕ 5 [Feet] is Width 5ft, and 2 + (3 × 4 ✕ 5) = is 17; inside
   /// an open bracket it empties the chip being typed there, and with
@@ -1473,8 +1486,8 @@ class Tape extends Equatable {
   /// when something is typed", and the caller closes the calculator in its
   /// place, as the prototype's ✕ does with nothing typed.
   TapeOutcome clearActive() {
-    if (openBracket case final bracket?) {
-      return switch (_inside(bracket, (inner) => inner.clearActive())) {
+    if (openBracketIndex case final index?) {
+      return switch (_inside(index, (inner) => inner.clearActive())) {
         TapeRefused(reason: TapeRefusal.nothingBeingTyped) => const TapeRefused(
           TapeRefusal.nothingTypedInGroup,
         ),
@@ -1524,8 +1537,8 @@ class Tape extends Equatable {
   /// (rule 4.16), so the key is refused on it as the unit keys are: 45
   /// recalled under Pitch never becomes the typed start of 45/2in.
   TapeOutcome typeFraction() {
-    if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.typeFraction());
+    if (openBracketIndex case final index?) {
+      return _inside(index, (inner) => inner.typeFraction());
     }
     final chip = active;
     if (chip == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
@@ -1559,9 +1572,9 @@ class Tape extends Equatable {
     bool takesAGrade = false,
     bool takesACount = false,
   }) {
-    if (openBracket case final bracket?) {
+    if (openBracketIndex case final index?) {
       return _inside(
-        bracket,
+        index,
         (inner) => inner.pressUnit(
           unit,
           holdsLengthOnly: holdsLengthOnly,
@@ -1750,8 +1763,8 @@ class Tape extends Equatable {
     if (editing != null) {
       return _leavingEdit((tape) => tape.pressOperator(operator));
     }
-    if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.pressOperator(operator));
+    if (openBracketIndex case final index?) {
+      return _inside(index, (inner) => inner.pressOperator(operator));
     }
     final chip = active;
     if (chip != null) {
@@ -1825,6 +1838,34 @@ class Tape extends Equatable {
     }
     if (chips.any(_lostItsLeftValue)) {
       return const TapeRefused(TapeRefusal.stepLostItsValue);
+    }
+    if (openBracketIndex case final index? when index < chips.length - 1) {
+      // the close recomputed the answers after the bracket; a step still
+      // pending at the end is landed as well, an answer there stands
+      return switch (closeBracket()) {
+        TapeChanged(:final tape, notice: null)
+            when !tape.endsWithResult && !tape.endsWithError =>
+          _landedAfterClose(tape),
+        TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled)
+            when !tape.endsWithResult && !tape.endsWithError =>
+          _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
+        // the close took an old answer with it, so the step left pending
+        // at the end is landed as well: ( 2 + 3 ) = × 4, the bracket
+        // reopened and retyped as (5), reads (5) | ×4 | Calc 20 (Section
+        // 7: "= closes the bracket first and then lands the Calc")
+        TapeChanged(
+          :final tape,
+          notice: TapeNotice.resultRemoved,
+          :final removed,
+        )
+            when !tape.endsWithResult && !tape.endsWithError =>
+          _landedAfterClose(
+            tape,
+            notice: TapeNotice.resultRemoved,
+            removed: removed,
+          ),
+        final outcome => outcome,
+      };
     }
     if (openBracket != null) {
       return switch (closeBracket()) {
@@ -1939,14 +1980,22 @@ class Tape extends Equatable {
     return _with([...chips.sublist(0, chips.length - 2), chips.last]);
   }
 
-  TapeOutcome _landedAfterClose(Tape closed, {TapeNotice? notice}) =>
-      switch (closed.pressEquals()) {
-        TapeChanged(:final tape) => TapeChanged(tape, notice: notice),
-        TapeOutcome() => TapeChanged(
-          closed,
-          notice: notice ?? TapeNotice.bracketClosedNothingToCompute,
-        ),
-      };
+  TapeOutcome _landedAfterClose(
+    Tape closed, {
+    TapeNotice? notice,
+    List<String> removed = const [],
+  }) => switch (closed.pressEquals()) {
+    TapeChanged(:final tape) => TapeChanged(
+      tape,
+      notice: notice,
+      removed: removed,
+    ),
+    TapeOutcome() => TapeChanged(
+      closed,
+      notice: notice ?? TapeNotice.bracketClosedNothingToCompute,
+      removed: removed,
+    ),
+  };
 
   static bool _holdsNothingTyped(TapeChip chip) =>
       chip is ValueChip && chip.entry.isEmpty && chip.operator == null;
@@ -1977,11 +2026,12 @@ class Tape extends Equatable {
   /// offered once more: a recalled value is finished and never becomes a
   /// typed start that ⌫ edits into one digit at a time (rule 4.16).
   TapeOutcome backspace() {
-    if (openBracket case final bracket?) {
+    if (openBracketIndex case final index?) {
+      final bracket = chips[index] as BracketChip;
       if (bracket.inner.every(_holdsNothingTyped)) {
-        return TapeChanged(_removeBracket(bracket));
+        return _bracketRemoved(index, bracket);
       }
-      return _inside(bracket, (inner) => inner.backspace());
+      return _inside(index, (inner) => inner.backspace());
     }
     if (editing case (
       :final index,
@@ -1994,7 +2044,7 @@ class Tape extends Equatable {
     }
     if (editing == null && chips.isNotEmpty) {
       if (chips.last case final BracketChip closed) {
-        return _replaceLastChip(_reopened(closed));
+        return _reopenedAt(chips.length - 1, closed);
       }
     }
     final chip = active;
@@ -2011,11 +2061,15 @@ class Tape extends Equatable {
     final remaining = chips.sublist(0, chips.length - 1);
     if (remaining.isEmpty) return TapeChanged(_with(remaining));
     final before = remaining.sublist(0, remaining.length - 1);
-    return TapeChanged(switch (remaining.last) {
-      final ValueChip previous => _with([...before, _reactivated(previous)]),
-      final BracketChip closed => _with([...before, _reopened(closed)]),
-      ResultChip() || ErrorChip() => _with(remaining),
-    });
+    return switch (remaining.last) {
+      final ValueChip previous => TapeChanged(
+        _with([...before, _reactivated(previous)]),
+      ),
+      final BracketChip closed => _with(
+        remaining,
+      )._reopenedAt(remaining.length - 1, closed),
+      ResultChip() || ErrorChip() => TapeChanged(_with(remaining)),
+    };
   }
 
   /// [( )]: one key opens a bracket and, pressed again, closes it, so the
@@ -2061,8 +2115,9 @@ class Tape extends Equatable {
   /// brings the group back as it was. An inside that cannot be computed
   /// keeps the bracket open (Section 5.3).
   TapeOutcome closeBracket() {
-    final bracket = openBracket;
-    if (bracket == null) return const TapeRefused(TapeRefusal.noBracketToClose);
+    final index = openBracketIndex;
+    if (index == null) return const TapeRefused(TapeRefusal.noBracketToClose);
+    final bracket = chips[index] as BracketChip;
     var inner = _with(bracket.inner)._withFractionClosedAsInches();
     if (inner.active case final chip? when chip.entry.isEmpty) {
       if (chip.operator != null) {
@@ -2071,7 +2126,7 @@ class Tape extends Equatable {
       inner = _with(inner.chips.sublist(0, inner.chips.length - 1));
     }
     if (inner.isEmpty) {
-      if (bracket.original != null) return _restored(bracket);
+      if (bracket.original != null) return _restored(index, bracket);
       return TapeChanged(
         _removeBracket(bracket),
         notice: TapeNotice.emptyBracketsRemoved,
@@ -2083,7 +2138,8 @@ class Tape extends Equatable {
     if (total is ChainEmpty) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
     }
-    return _replaceLastChip(
+    return _closedAndRecomputedAt(
+      index,
       bracket.copyWith(
         inner: inner._sealed().chips,
         isOpen: false,
@@ -2092,16 +2148,28 @@ class Tape extends Equatable {
     );
   }
 
-  TapeOutcome _restored(BracketChip bracket) => TapeChanged(
-    _replaceLastWith(
-      bracket.copyWith(
-        inner: bracket.original,
-        isOpen: false,
-        original: () => null,
-      ),
-    ),
-    notice: TapeNotice.bracketEditCancelled,
-  );
+  TapeOutcome _restored(int index, BracketChip bracket) =>
+      _closedAndRecomputedAt(
+        index,
+        bracket.copyWith(
+          inner: bracket.original,
+          isOpen: false,
+          original: () => null,
+        ),
+        notice: TapeNotice.bracketEditCancelled,
+      );
+
+  TapeOutcome _closedAndRecomputedAt(
+    int index,
+    BracketChip closed, {
+    TapeNotice? notice,
+  }) {
+    final (:tape, :removed) = _replaceChipAt(
+      index,
+      closed,
+    )._recomputedAfter(index, removesStale: true);
+    return _changed(tape, notice: notice, removed: removed);
+  }
 
   /// A tap on the chip at [index] (Section 1.1, "Tap an input chip to edit
   /// it"; rule 4.8). On a finished value it reopens the chip in place with
@@ -2114,21 +2182,25 @@ class Tape extends Equatable {
   /// ([TapeRefusal.finishThisValueFirst], Section 5.5: "another chip is
   /// tapped while an edited chip holds a dangling number"). A chip a key
   /// opened and nothing was typed into is dropped by the tap, as the strip's
-  /// answer drops it ([landAnswer]). A result, an error chip or a bracket
-  /// chip is read, not edited ([TapeRefusal.chipCannotBeEdited]). While a
-  /// bracket is open every other chip waits (Section 7), so a tap is
-  /// refused until it closes. The reopened chip is an edit wherever it sits
-  /// ([ValueChip.isEditing]), the last chip of the tape included, so a
-  /// wrong unit is refused in place rather than split into a new chip and
-  /// ✕ twice cannot abandon it.
+  /// answer drops it ([landAnswer]). A closed bracket reopens in place, with
+  /// the keypad typing into its last value again and the chips after it
+  /// waiting (Section 7, "Editing a bracket"; [TapeNotice.editingThisGroup]).
+  /// A result or an error chip is read, not edited
+  /// ([TapeRefusal.chipCannotBeEdited]). While a bracket is open a tap on
+  /// the bracket itself closes it, as the key does, and every other chip
+  /// waits (Section 7), deaf to a tap until it closes. The reopened value
+  /// chip is an edit wherever it sits ([ValueChip.isEditing]), the last
+  /// chip of the tape included, so a wrong unit is refused in place rather
+  /// than split into a new chip and ✕ twice cannot abandon it.
   TapeOutcome tapChip(int index) {
     if (index < 0 || index >= chips.length) {
       return const TapeRefused(TapeRefusal.chipCannotBeEdited);
     }
-    if (openBracket != null) {
-      return const TapeRefused(TapeRefusal.finishThisValueFirst);
+    if (openBracketIndex case final open?) {
+      if (open == index) return closeBracket();
+      return const TapeRefused(TapeRefusal.chipCannotBeEdited);
     }
-    if (chips[index] is! ValueChip) {
+    if (chips[index] case ResultChip() || ErrorChip()) {
       return const TapeRefused(TapeRefusal.chipCannotBeEdited);
     }
     final activeIndex = _activeIndex;
@@ -2157,6 +2229,9 @@ class Tape extends Equatable {
     final found = tape.chips.indexWhere(
       (chip) => identical(chip, tapped) || _isMarkedCopyOf(chip, tapped),
     );
+    if (tapped case final BracketChip closed) {
+      return tape._reopenedAt(found, closed, removed: removed);
+    }
     return _changed(
       tape._replaceChipAt(
         found,
@@ -2175,6 +2250,16 @@ class Tape extends Equatable {
     ValueChip(operator: _?) || BracketChip(operator: _?) => true,
     _ => false,
   };
+
+  TapeOutcome _reopenedAt(
+    int index,
+    BracketChip closed, {
+    List<String> removed = const [],
+  }) => _changed(
+    _replaceChipAt(index, _reopened(closed)),
+    notice: TapeNotice.editingThisGroup,
+    removed: removed,
+  );
 
   TapeOutcome _leavingEdit(TapeOutcome Function(Tape sealed) key) {
     final closed = _withFractionClosedAsInches();
@@ -2415,13 +2500,11 @@ class Tape extends Equatable {
     return sealed._with([...sealed.chips, chip]);
   }
 
-  TapeOutcome _inside(
-    BracketChip bracket,
-    TapeOutcome Function(Tape inner) key,
-  ) {
+  TapeOutcome _inside(int index, TapeOutcome Function(Tape inner) key) {
+    final bracket = chips[index] as BracketChip;
     return switch (key(_with(bracket.inner))) {
       TapeChanged(:final tape, :final notice) => TapeChanged(
-        _replaceLastWith(bracket.copyWith(inner: tape.chips)),
+        _replaceChipAt(index, bracket.copyWith(inner: tape.chips)),
         notice: notice,
       ),
       final TapeOutcome refused => refused,
@@ -2442,6 +2525,20 @@ class Tape extends Equatable {
       }
     }
     return reopened;
+  }
+
+  TapeOutcome _bracketRemoved(int index, BracketChip bracket) {
+    if (index == chips.length - 1) return TapeChanged(_removeBracket(bracket));
+    // in the middle the bracket's place stays open as the chip being
+    // edited — the operator before it waiting for its number again, or the
+    // empty first chip "…" of the chain (rule 4.8) — and the answers after
+    // it stand until a value is typed, as they do through any edit
+    final (:tape, :removed) = _with([
+      ...chips.sublist(0, index),
+      ValueChip(operator: bracket.operator, isEditing: true),
+      ...chips.sublist(index + 1),
+    ])._recomputedFrom(index + 1, removesStale: false);
+    return _changed(tape, removed: removed);
   }
 
   Tape _removeBracket(BracketChip bracket) {

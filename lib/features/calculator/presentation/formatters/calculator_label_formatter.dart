@@ -392,6 +392,7 @@ class CalculatorLabelFormatter {
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
+    CalculatorTypeNewFirstValueToast() => null,
     CalculatorResultRemovedToast() => null,
     CalculatorCannotAppendUnitToast(:final unit) =>
       l10n.calculatorToastCannotAppendTitle(unitName(unit)),
@@ -406,6 +407,7 @@ class CalculatorLabelFormatter {
     CalculatorFinishValueToast(value: '') => l10n.calculatorToastValueEmptyBody,
     CalculatorFinishValueToast(:final value) =>
       l10n.calculatorToastFinishValueBody(value),
+    CalculatorTypeNewFirstValueToast() => l10n.calculatorToastTypeNewFirstValue,
     CalculatorResultRemovedToast(keys: [final key]) =>
       l10n.calculatorToastResultRemoved(displayLabel(key)),
     CalculatorResultRemovedToast(keys: [final first, final second]) =>

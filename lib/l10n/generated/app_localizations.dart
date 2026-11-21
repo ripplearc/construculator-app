@@ -4448,11 +4448,17 @@ abstract class AppLocalizations {
   /// **'{value} isn\'t complete — close the number with a unit, backspace, or ✕ to retype.'**
   String calculatorToastFinishValueBody(String value);
 
-  /// Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing (UX Design Doc Section 5)
+  /// Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing, the place of a removed bracket included (UX Design Doc Section 5; product decision of 13 November 2026: no dash, and the key is named ⌫)
   ///
   /// In en, this message translates to:
-  /// **'The value is empty — type a new value, or backspace to delete the chip.'**
+  /// **'The value is empty. Type a new value, or press ⌫ to delete the chip.'**
   String get calculatorToastValueEmptyBody;
+
+  /// Red Alert when ⌫ is pressed again on the emptied first chip of a chain, which cannot be deleted (UX Design Doc rule 4.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Type a new first value, or press C to start again.'**
+  String get calculatorToastTypeNewFirstValue;
 
   /// Message when an edit leaves a result with no valid answer and that one chip is removed (UX Design Doc Section 5.5)
   ///
