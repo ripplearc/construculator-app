@@ -402,7 +402,7 @@ void main() {
 
         final loaded = await dataSource.loadEstimationById('est-1');
 
-        expect(loaded?.id, 'est-1');
+        expect(loaded!.id, 'est-1');
         expect(fakeWrapper.getAllCalls.single.parameters, ['est-1']);
       });
 
@@ -411,7 +411,7 @@ void main() {
 
         final loaded = await dataSource.loadEstimationById('est-1');
 
-        expect(loaded?.isLocked, isTrue);
+        expect(loaded!.isLocked, isTrue);
       });
 
       test('returns null when the phone has no row with the id', () async {
