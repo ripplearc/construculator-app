@@ -1,5 +1,7 @@
+import 'dart:async';
+
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -8,7 +10,6 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -22,6 +23,10 @@ void main() {
   late FakeYourRatesDatabase database;
   late FakeClockImpl clock;
   late AppLocalizations l10n;
+  YourRateEntry? result;
+  var closed = false;
+
+  const useButton = Key('material_lookup_use_button');
   final searchField = find.descendant(
     of: find.byKey(const Key('your_rates_search_field')),
     matching: find.byType(EditableText),
@@ -59,6 +64,8 @@ void main() {
   };
 
   setUp(() {
+    result = null;
+    closed = false;
     database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
@@ -92,17 +99,28 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<YourRatesBloc>(
-            create: (_) => yourRatesBlocWithoutDebounce(),
-            child: MaterialRateLookupSheet(
-              initialQuery: initialQuery,
-              clock: clock,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                key: const Key('open_sheet'),
+                onPressed: () async {
+                  result = await MaterialRateLookupSheet.show(
+                    context: context,
+                    initialQuery: initialQuery,
+                    clock: clock,
+                    blocFactory: yourRatesBlocWithoutDebounce,
+                  );
+                  closed = true;
+                },
+                child: const Text('open'),
+              ),
             ),
           ),
         ),
       ),
     );
+    await tester.tap(find.byKey(const Key('open_sheet')));
     await tester.pumpAndSettle();
   }
 
@@ -110,6 +128,9 @@ void main() {
     await tester.enterText(searchField, query);
     await tester.pumpAndSettle();
   }
+
+  CoreButton useButtonWidget(WidgetTester tester) =>
+      tester.widget<CoreButton>(find.byKey(useButton));
 
   group('MaterialRateLookupSheet – opening', () {
     testWidgets('opens on the material name, already searched', (tester) async {
@@ -167,6 +188,103 @@ void main() {
 
       expect(find.byKey(const Key('your_rate_row_screws')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
+    });
+  });
+
+  group('MaterialRateLookupSheet – picking', () {
+    testWidgets('the button is greyed out as "Use rate" until a row is '
+        'picked', (tester) async {
+      await openSheet(tester);
+
+      expect(useButtonWidget(tester).isDisabled, isTrue);
+      expect(useButtonWidget(tester).label, l10n.materialLookupUseRateButton);
+    });
+
+    testWidgets('picking a row only selects it, and the button names its '
+        'price', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      expect(closed, isFalse);
+      expect(useButtonWidget(tester).isDisabled, isFalse);
+      expect(useButtonWidget(tester).label, r'Use $52.00 /Liters');
+    });
+
+    testWidgets('the button returns the picked rate and closes the sheet', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await tester.tap(find.byKey(const Key('your_rate_row_signature')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(useButton));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+      expect(
+        result,
+        isA<YourRateEntry>().having((entry) => entry.id, 'id', 'signature'),
+      );
+    });
+
+    testWidgets('tapping the picked row again unpicks it', (tester) async {
+      await openSheet(tester);
+      final row = find.byKey(const Key('your_rate_row_proclassic'));
+
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+
+      expect(useButtonWidget(tester).isDisabled, isTrue);
+    });
+
+    testWidgets('a search that drops the picked row greys the button again', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await typeQuery(tester, 'signature');
+
+      expect(useButtonWidget(tester).isDisabled, isTrue);
+    });
+
+    testWidgets('closing the sheet without the button returns nothing', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+      expect(result, isNull);
+    });
+  });
+
+  group('MaterialRateLookupSheet – searching', () {
+    testWidgets('keeps the previous rows on screen while a search runs, '
+        'with no spinner', (tester) async {
+      await openSheet(tester);
+      final gate = Completer<void>();
+      database.getAllGate = gate;
+
+      await tester.enterText(searchField, 'drywall');
+      await tester.pump();
+
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsOneWidget);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('your_rate_row_screws')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
     });
   });
 }

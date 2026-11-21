@@ -4100,6 +4100,12 @@ abstract class AppLocalizations {
   /// **'/{unit}'**
   String materialRatePerUnitSuffix(String unit);
 
+  /// Greyed-out button at the foot of the material Look up a rate sheet before a row is picked; once a row is picked it reads yourRatesUseButtonLabel instead
+  ///
+  /// In en, this message translates to:
+  /// **'Use rate'**
+  String get materialLookupUseRateButton;
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:
