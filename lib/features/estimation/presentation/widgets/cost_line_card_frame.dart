@@ -1,17 +1,20 @@
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The rounded frame around one cost line on the estimate screen. The line
 /// added last takes a blue border and a blue fill; every other line has a grey
-/// border and no fill. Every card has the library's small card shadow. The
+/// border and a white fill. Every card has the library's small card shadow. The
 /// highlight changes only the colours: it adds no shadow of its own, has no
 /// animation, and does not change the corners or padding.
 ///
 // TODO: [CA-151] draw the estimate's cost lines inside this frame once the details screen is bound to data, and call clear on the highlight cubit from [onTap].
 class CostLineCardFrame extends StatelessWidget {
   static const double _cornerRadius = 14;
-  static const double _verticalPadding = 14;
+  static const double _horizontalPadding = 17;
+  static const double _topPadding = 15;
+  static const double _bottomPadding = 14;
 
   /// Whether this is the line that was just added.
   final bool isHighlighted;
@@ -32,28 +35,32 @@ class CostLineCardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: isHighlighted
-              ? colorTheme.backgroundBlueLight
-              : colorTheme.transparent,
-          borderRadius: BorderRadius.circular(_cornerRadius),
-          boxShadow: CoreShadows.small,
-          border: Border.all(
+    return MergeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
             color: isHighlighted
-                ? colorTheme.tabsHighlight
-                : colorTheme.lineLight,
+                ? colorTheme.backgroundBlueLight
+                : sheetSurface(context),
+            borderRadius: BorderRadius.circular(_cornerRadius),
+            boxShadow: CoreShadows.small,
+            border: Border.all(
+              color: isHighlighted
+                  ? colorTheme.tabsHighlight
+                  : colorTheme.lineLight,
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: _verticalPadding,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              _horizontalPadding,
+              _topPadding,
+              _horizontalPadding,
+              _bottomPadding,
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
     );
