@@ -339,15 +339,25 @@ void main() {
   });
 
   group('MaterialRateLookupSheet – sample cost file', () {
-    SampleRateRow paint(String id, double rate) => SampleRateRow(
+    SampleRateRow paint(
+      String id,
+      double rate, {
+      double? coverage = 400,
+      Unit coverageUnit = Unit.squareMeters,
+    }) => SampleRateRow(
       id: id,
       productName: 'Paint $id',
       rate: Money(amount: rate),
       unit: Unit.liters,
+      coverage: coverage,
+      coverageUnit: coverageUnit,
     );
 
     final sampleGroup = find.byKey(const Key('material_lookup_sample_group'));
     final notice = find.byKey(const Key('material_lookup_sample_notice'));
+    final footnote = find.byKey(
+      const Key('material_lookup_price_per_unit_footnote'),
+    );
 
     testWidgets('lists the sample rates under FROM SAMPLE COST FILE, below '
         'YOUR RATES, with the notice directly under the heading', (
@@ -429,5 +439,56 @@ void main() {
         ),
       );
     });
+
+    testWidgets('shows each price per the shared takeoff unit, with the '
+        'footnote, when every row states its coverage', (tester) async {
+      sampleRows = [paint('a', 52), paint('b', 38, coverage: 250)];
+      await openSheet(tester);
+
+      expect(
+        find.descendant(
+          of: footnote,
+          matching: find.text(
+            l10n.materialLookupPricePerUnitFootnote(l10n.unitSquareMeters),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('sample_rate_row_a')),
+          matching: find.textContaining(r'$0.13/Square meters'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('sample_rate_row_b')),
+          matching: find.textContaining(r'$0.15/Square meters'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final (reason, rows) in [
+      (
+        'a row has no coverage',
+        [paint('a', 52), paint('b', 38, coverage: null)],
+      ),
+      (
+        'the rows mix takeoff units',
+        [paint('a', 52), paint('b', 38, coverageUnit: Unit.meters)],
+      ),
+    ]) {
+      testWidgets('shows neither the price per unit nor the footnote when '
+          '$reason', (tester) async {
+        sampleRows = rows;
+        await openSheet(tester);
+
+        expect(footnote, findsNothing);
+        expect(find.textContaining('/Square meters'), findsNothing);
+        expect(find.textContaining('/Meters'), findsNothing);
+      });
+    }
   });
 }

@@ -46,6 +46,18 @@ class MaterialCostFormBloc
         ),
       ),
     );
+    on<MaterialSampleRatePicked>(
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(
+          itemName: e.itemName,
+          rate: e.rate,
+          unit: e.unit ?? d.unit,
+          rateStatus: RateStatus.sampleRateUnverified,
+          recalledRateId: null,
+        ),
+      ),
+    );
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,
