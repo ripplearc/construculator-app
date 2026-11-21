@@ -79,7 +79,16 @@ if ! git rev-parse --verify "$BASE_BRANCH" >/dev/null 2>&1; then
   error_exit "Branch '$BASE_BRANCH' does not exist" "INVALID_BRANCH" "{\"field\":\"base_branch\",\"expected\":\"valid branch\",\"received\":\"$BASE_BRANCH\"}"
 fi
 
-DIFF_OUTPUT=$(git diff --name-status "$BASE_BRANCH"..."$PR_BRANCH" 2>/dev/null || true)
+# Without a merge base (for example a shallow clone) git prints "fatal: no merge base"; report that
+# instead of an empty file list, which would read as "no files changed".
+# stderr goes to its own file: a warning such as "multiple merge bases" must not become a file line.
+GIT_STDERR=$(mktemp)
+if ! DIFF_OUTPUT=$(git diff --name-status "$BASE_BRANCH"..."$PR_BRANCH" 2>"$GIT_STDERR"); then
+  GIT_DETAILS=$(jq -n --rawfile git "$GIT_STDERR" '{git: $git}')
+  rm -f "$GIT_STDERR"
+  error_exit "Git diff failed" "GIT_ERROR" "$GIT_DETAILS"
+fi
+rm -f "$GIT_STDERR"
 
 FILES_JSON='[]'
 
