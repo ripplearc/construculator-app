@@ -10,6 +10,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../helpers/calculator_bloc_factory.dart';
+
 void main() {
   testWidgets('renders a Scaffold using the core page background color', (
     tester,
@@ -21,7 +23,10 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -38,7 +43,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
 
@@ -62,7 +70,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -135,7 +146,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
 
@@ -174,7 +188,10 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -205,7 +222,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -247,7 +267,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -270,7 +293,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -296,7 +322,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -329,7 +358,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -366,7 +398,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -404,7 +439,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -440,7 +478,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -484,7 +525,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
 
@@ -514,7 +558,10 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
 
@@ -669,7 +716,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
 
@@ -717,7 +767,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
       final bloc = BlocProvider.of<CalculatorBloc>(
@@ -754,7 +807,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
       final bloc = BlocProvider.of<CalculatorBloc>(
@@ -790,7 +846,10 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CalculatorPage(router: FakeAppRouter()),
+          home: CalculatorPage(
+            router: FakeAppRouter(),
+            calculatorBlocFactory: calculatorBlocForTests,
+          ),
         ),
       );
       final l10n = AppLocalizations.of(

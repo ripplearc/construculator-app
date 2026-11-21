@@ -11,23 +11,28 @@ import '../../../../scripts/golden/intended.dart';
 import '../../../../scripts/golden/replay.dart';
 import '../../../../scripts/golden/scenario.dart';
 import '../../../../scripts/golden/snapshot.dart';
+import '../../../features/calculator/helpers/calculator_bloc_factory.dart';
 
 /// Drives [CalculatorBloc] with the prototype's keys and reads its state back
 /// as a [Snapshot], in the words the page would show in English.
 ///
-/// The bloc maps what the engine answers today (S1b); the ladder's rungs,
-/// the sheets and the tape's own taps are still to come, so a scenario
-/// that needs them fails at that checkpoint — which is what this driver is
-/// for: the readable diff of what the app shows against what the prototype
-/// showed, and the score the CI job reports. A strip chip is accepted by the
-/// prefix of its text, as the prototype's `{accept}` step names it, and a
-/// tape chip is tapped by the prefix of its text (S1c). The prototype's
-/// steps that only switch on its own preferences or open its "View all"
-/// sheet change nothing here and are performed as no-ops; steps the bloc
-/// has no event for (the sheets, history) are refused, and the runner
-/// reports the scenario as unsupported from there.
+/// The bloc maps what the engine answers today (S1b) and the sheet counts
+/// the store answers for an area (S2a), over a fake store seeded with
+/// Appendix B's sizes; the ladder's other rungs, the sheets and the tape's
+/// own taps are still to come, so a scenario that needs them fails at that
+/// checkpoint — which is what this driver is for: the readable diff of
+/// what the app shows against what the prototype showed, and the score the
+/// CI job reports. A strip chip is accepted by the prefix of its text, as
+/// the prototype's `{accept}` step names it, and a tape chip is tapped by
+/// the prefix of its text (S1c). The prototype's steps that only switch on
+/// its own preferences or open its "View all" sheet change nothing here and
+/// are performed as no-ops; its tap on the "Materials keys ready" hint, a
+/// device the design does not have, selects the Materials group as the
+/// "View all" sheet would; steps the bloc has no event for (the sheets,
+/// history) are refused, and the runner reports the scenario as
+/// unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
-  CalculatorBloc _bloc = CalculatorBloc();
+  CalculatorBloc _bloc = calculatorBlocForTests();
 
   static final CalculatorLabelFormatter _labels = CalculatorLabelFormatter(
     AppLocalizationsEn(),
@@ -39,7 +44,7 @@ class BlocScenarioDriver implements ScenarioDriver {
   @override
   Future<void> reset() async {
     await _bloc.close();
-    _bloc = CalculatorBloc();
+    _bloc = calculatorBlocForTests();
   }
 
   // The prototype's preference for editing in place, which the design
@@ -50,6 +55,10 @@ class BlocScenarioDriver implements ScenarioDriver {
   // bloc's, and the group a scenario then clicks is selected by its id.
   static const String _viewAllKey = 'view-all';
 
+  // The prototype's hint under the strip that switches to the Materials
+  // group (its risk audit #5); here the group is selected as from "View all".
+  static const String _materialsHintKey = 'matswitch';
+
   @override
   Future<bool> perform(ScenarioStep step) async {
     if (step case JsStep(
@@ -59,6 +68,9 @@ class BlocScenarioDriver implements ScenarioDriver {
     }
     if (step case KeyStep(key: _viewAllKey)) return true;
     final event = switch (step) {
+      KeyStep(key: _materialsHintKey) => CalculatorGroupSelected(
+        _bloc.state.groupOrder.indexOf(CalculatorGroupId.materials),
+      ),
       KeyStep(:final key) => _eventFor(key),
       AcceptStep(:final prefix) => _acceptEventFor(prefix),
       TapChipStep(:final prefix) => _tapEventFor(prefix),
@@ -116,7 +128,8 @@ class BlocScenarioDriver implements ScenarioDriver {
   }
 
   static String _rowOneText(CalculatorSuggestion suggestion) =>
-      '${_labels.suggestionLabel(suggestion)}: ${suggestion.text}';
+      '${_labels.suggestionLabel(suggestion)}: '
+      '${_labels.suggestionText(suggestion)}';
 
   static String _bracketTextAsThePrototypeSpellsIt(
     CoreCalculatorChip chip,
@@ -212,6 +225,9 @@ class BlocScenarioDriver implements ScenarioDriver {
       system: state.currentUnitSystem == UnitSystem.metric
           ? 'metric'
           : 'imperial',
+      functionGroup: _labels.groupLabel(
+        state.groupOrder[state.currentGroupIndex],
+      ),
     );
   }
 
@@ -356,8 +372,9 @@ void main() {
       );
     });
 
-    test('S01 passes the engine\'s checkpoints, accepts Area from the strip, '
-        'and fails at the first trade rung with a readable diff', () async {
+    test('S01 passes the engine\'s checkpoints, accepts Area and the first '
+        'sheet count from the strip, and fails at the Sheet size pill with a '
+        'readable diff', () async {
       final s01 = scenarios.firstWhere((s) => s.id == 'S01');
       final result = await runScenario(s01, driver);
       expect(result.passed, isFalse);
@@ -365,15 +382,34 @@ void main() {
       expect(
         diff,
         contains(
-          'S01 Area happy path — FAILED at step 16 '
-          '"material suggestion follows"',
+          'S01 Area happy path — FAILED at step 19 '
+          '"dependent key shows the sheet size"',
         ),
       );
-      expect(diff, contains("expected: strip[0] startsWith 'Drywall:'"));
+      expect(
+        diff,
+        contains("expected: depKey == 'Sheet size: 47.24in x 94.49in'"),
+      );
       expect(diff, contains('actual:   '));
-      expect(diff, contains('tape=[Length22ft, Width18ft 8in, Area410.67ft²]'));
-      expect(diff, contains('strip=[Diagonal: 28.85ft, Perimeter: 81.33ft]'));
-      expect(diff, contains("source:   r=>r.strip[0].startsWith('Drywall:')"));
+      expect(
+        diff,
+        contains(
+          'tape=[Length22ft, Width18ft 8in, Area410.67ft², '
+          'Number of sheets12.83]',
+        ),
+      );
+      expect(
+        diff,
+        contains(
+          'strip=[Drywall: 11.41 sheets (48in x 108in), '
+          'Drywall: 10.27 sheets (48in x 120in), Diagonal: 28.85ft, '
+          'Perimeter: 81.33ft]',
+        ),
+      );
+      expect(
+        diff,
+        contains("source:   r=>r.depKey==='Sheet size: 47.24in x 94.49in'"),
+      );
     });
 
     test('the driver refuses steps the bloc has no event for, an accept '

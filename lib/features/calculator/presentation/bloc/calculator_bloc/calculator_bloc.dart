@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -26,10 +29,20 @@ part 'calculator_toast.dart';
 /// 3, "Takes: A length"), under Pitch (which takes a bare number, a length
 /// or a D:M:S entry and never an area or a weight: Section 5, "keeps", "at
 /// any time under Pitch") or under Slope goes to the tape with that said,
-/// read off the chip being typed wherever it is. Nothing here reads a
-/// store, the recents or the preferences repository; the System of units
-/// toggle sets the tape's own preferences, so the tape and the keyboard
-/// agree on one value.
+/// read off the chip being typed wherever it is. Nothing here reads the
+/// recents or the preferences repository; the System of units toggle sets
+/// the tape's own preferences, so the tape and the keyboard agree on one
+/// value.
+///
+/// The one store it reads is the sheet-size store, through
+/// [WatchMaterialCountsUseCase] (S2a, CA-1090; requirement R9): whenever
+/// the state's [CalculatorState.areaForCounts] or the unit system changes
+/// the bloc watches the counts of that area, and every answer — the first,
+/// and each change to the store after it — arrives as
+/// [CalculatorMaterialCountsArrived] and is kept in the state for the
+/// strip. The watch ends with the bloc. Which area is counted, and what
+/// the strip makes of the counts, is the state's reading; the counting is
+/// the engine's.
 ///
 /// The strip is the state's reading of the same tape (CA-1088, S1b):
 /// accepting a chip lands the answer the engine had already computed, so
@@ -45,7 +58,20 @@ part 'calculator_toast.dart';
 /// has one (term 2.15: "= still lands that suggestion"), else the tape's
 /// own equals.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
-  CalculatorBloc() : super(CalculatorState.initial()) {
+  final WatchMaterialCountsUseCase _materialCounts;
+
+  StreamSubscription<List<TradeCount>>? _countsSubscription;
+
+  // The area and the unit system the open watch was asked for, so a state
+  // change that keeps both leaves the watch alone.
+  Area? _watchedArea;
+  MeasurementSystem? _watchedSystem;
+
+  /// Creates the bloc over the use case that counts the stored sheet sizes
+  /// for an area.
+  CalculatorBloc({required this._materialCounts})
+    : super(CalculatorState.initial()) {
+    on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -62,6 +88,48 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
     on<CalculatorToastClosed>(_onToastClosed);
+  }
+
+  @override
+  void onChange(Change<CalculatorState> change) {
+    super.onChange(change);
+    _followTheAreaOnScreen(change.nextState);
+  }
+
+  @override
+  Future<void> close() async {
+    await _countsSubscription?.cancel();
+    return super.close();
+  }
+
+  // Watches the store for the area on the display under the unit system in
+  // force, and only when one of them changes: the store's own changes come
+  // through the open watch (R9), not through a new one.
+  void _followTheAreaOnScreen(CalculatorState next) {
+    final area = next.areaForCounts;
+    final system = next.tape.preferences.system;
+    if (area == _watchedArea && system == _watchedSystem) return;
+    unawaited(_countsSubscription?.cancel());
+    _countsSubscription = null;
+    _watchedArea = area;
+    _watchedSystem = system;
+    if (area == null) return;
+    _countsSubscription = _materialCounts(
+      trade: Trade.drywall,
+      area: area,
+      system: system,
+    ).listen((counts) => add(CalculatorMaterialCountsArrived(counts)));
+  }
+
+  // An answer for an area the bloc has stopped watching — queued by the old
+  // watch before the key that changed the area was handled — is dropped,
+  // so the state never carries counts the strip could not use.
+  void _onMaterialCountsArrived(
+    CalculatorMaterialCountsArrived event,
+    Emitter<CalculatorState> emit,
+  ) {
+    if (event.counts.any((count) => count.area != _watchedArea)) return;
+    emit(state.copyWith(materialCounts: event.counts));
   }
 
   static const Map<String, Unit> _unitKeys = {
