@@ -187,6 +187,10 @@
             <mutation text="sizeTable != null;"/>
             <mutation text="dimensions.isNotEmpty &amp;&amp; sizeTable != null;"/>
         </regex>
+        <!-- T2a 3/3 (CA-1095): the size editor reads under the system in force -->
+        <regex pattern="const SizeEntryParser\(\)\.lengthOf\(text, tape\.preferences\.system\)" dotAll="true" id="calculator_state.size_entry.always_imperial">
+            <mutation text="const SizeEntryParser().lengthOf(text, MeasurementSystem.imperial)"/>
+        </regex>
     </rules>
 
     <commands>

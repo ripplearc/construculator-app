@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -62,6 +64,7 @@ part 'calculator_toast.dart';
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
+  final AddMaterialSizeUseCase _addMaterialSize;
 
   StreamSubscription<List<TradeCount>>? _countsSubscription;
 
@@ -71,13 +74,15 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   MeasurementSystem? _watchedSystem;
 
   /// Creates the bloc over the use cases that count the stored sheet sizes
-  /// for an area and remove a size from the store.
+  /// for an area, and add a size to the store or remove one.
   CalculatorBloc({
     required this._materialCounts,
     required this._deleteMaterialSize,
+    required this._addMaterialSize,
   }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
+    on<CalculatorSizeEditorClosed>(_onSizeEditorClosed);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -159,6 +164,22 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     );
     if (deleted.isLeft() && identical(state.materialCounts, remaining)) {
       emit(state.copyWith(materialCounts: counts));
+    }
+  }
+
+  Future<void> _onSizeEditorClosed(
+    CalculatorSizeEditorClosed event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    if (event.fields case [final lengthText, final widthText]) {
+      final width = state.sizeEntryLength(lengthText);
+      final height = state.sizeEntryLength(widthText);
+      if (width == null || height == null) return;
+      await _addMaterialSize(
+        trade: Trade.drywall,
+        width: width,
+        height: height,
+      );
     }
   }
 

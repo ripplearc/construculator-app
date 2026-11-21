@@ -196,3 +196,22 @@ class CalculatorSizeRowDeleted extends CalculatorEvent {
   @override
   List<Object?> get props => [rowId];
 }
+
+/// The size editor opened from "+ Add size" in the detail panel's sheet
+/// table closed (Section 1.4; term 2.18). Closed with Add, [fields] holds
+/// the Length and Width fields as typed, and the size, width first, is
+/// added to the drywall store; its count reaches the table and the strip
+/// through the open watch (R9). Closed any other way, [fields] is empty and
+/// nothing is added, as it is for a field that spells no size, which the
+/// editor refuses before Add. Not a key: the tape and what the last key
+/// said stay.
+class CalculatorSizeEditorClosed extends CalculatorEvent {
+  /// The editor's fields: Length (the new size's width), then Width (its
+  /// height); empty when the editor closed without Add.
+  final List<String> fields;
+
+  const CalculatorSizeEditorClosed(this.fields);
+
+  @override
+  List<Object?> get props => [fields];
+}

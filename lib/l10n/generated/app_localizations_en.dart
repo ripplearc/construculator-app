@@ -2152,6 +2152,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get calculatorSheetTableAddButton => 'Add size';
+
+  @override
+  String get calculatorSizeEditorLengthField => 'Length';
+
+  @override
+  String get calculatorSizeEditorWidthField => 'Width';
+
+  @override
+  String get calculatorSizeEditorAddButton => 'Add';
+
+  @override
+  String get calculatorSizeEditorSizeError => 'Size must be more than zero.';
+
+  @override
   String get calculatorLabelValue => 'Value';
 
   @override

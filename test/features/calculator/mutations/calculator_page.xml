@@ -149,6 +149,16 @@
         <regex pattern="values: \[row\.sizeText, row\.countText\]" dotAll="true" id="calculator_page.sheet_table.count_column_shows_the_size">
             <mutation text="values: [row.sizeText, row.sizeText]"/>
         </regex>
+        <!-- T2a 3/3 (CA-1095): "+ Add size" -->
+        <regex pattern="onAdd: \(\) =&gt; _addSize\(labels, state\)," dotAll="true" id="calculator_page.add_size.opens_nothing">
+            <mutation text="onAdd: () {},"/>
+        </regex>
+        <regex pattern="state\.sizeEntryLength\(text\) == null\s*\?" dotAll="true" id="calculator_page.add_size.refuses_the_good_size">
+            <mutation text="state.sizeEntryLength(text) != null ?"/>
+        </regex>
+        <regex pattern="CalculatorSizeEditorClosed\(entry\?\.values \?\? const \[\]\)" dotAll="true" id="calculator_page.add_size.fields_dropped">
+            <mutation text="CalculatorSizeEditorClosed(const [])"/>
+        </regex>
     </rules>
 
     <commands>
