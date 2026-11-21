@@ -130,10 +130,16 @@ abstract class CostEstimationRepository {
   ///
   /// [estimationId] The ID of the estimation to rename.
   /// [newName] The new name for the estimation.
-  /// [projectId] The ID of the project the estimation belongs to (required for cache/stream updates).
+  /// [projectId] The ID of the project the estimation belongs to, used for error
+  /// context.
+  ///
+  /// Writes the new name to the phone, which uploads it later, so the call does
+  /// not wait for the server. Only the name changes; the last edited date stays
+  /// as the phone has it.
   ///
   /// Returns a [Future] that completes with an [Either] containing either
-  /// a [Failure] or the updated [CostEstimate].
+  /// a [Failure] (a not-found failure when the phone has no such estimation) or
+  /// the updated [CostEstimate].
   Future<Either<Failure, CostEstimate>> renameEstimation({
     required String estimationId,
     required String newName,
