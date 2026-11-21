@@ -1198,16 +1198,17 @@ class Tape extends Equatable {
   ///
   /// Under Slope the pill offers the ratio where both readings are
   /// realistic, between 0 and 2 (0.65 → 65%; above 2 it never asks), and
-  /// then the way back. Under Pitch it walks every reading of the digits,
-  /// degrees, inches of rise per 12in of run and D:M:S (8.45° → 8.45in/12in
-  /// → 8°45' → 8.45°, walkthrough 17.4), skipping the roof nobody could
-  /// frame (over 24in/12in, the same line Slope draws at a ratio of 2; a
-  /// number the Inch key made that steep gets no pill either), the
-  /// D:M:S of a whole number, which is itself, and any stop the rules would
-  /// refuse as a pitch, 0° or less or 90° or more (8.9999 skips 174°39');
-  /// a reading the user has typed in full, an angle typed with the D:M:S
-  /// key, a fraction, a squared inch, or a length in feet or metres asks
-  /// nothing. The rise the pill reads a bare number as is not a unit the
+  /// then the way back. Under Pitch it offers the other plausible reading,
+  /// degrees or inches of rise per 12in of run, and then the way back
+  /// (8.45° → 8.45in/12in → 8.45°); it never offers D:M:S, which is not a
+  /// pitch reading (decision tree rows 197 and 260; walkthrough 17.4's
+  /// D:M:S stop is a doc error), nor the roof nobody could frame (over
+  /// 24in/12in, the same line Slope draws at a ratio of 2; a number the
+  /// Inch key made that steep gets no pill either). A D:M:S opened by a
+  /// second point keeps the way back to the degrees its digits were typed
+  /// as (8.45. offers 8.45°). A number still ending in its point, an angle
+  /// typed with the D:M:S key, a fraction, a squared inch, or a length in
+  /// feet or metres asks nothing. The rise the pill reads a bare number as is not a unit the
   /// user typed: a digit after the tap continues the number (6in/12in then
   /// 5 is 65, read by default as 65°).
   ReadAsOffer? get readAsOffer {
@@ -1383,32 +1384,35 @@ class Tape extends Equatable {
     if (token.unit != null && (token.unit != Unit.inch || token.power != 1)) {
       return null;
     }
-    if (token.isDegreesMinutesSeconds && token.typedAs == null) return null;
+    if (token.isDegreesMinutesSeconds) {
+      if (token.typedAs case final typed?) {
+        return ReadAsOffer(
+          chipIndex: index,
+          from: NumberReading.degreesMinutesSeconds,
+          to: NumberReading.degrees,
+          next: _plain(typed),
+        );
+      }
+      return null;
+    }
     final raw = token.typedAs ?? token.digits;
-    if (token.unit == Unit.inch && !_isARoofSomeoneCouldFrame(raw)) return null;
-    final stops = [
-      NumberReading.degrees,
-      if (!raw.endsWith('.') && _isARoofSomeoneCouldFrame(raw))
-        NumberReading.risePerFoot,
-      if (_isAPitch(_readAsDegreesMinutesSeconds(raw)?.tokens.single.value))
-        NumberReading.degreesMinutesSeconds,
-    ];
-    if (stops.length < 2) return null;
-    final current = token.isDegreesMinutesSeconds
-        ? NumberReading.degreesMinutesSeconds
-        : token.unit == Unit.inch
-        ? NumberReading.risePerFoot
-        : NumberReading.degrees;
-    final next = stops[(stops.indexOf(current) + 1) % stops.length];
-    final entry = switch (next) {
-      NumberReading.degrees => _plain(raw),
-      NumberReading.risePerFoot => EntryBuffer(
+    if (raw.endsWith('.') || !_isARoofSomeoneCouldFrame(raw)) return null;
+    if (token.unit == Unit.inch) {
+      return ReadAsOffer(
+        chipIndex: index,
+        from: NumberReading.risePerFoot,
+        to: NumberReading.degrees,
+        next: _plain(raw),
+      );
+    }
+    return ReadAsOffer(
+      chipIndex: index,
+      from: NumberReading.degrees,
+      to: NumberReading.risePerFoot,
+      next: EntryBuffer(
         List.unmodifiable([Token(digits: raw, unit: Unit.inch, typedAs: raw)]),
       ),
-      _ => _readAsDegreesMinutesSeconds(raw),
-    };
-    if (entry == null) return null;
-    return ReadAsOffer(chipIndex: index, from: current, to: next, next: entry);
+    );
   }
 
   bool _isARoofSomeoneCouldFrame(String raw) {
@@ -1419,9 +1423,6 @@ class Tape extends Equatable {
     final length = parser.parse([Token(digits: raw, unit: Unit.inch)]);
     return length is Length && length.ticks > 0;
   }
-
-  static bool _isAPitch(double? degrees) =>
-      degrees != null && degrees > 0 && degrees < _degreesInARightAngle;
 
   static bool _holdsARecalledAngle(ValueChip chip) => chip.exactValue is Angle;
 
@@ -1916,7 +1917,7 @@ class Tape extends Equatable {
   /// Lands an answer the strip offered (Section 1.2) as a result chip
   /// labelled [key]: the chip being typed is closed the way = closes it — a
   /// fraction typed after whole inches read as inches, an angle's open
-  /// field sealed with its carry — and sealed before the answer; a chip
+  /// field sealed — and sealed before the answer; a chip
   /// nothing was typed into is dropped, since the key that opened it asked
   /// for the answer; and an unfinished chip keeps the answer out with the
   /// reason = gives it (Section 5.1, "Finish this value first"; a bare
@@ -1926,13 +1927,24 @@ class Tape extends Equatable {
   /// ([TapeRefusal.operatorNeedsANumber], walkthrough 21.3; product
   /// decision of 13 November 2026), and the operator stays: Length 12ft
   /// Width 10ft × then a tap on Area keeps the × rather than landing Area
-  /// over it.
+  /// over it. On a pitch answer a tap on another pitch reading rewrites
+  /// that answer, as pressing Pitch again does, and adds no new chip
+  /// (Section 8: "a tap on one of them rewrites the last tape entry, like
+  /// pressing Pitch again, and adds no new entry"; decision tree row 255).
   TapeOutcome landAnswer(String key, Quantity value) {
     if (editing != null) {
       return _leavingEdit((tape) => tape.landAnswer(key, value));
     }
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    if (chips.lastOrNull
+        case ResultChip(key: final answered, value: Angle(), :final operator)
+        when DeterministicRules.isPitchKey(answered) &&
+            DeterministicRules.isPitchKey(key)) {
+      return _replaceLastChip(
+        ResultChip(key: key, value: value, operator: operator),
+      );
     }
     final tape = _withFractionClosedAsInches()._withFieldClosed();
     final answer = ResultChip(key: key, value: value);

@@ -269,6 +269,44 @@ void main() {
       );
       expect(labels.toastBody(three), contains('and 2 more removed'));
     });
+
+    test('= on a pitch or a slope warning repeats the note, title then body, '
+        'and a Sides count no polygon has reads as its own note (Section '
+        '1.8; decision tree rows 339, 375; CA-1094)', () {
+      final words = {
+        CalculatorRangeWarning.pitchUnderRightAngle: (
+          'A pitch must be under 90°',
+          'Edit the Pitch chip.',
+        ),
+        CalculatorRangeWarning.pitchAtLeastZero: (
+          'A pitch must be 0° or more',
+          'Edit the Pitch chip.',
+        ),
+        CalculatorRangeWarning.flatPitchHasNoRun: (
+          'A flat pitch has no run',
+          'Edit the Pitch chip.',
+        ),
+        CalculatorRangeWarning.slopeAboveZero: (
+          'Slope must be more than 0%',
+          'Edit the Slope chip.',
+        ),
+      };
+      expect(words.keys.toSet(), CalculatorRangeWarning.values.toSet());
+      for (final MapEntry(key: warning, value: (title, body))
+          in words.entries) {
+        final toast = CalculatorRangeWarningToast(warning);
+        expect(labels.toastTitle(toast), title, reason: warning.name);
+        expect(labels.toastBody(toast), body, reason: warning.name);
+      }
+      expect(
+        labels.stripText(const CalculatorSidesNotWholeNote()),
+        'Sides needs a whole number, 3 or more.',
+      );
+      expect(
+        labels.stripText(const CalculatorSlopeOutOfRangeNote()),
+        'Slope must be more than 0%. Edit the Slope chip.',
+      );
+    });
   });
 
   group('CalculatorLabelFormatter.localizeChips with a chip tap', () {

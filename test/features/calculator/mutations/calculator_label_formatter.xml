@@ -85,6 +85,29 @@
         <regex pattern="CoreCalculatorChipType\.editable \|\|\s*CoreCalculatorChipType\.active \|\|\s*CoreCalculatorChipType\.bracketClosed \|\|\s*CoreCalculatorChipType\.bracketOpen when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.bracket_takes_no_tap">
             <mutation text="CoreCalculatorChipType.editable || CoreCalculatorChipType.active when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>
         </regex>
+        <!-- CA-1094 (Section 1.8): the Sides note, and the Alert = raises on a
+             warning, read in another note's words -->
+        <regex pattern="CalculatorSidesNotWholeNote\(\) =&gt; l10n\.calculatorNoteSidesNotWhole," dotAll="true" id="calculator_label_formatter.note.sides_words">
+            <mutation text="CalculatorSidesNotWholeNote() =&gt; l10n.calculatorNoteSlopeAboveZero,"/>
+        </regex>
+        <regex pattern="CalculatorRangeWarning\.pitchUnderRightAngle =&gt;\s*l10n\.calculatorToastPitchUnderRightAngleTitle," dotAll="true" id="calculator_label_formatter.toast.right_angle_title">
+            <mutation text="CalculatorRangeWarning.pitchUnderRightAngle =&gt; l10n.calculatorToastPitchAtLeastZeroTitle,"/>
+        </regex>
+        <regex pattern="CalculatorRangeWarning\.pitchAtLeastZero =&gt;\s*l10n\.calculatorToastPitchAtLeastZeroTitle," dotAll="true" id="calculator_label_formatter.toast.below_zero_title">
+            <mutation text="CalculatorRangeWarning.pitchAtLeastZero =&gt; l10n.calculatorToastPitchUnderRightAngleTitle,"/>
+        </regex>
+        <regex pattern="CalculatorRangeWarning\.flatPitchHasNoRun =&gt;\s*l10n\.calculatorToastFlatPitchHasNoRunTitle," dotAll="true" id="calculator_label_formatter.toast.flat_pitch_title">
+            <mutation text="CalculatorRangeWarning.flatPitchHasNoRun =&gt; l10n.calculatorToastSlopeAboveZeroTitle,"/>
+        </regex>
+        <regex pattern="CalculatorRangeWarning\.slopeAboveZero =&gt;\s*l10n\.calculatorToastSlopeAboveZeroTitle," dotAll="true" id="calculator_label_formatter.toast.slope_title">
+            <mutation text="CalculatorRangeWarning.slopeAboveZero =&gt; l10n.calculatorToastFlatPitchHasNoRunTitle,"/>
+        </regex>
+        <regex pattern="\) =&gt;\s*l10n\.calculatorToastEditTheSlopeChipBody," dotAll="true" id="calculator_label_formatter.toast.slope_body">
+            <mutation text=") =&gt; l10n.calculatorToastEditThePitchChipBody,"/>
+        </regex>
+        <regex pattern="CalculatorRangeWarningToast\(\) =&gt; l10n\.calculatorToastEditThePitchChipBody," dotAll="true" id="calculator_label_formatter.toast.pitch_body">
+            <mutation text="CalculatorRangeWarningToast() =&gt; l10n.calculatorToastEditTheSlopeChipBody,"/>
+        </regex>
     </rules>
 
     <commands>

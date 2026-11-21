@@ -286,6 +286,7 @@ class CalculatorLabelFormatter {
     CalculatorPitchOutOfRangeNote() => l10n.calculatorNotePitchAtLeastZero,
     CalculatorFlatPitchHasNoRunNote() => l10n.calculatorNoteFlatPitchHasNoRun,
     CalculatorSlopeOutOfRangeNote() => l10n.calculatorNoteSlopeAboveZero,
+    CalculatorSidesNotWholeNote() => l10n.calculatorNoteSidesNotWhole,
     CalculatorPitchHasNoDmsNote() => l10n.calculatorNotePitchHasNoDms,
     CalculatorTrigCannotAnswerNote(:final function) =>
       l10n.calculatorNoteTrigCannotAnswer(trigLabel(function)),
@@ -301,7 +302,6 @@ class CalculatorLabelFormatter {
     DependentKeyId.rate => l10n.calculatorPillRate,
     DependentKeyId.waste => l10n.calculatorPillWaste,
     DependentKeyId.density => l10n.calculatorPillDensity,
-    DependentKeyId.shownAs => l10n.calculatorPillShownAs,
     DependentKeyId.across => l10n.calculatorPillAcross,
   };
 
@@ -429,6 +429,16 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastSecondsTwoDigitsTitle,
     CalculatorAngleThreePartsToast() =>
       l10n.calculatorToastAngleThreePartsTitle,
+    CalculatorRangeWarningToast(:final warning) => switch (warning) {
+      CalculatorRangeWarning.pitchUnderRightAngle =>
+        l10n.calculatorToastPitchUnderRightAngleTitle,
+      CalculatorRangeWarning.pitchAtLeastZero =>
+        l10n.calculatorToastPitchAtLeastZeroTitle,
+      CalculatorRangeWarning.flatPitchHasNoRun =>
+        l10n.calculatorToastFlatPitchHasNoRunTitle,
+      CalculatorRangeWarning.slopeAboveZero =>
+        l10n.calculatorToastSlopeAboveZeroTitle,
+    },
   };
 
   /// The body of [toast], in the words of UX Design Doc Section 5.
@@ -463,6 +473,11 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastMinutesTwoDigitsBody,
     CalculatorSecondsTwoDigitsToast() ||
     CalculatorAngleThreePartsToast() => l10n.calculatorToastFinishTheAngleBody,
+    CalculatorRangeWarningToast(
+      warning: CalculatorRangeWarning.slopeAboveZero,
+    ) =>
+      l10n.calculatorToastEditTheSlopeChipBody,
+    CalculatorRangeWarningToast() => l10n.calculatorToastEditThePitchChipBody,
   };
 
   String _untranslated(String id) {

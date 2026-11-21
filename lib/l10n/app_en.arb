@@ -2878,10 +2878,6 @@
   "@calculatorPillDensity": {
     "description": "Dependent-key pill: the material density behind a weight. Plain word until CA-1083 supplies the material name"
   },
-  "calculatorPillShownAs": "Shown as",
-  "@calculatorPillShownAs": {
-    "description": "Dependent-key pill that respells a pitch as in/12in, degrees or grade"
-  },
   "calculatorPillAcross": "Across",
   "@calculatorPillAcross": {
     "description": "Dependent-key pill on a polygon area. Its value is 'corners' or 'flats': whether the diameter was measured corner to corner or flat side to flat side"
@@ -3222,9 +3218,13 @@
   "@calculatorNoteFlatPitchHasNoRun": {
     "description": "Strip note shown in place of the calculator suggestions while Pitch holds 0° with a Rise named and no Run or Diag to solve from"
   },
-  "calculatorNoteSlopeAboveZero": "A slope must be above 0%. Edit the Slope chip.",
+  "calculatorNoteSlopeAboveZero": "Slope must be more than 0%. Edit the Slope chip.",
   "@calculatorNoteSlopeAboveZero": {
     "description": "Strip note shown in place of the calculator suggestions while Slope holds a grade of 0% or less"
+  },
+  "calculatorNoteSidesNotWhole": "Sides needs a whole number, 3 or more.",
+  "@calculatorNoteSidesNotWhole": {
+    "description": "Strip note shown in place of the calculator suggestions while Sides holds a count that is not a whole number of 3 or more (UX Design Doc Section 1.8)"
   },
   "calculatorNotePitchHasNoDms": "Pitch has no D:M:S. Press Pitch for other readings.",
   "@calculatorNotePitchHasNoDms": {
@@ -3896,6 +3896,30 @@
   "calculatorToastAngleThreePartsTitle": "An angle has three parts",
   "@calculatorToastAngleThreePartsTitle": {
     "description": "Title of the red Alert when a point or the D:M:S key is pressed once the seconds of an angle are open (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastPitchUnderRightAngleTitle": "A pitch must be under 90°",
+  "@calculatorToastPitchUnderRightAngleTitle": {
+    "description": "Title of the red Alert when = is pressed while the strip says the pitch must be under 90° (UX Design Doc Section 1.8)"
+  },
+  "calculatorToastPitchAtLeastZeroTitle": "A pitch must be 0° or more",
+  "@calculatorToastPitchAtLeastZeroTitle": {
+    "description": "Title of the red Alert when = is pressed while the strip says the pitch must be 0° or more (UX Design Doc Section 1.8)"
+  },
+  "calculatorToastFlatPitchHasNoRunTitle": "A flat pitch has no run",
+  "@calculatorToastFlatPitchHasNoRunTitle": {
+    "description": "Title of the red Alert when = is pressed while the strip says a flat pitch has no run (UX Design Doc Section 1.8)"
+  },
+  "calculatorToastSlopeAboveZeroTitle": "Slope must be more than 0%",
+  "@calculatorToastSlopeAboveZeroTitle": {
+    "description": "Title of the red Alert when = is pressed while the strip says the slope must be more than 0% (UX Design Doc Section 1.8)"
+  },
+  "calculatorToastEditThePitchChipBody": "Edit the Pitch chip.",
+  "@calculatorToastEditThePitchChipBody": {
+    "description": "Body of the red Alert when = is pressed while a strip note says the pitch cannot be used (UX Design Doc Section 1.8)"
+  },
+  "calculatorToastEditTheSlopeChipBody": "Edit the Slope chip.",
+  "@calculatorToastEditTheSlopeChipBody": {
+    "description": "Body of the red Alert when = is pressed while the strip note says the slope cannot be used (UX Design Doc Section 1.8)"
   },
   "calculatorToastFinishTheAngleBody": "Press = or an operator to finish the angle.",
   "@calculatorToastFinishTheAngleBody": {

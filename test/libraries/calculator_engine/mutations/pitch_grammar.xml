@@ -120,6 +120,24 @@
             <mutation text="Angle(math.atan(riseOverRun));"/>
             <mutation text="Angle(math.tan(riseOverRun) * 180 / math.pi);"/>
         </regex>
+        <!-- CA-1094 (decision tree row 255): a tap on another pitch reading
+             appends a chip, any answer rewrites a pitch answer, or a pitch
+             reading rewrites an angle that is no pitch answer -->
+        <regex pattern="\) when DeterministicRules\.isPitchKey\(answered\) &amp;&amp;\s*DeterministicRules\.isPitchKey\(key\)\) \{" dotAll="true" id="pitch_grammar.strip_tap.rewrites_only_a_pitch">
+            <mutation text=") when DeterministicRules.isPitchKey(answered)) {"/>
+            <mutation text=") when DeterministicRules.isPitchKey(key)) {"/>
+        </regex>
+        <regex pattern="return _replaceLastChip\(\s*ResultChip\(key: key, value: value, operator: operator\),\s*\);" dotAll="true" id="pitch_grammar.strip_tap.appends">
+            <mutation text="return TapeChanged(append(ResultChip(key: key, value: value, operator: operator)));"/>
+        </regex>
+
+        <!-- CA-1094 (decision tree row 339): a Sides count no polygon has is
+             used, or a tape with no Sides, or a whole count, is refused -->
+        <regex pattern="if \(namedValues\.containsKey\(DimensionKey\.sides\.id\) &amp;&amp;\s*_sidesOf\(namedValues\) == null\) \{" dotAll="true" id="pitch_grammar.sides.not_whole">
+            <mutation text="if (_sidesOf(namedValues) == null) {"/>
+            <mutation text="if (namedValues.containsKey(DimensionKey.sides.id)) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
     </rules>
 
     <commands>

@@ -699,12 +699,12 @@ void main() {
 
     final labels = CalculatorLabelFormatter(l10n);
 
-    final toggle = labels.pill(DependentKeyId.shownAs, 'in/12in');
+    final toggle = labels.pill(DependentKeyId.across, 'corners');
     final editable = labels.pill(DependentKeyId.rate, '4.5');
 
     expect(toggle.kind, equals(CoreDependentKeyKind.toggle));
-    expect(toggle.label, equals(l10n.calculatorPillShownAs));
-    expect(toggle.value, equals('in/12in'));
+    expect(toggle.label, equals(l10n.calculatorPillAcross));
+    expect(toggle.value, equals('corners'));
     expect(editable.kind, equals(CoreDependentKeyKind.editable));
   });
 
@@ -735,7 +735,6 @@ void main() {
         DependentKeyId.rate: l10n.calculatorPillRate,
         DependentKeyId.waste: l10n.calculatorPillWaste,
         DependentKeyId.density: l10n.calculatorPillDensity,
-        DependentKeyId.shownAs: l10n.calculatorPillShownAs,
         DependentKeyId.across: l10n.calculatorPillAcross,
       };
 

@@ -8,9 +8,9 @@
          more), where the tap goes (the D:M:S reading, the way back from the
          typed digits) and what the tap does (re-input from the digits,
          rebuild the trig answer behind them). Under Pitch and Slope: the
-         stops the pill walks (degrees, inches of rise per 12in of run and
-         D:M:S under Pitch; a grade's ratio inside the 0 to 2 band under
-         Slope), the roof nobody could frame, a number the Inch key made
+         stops the pill walks (degrees and inches of rise per 12in of run
+         under Pitch, never D:M:S; a grade's ratio inside the 0 to 2 band
+         under Slope), the roof nobody could frame, a number the Inch key made
          that steep, the digit typed after the tap, and the way back to the
          typed digits. Critical path: a pill that offers the wrong
          reading, or rebuilds the wrong answer, rewrites the user's number
@@ -79,8 +79,7 @@
             <mutation text="final shifted = '$whole${fraction.substring(0, 1)}'.replaceFirst("/>
         </regex>
 
-        <!-- RULE 8: the Pitch stops: the roof ceiling, the D:M:S of a whole
-             number, a trailing point's trade stop -->
+        <!-- RULE 8: the Pitch stops: the roof ceiling -->
         <regex pattern="if \(rise == null \|\| rise &lt;= 0 \|\| rise &gt; ReadAsOffer\.largestRisePerFoot\) \{\s*return false;\s*\}" dotAll="true" id="read_as.pitch.roof_ceiling">
             <mutation text="if (rise == null || rise &lt;= 0) { return false; }"/>
             <mutation text="if (rise == null || rise &lt;= 0 || rise &gt;= ReadAsOffer.largestRisePerFoot) { return false; }"/>
@@ -91,40 +90,33 @@
             <mutation text="return true;"/>
             <mutation text="return length is Length &amp;&amp; length.ticks &gt;= 0;"/>
         </regex>
-        <regex pattern="if \(_isAPitch\(_readAsDegreesMinutesSeconds\(raw\)\?\.tokens\.single\.value\)\)\s*NumberReading\.degreesMinutesSeconds," dotAll="true" id="read_as.pitch.whole_number_dms">
-            <mutation text="NumberReading.degreesMinutesSeconds,"/>
+
+        <!-- RULE 9 (CA-1094, decision tree row 260): under Pitch the pill
+             offers degrees or in/12in and the way back, never D:M:S: a
+             trailing point or a roof past the band is asked about, the two
+             readings swap, a D:M:S opened by a second point loses its way
+             back or a settled one gets one -->
+        <regex pattern="if \(raw\.endsWith\('\.'\) \|\| !_isARoofSomeoneCouldFrame\(raw\)\) return null;" dotAll="true" id="read_as.pitch.trailing_point_or_roof">
+            <mutation text="if (!_isARoofSomeoneCouldFrame(raw)) return null;"/>
+            <mutation text="if (raw.endsWith('.')) return null;"/>
         </regex>
-        <regex pattern="if \(!raw\.endsWith\('\.'\) &amp;&amp; _isARoofSomeoneCouldFrame\(raw\)\)" dotAll="true" id="read_as.pitch.trailing_point_trade">
-            <mutation text="if (_isARoofSomeoneCouldFrame(raw))"/>
+        <regex pattern="if \(token\.unit == Unit\.inch\) \{\s*return ReadAsOffer\(\s*chipIndex: index,\s*from: NumberReading\.risePerFoot," dotAll="true" id="read_as.pitch.readings_swapped">
+            <mutation text="if (token.unit != Unit.inch) { return ReadAsOffer( chipIndex: index, from: NumberReading.risePerFoot,"/>
+        </regex>
+        <regex pattern="token\.power != 1\)\) \{\s*return null;\s*\}\s*if \(token\.isDegreesMinutesSeconds\) \{\s*if \(token\.typedAs case final typed\?\) \{" dotAll="true" id="read_as.pitch.typed_angle_way_back">
+            <mutation text="token.power != 1)) { return null; } if (token.isDegreesMinutesSeconds) { if (token.typedAs case final typed? when typed.isEmpty) {"/>
+            <mutation text="token.power != 1)) { return null; } if (token.isDegreesMinutesSeconds &amp;&amp; token.typedAs != null) { if (token.typedAs case final typed?) {"/>
         </regex>
 
-        <!-- RULE 9: the current stop is misread, or the next one is the
-             current one -->
-        <regex pattern="final next = stops\[\(stops\.indexOf\(current\) \+ 1\) % stops\.length\];" dotAll="true" id="read_as.pitch.next_stop">
-            <mutation text="final next = stops[(stops.indexOf(current) + 2) % stops.length];"/>
-        </regex>
-        <regex pattern=": token\.unit == Unit\.inch\s*\? NumberReading\.risePerFoot\s*: NumberReading\.degrees;" dotAll="true" id="read_as.pitch.current_stop">
-            <mutation text=": NumberReading.degrees;"/>
-        </regex>
-
-        <!-- RULE 10: a settled D:M:S, a fraction or a length in feet is
-             asked about -->
-        <regex pattern="if \(token\.isDegreesMinutesSeconds &amp;&amp; token\.typedAs == null\) return null;" dotAll="true" id="read_as.pitch.settled_angle">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="if \(token\.unit == Unit\.inch &amp;&amp; !_isARoofSomeoneCouldFrame\(raw\)\) return null;" dotAll="true" id="read_as.pitch.typed_roof_past_the_band">
-            <mutation text=""/>
-        </regex>
+        <!-- RULE 10: a fraction or a length in feet is asked about -->
         <regex pattern="if \(token\.unit != null &amp;&amp; \(token\.unit != Unit\.inch \|\| token\.power != 1\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.pitch.feet">
             <mutation text=""/>
             <mutation text="if (token.unit != null &amp;&amp; token.unit != Unit.inch) { return null; }"/>
         </regex>
 
-        <!-- RULE 11: the lap does not come home: the way back reads the
-             current digits -->
-        <regex pattern="final raw = token\.typedAs \?\? token\.digits;" dotAll="true" id="read_as.pitch.raw_is_current">
-            <mutation text="final raw = token.digits;"/>
-        </regex>
+        <!-- RULE 11 is gone with CA-1094: once Pitch has no D:M:S stop, the
+             digits a Pitch token was typed as are its digits outside the
+             D:M:S branch, so reading the current digits is equivalent -->
 
         <!-- RULE 12: the tap keeps the old answer, or rebuilds it on the old
              reading -->
@@ -132,16 +124,9 @@
             <mutation text="_with([...before.chips, answer]),"/>
         </regex>
 
-        <!-- RULE 12b (R1): a stop the rules refuse as a pitch is offered,
-             Slope asks about a
-             fraction or a length, the rise the pill reads has no way back
-             so a digit after it starts a compound -->
-        <!-- The 90° off-by-one mutant (&lt;=) is equivalent since CA-1372:
-             no stop reads exactly 90° once 89.60 is refused at the digit -->
-        <regex pattern="static bool _isAPitch\(double\? degrees\) =&gt;\s*degrees != null &amp;&amp; degrees &gt; 0 &amp;&amp; degrees &lt; _degreesInARightAngle;" dotAll="true" id="read_as.pitch.stop_the_rules_refuse">
-            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null;"/>
-            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null &amp;&amp; degrees &gt;= 0 &amp;&amp; degrees &lt; _degreesInARightAngle;"/>
-        </regex>
+        <!-- RULE 12b (R1): Slope asks about a fraction or a length, the rise
+             the pill reads has no way back so a digit after it starts a
+             compound -->
 
         <regex pattern="if \(!_isSolo\(chip\)\) return null;\s*final token = chip\.entry\.tokens\.single;\s*if \(token\.isDegreesMinutesSeconds \|\| token\.digits\.endsWith" dotAll="true" id="read_as.slope.fraction_or_length">
             <mutation text="final token = chip.entry.tokens.single; if (token.isDegreesMinutesSeconds || token.digits.endsWith"/>
