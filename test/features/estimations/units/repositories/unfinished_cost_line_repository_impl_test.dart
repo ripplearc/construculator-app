@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
@@ -10,6 +11,7 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,13 +47,14 @@ UnfinishedCostLine _line({
 void main() {
   group('UnfinishedCostLineRepository', () {
     const key = 'unfinished_cost_line.account-1';
-    late FakeStorageService storage;
+    late _HeldWriteStorage storage;
+    late FakeClockImpl clock;
     late FakeAuthRepository auth;
     late UnfinishedCostLineRepository repository;
 
     setUp(() {
-      final clock = FakeClockImpl();
-      storage = FakeStorageService();
+      clock = FakeClockImpl(_openedAt);
+      storage = _HeldWriteStorage();
       auth = FakeAuthRepository(clock: clock)
         ..setCurrentCredentials(_credential('account-1'));
       Modular.init(
@@ -64,6 +67,7 @@ void main() {
       addTearDown(Modular.destroy);
       Modular.replaceInstance<StorageService>(storage);
       Modular.replaceInstance<AuthRepository>(auth);
+      Modular.replaceInstance<Clock>(clock);
       repository = Modular.get<UnfinishedCostLineRepository>();
     });
 
@@ -117,10 +121,64 @@ void main() {
       );
     });
 
+    test('saves in the order asked, without waiting between saves', () async {
+      final saves = [
+        repository.save(_line(itemName: 'P')),
+        repository.save(_line(itemName: 'Pa')),
+        repository.remove(),
+        repository.save(_line(itemName: 'Pai')),
+      ];
+      await Future.wait(saves);
+
+      expect(
+        (await repository.read()),
+        _lineWith('itemName', (l) => l.itemName, 'Pai'),
+      );
+    });
+
+    test('a slow older save never lands after a newer one', () async {
+      final slowWrite = storage.holdNextWrite();
+      final older = repository.save(_line(itemName: 'Primer'));
+      final newer = repository.save(_line(itemName: 'Interior paint'));
+      await storage.heldWriteStarted;
+      slowWrite.complete();
+      await Future.wait([older, newer]);
+
+      expect(
+        (await repository.read()),
+        _lineWith('itemName', (l) => l.itemName, 'Interior paint'),
+      );
+    });
+
+    test('a read waits for a save still running', () async {
+      final slowWrite = storage.holdNextWrite();
+      unawaited(repository.save(_line()));
+      await storage.heldWriteStarted;
+      final read = repository.read();
+      slowWrite.complete();
+
+      expect(await read, _line());
+    });
+
     test('remove leaves no line', () async {
       await repository.save(_line());
 
       await repository.remove();
+
+      expect(await repository.read(), isNull);
+      expect(storage.valueOf(key), isNull);
+    });
+
+    test('keeps a line changed less than 7 days ago', () async {
+      await repository.save(_line());
+      clock.set(_openedAt.add(const Duration(days: 7) - _oneSecond));
+
+      expect(await repository.read(), _line());
+    });
+
+    test('removes a line changed 7 days ago', () async {
+      await repository.save(_line());
+      clock.set(_openedAt.add(const Duration(days: 7)));
 
       expect(await repository.read(), isNull);
       expect(storage.valueOf(key), isNull);
@@ -194,6 +252,28 @@ void main() {
       expect(line, _lineWith('itemName', (l) => l.itemName, 'Interior paint'));
     });
   });
+}
+
+const _oneSecond = Duration(seconds: 1);
+
+class _HeldWriteStorage extends FakeStorageService {
+  Completer<void>? _heldWrite;
+  final _writeStarted = Completer<void>();
+
+  Future<void> get heldWriteStarted => _writeStarted.future;
+
+  Completer<void> holdNextWrite() => _heldWrite = Completer<void>();
+
+  @override
+  Future<void> saveData<T>(String key, T value) async {
+    final held = _heldWrite;
+    _heldWrite = null;
+    if (held != null) {
+      _writeStarted.complete();
+      await held.future;
+    }
+    await super.saveData<T>(key, value);
+  }
 }
 
 String _storedWith(Map<String, Object?> changes) =>
