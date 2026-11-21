@@ -9,7 +9,10 @@ import 'package:construculator/features/calculator/data/repositories/trade_store
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_fence_count_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_footing_volumes_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_spacing_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
@@ -61,6 +64,15 @@ class CalculatorModule extends Module {
     );
     i.add<WatchMaterialCountsUseCase>(
       () => WatchMaterialCountsUseCase(repository: i()),
+    );
+    i.add<WatchFootingVolumesUseCase>(
+      () => WatchFootingVolumesUseCase(repository: i()),
+    );
+    i.add<WatchFenceCountUseCase>(
+      () => WatchFenceCountUseCase(repository: i()),
+    );
+    i.add<WatchSpacingCountsUseCase>(
+      () => WatchSpacingCountsUseCase(repository: i()),
     );
     i.addLazySingleton<LocalRecentsDataSource>(
       () => PowerSyncLocalRecentsDataSource(
