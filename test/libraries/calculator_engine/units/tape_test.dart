@@ -395,6 +395,29 @@ void main() {
         );
       });
 
+      test('R2 of #820: under a key that takes a count every unit is '
+          'refused, a weight and an area-raising second press included, '
+          'and the number stays typed; inside a bracket too', () {
+        final sides = press(const Tape(), '[Sides] 6');
+        for (final unit in [Unit.foot, Unit.inch, Unit.pound, Unit.metre]) {
+          expect(
+            sides.pressUnit(unit, takesACount: true),
+            const TapeRefused(TapeRefusal.sidesTakesACount),
+            reason: unit.name,
+          );
+        }
+        expect(
+          press(const Tape(), '6').pressUnit(Unit.foot),
+          isA<TapeChanged>(),
+          reason: 'a bare number with no flag still takes the unit',
+        );
+        final inBracket = press(changed(const Tape().pressBracket()), '6');
+        expect(
+          inBracket.pressUnit(Unit.foot, takesACount: true),
+          const TapeRefused(TapeRefusal.sidesTakesACount),
+        );
+      });
+
       test('a length-only key refuses the raise on its finished value', () {
         final tape = press(const Tape(), '[Width] 2 2 ft');
         final refused = tape.pressUnit(Unit.foot, holdsLengthOnly: true);

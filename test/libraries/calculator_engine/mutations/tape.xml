@@ -250,6 +250,15 @@
         <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return TapeChanged\(_removeBracket\(bracket\)\);\s*\}" dotAll="true" id="tape.backspace.emptied_group_kept">
             <mutation text="if (bracket.inner.isEmpty) { return TapeChanged(_removeBracket(bracket)); }"/>
         </regex>
+
+        <!-- RULE (R2 of #820, F1): a unit under a key that takes a count is
+             let in, or let in only inside a bracket -->
+        <regex pattern="if \(takesACount\) return const TapeRefused\(TapeRefusal\.sidesTakesACount\);" dotAll="true" id="tape.press_unit.count_takes_a_unit">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="takesAGrade: takesAGrade,\s*takesACount: takesACount," dotAll="true" id="tape.press_unit.count_flag_dropped_in_bracket">
+            <mutation text="takesAGrade: takesAGrade,"/>
+        </regex>
     </rules>
 
     <commands>

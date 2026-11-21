@@ -544,6 +544,27 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
+        'R2 (review of 18 Nov, F1): Sides takes a count, so every unit under '
+        'it is refused and the 6 stays: Sides 6 [Feet], a second [Feet] and '
+        '[Lbs] never read 6ft, 6ft² or 6lbs',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Sides'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('lbs')),
+        verify: (bloc) {
+          expect(bloc.state.tape, pressed('[Sides] 6'));
+          expect(
+            bloc.state.refusal,
+            const TapeRefused(TapeRefusal.sidesTakesACount),
+          );
+          expect(bloc.state.valueText, '6');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
         'Pitch holds a length only: a unit pressed again under it keeps the '
         'length instead of raising it to an area (Pitch 6 [Inch] [Inch] stays '
         'Pitch 6in), and a weight under it is refused with the number kept',

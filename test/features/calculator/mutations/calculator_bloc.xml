@@ -36,6 +36,12 @@
         <regex pattern="\|\| key == PlainNumberKeys\.pitch" dotAll="true" id="calculator_bloc.press_unit.pitch_holds_any_unit">
             <mutation text=""/>
         </regex>
+
+        <!-- RULE 5 (R2 of #820, review of 18 Nov, F1): Sides takes any unit,
+             so Sides 6 [Feet] [Feet] reads 6ft² -->
+        <regex pattern="takesACount: key == PlainNumberKeys\.sides," dotAll="true" id="calculator_bloc.press_unit.sides_takes_a_unit">
+            <mutation text="takesACount: false,"/>
+        </regex>
     </rules>
 
     <commands>

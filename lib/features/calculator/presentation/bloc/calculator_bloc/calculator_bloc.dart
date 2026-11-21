@@ -98,6 +98,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       holdsLengthOnly:
           LengthOnlyKeys.all.contains(key) || key == PlainNumberKeys.pitch,
       takesAGrade: key == PlainNumberKeys.slope,
+      takesACount: key == PlainNumberKeys.sides,
     );
   }
 

@@ -89,6 +89,11 @@ enum TapeRefusal {
   /// grade").
   slopeTakesAGrade,
 
+  /// Any unit on a number under Sides, which takes a count (Section 3,
+  /// "Takes: A count"): Sides 6 [Feet] would read 6ft, and a second press
+  /// 6ft², so the unit is refused and the 6 stays typed.
+  sidesTakesACount,
+
   /// A trig key on a value with a unit (38ft [SIN], 12ft ÷ 2 [ATAN]): "Sine
   /// needs a plain angle, not a length", "Arctangent needs a ratio, not a
   /// length" (Section 5.4). The caller names the function and the value
@@ -1372,7 +1377,9 @@ class Tape extends Equatable {
   /// a key that can only hold a length. [takesAGrade] is true under
   /// Slope, whose bare number is a % grade: a length unit there is refused
   /// (Section 5.4, "A slope is a % grade, not a length"), so [Slope] 6
-  /// [Feet] cannot become a length the solver never reads. Pitch takes a
+  /// [Feet] cannot become a length the solver never reads. [takesACount] is
+  /// true under Sides, which takes a count, so every unit is refused there
+  /// and Sides 6 [Feet] [Feet] never reads 6ft². Pitch takes a
   /// length as inches of rise per 12in of run (rule 4.10). An angle typed
   /// as degrees, minutes and seconds is refused a unit under any key
   /// (Section 5.4, "That value is already an angle"), and so is an angle
@@ -1382,6 +1389,7 @@ class Tape extends Equatable {
     Unit unit, {
     bool holdsLengthOnly = false,
     bool takesAGrade = false,
+    bool takesACount = false,
   }) {
     if (openBracket case final bracket?) {
       return _inside(
@@ -1390,6 +1398,7 @@ class Tape extends Equatable {
           unit,
           holdsLengthOnly: holdsLengthOnly,
           takesAGrade: takesAGrade,
+          takesACount: takesACount,
         ),
       );
     }
@@ -1420,6 +1429,7 @@ class Tape extends Equatable {
     if (takesAGrade && unit.dimension == Dimension.length) {
       return const TapeRefused(TapeRefusal.slopeTakesAGrade);
     }
+    if (takesACount) return const TapeRefused(TapeRefusal.sidesTakesACount);
     if (chip.entry.isOpen) {
       return _entry(
         chip,
