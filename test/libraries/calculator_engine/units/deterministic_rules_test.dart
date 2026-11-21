@@ -12,6 +12,10 @@ void main() {
     unit: Unit.footInch,
   );
   const feet20 = Length(20 * Length.ticksPerFoot, unit: Unit.foot);
+  const feet22in8 = Length(
+    22 * Length.ticksPerFoot + 8 * Length.ticksPerInch,
+    unit: Unit.footInch,
+  );
   const feet9 = Length(9 * Length.ticksPerFoot, unit: Unit.foot);
   const feet12 = Length(12 * Length.ticksPerFoot, unit: Unit.foot);
   const feet15 = Length(15 * Length.ticksPerFoot, unit: Unit.foot);
@@ -1021,8 +1025,12 @@ void main() {
       });
 
       test('a value still being typed and a bare number are left out', () {
-        final tape = press(const Tape(), '[Length] 2 2 ft 8 ft [Width] 1 8');
-        expect(tape.namedValues, {'Length': feet22});
+        final tape = press(
+          const Tape(),
+          '[Length] 2 2 ft 8 in 8 ft [Width] 1 8',
+        );
+        expect(tape.chips, hasLength(3), reason: 'Length 22ft 8in | 8ft | 18');
+        expect(tape.namedValues, {'Length': feet22in8});
       });
 
       test(

@@ -12,6 +12,19 @@ void main() {
 
   group('QuantityFormatter', () {
     group('lengths, as Section 6 spells them', () {
+      test('a bare fraction of an inch reads 1/2in, never 0-1/2in (decision '
+          'tree row 110)', () {
+        expect(formatter.format(const Length(32, unit: Unit.inch)), '1/2in');
+        expect(formatter.format(const Length(-32, unit: Unit.inch)), '-1/2in');
+        expect(formatter.format(const Length(96, unit: Unit.inch)), '1-1/2in');
+        expect(formatter.format(const Length(0, unit: Unit.inch)), '0in');
+        expect(
+          formatter.format(const Length(32, unit: Unit.footInch)),
+          '0ft 0-1/2in',
+          reason: 'a compound keeps its whole inches in front of the fraction',
+        );
+      });
+
       test('22ft in feet, inches, yards and metres', () {
         expect(
           formatter.format(const Length(twentyTwoFeet, unit: Unit.foot)),
@@ -58,7 +71,7 @@ void main() {
         );
         expect(formatter.format(diagonal.spelledIn(Unit.metre)), '5.6m');
         expect(formatter.format(Length.computed(1.9, unit: Unit.inch)), '0in');
-        expect(formatter.format(const Length(2, unit: Unit.inch)), '0-1/16in');
+        expect(formatter.format(const Length(2, unit: Unit.inch)), '1/16in');
         expect(
           formatter.format(Length.computed(1.9, unit: Unit.footInch)),
           '0ft 0in',
@@ -228,7 +241,7 @@ void main() {
         const firstStep = Rational(-1, 16);
         expect(
           formatter.format(const Length.exact(firstStep, unit: Unit.inch)),
-          '-0-1/16in',
+          '-1/16in',
         );
         expect(
           formatter.format(const Length.exact(firstStep, unit: Unit.footInch)),

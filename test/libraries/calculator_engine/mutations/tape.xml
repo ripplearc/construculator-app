@@ -224,6 +224,50 @@
         <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
         </regex>
+
+        <!-- RULE R79a (decision tree row 79): = leaves the inch part of a
+             compound open, so the value is refused as unfinished -->
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\s*\._withInchPartClosed\(\)\s*\._withFieldClosed\(\);" dotAll="true" id="tape.equals.inch_part_left_open">
+            <mutation text="final tape = _withFractionClosedAsInches()._withFieldClosed();"/>
+        </regex>
+
+        <!-- RULE R79b: the compound = closed is not landed as Calc, or any
+             tape that ends on a closed bracket lands only the bracket (R3,
+             B6: rows 66, 107) -->
+        <regex pattern="ChainValue\(:final value\)\s*when tape\._isALoneClosedBracket \|\|\s*closedInchPart &amp;&amp; tape\._isALoneUnnamedValue =&gt;" dotAll="true" id="tape.equals.closed_inch_part_not_landed">
+            <mutation text="ChainValue(:final value) when tape._isALoneClosedBracket =&gt;"/>
+            <mutation text="ChainValue(:final value) when tape._isALoneClosedBracket || closedInchPart =&gt;"/>
+            <mutation text="ChainValue(:final value) when tape._endsWithClosedBracket || closedInchPart &amp;&amp; tape._isALoneUnnamedValue =&gt;"/>
+        </regex>
+        <regex pattern="\[BracketChip\(\)\] =&gt; true," dotAll="true" id="tape.equals.lone_closed_bracket">
+            <mutation text="[..., BracketChip()] =&gt; true,"/>
+        </regex>
+
+        <!-- RULE R77 (R3, B3: decision tree row 77): = closes an inch part
+             of 12 or more and lands the carried compound -->
+        <regex pattern="EntryChanged\(:final buffer\) =&gt; _replaceActive\(\s*chip\.copyWith\(entry: buffer\),\s*\),\s*EntryOutcome\(\) =&gt; this,\s*\};\s*\}\s*Tape _withFractionClosedAsInches" dotAll="true" id="tape.equals.inch_part_carried">
+            <mutation text="EntryChanged(:final buffer) || EntryCarried(:final buffer) =&gt; _replaceActive(chip.copyWith(entry: buffer)), EntryOutcome() =&gt; this, }; } Tape _withFractionClosedAsInches"/>
+        </regex>
+
+        <!-- RULE R79c (B1): only a lone unnamed compound lands as Calc; a
+             named value, or a tape of several values, is read as one -->
+        <regex pattern="\[ValueChip\(key: null, operator: null\)\] =&gt; true," dotAll="true" id="tape.equals.lone_unnamed_value">
+            <mutation text="[ValueChip(operator: null)] =&gt; true,"/>
+            <mutation text="[..., ValueChip(key: null, operator: null)] =&gt; true,"/>
+        </regex>
+
+        <!-- RULE R28 (R3, B5: rule 4.5): inside a bracket a digit after a
+             fraction the Inch key closed starts a second value the bracket
+             then drops -->
+        <regex pattern="if \(_with\(bracket\.inner\)\.active case final chip\?\s*when chip\.entry\.endsWithClosedInchFraction\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}" dotAll="true" id="tape.type_digit.second_value_in_bracket">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE R84 (decision tree row 84): a digit after a fraction the Inch
+             key closed goes on with the value -->
+        <regex pattern="if \(active case final chip\? when chip\.entry\.endsWithClosedInchFraction\) \{\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.after_closed_fraction">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>
