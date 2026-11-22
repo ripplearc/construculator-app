@@ -2833,4 +2833,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replaceSavedRateGoBackButton => 'Go back';
+
+  @override
+  String get estimateTotalLabel => 'Total';
+
+  @override
+  String get addCostButton => 'Add cost';
 }

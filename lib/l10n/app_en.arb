@@ -4066,5 +4066,15 @@
   "@replaceSavedRateGoBackButton": {
     "description": "Outlined button of the replace question that keeps the saved price and saves nothing",
     "context": "Storyboard CUJ 6, frame 5r (Saved price changed, then saved again)"
+  },
+  "estimateTotalLabel": "Total",
+  "@estimateTotalLabel": {
+    "description": "Label of the estimate total in the bar at the bottom of the estimate screen",
+    "context": "CUJ 3 screens 2, 3 and 14, and CUJ 4 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "addCostButton": "Add cost",
+  "@addCostButton": {
+    "description": "Label of the outlined button in the bottom bar that opens the category list",
+    "context": "CUJ 3 screens 2, 3 and 14, and CUJ 4 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
   }
 }
