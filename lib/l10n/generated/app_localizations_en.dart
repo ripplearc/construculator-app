@@ -1395,7 +1395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectUnitTitle => 'Select unit';
 
   @override
-  String get unitPieces => 'Pieces';
+  String get unitPieces => 'Single units — fixtures';
 
   @override
   String get unitMeters => 'Meters';
@@ -1407,7 +1407,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitCubicMeters => 'Cubic meters';
 
   @override
-  String get unitKilograms => 'Kilograms';
+  String get unitKilograms => 'Kilogram';
 
   @override
   String get unitTons => 'Tons';
@@ -1422,16 +1422,157 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitDays => 'Days';
 
   @override
-  String get unitBoxes => 'Boxes';
+  String get unitBoxes => 'Box';
 
   @override
-  String get unitBags => 'Bags';
+  String get unitBags => 'Bag';
 
   @override
-  String get unitRolls => 'Rolls';
+  String get unitRolls => 'Roll';
 
   @override
-  String get unitSheets => 'Sheets';
+  String get unitSheets => 'Sheet — 4×8 panel goods';
+
+  @override
+  String get unitFeet => 'Foot';
+
+  @override
+  String get unitInches => 'Inch';
+
+  @override
+  String get unitYards => 'Yard';
+
+  @override
+  String get unitLinearFeet => 'Linear foot';
+
+  @override
+  String get unitSquareFeet => 'Square foot';
+
+  @override
+  String get unitSquareYards => 'Square yard';
+
+  @override
+  String get unitSquares => 'Square — 100 sq ft';
+
+  @override
+  String get unitCubicFeet => 'Cubic foot';
+
+  @override
+  String get unitCubicYards => 'Cubic yard';
+
+  @override
+  String get unitGallons => 'Gallon — paint, adhesive';
+
+  @override
+  String get unitPounds => 'Pound — fasteners, compound';
+
+  @override
+  String get unitShortTons => 'Ton — 2,000 lb';
+
+  @override
+  String get unitPairs => 'Pair';
+
+  @override
+  String get unitDozens => 'Dozen';
+
+  @override
+  String get unitBundles => 'Bundle';
+
+  @override
+  String get unitPallets => 'Pallet';
+
+  @override
+  String get unitTubes => 'Tube';
+
+  @override
+  String get unitSymbolPieces => 'ea';
+
+  @override
+  String get unitSymbolMeters => 'm';
+
+  @override
+  String get unitSymbolSquareMeters => 'sqm';
+
+  @override
+  String get unitSymbolCubicMeters => 'cbm';
+
+  @override
+  String get unitSymbolKilograms => 'kg';
+
+  @override
+  String get unitSymbolTons => 't';
+
+  @override
+  String get unitSymbolLiters => 'l';
+
+  @override
+  String get unitSymbolHours => 'hr';
+
+  @override
+  String get unitSymbolDays => 'day';
+
+  @override
+  String get unitSymbolBoxes => 'bx';
+
+  @override
+  String get unitSymbolBags => 'bag';
+
+  @override
+  String get unitSymbolRolls => 'rl';
+
+  @override
+  String get unitSymbolSheets => 'sht';
+
+  @override
+  String get unitSymbolFeet => 'ft';
+
+  @override
+  String get unitSymbolInches => 'in';
+
+  @override
+  String get unitSymbolYards => 'yd';
+
+  @override
+  String get unitSymbolLinearFeet => 'lf';
+
+  @override
+  String get unitSymbolSquareFeet => 'sf';
+
+  @override
+  String get unitSymbolSquareYards => 'sy';
+
+  @override
+  String get unitSymbolSquares => 'sq';
+
+  @override
+  String get unitSymbolCubicFeet => 'cf';
+
+  @override
+  String get unitSymbolCubicYards => 'cy';
+
+  @override
+  String get unitSymbolGallons => 'gal';
+
+  @override
+  String get unitSymbolPounds => 'lb';
+
+  @override
+  String get unitSymbolShortTons => 'tn';
+
+  @override
+  String get unitSymbolPairs => 'pr';
+
+  @override
+  String get unitSymbolDozens => 'dz';
+
+  @override
+  String get unitSymbolBundles => 'bdl';
+
+  @override
+  String get unitSymbolPallets => 'plt';
+
+  @override
+  String get unitSymbolTubes => 'tb';
 
   @override
   String get labourTypeLabel => 'Labour type*';
@@ -2457,6 +2598,117 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: 'sheets',
       one: 'sheet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unitNameFeet => 'ft';
+
+  @override
+  String get unitNameInches => 'in';
+
+  @override
+  String get unitNameYards => 'yd';
+
+  @override
+  String get unitNameLinearFeet => 'lf';
+
+  @override
+  String get unitNameSquareFeet => 'ft²';
+
+  @override
+  String get unitNameSquareYards => 'yd²';
+
+  @override
+  String get unitNameSquares => 'sq';
+
+  @override
+  String get unitNameCubicFeet => 'ft³';
+
+  @override
+  String get unitNameCubicYards => 'yd³';
+
+  @override
+  String get unitNameGallons => 'gal';
+
+  @override
+  String get unitNamePounds => 'lb';
+
+  @override
+  String get unitNameShortTons => 'tn';
+
+  @override
+  String unitNamePairs(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pairs',
+      one: 'pair',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameDozens(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dozens',
+      one: 'dozen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameBundles(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bundles',
+      one: 'bundle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNamePallets(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pallets',
+      one: 'pallet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameTubes(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tubes',
+      one: 'tube',
     );
     return '$_temp0';
   }

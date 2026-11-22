@@ -45,11 +45,11 @@ void main() {
     });
 
     testWidgets('renders the pill with a unit', (tester) async {
-      await pumpPill(tester, unit: Unit.liters);
+      await pumpPill(tester, unit: Unit.gallons);
 
       await expectLater(
         find.byType(UnitPill),
-        matchesGoldenFile('goldens/unit_pill/unit_pill_liters$suffix.png'),
+        matchesGoldenFile('goldens/unit_pill/unit_pill_gallons$suffix.png'),
       );
     });
   });

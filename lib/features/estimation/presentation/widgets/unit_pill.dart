@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// The rounded unit button next to the quantity. Tapping it opens the unit
-/// list; the unit is never typed.
+/// The rounded unit button next to the quantity, showing the unit's symbol.
+/// Tapping it opens the unit list; the unit is never typed.
 ///
 // TODO: [CA-1186] replace the interim unit list with the grouped 23-unit "Select unit" sheet, which has no time units and a 2,000 lb ton where Tons here is metric. https://ripplearc.youtrack.cloud/issue/CA-1186
 class UnitPill extends StatelessWidget {
@@ -74,7 +74,7 @@ class UnitPill extends StatelessWidget {
                     Text(
                       unit == null
                           ? l10n.unitPillEmptyLabel
-                          : unit.displayName(l10n),
+                          : unit.symbol(l10n),
                       style: textTheme.bodyLargeRegular.copyWith(
                         color: unit == null
                             ? colorTheme.textDisable
