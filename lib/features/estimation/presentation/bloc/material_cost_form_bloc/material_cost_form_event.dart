@@ -37,10 +37,14 @@ class MaterialSampleRatePicked extends MaterialCostFormEvent {
     required this.itemName,
     required this.rate,
     this.unit,
+    this.typedName = '',
   });
 
   /// The material name with the picked product appended.
   final String itemName;
+
+  /// The name typed before the product was appended, or empty when none was.
+  final String typedName;
 
   /// The sample price of one unit.
   final double rate;
