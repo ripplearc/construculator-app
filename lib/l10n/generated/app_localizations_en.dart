@@ -2603,6 +2603,117 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get unitNameFeet => 'ft';
+
+  @override
+  String get unitNameInches => 'in';
+
+  @override
+  String get unitNameYards => 'yd';
+
+  @override
+  String get unitNameLinearFeet => 'lf';
+
+  @override
+  String get unitNameSquareFeet => 'ft²';
+
+  @override
+  String get unitNameSquareYards => 'yd²';
+
+  @override
+  String get unitNameSquares => 'sq';
+
+  @override
+  String get unitNameCubicFeet => 'ft³';
+
+  @override
+  String get unitNameCubicYards => 'yd³';
+
+  @override
+  String get unitNameGallons => 'gal';
+
+  @override
+  String get unitNamePounds => 'lb';
+
+  @override
+  String get unitNameShortTons => 'tn';
+
+  @override
+  String unitNamePairs(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pairs',
+      one: 'pair',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameDozens(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dozens',
+      one: 'dozen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameBundles(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bundles',
+      one: 'bundle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNamePallets(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pallets',
+      one: 'pallet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameTubes(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tubes',
+      one: 'tube',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String costLineMaterialQuantity(String quantity, String unit) {
     return '$quantity $unit';
   }

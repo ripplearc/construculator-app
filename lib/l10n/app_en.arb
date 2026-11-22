@@ -3773,6 +3773,104 @@
       }
     }
   },
+  "unitNameFeet": "ft",
+  "@unitNameFeet": {
+    "description": "Short symbol of the unit feet, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameInches": "in",
+  "@unitNameInches": {
+    "description": "Short symbol of the unit inches, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameYards": "yd",
+  "@unitNameYards": {
+    "description": "Short symbol of the unit yards, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameLinearFeet": "lf",
+  "@unitNameLinearFeet": {
+    "description": "Short symbol of the unit linear feet, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameSquareFeet": "ft²",
+  "@unitNameSquareFeet": {
+    "description": "Short symbol of the unit square feet, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameSquareYards": "yd²",
+  "@unitNameSquareYards": {
+    "description": "Short symbol of the unit square yards, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameSquares": "sq",
+  "@unitNameSquares": {
+    "description": "Short symbol of the unit squares, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameCubicFeet": "ft³",
+  "@unitNameCubicFeet": {
+    "description": "Short symbol of the unit cubic feet, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameCubicYards": "yd³",
+  "@unitNameCubicYards": {
+    "description": "Short symbol of the unit cubic yards, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameGallons": "gal",
+  "@unitNameGallons": {
+    "description": "Short symbol of the unit gallons, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNamePounds": "lb",
+  "@unitNamePounds": {
+    "description": "Short symbol of the unit pounds, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNameShortTons": "tn",
+  "@unitNameShortTons": {
+    "description": "Short symbol of the unit short tons, the same for any quantity, used in a cost line's quantity and price per unit"
+  },
+  "unitNamePairs": "{count, plural, =1{pair} other{pairs}}",
+  "@unitNamePairs": {
+    "description": "Lowercase name of the unit pairs, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameDozens": "{count, plural, =1{dozen} other{dozens}}",
+  "@unitNameDozens": {
+    "description": "Lowercase name of the unit dozens, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameBundles": "{count, plural, =1{bundle} other{bundles}}",
+  "@unitNameBundles": {
+    "description": "Lowercase name of the unit bundles, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNamePallets": "{count, plural, =1{pallet} other{pallets}}",
+  "@unitNamePallets": {
+    "description": "Lowercase name of the unit pallets, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameTubes": "{count, plural, =1{tube} other{tubes}}",
+  "@unitNameTubes": {
+    "description": "Lowercase name of the unit tubes, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "costLineMaterialQuantity": "{quantity} {unit}",
   "@costLineMaterialQuantity": {
     "description": "Bold first part of a material line's meta row: the quantity and its unit, for example 13.25 sheets",

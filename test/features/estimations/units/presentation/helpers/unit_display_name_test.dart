@@ -94,4 +94,51 @@ void main() {
       });
     }
   });
+
+  group('countName', () {
+    const expectedCountNames = {
+      Unit.pieces: ('piece', 'pieces'),
+      Unit.meters: ('m', 'm'),
+      Unit.squareMeters: ('m²', 'm²'),
+      Unit.cubicMeters: ('m³', 'm³'),
+      Unit.kilograms: ('kg', 'kg'),
+      Unit.tons: ('t', 't'),
+      Unit.liters: ('L', 'L'),
+      Unit.hours: ('hour', 'hours'),
+      Unit.days: ('day', 'days'),
+      Unit.boxes: ('box', 'boxes'),
+      Unit.bags: ('bag', 'bags'),
+      Unit.rolls: ('roll', 'rolls'),
+      Unit.sheets: ('sheet', 'sheets'),
+      Unit.feet: ('ft', 'ft'),
+      Unit.inches: ('in', 'in'),
+      Unit.yards: ('yd', 'yd'),
+      Unit.linearFeet: ('lf', 'lf'),
+      Unit.squareFeet: ('ft²', 'ft²'),
+      Unit.squareYards: ('yd²', 'yd²'),
+      Unit.squares: ('sq', 'sq'),
+      Unit.cubicFeet: ('ft³', 'ft³'),
+      Unit.cubicYards: ('yd³', 'yd³'),
+      Unit.gallons: ('gal', 'gal'),
+      Unit.pounds: ('lb', 'lb'),
+      Unit.shortTons: ('tn', 'tn'),
+      Unit.pairs: ('pair', 'pairs'),
+      Unit.dozens: ('dozen', 'dozens'),
+      Unit.bundles: ('bundle', 'bundles'),
+      Unit.pallets: ('pallet', 'pallets'),
+      Unit.tubes: ('tube', 'tubes'),
+    };
+
+    test('gives every unit a count name', () {
+      expect(expectedCountNames.keys, unorderedEquals(Unit.values));
+    });
+
+    for (final MapEntry(key: unit, value: (one, many))
+        in expectedCountNames.entries) {
+      test('writes ${unit.name} as $one for 1 and $many for 3', () {
+        expect(unit.countName(l10n, 1), one);
+        expect(unit.countName(l10n, 3), many);
+      });
+    }
+  });
 }

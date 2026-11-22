@@ -4484,6 +4484,108 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{sheet} other{sheets}}'**
   String unitNameSheets(num count);
 
+  /// Short symbol of the unit feet, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'ft'**
+  String get unitNameFeet;
+
+  /// Short symbol of the unit inches, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'in'**
+  String get unitNameInches;
+
+  /// Short symbol of the unit yards, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'yd'**
+  String get unitNameYards;
+
+  /// Short symbol of the unit linear feet, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'lf'**
+  String get unitNameLinearFeet;
+
+  /// Short symbol of the unit square feet, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'ft²'**
+  String get unitNameSquareFeet;
+
+  /// Short symbol of the unit square yards, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'yd²'**
+  String get unitNameSquareYards;
+
+  /// Short symbol of the unit squares, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'sq'**
+  String get unitNameSquares;
+
+  /// Short symbol of the unit cubic feet, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'ft³'**
+  String get unitNameCubicFeet;
+
+  /// Short symbol of the unit cubic yards, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'yd³'**
+  String get unitNameCubicYards;
+
+  /// Short symbol of the unit gallons, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'gal'**
+  String get unitNameGallons;
+
+  /// Short symbol of the unit pounds, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'lb'**
+  String get unitNamePounds;
+
+  /// Short symbol of the unit short tons, the same for any quantity, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'tn'**
+  String get unitNameShortTons;
+
+  /// Lowercase name of the unit pairs, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{pair} other{pairs}}'**
+  String unitNamePairs(num count);
+
+  /// Lowercase name of the unit dozens, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{dozen} other{dozens}}'**
+  String unitNameDozens(num count);
+
+  /// Lowercase name of the unit bundles, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{bundle} other{bundles}}'**
+  String unitNameBundles(num count);
+
+  /// Lowercase name of the unit pallets, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{pallet} other{pallets}}'**
+  String unitNamePallets(num count);
+
+  /// Lowercase name of the unit tubes, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{tube} other{tubes}}'**
+  String unitNameTubes(num count);
+
   /// Bold first part of a material line's meta row: the quantity and its unit, for example 13.25 sheets
   ///
   /// In en, this message translates to:
