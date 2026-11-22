@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/repositories/last_used_unit_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/added_line_highlight_cubit/added_line_highlight_cubit.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
@@ -16,12 +18,14 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -34,7 +38,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -61,6 +64,7 @@ class _CostEstimationDetailsPageTestModule extends Module {
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeYourRatesDatabase database;
+  late FakeStorageService storage;
   late Clock clock;
   late AppBootstrap appBootstrap;
 
@@ -72,6 +76,7 @@ void main() {
 
     clock = FakeClockImpl();
     database = FakeYourRatesDatabase();
+    storage = FakeStorageService();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
 
     appBootstrap = FakeAppBootstrapFactory.create(
@@ -88,7 +93,7 @@ void main() {
   });
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    storage.reset();
     fakeSupabase.reset();
     database.reset();
     Modular.dispose<AuthManager>();
@@ -124,6 +129,12 @@ void main() {
     await tester.pumpAndSettle();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
+    Modular.replaceInstance<LastUsedUnitRepository>(
+      LastUsedUnitRepositoryImpl(
+        storage: storage,
+        authRepository: Modular.get<AuthRepository>(),
+      ),
+    );
   }
 
   void setUpAuthenticatedUser({
