@@ -3425,6 +3425,11 @@
       }
     }
   },
+  "materialRateLookupHint": "Never priced this? Use the search icon above to look it up in the cost file.",
+  "@materialRateLookupHint": {
+    "description": "Hint under the empty Rate row of the material form, pointing at the search button that opens Look up a rate",
+    "context": "Storyboard CUJ 4, sub-flow A, Rate-field search icon"
+  },
   "materialLookupUseRateButton": "Use rate",
   "@materialLookupUseRateButton": {
     "description": "Greyed-out button at the foot of the material Look up a rate sheet before a row is picked; once a row is picked it reads yourRatesUseButtonLabel instead",

@@ -8,23 +8,31 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
+import '../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
   late FakeStorageService storage;
   late FakeAuthRepository auth;
   late LastUsedUnitRepository lastUsedUnits;
   late MaterialCostFormBloc bloc;
+  late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
 
   final nameField = find.byKey(const Key('material_name_field'));
   final quantityField = find.byKey(const Key('material_quantity_field'));
@@ -35,15 +43,16 @@ void main() {
     final clock = FakeClockImpl();
     storage = FakeStorageService();
     auth = FakeAuthRepository(clock: clock);
+    fakeSupabase = FakeSupabaseWrapper(clock: clock);
+    database = FakeYourRatesDatabase();
     Modular.init(
       EstimationModule(
-        FakeAppBootstrapFactory.create(
-          supabaseWrapper: FakeSupabaseWrapper(clock: clock),
-        ),
+        FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
     Modular.replaceInstance<StorageService>(storage);
     Modular.replaceInstance<AuthRepository>(auth);
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     lastUsedUnits = Modular.get<LastUsedUnitRepository>();
   });
 
@@ -52,6 +61,12 @@ void main() {
   setUp(() {
     storage.reset();
     auth.reset();
+    database.reset();
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     auth.setCurrentCredentials(
       UserCredential(
         id: 'account-1',
@@ -81,6 +96,8 @@ void main() {
             child: MaterialCostFormFields(
               initialRateEntry: initialRateEntry,
               initialName: initialName,
+              yourRatesBlocFactory: yourRatesBlocWithoutDebounce,
+              clock: FakeClockImpl(),
             ),
           ),
         ),
@@ -265,6 +282,27 @@ void main() {
         find.descendant(of: rateField, matching: find.byType(TextField)),
       );
       expect(unit.style!.fontSize, lessThan(rate.style!.fontSize!));
+    });
+
+    testWidgets('shortens a long unit with an ellipsis so the search button '
+        'still fits on a 360 dp phone', (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpFields(tester);
+      bloc.add(const MaterialUnitSelected(Unit.squareMeters));
+      await tester.pumpAndSettle();
+
+      final unit = find.text('/Square meters');
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.renderObject<RenderParagraph>(unit).didExceedMaxLines,
+        isTrue,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('lookup_rate_button'))).right,
+        lessThanOrEqualTo(360),
+      );
     });
 
     testWidgets('shows the unit even before a rate is typed', (tester) async {
@@ -600,6 +638,121 @@ void main() {
       expect(textOf(tester, nameField), 'primer');
       expect(textOf(tester, rateField), isEmpty);
       expect(bloc.state.data.itemName, 'primer');
+    });
+  });
+
+  group('looking up a rate', () {
+    final lookupButton = find.byKey(const Key('lookup_rate_button'));
+    final hint = find.byKey(const Key('material_rate_lookup_hint'));
+
+    setUp(() {
+      database.seedRow({
+        'id': 'paint-rate',
+        'company_id': 'company-1',
+        'category': 'material',
+        'item_name': 'Interior paint ProClassic',
+        'rate_amount': 52.0,
+        'rate_currency': 'USD',
+        'unit': 'liters',
+        'saved_at': '2026-01-10T00:00:00.000Z',
+      });
+    });
+
+    Future<void> pickFromLookup(WidgetTester tester) async {
+      await tester.tap(lookupButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rate_row_paint-rate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_lookup_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an empty rate shows the search button and the hint under it', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.pumpAndSettle();
+
+      expect(lookupButton, findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.descendant(
+          of: hint,
+          matching: find.text(l10n.materialRateLookupHint),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a typed rate removes the search button and the hint', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '12');
+      await tester.pumpAndSettle();
+
+      expect(lookupButton, findsNothing);
+      expect(hint, findsNothing);
+    });
+
+    testWidgets('the search button opens Look up a rate searched on the typed '
+        'name', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'interior paint');
+
+      await tester.tap(lookupButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rates_search_field')),
+          matching: find.text('interior paint'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('your_rate_row_paint-rate')), findsOneWidget);
+    });
+
+    testWidgets('a picked rate fills the rate and unit, keeps the typed name '
+        'and removes the search button', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'interior paint');
+
+      await pickFromLookup(tester);
+
+      expect(textOf(tester, nameField), 'interior paint');
+      expect(textOf(tester, rateField), '52');
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.descendant(of: unitPill, matching: find.text(l10n.unitLiters)),
+        findsOneWidget,
+      );
+      expect(lookupButton, findsNothing);
+      expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+    });
+
+    testWidgets('a picked rate fills the name too while it is empty', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+
+      await pickFromLookup(tester);
+
+      expect(textOf(tester, nameField), 'Interior paint ProClassic');
+    });
+
+    testWidgets('closing Look up a rate without a pick changes nothing', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.tap(lookupButton);
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, rateField), isEmpty);
+      expect(lookupButton, findsOneWidget);
     });
   });
 }
