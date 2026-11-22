@@ -438,13 +438,7 @@ class _RenderRevealedWithGap extends RenderProxyBox {
     Duration duration = Duration.zero,
     Curve curve = Curves.ease,
   }) {
-    // Scrolls a focused field's row, underline included, so it sits 12 clear
-    // of whatever is pinned below the form: the card, the number pad or the
-    // phone's keyboard (storyboard CUJ 4, "When a keyboard comes up"). The
-    // text field asks to be shown on focus and when the keyboard grows; this
-    // replaces the area it asks for, which leaves room for selection handles,
-    // with the whole row and 12 under it, and waits a frame so the layout for
-    // the pad has settled. A row already in view does not move.
+    // Storyboard "Reserve then scroll": whole row + 12, after the pad's layout.
     SchedulerBinding.instance
       ..addPostFrameCallback((_) {
         if (!attached) return;

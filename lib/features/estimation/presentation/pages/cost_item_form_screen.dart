@@ -103,7 +103,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
 
   final _isFormScrolled = ValueNotifier(false);
 
-  static const double _oneFieldRow = 72;
+  static const double _tallestFieldRow = 77;
 
   @override
   void dispose() {
@@ -193,10 +193,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     closesPad(_buildBody(context, trailing: scrollingPanel)),
                 panel: closesPad(footer(AddToEstimateFooterPart.panel)),
                 controls: footer(AddToEstimateFooterPart.controls),
-                // About one field row stays in view above the pinned card.
                 minFormHeight: MediaQuery.textScalerOf(
                   context,
-                ).scale(_oneFieldRow),
+                ).scale(_tallestFieldRow + CoreSpacing.space3),
               ),
       ),
     );

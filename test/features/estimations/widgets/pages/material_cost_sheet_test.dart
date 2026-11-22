@@ -930,6 +930,29 @@ void main() {
       );
     });
 
+    for (final size in const [Size(393, 802), Size(393, 804), Size(375, 812)]) {
+      testWidgets('on a ${size.width.toInt()} x ${size.height.toInt()} phone, '
+          'too short for the rate row and 12 above the pinned card, the card '
+          'scrolls and the rate row sits at least 12 above the pad', (
+        tester,
+      ) async {
+        await openSheet(tester, size: size);
+
+        await focus(tester, rate);
+
+        final form = Scrollable.of(tester.element(rate)).context;
+        final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
+        expect(
+          visibleEnd - tester.getRect(rateRow).bottom,
+          greaterThanOrEqualTo(12),
+        );
+        expect(
+          find.descendant(of: find.byWidget(form.widget), matching: panel),
+          findsOneWidget,
+        );
+      });
+    }
+
     testWidgets('a long name scrolling its own field sideways draws no line', (
       tester,
     ) async {
@@ -948,7 +971,11 @@ void main() {
       await focus(tester, rate);
       expect(scrolledLine, findsOneWidget);
 
-      await tester.tap(find.text('New material cost'));
+      await tester.tap(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).newMaterialCostSheetTitle,
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(Scrollable.of(tester.element(rate)).position.pixels, 0);
