@@ -192,8 +192,11 @@ void main() {
       await expectSheetGolden(tester, 'long_name', suffix);
     });
 
-    testWidgets('unit list open', (tester) async {
+    testWidgets('unit list open on the picked unit, as in the storyboard', (
+      tester,
+    ) async {
       await openSheet(tester, theme);
+      await pickUnit(tester, Unit.gallons);
       await tester.tap(find.byKey(const Key('material_unit_pill')));
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'unit_list', suffix);
