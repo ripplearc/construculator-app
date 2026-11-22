@@ -85,14 +85,15 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   }
 
   Future<void> _openRateLookup() async {
-    final entry = await MaterialRateLookupSheet.show(
+    final pick = await MaterialRateLookupSheet.show(
       context: context,
       initialQuery: _nameController.text.trim(),
       clock: widget.clock,
       blocFactory: widget.yourRatesBlocFactory,
       sampleRatesFor: noSampleRates,
     );
-    if (entry == null || !mounted) return;
+    if (pick is! MaterialLookupYourRate || !mounted) return;
+    final entry = pick.entry;
     if (_nameController.text.trim().isEmpty) {
       _nameController.text = entry.itemName;
     }
