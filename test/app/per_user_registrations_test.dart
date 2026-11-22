@@ -70,7 +70,6 @@ void main() {
       sessionService.endSession();
 
       expect(Modular.tryGet<CurrentCompanyResolver>(), isNull);
-      expect(Modular.tryGet<CurrentCompanyResolver>(), isNull);
       expect(Modular.tryGet<CurrentProjectNotifier>(), isNull);
       expect(Modular.tryGet<ProjectRepository>(), isNull);
       expect(Modular.tryGet<ProjectDropdownBloc>(), isNull);
