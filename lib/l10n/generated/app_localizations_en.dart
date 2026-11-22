@@ -1890,6 +1890,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourRatesNewEquipmentCostAction => 'New equipment cost';
 
   @override
+  String get yourRatesMaterialRecentsTitle => 'Add material';
+
+  @override
+  String get yourRatesMaterialSearchHint => 'Search or type a material';
+
+  @override
+  String get yourRatesNewMaterialCostAction => 'New material cost';
+
+  @override
+  String yourRatesCreateMaterialAction(String name) {
+    return 'Create “$name” as a new material cost';
+  }
+
+  @override
+  String get yourRatesMaterialRecentsLoadErrorHint =>
+      'You can still search, or add a new material cost.';
+
+  @override
   String equipmentRefusedDefaultNotice(
     String refused,
     String hasAccepted,

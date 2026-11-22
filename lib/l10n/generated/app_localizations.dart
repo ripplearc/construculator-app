@@ -3310,6 +3310,36 @@ abstract class AppLocalizations {
   /// **'New equipment cost'**
   String get yourRatesNewEquipmentCostAction;
 
+  /// Title of the 'Your recents' sheet opened by the Material tab's '+ Add material cost' button, before the material form itself
+  ///
+  /// In en, this message translates to:
+  /// **'Add material'**
+  String get yourRatesMaterialRecentsTitle;
+
+  /// Placeholder of the search box at the top of the Material 'Your recents' sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search or type a material'**
+  String get yourRatesMaterialSearchHint;
+
+  /// Last row of the Material 'Your recents' sheet while its search box is empty; opens the material form blank instead of recalling a saved rate
+  ///
+  /// In en, this message translates to:
+  /// **'New material cost'**
+  String get yourRatesNewMaterialCostAction;
+
+  /// Last row of the Material 'Your recents' sheet while a name is typed in its search box; opens the material form with that name. The name is in curly quotes
+  ///
+  /// In en, this message translates to:
+  /// **'Create “{name}” as a new material cost'**
+  String yourRatesCreateMaterialAction(String name);
+
+  /// Grey line under the Material 'Your recents' sheet's error line when the phone could not read Your rates
+  ///
+  /// In en, this message translates to:
+  /// **'You can still search, or add a new material cost.'**
+  String get yourRatesMaterialRecentsLoadErrorHint;
+
   /// Message above the Rate/Amount field on the first equipment form for an item after the server refused its saved default (storyboard CUJ 6, frame Not kept); refused and accepted are pre-formatted currency strings, hasAccepted is 'true' when the server ever accepted a price for the item (its middle sentence), and hasEstimate is 'true' when an estimate has a line at the refused amount (its last sentence) with estimate as that estimate's name
   ///
   /// In en, this message translates to:
