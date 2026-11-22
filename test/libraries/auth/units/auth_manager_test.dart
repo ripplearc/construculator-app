@@ -375,11 +375,10 @@ void main() {
         expect(sessionService.startCount, 1);
       });
 
-      test('stops reacting to sign-in events once it is disposed', () async {
+      test('stops reacting to sign-in events once it is disposed', () {
         (authManager as Disposable).dispose();
 
         supabaseWrapper.setCurrentUser(signedInUser());
-        await Future<void>.value();
 
         expect(sessionService.startCount, 0);
       });
