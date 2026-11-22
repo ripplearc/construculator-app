@@ -16,6 +16,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   group('AddCostEstimationBloc', () {
@@ -72,6 +73,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
       );
       Modular.init(EstimationModule(bootstrap));
+      startTestSession();
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

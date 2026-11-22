@@ -30,16 +30,20 @@ import 'package:construculator/features/estimation/presentation/bloc/rename_esti
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/storage/storage_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -142,41 +146,35 @@ class EstimationModule extends Module {
       ),
     );
 
-    i.addLazySingleton<AddCostEstimationUseCase>(
-      () => AddCostEstimationUseCase(
-        repository: i.get(),
-        authRepository: i.get(),
-        clock: i.get(),
-        currentProjectNotifier: i.get(),
-      ),
-    );
     i.add<CostEstimationListBloc>(
       () => CostEstimationListBloc(
         repository: i.get(),
-        currentProjectNotifier: i.get(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
     i.add<AddCostEstimationBloc>(
-      () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
+      () => AddCostEstimationBloc(
+        addCostEstimationUseCase: Modular.get<AddCostEstimationUseCase>(),
+      ),
     );
     i.add<DeleteCostEstimationBloc>(
       () => DeleteCostEstimationBloc(
         costEstimationRepository: i.get(),
-        currentProjectNotifier: i.get(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
     i.add<ChangeLockStatusBloc>(
       () => ChangeLockStatusBloc(
         repository: i.get(),
-        projectRepository: i.get(),
-        currentProjectNotifier: i.get(),
+        projectRepository: Modular.get<ProjectRepository>(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
     i.add<RenameEstimationBloc>(
       () => RenameEstimationBloc(
         repository: i.get(),
-        projectRepository: i.get(),
-        currentProjectNotifier: i.get(),
+        projectRepository: Modular.get<ProjectRepository>(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
     i.add<CostEstimationLogBloc>(
@@ -216,4 +214,23 @@ class EstimationModule extends Module {
       () => const EstimationTileProviderImpl(),
     );
   }
+}
+
+/// Adds the estimation objects that belong to one signed-in user: the use case
+/// that holds the selected project.
+///
+/// Only the session module calls this, so a new use case is built for the next
+/// user.
+void registerEstimationPerUserObjects(Injector i) =>
+    _registerPerUserObjects(i);
+
+void _registerPerUserObjects(Injector i) {
+  i.addLazySingleton<AddCostEstimationUseCase>(
+    () => AddCostEstimationUseCase(
+      repository: Modular.get<CostEstimationRepository>(),
+      authRepository: Modular.get<AuthRepository>(),
+      clock: Modular.get<Clock>(),
+      currentProjectNotifier: i.get<CurrentProjectNotifier>(),
+    ),
+  );
 }

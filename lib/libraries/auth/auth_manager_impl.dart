@@ -14,6 +14,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -25,7 +26,10 @@ class AuthManagerImpl implements AuthManager {
   final SentryWrapper _sentryWrapper;
   final AnalyticsRepository _analyticsRepository;
   final CurrentCompanyResolver _currentCompanyResolver;
+  final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
+
+  String? _sessionUserId;
 
   AuthManagerImpl({
     required this._wrapper,
@@ -34,6 +38,7 @@ class AuthManagerImpl implements AuthManager {
     required this._sentryWrapper,
     required this._analyticsRepository,
     required this._currentCompanyResolver,
+    required this._sessionService,
   }) {
     _initAuthListener();
   }
@@ -48,6 +53,10 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
+            // TODO: [CA-1471] Move session start and end into the sign-in check
+            // and the sign-out handler.
+            // https://ripplearc.youtrack.cloud/issue/CA-1471
+            _startSessionFor(user.id);
             unawaited(_currentCompanyResolver.resolveAfterSignIn());
             _emitAuthStateChanged(
               AuthStatus.authenticated,
@@ -59,6 +68,9 @@ class AuthManagerImpl implements AuthManager {
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
           unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
+          // The session stays: Supabase also sends signedOut when a token
+          // refresh fails, and open screens still hold its objects. It ends at
+          // logout or when a different user signs in.
         }
       },
       onError: (error) {
@@ -77,6 +89,10 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
+        // TODO: [CA-1471] Move session start for a resumed login into the
+        // sign-in check.
+        // https://ripplearc.youtrack.cloud/issue/CA-1471
+        _startSessionFor(user.id);
         unawaited(_sentryWrapper.setUser(user.id));
         // TODO: [CA-961] Gate identify() on recorded analytics consent once
         // the server-driven consent flow lands; currently relies on the
@@ -97,6 +113,12 @@ class AuthManagerImpl implements AuthManager {
     } else {
       _emitAuthStateChanged(AuthStatus.unauthenticated, null);
     }
+  }
+
+  void _startSessionFor(String userId) {
+    if (_sessionUserId != userId) _sessionService.endSession();
+    _sessionService.startSession();
+    _sessionUserId = userId;
   }
 
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {
@@ -367,6 +389,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
+      _sessionService.endSession();
 
       await _sentryWrapper.setUser(null);
       unawaited(

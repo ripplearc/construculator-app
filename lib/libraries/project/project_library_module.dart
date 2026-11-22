@@ -36,10 +36,6 @@ class ProjectLibraryModule extends Module {
 }
 
 void _registerDependencies(Injector i) {
-  i.addLazySingleton<CurrentProjectNotifier>(
-    () => CurrentProjectNotifierImpl(),
-  );
-
   i.addLazySingleton<ProjectDataSource>(
     () => RemoteProjectDataSource(
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
@@ -50,16 +46,6 @@ void _registerDependencies(Injector i) {
     () => LocalJwtProjectPermissionDataSource(
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
     ),
-  );
-
-  i.addLazySingleton<ProjectRepository>(
-    () => ProjectRepositoryImpl(
-      projectDataSource: Modular.get<ProjectDataSource>(),
-      permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
-      currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-      clock: Modular.get<Clock>(),
-    ),
-    config: BindConfig(onDispose: (repository) => repository.dispose()),
   );
 
   i.addLazySingleton<ProjectSearchDataSource>(
@@ -86,5 +72,28 @@ void _registerDependencies(Injector i) {
     () => ProjectSearchRepositoryImpl(
       dataSource: Modular.get<ProjectSearchDataSource>(),
     ),
+  );
+}
+
+/// Adds the project objects that belong to one signed-in user: the selected
+/// project and the project repository that reads it.
+///
+/// Only the session module calls this, so both are removed when the user
+/// signs out and new ones are created at the next sign-in.
+void registerProjectPerUserObjects(Injector i) => _registerPerUserObjects(i);
+
+void _registerPerUserObjects(Injector i) {
+  i.addLazySingleton<CurrentProjectNotifier>(
+    () => CurrentProjectNotifierImpl(),
+  );
+
+  i.addLazySingleton<ProjectRepository>(
+    () => ProjectRepositoryImpl(
+      projectDataSource: Modular.get<ProjectDataSource>(),
+      permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+      currentProjectNotifier: i.get<CurrentProjectNotifier>(),
+      clock: Modular.get<Clock>(),
+    ),
+    config: BindConfig(onDispose: (repository) => repository.dispose()),
   );
 }

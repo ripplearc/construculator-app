@@ -23,6 +23,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/start_test_session.dart';
 
 void main() {
   group('ProjectRepositoryImpl', () {
@@ -33,6 +34,7 @@ void main() {
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
+      startTestSession();
       supabaseWrapper = Modular.get<FakeSupabaseWrapper>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
@@ -523,6 +525,8 @@ void main() {
       );
 
       Modular.init(_PermissionsTestModule(bootstrap, clock));
+
+      startTestSession();
 
       supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<ProjectRepository>() as ProjectRepositoryImpl;

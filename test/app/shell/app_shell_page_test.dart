@@ -46,6 +46,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../utils/dashboard_shell_test_module.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
 import '../../utils/feature_availability_scope.dart';
+import '../../utils/start_test_session.dart';
 
 void main() {
   late FakeCurrentProjectNotifier fakeProjectNotifier;
@@ -93,6 +94,8 @@ void main() {
     );
 
     Modular.init(ShellModule(appBootstrap));
+
+    startTestSession();
     addTearDown(Modular.destroy);
     // Pre-bind DashboardModule so AuthNotifier, AuthManager, AppRouter, and
     // RecentEstimationsBloc are resolvable when AppShellPage is constructed.
@@ -508,6 +511,7 @@ void main() {
     setUp(() {
       Modular.destroy();
       Modular.init(DashboardShellTestModule(appBootstrap));
+      startTestSession();
       final supabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       supabase.setCurrentUser(
         FakeUser(

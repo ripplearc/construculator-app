@@ -20,6 +20,8 @@ import 'package:construculator/libraries/company/testing/fake_current_company_da
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -115,87 +117,78 @@ void main() {
         },
       );
 
-      test(
-        'should call setUser and identify when constructed with an '
-        'already-authenticated (resumed) session',
-        () {
-          // setUp() already constructed `authManager` with no session, so
-          // no identify()/setUser() calls should be recorded yet.
-          sentryWrapper.reset();
-          analyticsRepository.resetFake();
+      test('should call setUser and identify when constructed with an '
+          'already-authenticated (resumed) session', () {
+        // setUp() already constructed `authManager` with no session, so
+        // no identify()/setUser() calls should be recorded yet.
+        sentryWrapper.reset();
+        analyticsRepository.resetFake();
 
-          // Set the session on the shared fake wrapper before asking for a
-          // new AuthManager instance, mirroring a persisted Supabase
-          // session found at cold start. `AuthManager` is bound as a
-          // factory (see `_TestAppModule.binds`), so this Modular.get call
-          // constructs a brand-new AuthManagerImpl and re-runs
-          // `_initAuthListener()` against the now-authenticated wrapper.
-          supabaseWrapper.setCurrentUser(
-            FakeUser(
-              email: testEmail,
-              id: 'resumed-user-id',
-              createdAt: clock.now().toIso8601String(),
-            ),
-          );
-
-          final resumedManager = Modular.get<AuthManager>();
-
-          expect(resumedManager.isAuthenticated(), true);
-          expect(sentryWrapper.userId, 'resumed-user-id');
-          expect(analyticsRepository.identifyCalls, hasLength(1));
-          expect(
-            analyticsRepository.identifyCalls.single.userId,
-            'resumed-user-id',
-          );
-          expect(
-            analyticsRepository.identifyCalls.single.properties,
-            const AnalyticsUserProperties(),
-          );
-        },
-      );
-
-      test(
-        'should not call setUser or identify again when the auth stream '
-        'later replays a signedIn event for the same resumed session',
-        () {
-          final resumedUser = FakeUser(
+        // Set the session on the shared fake wrapper before asking for a
+        // new AuthManager instance, mirroring a persisted Supabase
+        // session found at cold start. `AuthManager` is bound as a
+        // factory (see `_TestAppModule.binds`), so this Modular.get call
+        // constructs a brand-new AuthManagerImpl and re-runs
+        // `_initAuthListener()` against the now-authenticated wrapper.
+        supabaseWrapper.setCurrentUser(
+          FakeUser(
             email: testEmail,
             id: 'resumed-user-id',
             createdAt: clock.now().toIso8601String(),
-          );
+          ),
+        );
 
-          // Construct the resumed-session manager first; this is the one
-          // call site that identifies the user (the cold-start branch).
-          supabaseWrapper.setCurrentUser(resumedUser);
-          Modular.get<AuthManager>();
+        final resumedManager = Modular.get<AuthManager>();
 
-          sentryWrapper.reset();
-          analyticsRepository.resetFake();
+        expect(resumedManager.isAuthenticated(), true);
+        expect(sentryWrapper.userId, 'resumed-user-id');
+        expect(analyticsRepository.identifyCalls, hasLength(1));
+        expect(
+          analyticsRepository.identifyCalls.single.userId,
+          'resumed-user-id',
+        );
+        expect(
+          analyticsRepository.identifyCalls.single.properties,
+          const AnalyticsUserProperties(),
+        );
+      });
 
-          // Simulate Supabase's auth stream redundantly re-emitting
-          // `signedIn` for the same already-authenticated session. The
-          // `.listen()` callback's `signedIn` branch intentionally does not
-          // call setUser()/identify() (only the cold-start `isAuthenticated`
-          // branch does), so this must not produce another call.
-          supabaseWrapper.setCurrentUser(resumedUser);
+      test('should not call setUser or identify again when the auth stream '
+          'later replays a signedIn event for the same resumed session', () {
+        final resumedUser = FakeUser(
+          email: testEmail,
+          id: 'resumed-user-id',
+          createdAt: clock.now().toIso8601String(),
+        );
 
-          expect(sentryWrapper.userId, isNull);
-          expect(analyticsRepository.identifyCalls, isEmpty);
-        },
-      );
+        // Construct the resumed-session manager first; this is the one
+        // call site that identifies the user (the cold-start branch).
+        supabaseWrapper.setCurrentUser(resumedUser);
+        Modular.get<AuthManager>();
 
-      test(
-        'should not call setUser or identify when constructed with no '
-        'authenticated session',
-        () {
-          // `authManager` from setUp() was constructed while
-          // `supabaseWrapper` had no current user, exercising the
-          // unauthenticated cold-start branch.
-          expect(supabaseWrapper.isAuthenticated, false);
-          expect(sentryWrapper.userId, isNull);
-          expect(analyticsRepository.identifyCalls, isEmpty);
-        },
-      );
+        sentryWrapper.reset();
+        analyticsRepository.resetFake();
+
+        // Simulate Supabase's auth stream redundantly re-emitting
+        // `signedIn` for the same already-authenticated session. The
+        // `.listen()` callback's `signedIn` branch intentionally does not
+        // call setUser()/identify() (only the cold-start `isAuthenticated`
+        // branch does), so this must not produce another call.
+        supabaseWrapper.setCurrentUser(resumedUser);
+
+        expect(sentryWrapper.userId, isNull);
+        expect(analyticsRepository.identifyCalls, isEmpty);
+      });
+
+      test('should not call setUser or identify when constructed with no '
+          'authenticated session', () {
+        // `authManager` from setUp() was constructed while
+        // `supabaseWrapper` had no current user, exercising the
+        // unauthenticated cold-start branch.
+        expect(supabaseWrapper.isAuthenticated, false);
+        expect(sentryWrapper.userId, isNull);
+        expect(analyticsRepository.identifyCalls, isEmpty);
+      });
 
       test(
         'loginWithEmail should emit authenticated state on success',
@@ -345,6 +338,129 @@ void main() {
           AuthStatus.connectionError,
           AuthStatus.unauthenticated,
         ]);
+      });
+    });
+
+    group('Session', () {
+      late FakeSessionService sessionService;
+
+      FakeUser signedInUser() => FakeUser(
+        email: testEmail,
+        id: 'test-id',
+        createdAt: clock.now().toIso8601String(),
+        appMetadata: {},
+      );
+
+      setUp(() {
+        sessionService = Modular.get<SessionService>() as FakeSessionService;
+      });
+
+      test('does not start a session when nobody is signed in', () {
+        expect(sessionService.isActive, false);
+        expect(sessionService.startCount, 0);
+      });
+
+      test('starts the session when a user signs in', () async {
+        final signedIn = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
+
+        supabaseWrapper.setCurrentUser(signedInUser());
+        await signedIn;
+
+        expect(sessionService.isActive, true);
+        expect(sessionService.startCount, 1);
+      });
+
+      test('starts the session for a resumed login at app start', () {
+        supabaseWrapper.setCurrentUser(signedInUser());
+
+        Modular.get<AuthManager>();
+
+        expect(sessionService.isActive, true);
+      });
+      test('keeps the session when the user is signed out in the background, '
+          'because screens that are open still hold its objects', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        final signedOut = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.unauthenticated),
+          ),
+        );
+
+        supabaseWrapper.setCurrentUser(null);
+        await signedOut;
+
+        expect(sessionService.isActive, true);
+        expect(sessionService.endCount, 0);
+      });
+
+      test('keeps the same session when the same user signs in again after a '
+          'background sign-out', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        supabaseWrapper.setCurrentUser(null);
+        final signedIn = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
+
+        supabaseWrapper.setCurrentUser(signedInUser());
+        await signedIn;
+
+        expect(sessionService.startCount, 1);
+        expect(sessionService.endCount, 0);
+        expect(sessionService.isActive, true);
+      });
+
+      test('replaces the session when a different user signs in after a '
+          'background sign-out', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        supabaseWrapper.setCurrentUser(null);
+        final signedIn = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
+
+        supabaseWrapper.setCurrentUser(
+          FakeUser(
+            email: 'other@example.com',
+            id: 'other-id',
+            createdAt: clock.now().toIso8601String(),
+            appMetadata: {},
+          ),
+        );
+        await signedIn;
+
+        expect(sessionService.endCount, 1);
+        expect(sessionService.startCount, 2);
+        expect(sessionService.isActive, true);
+      });
+
+      test('ends the session on logout', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        expect(sessionService.isActive, true);
+
+        await authManager.logout();
+
+        expect(sessionService.isActive, false);
+      });
+
+      test('keeps the session when the logout fails', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        supabaseWrapper.shouldThrowOnSignOut = true;
+
+        final result = await authManager.logout();
+
+        expect(result.isSuccess, false);
+        expect(sessionService.isActive, true);
       });
     });
 
@@ -807,6 +923,67 @@ void main() {
         expect(result.isSuccess, true);
       });
 
+      test('sendOtp to an email sends the email and no phone', () async {
+        await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        final call = supabaseWrapper.getMethodCallsFor('signInWithOtp').single;
+        expect(call['email'], testEmail);
+        expect(call['phone'], isNull);
+      });
+
+      test('sendOtp to a phone sends the phone and no email', () async {
+        await authManager.sendOtp('+1234567890', OtpReceiver.phone);
+
+        final call = supabaseWrapper.getMethodCallsFor('signInWithOtp').single;
+        expect(call['phone'], '+1234567890');
+        expect(call['email'], isNull);
+      });
+
+      test(
+        'verifyOtp for an email verifies the email as an email OTP',
+        () async {
+          await authManager.verifyOtp(testEmail, '123456', OtpReceiver.email);
+
+          final call = supabaseWrapper.getMethodCallsFor('verifyOTP').single;
+          expect(call['email'], testEmail);
+          expect(call['phone'], isNull);
+          expect(call['type'], supabase.OtpType.email);
+        },
+      );
+
+      test('verifyOtp for a phone verifies the phone as an sms OTP', () async {
+        await authManager.verifyOtp('+1234567890', '123456', OtpReceiver.phone);
+
+        final call = supabaseWrapper.getMethodCallsFor('verifyOTP').single;
+        expect(call['phone'], '+1234567890');
+        expect(call['email'], isNull);
+        expect(call['type'], supabase.OtpType.sms);
+      });
+
+      test('a signup the server refuses is logged as a warning, not sent to '
+          'Sentry as an error', () async {
+        AppLogger.setSentryWrapper(sentryWrapper);
+        supabaseWrapper.shouldThrowOnOtp = true;
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.registrationFailure;
+
+        final result = await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        expect(result.errorType, AuthErrorType.registrationFailure);
+        expect(sentryWrapper.exceptions, isEmpty);
+      });
+
+      test('a timeout is sent to Sentry as an error', () async {
+        AppLogger.setSentryWrapper(sentryWrapper);
+        supabaseWrapper.shouldThrowOnOtp = true;
+        supabaseWrapper.authErrorCode = SupabaseAuthErrorCode.timeout;
+
+        final result = await authManager.sendOtp(testEmail, OtpReceiver.email);
+
+        expect(result.errorType, AuthErrorType.timeout);
+        expect(sentryWrapper.exceptions, hasLength(1));
+      });
+
       test('verifyOtp should accept valid OTP format', () async {
         final result = await authManager.verifyOtp(
           'test@example.com',
@@ -1245,11 +1422,10 @@ void main() {
           'Initiating password reset',
           'Password reset email sent successfully',
         ]),
-        _breadcrumbCase(
-          'logout',
-          (m, _) => m.logout(),
-          ['Logging out user', 'Logout successful'],
-        ),
+        _breadcrumbCase('logout', (m, _) => m.logout(), [
+          'Logging out user',
+          'Logout successful',
+        ]),
         _breadcrumbCase(
           'isEmailRegistered',
           (m, s) {
@@ -1296,7 +1472,8 @@ void main() {
 
           final failure = sentryWrapper.breadcrumbs.singleWhere(
             (breadcrumb) =>
-                breadcrumb.message == '$logTag Login failed with expected error',
+                breadcrumb.message ==
+                '$logTag Login failed with expected error',
           );
           expect(failure.data, {'error': 'invalidCredentials'});
         },
@@ -1451,42 +1628,39 @@ void main() {
         expect(analyticsRepository.resetCallCount, 0);
       });
 
-      test(
-        'logout clears the current-company cache so the next user is '
-        'resolved fresh',
-        () async {
-          supabaseWrapper.setRpcResponse(
-            DatabaseConstants.getMyCompanyIdRpcFunction,
-            'company-a',
-          );
-          await authManager.loginWithEmail(testEmail, testPassword);
-          expect(
-            (await currentCompanyResolver.resolve()).getRightOrNull(),
-            'company-a',
-          );
+      test('logout clears the current-company cache so the next user is '
+          'resolved fresh', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        await authManager.loginWithEmail(testEmail, testPassword);
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'company-a',
+        );
 
-          await authManager.logout();
+        await authManager.logout();
 
-          supabaseWrapper.setRpcResponse(
-            DatabaseConstants.getMyCompanyIdRpcFunction,
-            'company-b',
-          );
-          expect(
-            (await currentCompanyResolver.resolve()).getRightOrNull(),
-            'company-b',
-          );
-          expect(
-            supabaseWrapper
-                .getMethodCallsFor('rpc')
-                .where(
-                  (call) =>
-                      call['functionName'] ==
-                      DatabaseConstants.getMyCompanyIdRpcFunction,
-                ),
-            hasLength(2),
-          );
-        },
-      );
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-b',
+        );
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'company-b',
+        );
+        expect(
+          supabaseWrapper
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.getMyCompanyIdRpcFunction,
+              ),
+          hasLength(2),
+        );
+      });
 
       Future<void> signInAndAwaitAuthenticated() async {
         final authenticated = authNotifier.onAuthStateChanged.firstWhere(
@@ -1619,32 +1793,29 @@ void main() {
         expect(await deviceStore.loadCompanyId(userId), isNull);
       });
 
-      test(
-        'a signed-out event that does not come from logout() clears the '
-        'current-company cache too',
-        () async {
-          await authManager.loginWithEmail(testEmail, testPassword);
-          supabaseWrapper.setRpcResponse(
-            DatabaseConstants.getMyCompanyIdRpcFunction,
-            'company-a',
-          );
-          expect(
-            (await currentCompanyResolver.resolve()).getRightOrNull(),
-            'company-a',
-          );
+      test('a signed-out event that does not come from logout() clears the '
+          'current-company cache too', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'company-a',
+        );
 
-          await supabaseWrapper.signOut();
+        await supabaseWrapper.signOut();
 
-          supabaseWrapper.setRpcResponse(
-            DatabaseConstants.getMyCompanyIdRpcFunction,
-            'company-b',
-          );
-          expect(
-            (await currentCompanyResolver.resolve()).getRightOrNull(),
-            'company-b',
-          );
-        },
-      );
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-b',
+        );
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'company-b',
+        );
+      });
 
       test(
         'logout does not clear the current-company cache on failure',
@@ -1709,8 +1880,10 @@ class _TestAppModule extends Module {
         sentryWrapper: i<SentryWrapper>(),
         analyticsRepository: i<AnalyticsRepository>(),
         currentCompanyResolver: i<CurrentCompanyResolver>(),
+        sessionService: i<SessionService>(),
       ),
     );
+    i.addSingleton<SessionService>(() => FakeSessionService());
   }
 }
 

@@ -20,6 +20,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/feature_availability_scope.dart';
+import '../../../utils/start_test_session.dart';
 
 /// Exclusion tests for the calculator route (CA-930).
 ///
@@ -64,6 +65,7 @@ void main() {
 
   void initShell() {
     Modular.init(AppModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<CurrentProjectNotifier>(
       FakeCurrentProjectNotifier(),
     );

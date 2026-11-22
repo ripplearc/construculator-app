@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/fake_app_bootstrap_factory.dart';
+import '../../utils/start_test_session.dart';
 
 /// Regression tests for CA-900: pushes to the estimation, project-settings,
 /// and calculator destinations were silently swallowed while their modules
@@ -69,6 +70,7 @@ void main() {
     // no manual module pre-binding is needed, and the AuthGuard's redirect
     // target (the /auth login route) exists for the signed-out tests below.
     Modular.init(AppModule(appBootstrap));
+    startTestSession();
 
     Modular.replaceInstance<CurrentProjectNotifier>(
       FakeCurrentProjectNotifier(),

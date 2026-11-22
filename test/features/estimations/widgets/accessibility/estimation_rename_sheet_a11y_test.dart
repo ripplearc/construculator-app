@@ -23,6 +23,7 @@ import '../../../../libraries/estimation/helpers/estimation_test_data_map_factor
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/start_test_session.dart';
 
 class _EstimationRenameSheetTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -59,6 +60,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_EstimationRenameSheetTestModule(appBootstrap));
+    startTestSession();
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
 
     fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(initialProjectId: testProjectId);
