@@ -4124,6 +4124,18 @@ abstract class AppLocalizations {
   /// **'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.'**
   String get materialLookupSampleNotice;
 
+  /// Footnote above the sample rates when each shows its price per takeoff unit; shown together with that price, or not at all
+  ///
+  /// In en, this message translates to:
+  /// **'These come in different sizes, so each price also shows the price per {unit}.'**
+  String materialLookupPricePerUnitFootnote(String unit);
+
+  /// A sample rate's price per takeoff unit, such as '$0.13/Square meters'; amount is pre-formatted currency and unit is materialRatePerUnitSuffix
+  ///
+  /// In en, this message translates to:
+  /// **'{amount}{unit}'**
+  String materialLookupPricePerUnit(String amount, String unit);
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:

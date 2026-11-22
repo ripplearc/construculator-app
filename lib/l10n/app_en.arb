@@ -3445,6 +3445,30 @@
     "description": "Message with no close control directly under the FROM SAMPLE COST FILE heading; shown whenever the sample group is shown",
     "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate, build note Sample notice"
   },
+  "materialLookupPricePerUnitFootnote": "These come in different sizes, so each price also shows the price per {unit}.",
+  "@materialLookupPricePerUnitFootnote": {
+    "description": "Footnote above the sample rates when each shows its price per takeoff unit; shown together with that price, or not at all",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate, build note the price-per-unit column",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "Square meters"
+      }
+    }
+  },
+  "materialLookupPricePerUnit": "{amount}{unit}",
+  "@materialLookupPricePerUnit": {
+    "description": "A sample rate's price per takeoff unit, such as '$0.13/Square meters'; amount is pre-formatted currency and unit is materialRatePerUnitSuffix",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate, build note the price-per-unit column",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "newMaterialCostSheetTitle": "New material cost",
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",

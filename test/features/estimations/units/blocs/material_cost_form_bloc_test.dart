@@ -19,6 +19,15 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
 
+final _lookedUpRate = YourRateEntry(
+  id: 'paint-rate',
+  companyId: 'company-1',
+  itemName: 'Interior paint',
+  category: CostItemType.material,
+  rate: const Money(amount: 40),
+  savedAt: DateTime.utc(2026, 1, 10),
+);
+
 MaterialCostFormData _dataOf(MaterialCostFormState state) =>
     (state as MaterialCostFormEditing).data;
 
@@ -621,6 +630,73 @@ void main() {
           ..add(const MaterialQuantityUpdated('3'))
           ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
         verify: (_) => expect(database.updatedRowIds, ['paint-rate']),
+      );
+    });
+
+    group('sample rate picked on Look up a rate', () {
+      const picked = MaterialSampleRatePicked(
+        itemName: 'Interior paint · ProClassic',
+        rate: 52,
+        unit: Unit.liters,
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the name, rate and unit, tagged Sample rate',
+        build: () => bloc,
+        act: (b) => b.add(picked),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.itemName, 'Interior paint · ProClassic');
+          expect(data.rate, 52);
+          expect(data.unit, Unit.liters);
+          expect(data.rateStatus, RateStatus.sampleRateUnverified);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the picked unit when the sample rate has none',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialUnitSelected(Unit.bags))
+          ..add(const MaterialSampleRatePicked(itemName: 'Paint', rate: 52)),
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.bags),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves the line tagged as a sample rate and marks no saved rate as '
+        'used',
+        setUp: () => database.seedRow({
+          'id': 'paint-rate',
+          'company_id': 'company-1',
+          'category': 'material',
+          'item_name': 'Interior paint',
+          'rate_amount': 40.0,
+          'rate_currency': 'USD',
+          'saved_at': '2026-01-10T00:00:00.000Z',
+        }),
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialRateLookedUp(_lookedUpRate))
+          ..add(picked)
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (_) {
+          final row =
+              fakeSupabase.getMethodCallsFor('insert').single['data']
+                  as Map<String, dynamic>;
+          expect(row['rate_status'], 'sample_rate_unverified');
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'typing over the sample price makes it the user\'s own',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(const MaterialRateUpdated('60')),
+        verify: (b) =>
+            expect(_dataOf(b.state).rateStatus, RateStatus.ownRateUnconfirmed),
       );
     });
 

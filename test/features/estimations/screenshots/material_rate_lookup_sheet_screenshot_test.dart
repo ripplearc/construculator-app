@@ -146,24 +146,47 @@ void main() {
       await expectGolden('load_error', suffix);
     });
 
-    SampleRateRow paint(String id, String product, double rate) =>
-        SampleRateRow(
-          id: id,
-          productName: product,
-          details: 'Interior · flat',
-          rate: Money(amount: rate),
-          unit: Unit.liters,
-        );
+    SampleRateRow paint(
+      String id,
+      String product,
+      double rate, {
+      double? coverage = 37,
+      Unit coverageUnit = Unit.squareMeters,
+    }) => SampleRateRow(
+      id: id,
+      productName: product,
+      details: 'Interior · flat',
+      rate: Money(amount: rate),
+      unit: Unit.liters,
+      coverage: coverage,
+      coverageUnit: coverageUnit,
+    );
 
-    testWidgets('displays both groups, the sample one with its notice', (
-      tester,
-    ) async {
+    testWidgets('displays the sample group with its notice, footnote and '
+        'price per unit', (tester) async {
+      await pumpSheet(
+        tester,
+        theme,
+        initialQuery: 'premium',
+        sampleRows: [
+          paint('premium', 'Premium Plus interior', 38, coverage: 23),
+          paint('proclassic', 'ProClassic interior', 52),
+        ],
+      );
+      await tester.tap(find.byKey(const Key('sample_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await expectGolden('sample_group_price_per_unit', suffix);
+    });
+
+    testWidgets('displays both groups, and no price per unit when a sample '
+        'row has no coverage', (tester) async {
       await pumpSheet(
         tester,
         theme,
         sampleRows: [
           paint('premium', 'Premium Plus interior', 38),
-          paint('contractor', 'Contractor Grade interior', 28),
+          paint('contractor', 'Contractor Grade interior', 28, coverage: null),
         ],
       );
 
