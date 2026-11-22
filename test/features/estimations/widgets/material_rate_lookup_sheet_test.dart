@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -24,6 +25,7 @@ void main() {
   late FakeClockImpl clock;
   late AppLocalizations l10n;
   YourRateEntry? result;
+  List<SampleRateRow> sampleRows = const [];
   var closed = false;
 
   const useButton = Key('material_lookup_use_button');
@@ -66,6 +68,7 @@ void main() {
   setUp(() {
     result = null;
     closed = false;
+    sampleRows = const [];
     database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
@@ -110,6 +113,7 @@ void main() {
                     initialQuery: initialQuery,
                     clock: clock,
                     blocFactory: yourRatesBlocWithoutDebounce,
+                    sampleRatesFor: (_) => sampleRows,
                   );
                   closed = true;
                 },
@@ -352,6 +356,88 @@ void main() {
       expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
       expect(find.byKey(useButton), findsNothing);
+    });
+  });
+
+  group('MaterialRateLookupSheet – sample cost file', () {
+    SampleRateRow paint(String id, double rate) => SampleRateRow(
+      id: id,
+      productName: 'Paint $id',
+      rate: Money(amount: rate),
+      unit: Unit.liters,
+    );
+
+    final sampleGroup = find.byKey(const Key('material_lookup_sample_group'));
+    final notice = find.byKey(const Key('material_lookup_sample_notice'));
+
+    testWidgets('lists the sample rates under FROM SAMPLE COST FILE, below '
+        'YOUR RATES, with the notice directly under the heading', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      expect(find.text('FROM SAMPLE COST FILE'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: notice,
+          matching: find.text(l10n.materialLookupSampleNotice),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('YOUR RATES')).dy,
+        lessThan(tester.getTopLeft(find.text('FROM SAMPLE COST FILE')).dy),
+      );
+      expect(
+        tester.getTopLeft(notice).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const Key('sample_rate_row_a'))).dy,
+        ),
+      );
+    });
+
+    testWidgets('a new search lists the sample rates for the new words', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      sampleRows = [paint('b', 38)];
+      await typeQuery(tester, 'premium');
+
+      expect(find.byKey(const Key('sample_rate_row_b')), findsOneWidget);
+      expect(find.byKey(const Key('sample_rate_row_a')), findsNothing);
+    });
+
+    testWidgets('shows no sample heading and no notice without sample rates', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      expect(sampleGroup, findsNothing);
+      expect(find.text(l10n.materialLookupSampleNotice), findsNothing);
+    });
+
+    testWidgets('shows the sample group alone, without a YOUR RATES heading, '
+        'when no saved rate matches', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester, initialQuery: 'epoxy grout');
+
+      expect(sampleGroup, findsOneWidget);
+      expect(find.text('YOUR RATES'), findsNothing);
+      expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
+    });
+
+    testWidgets('keeps the sample group when Your rates cannot be read', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
+      expect(notice, findsOneWidget);
     });
   });
 }
