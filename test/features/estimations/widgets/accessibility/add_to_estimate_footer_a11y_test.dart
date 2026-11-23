@@ -21,7 +21,10 @@ void main() {
         home: Scaffold(
           body: AddToEstimateFooter(
             lineTotal: 605,
-            deliveryFee: 85,
+            charge: const AddToEstimateCharge(
+              label: 'incl. delivery',
+              amount: 85,
+            ),
             estimateName: 'Bedroom 2',
             estimateTotal: 2993.62,
             block: block,

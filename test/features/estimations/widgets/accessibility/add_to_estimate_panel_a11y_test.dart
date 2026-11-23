@@ -25,7 +25,13 @@ void main() {
           body: AddToEstimatePanel(
             key: const Key('panel'),
             lineTotal: 520,
-            deliveryFee: deliveryFee,
+            charge: switch (deliveryFee) {
+              final fee? => AddToEstimateCharge(
+                label: 'incl. delivery',
+                amount: fee,
+              ),
+              null => null,
+            },
             estimateName: 'Bedroom 2',
             estimateTotal: estimateTotal,
             block: block,

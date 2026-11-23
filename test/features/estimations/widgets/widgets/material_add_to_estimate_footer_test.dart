@@ -114,11 +114,13 @@ void main() {
     String? quantity,
     Unit? unit,
     String? rate,
+    String? waste,
   }) async {
     if (name != null) bloc.add(MaterialCostItemTypeChanged(name));
     if (quantity != null) bloc.add(MaterialQuantityUpdated(quantity));
     if (unit != null) bloc.add(MaterialUnitSelected(unit));
     if (rate != null) bloc.add(MaterialRateUpdated(rate));
+    if (waste != null) bloc.add(MaterialWasteUpdated(waste));
     await tester.pumpAndSettle();
   }
 
@@ -255,6 +257,105 @@ void main() {
       expect(find.text(r'$2,110.87'), findsOneWidget);
       expect(find.textContaining('Bedroom 2'), findsOneWidget);
     });
+
+    testWidgets('shows the waste in the line total and on its own row', (
+      tester,
+    ) async {
+      await pumpFooter(tester);
+      await fill(
+        tester,
+        name: 'Interior paint',
+        quantity: '3',
+        unit: Unit.gallons,
+        rate: '52',
+        waste: '15',
+      );
+
+      expect(find.text(r'$179.40'), findsOneWidget);
+      expect(find.text('incl. 15% waste'), findsOneWidget);
+      expect(find.text(r'+$23.40'), findsOneWidget);
+      expect(find.text(r'$2,272.42'), findsOneWidget);
+    });
+
+    testWidgets('names a part percentage with its decimal', (tester) async {
+      await pumpFooter(tester);
+      await fillAll(tester);
+      await fill(tester, waste: '12.5');
+
+      expect(find.text('incl. 12.5% waste'), findsOneWidget);
+      expect(find.text(r'+$2.23'), findsOneWidget);
+    });
+
+    testWidgets('updates the waste row when the waste is changed again', (
+      tester,
+    ) async {
+      await pumpFooter(tester);
+      await fill(
+        tester,
+        name: 'Interior paint',
+        quantity: '3',
+        unit: Unit.gallons,
+        rate: '52',
+        waste: '15',
+      );
+      await fill(tester, waste: '10');
+
+      expect(find.text('incl. 15% waste'), findsNothing);
+      expect(find.text('incl. 10% waste'), findsOneWidget);
+      expect(find.text(r'+$15.60'), findsOneWidget);
+      expect(find.text(r'$171.60'), findsOneWidget);
+    });
+
+    testWidgets('keeps the waste row while the line saves', (tester) async {
+      await pumpFooter(tester);
+      await fillAll(tester);
+      await fill(tester, waste: '15');
+      holdSaves();
+
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pump();
+      final disabledWhileSaving = isButtonDisabled(tester);
+      final wasteRows = find.text('incl. 15% waste').evaluate().length;
+      final wasteAmounts = find.text(r'+$2.68').evaluate().length;
+
+      database.writeGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(disabledWhileSaving, isTrue);
+      expect(wasteRows, 1);
+      expect(wasteAmounts, 1);
+    });
+
+    testWidgets('keeps the waste row after a failed save and updates it when '
+        'the waste is edited', (tester) async {
+      database.executeError = StateError('disk full');
+      await pumpFooter(tester);
+      await fillAll(tester);
+      await fill(tester, waste: '15');
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+      expect(find.text('incl. 15% waste'), findsOneWidget);
+
+      await fill(tester, waste: '10');
+
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+      expect(find.text('incl. 10% waste'), findsOneWidget);
+      expect(find.text(r'+$1.79'), findsOneWidget);
+    });
+
+    for (final waste in ['', '0']) {
+      testWidgets('shows no waste row for a waste of "$waste"', (tester) async {
+        await pumpFooter(tester);
+        await fillAll(tester);
+        await fill(tester, waste: '15');
+        await fill(tester, waste: waste);
+
+        expect(find.textContaining('waste'), findsNothing);
+        expect(find.text(r'$17.85'), findsOneWidget);
+      });
+    }
 
     testWidgets('shows a part quantity total without losing a half cent', (
       tester,

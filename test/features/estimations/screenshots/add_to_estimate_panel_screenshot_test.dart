@@ -20,6 +20,7 @@ void main() {
     ThemeData theme, {
     double lineTotal = 520,
     double? deliveryFee,
+    String chargeLabel = 'incl. delivery',
     String estimateName = 'Bedroom 2',
     double? estimateTotal = 2993.62,
     AddToEstimateBlock? block,
@@ -45,7 +46,13 @@ void main() {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: AddToEstimatePanel(
                       lineTotal: lineTotal,
-                      deliveryFee: deliveryFee,
+                      charge: switch (deliveryFee) {
+                        final fee? => AddToEstimateCharge(
+                          label: chargeLabel,
+                          amount: fee,
+                        ),
+                        null => null,
+                      },
                       estimateName: estimateName,
                       estimateTotal: estimateTotal,
                       block: block,
@@ -76,6 +83,17 @@ void main() {
     testWidgets('ready, with delivery fee', (tester) async {
       await pumpPanel(tester, theme, lineTotal: 605, deliveryFee: 85);
       await expectGolden(tester, 'ready_with_delivery', suffix);
+    });
+
+    testWidgets('ready, with waste', (tester) async {
+      await pumpPanel(
+        tester,
+        theme,
+        lineTotal: 171.60,
+        deliveryFee: 15.60,
+        chargeLabel: 'incl. 10% waste',
+      );
+      await expectGolden(tester, 'ready_with_waste', suffix);
     });
 
     testWidgets('ready, with a long estimate name', (tester) async {

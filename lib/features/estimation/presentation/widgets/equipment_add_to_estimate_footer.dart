@@ -55,7 +55,13 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
         final blocker = data.submitBlocker;
         return AddToEstimateFooter(
           lineTotal: data.lineTotal,
-          deliveryFee: data.deliveryFee,
+          charge: switch (data.deliveryFee) {
+            final fee? => AddToEstimateCharge(
+              label: l10n.addsToEstimateIncludesDelivery,
+              amount: fee,
+            ),
+            null => null,
+          },
           changeInEstimateTotal: data.changeInEstimateTotal,
           hasUnsavedChanges: data.hasUnsavedChanges,
           isEditingExistingLine: data.isEditingExistingLine,

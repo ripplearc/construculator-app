@@ -4096,6 +4096,12 @@ abstract class AppLocalizations {
   /// **' total  {amount} →'**
   String addsToEstimateTotalBeforeSuffix(String amount);
 
+  /// Label of the summary card row showing how much of a material line total is its waste allowance, such as incl. 10% waste
+  ///
+  /// In en, this message translates to:
+  /// **'incl. {percent} waste'**
+  String addsToEstimateIncludesWaste(String percent);
+
   /// Label of the summary card row showing how much of the line total is the delivery fee
   ///
   /// In en, this message translates to:

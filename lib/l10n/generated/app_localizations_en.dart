@@ -2298,6 +2298,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String addsToEstimateIncludesWaste(String percent) {
+    return 'incl. $percent waste';
+  }
+
+  @override
   String get addsToEstimateIncludesDelivery => 'incl. delivery';
 
   @override

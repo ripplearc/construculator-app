@@ -29,7 +29,13 @@ void main() {
         home: Scaffold(
           body: AddToEstimateFooter(
             lineTotal: 520,
-            deliveryFee: deliveryFee,
+            charge: switch (deliveryFee) {
+              final fee? => AddToEstimateCharge(
+                label: 'incl. delivery',
+                amount: fee,
+              ),
+              null => null,
+            },
             estimateName: 'Bedroom 2',
             estimateTotal: 2993.62,
             block: block,

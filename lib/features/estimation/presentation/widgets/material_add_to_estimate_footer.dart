@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/presentation/widgets/confirma
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -86,6 +87,15 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
             isSubmitting ? () {} : edit;
         return AddToEstimateFooter(
           lineTotal: data.lineTotal,
+          charge: switch (data.wastePercent) {
+            final waste? => AddToEstimateCharge(
+              label: l10n.addsToEstimateIncludesWaste(
+                DisplayFormatter.formatPercent(waste),
+              ),
+              amount: data.wasteAmount,
+            ),
+            null => null,
+          },
           estimateName: estimateName,
           estimateTotal: estimateTotal,
           isEditingExistingLine: data.isEditingExistingLine,

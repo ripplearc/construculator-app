@@ -87,6 +87,17 @@ class DisplayFormatter {
     return days < 0 ? 0 : days;
   }
 
+  /// Formats a percentage with at most one decimal place.
+  ///
+  /// A whole number shows no decimals, except 0, which shows as "0.0%" so a
+  /// value set to zero reads apart from an empty one.
+  ///
+  /// Example: 10 -> "10%", 12.5 -> "12.5%", 0 -> "0.0%"
+  static String formatPercent(double value) {
+    final digits = value == 0 || value != value.roundToDouble() ? 1 : 0;
+    return '${value.toStringAsFixed(digits)}%';
+  }
+
   /// Formats a file size in bytes to a human-readable string.
   ///
   /// Example: 204800 -> "200KB", 1572864 -> "1.5MB", 512 -> "512B"

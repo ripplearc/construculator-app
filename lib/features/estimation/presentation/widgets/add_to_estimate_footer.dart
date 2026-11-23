@@ -33,11 +33,11 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Key of the Delete this line button.
   static const deleteButtonKey = Key('delete_line_button');
 
-  /// The line's own total including delivery. Ignored while [block] is set.
+  /// The line's own total including [charge]. Ignored while [block] is set.
   final double lineTotal;
 
-  /// Shown as an "incl. delivery" row when above zero.
-  final double? deliveryFee;
+  /// Shown as an "incl. …" row, such as "incl. delivery", when above zero.
+  final AddToEstimateCharge? charge;
 
   /// The name of the estimate the line is added to.
   final String estimateName;
@@ -94,7 +94,7 @@ class AddToEstimateFooter extends StatelessWidget {
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
-    this.deliveryFee,
+    this.charge,
     required this.estimateName,
     required this.estimateTotal,
     this.block,
@@ -120,7 +120,7 @@ class AddToEstimateFooter extends StatelessWidget {
       child: AddToEstimatePanel(
         key: panelKey,
         lineTotal: lineTotal,
-        deliveryFee: deliveryFee,
+        charge: charge,
         estimateName: estimateName,
         estimateTotal: estimateTotal,
         block: block,
