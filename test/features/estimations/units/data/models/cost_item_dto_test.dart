@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/cost_item_test_data_map_factory.dart';
@@ -31,6 +32,85 @@ void main() {
         final json = dtoWithId('item-123').toJson();
 
         expect(json['id'], 'item-123');
+      });
+    });
+
+    group('the phone\'s cost_items table', () {
+      test('has a column for every field toJson uploads except the id', () {
+        const fullyFilled = CostItemDto(
+          id: 'line-1',
+          estimateId: 'estimate-1',
+          itemName: 'Plywood',
+          itemType: 'material',
+          calculation: {'unit_price': 10.0},
+          itemTotalCost: 20,
+          createdAt: '2026-11-14T10:00:00.000Z',
+          updatedAt: '2026-11-14T10:00:00.000Z',
+          currency: 'USD',
+          productLink: 'https://example.com',
+          description: 'Sheet',
+          unitPrice: 10,
+          quantity: 2,
+          unitMeasurement: 'pieces',
+          pricingMethod: 'day',
+          duration: 1,
+          dailyRate: 1,
+          jobAmount: 1,
+          deliveryFee: 1,
+          rateStatus: 'missing',
+          laborCalcMethod: 'per_hour',
+          laborDays: 1,
+          laborHours: 1,
+          laborUnitType: 'unit',
+          laborUnitValue: 1,
+          crewSize: 1,
+          wastePercent: 1,
+          quantityProvenance: 'manual',
+          calculatorFormula: 'a * b',
+        );
+        final columns = schema.tables
+            .singleWhere((table) => table.name == 'cost_items')
+            .columns
+            .map((column) => column.name);
+
+        expect(
+          columns,
+          unorderedEquals(fullyFilled.toJson().keys.toSet()..remove('id')),
+        );
+      });
+    });
+
+    group('fromRow', () {
+      Map<String, dynamic> row({Object? calculation}) => {
+        'id': 'line-1',
+        'estimate_id': 'estimate-456',
+        'item_name': 'Concrete Mix',
+        'item_type': 'material',
+        'calculation': calculation,
+        'item_total_cost': 100.0,
+        'created_at': '2025-02-25T14:30:00.000Z',
+        'updated_at': '2025-02-25T14:30:00.000Z',
+        'currency': 'USD',
+        'crew_size': null,
+      };
+
+      test('reads the calculation from the JSON text the phone stores', () {
+        final dto = CostItemDto.fromRow(
+          row(calculation: '{"unit_price":10.5,"quantity":2.0}'),
+        );
+
+        expect(dto.calculation, {'unit_price': 10.5, 'quantity': 2.0});
+      });
+
+      test('reads an empty calculation when the column holds no text', () {
+        expect(CostItemDto.fromRow(row()).calculation, isEmpty);
+      });
+
+      test('fails on calculation text that is not JSON', () {
+        expect(
+          () => CostItemDto.fromRow(row(calculation: 'not json')),
+          throwsFormatException,
+        );
       });
     });
 
