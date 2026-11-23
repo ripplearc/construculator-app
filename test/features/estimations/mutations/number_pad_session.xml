@@ -5,6 +5,7 @@
 
     <files>
         <file>lib/features/estimation/presentation/widgets/number_pad_session.dart</file>
+        <file>lib/features/estimation/presentation/helpers/number_pad_put_back_label.dart</file>
     </files>
 
     <exclude>
@@ -57,10 +58,23 @@
         <regex pattern="controller\.value = formatted;" dotAll="false" id="session.apply.caret_kept_on_same_text">
             <mutation text="if (formatted.text != previous.text) controller.value = formatted;"/>
         </regex>
+        <regex pattern="putBackLabel = putBackLabelOf\(controller\.text\);" dotAll="false" id="session.label.not_opened_value">
+            <mutation text="putBackLabel = putBackLabelOf('');"/>
+        </regex>
+        <regex pattern="if \(openedWith\.isEmpty\) return l10n\.numberPadClearButton;" dotAll="false" id="label.clear.never">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="openedWith\.isEmpty" dotAll="false" id="label.clear.inverted">
+            <mutation text="openedWith.isNotEmpty"/>
+        </regex>
+        <regex pattern="shown\?\.call\(openedWith\) \?\? openedWith" dotAll="false" id="label.sign.dropped">
+            <mutation text="openedWith"/>
+        </regex>
     </rules>
 
     <commands>
         <command group="session" expected-return="0">fvm flutter test test/features/estimations/units/presentation/widgets/number_pad_session_test.dart</command>
+        <command group="label" expected-return="0">fvm flutter test test/features/estimations/units/presentation/helpers/number_pad_put_back_label_test.dart</command>
     </commands>
 
     <threshold failure="85"/>
