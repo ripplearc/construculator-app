@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- AUTH EVENT QUEUE MUTATION TESTING -->
+
+    <files>
+        <file>lib/libraries/auth/queue/auth_event_queue.dart</file>
+    </files>
+
+    <rules>
+        <regex pattern="int _lastAcceptedEventNumber = 0;" id="queue.initial_accepted">
+            <mutation text="int _lastAcceptedEventNumber = 5;"/>
+        </regex>
+
+        <regex pattern="int _lastRunId = 0;" id="queue.initial_run_id">
+            <mutation text="int _lastRunId = 1;"/>
+        </regex>
+
+        <regex pattern="int _lastEventNumber = 0;" id="queue.initial_event_number">
+            <mutation text="int _lastEventNumber = 1;"/>
+        </regex>
+
+        <regex pattern="bool _timedOut = false;" id="run.initial_timed_out">
+            <mutation text="bool _timedOut = true;"/>
+        </regex>
+
+        <regex pattern="bool get isCurrent =&gt; !_timedOut;" id="run.is_current_negated">
+            <mutation text="bool get isCurrent =&gt; _timedOut;"/>
+        </regex>
+
+        <regex pattern="_timedOut = true;" id="run.skip_mark_timed_out">
+            <mutation text="_timedOut = false;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_onTimedOut\(running\);" id="run.skip_on_timed_out">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="throw const QueueTimeoutException\(\);" id="run.timeout_rethrown_raw">
+            <mutation text="rethrow;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="return await running\.timeout\(_timeout\);" id="run.no_timeout">
+            <mutation text="return await running;"/>
+        </regex>
+
+        <regex pattern="if \(eventNumber &lt;= _lastAcceptedEventNumber\) return _tail;" id="enqueue.replay_boundary">
+            <mutation text="if (eventNumber &lt; _lastAcceptedEventNumber) return _tail;"/>
+            <mutation text="if (eventNumber &gt; _lastAcceptedEventNumber) return _tail;"/>
+            <mutation text="if (eventNumber == _lastAcceptedEventNumber) return _tail;"/>
+            <mutation text="if (false) return _tail;"/>
+            <mutation text="if (true) return _tail;"/>
+        </regex>
+
+        <regex pattern="return _tail;" id="enqueue.replay_returns_not_tail">
+            <mutation text="return Future&lt;void&gt;.value();"/>
+        </regex>
+
+        <regex pattern="_lastAcceptedEventNumber = eventNumber;" id="enqueue.skip_record_accepted">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_tail = done;" id="enqueue.skip_chain">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_tail\.then\(\(_\) =&gt; _run\(item, settle\)\)" id="enqueue.no_wait_for_tail">
+            <mutation text="Future&lt;void&gt;.value().then((_) =&gt; _run(item, settle))"/>
+        </regex>
+
+        <regex pattern="if \(_unstoppedAction != null\)" id="run.unstopped_guard">
+            <mutation text="if (_unstoppedAction == null)"/>
+            <mutation text="if (false)"/>
+            <mutation text="if (true)"/>
+        </regex>
+
+        <regex pattern="_onUnstoppedRun\(\);" id="run.skip_report_unstopped">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="\n      return;\n" id="run.dropped_item_still_runs">
+            <mutation text="
+"/>
+        </regex>
+
+        <regex pattern="\+\+_lastRunId" id="run.id_post_increment">
+            <mutation text="_lastRunId++"/>
+            <mutation text="--_lastRunId"/>
+        </regex>
+
+        <regex pattern="var outcome = QueueOutcome\.completed;" id="run.initial_outcome">
+            <mutation text="var outcome = QueueOutcome.failed;"/>
+            <mutation text="var outcome = QueueOutcome.timedOut;"/>
+        </regex>
+
+        <regex pattern="outcome = QueueOutcome\.timedOut;" id="run.timed_out_outcome">
+            <mutation text="outcome = QueueOutcome.failed;"/>
+            <mutation text="outcome = QueueOutcome.completed;"/>
+        </regex>
+
+        <regex pattern="outcome = QueueOutcome\.failed;" id="run.failed_outcome">
+            <mutation text="outcome = QueueOutcome.completed;"/>
+            <mutation text="outcome = QueueOutcome.timedOut;"/>
+        </regex>
+
+        <regex pattern="await item\(run\);" id="run.skip_item">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="await settle\(outcome\);" id="run.skip_settle">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_unstoppedAction = action;" id="mark.skip_record">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(_unstoppedAction == action\) _unstoppedAction = null;" id="mark.stopped_guard">
+            <mutation text="if (_unstoppedAction != action) _unstoppedAction = null;"/>
+            <mutation text="_unstoppedAction = null;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="action\.then\(markStopped, onError: markStopped\);" id="mark.listen">
+            <mutation text="action.then(markStopped);"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="\+\+_lastEventNumber" id="event.post_increment">
+            <mutation text="_lastEventNumber++"/>
+            <mutation text="--_lastEventNumber"/>
+        </regex>
+
+        <regex pattern="eventNumber == _lastEventNumber" id="event.is_newest">
+            <mutation text="eventNumber != _lastEventNumber"/>
+            <mutation text="eventNumber &lt;= _lastEventNumber"/>
+            <mutation text="eventNumber &gt;= _lastEventNumber"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="auth_event_queue" expected-return="0">flutter test test/libraries/auth/units/queue/auth_event_queue_test.dart</command>
+    </commands>
+</mutations>
