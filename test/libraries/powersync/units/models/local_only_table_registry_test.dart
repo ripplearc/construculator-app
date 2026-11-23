@@ -79,6 +79,14 @@ void main() {
       expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
     });
 
+    test('registers cost_item_refusals to clear when the user changes', () {
+      final entry = LocalOnlyTableRegistry.registrations.singleWhere(
+        (entry) => entry.tableName == DatabaseConstants.costItemRefusalsTable,
+      );
+
+      expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
+    });
+
     test('reports a local-only table that is not registered', () {
       final problems = problemsOf(schemaOf(localOnly: ['notes', 'drafts']), [
         clearedNote,
@@ -169,6 +177,7 @@ void main() {
             'DELETE FROM current_company',
             'DELETE FROM your_rate_refusals',
             'DELETE FROM calculator_recents',
+            'DELETE FROM cost_item_refusals',
           ]),
         );
       });

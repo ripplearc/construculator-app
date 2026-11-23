@@ -1,10 +1,16 @@
+import 'dart:convert';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/data/connectors/supabase_powersync_connector.dart';
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
+import 'package:construculator/libraries/powersync/testing/fake_cost_item_refusal_database.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:powersync/powersync.dart';
@@ -211,6 +217,328 @@ void main() {
           equals({'seed': 'fence', 'rails_per_section': 2}),
         );
         expect(calls.last['data'], {'deleted_at': '2026-11-02T10:00:00.000Z'});
+      });
+
+      test(
+        'PUT of a cost item sends its calculation as a JSON object',
+        () async {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+                'estimate_id': 'estimate-1',
+                'item_name': 'Plywood',
+                'calculation': '{"unit_price": 10.0, "quantity": 2.0}',
+              }),
+            ]),
+          );
+
+          await connector.uploadData(fakeDatabase);
+
+          final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+          expect(data, containsPair('id', 'line-1'));
+          expect(
+            data['calculation'],
+            equals({'unit_price': 10.0, 'quantity': 2.0}),
+          );
+        },
+      );
+
+      test('PUT of a cost item sends a null for each column the phone left '
+          'out, so a cleared field is cleared on the server', () async {
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+              'estimate_id': 'estimate-1',
+              'calculation': '{}',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data =
+            fakeSupabase.getMethodCallsFor('upsert').single['data']
+                as Map<String, dynamic>;
+        final columns = schema.tables
+            .singleWhere((table) => table.name == 'cost_items')
+            .columns
+            .map((column) => column.name);
+        expect(data.keys, unorderedEquals([...columns, 'id']));
+        expect(data, containsPair('description', null));
+        expect(data, containsPair('estimate_id', 'estimate-1'));
+        expect(data, containsPair('calculation', isEmpty));
+      });
+
+      test('PUT of another table sends only the columns it has', () async {
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'project_name': 'House',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+        expect(data.keys, unorderedEquals(['project_name', 'id']));
+      });
+
+      test('PATCH of a cost item decodes calculation and sends only what '
+          'changed', () async {
+        fakeSupabase.addTableData('cost_items', [
+          {'id': 'line-1', 'item_name': 'Plywood'},
+        ]);
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'cost_items', 'line-1', null, {
+              'calculation': '{"quantity": 3.0}',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('update').single['data'];
+        expect(data, {
+          'calculation': {'quantity': 3.0},
+        });
+      });
+
+      group('a cost line the server refuses or cannot decode', () {
+        final refusedAt = DateTime.utc(2026, 11, 18, 9, 30);
+        final phoneLine = <String, Object?>{
+          'id': 'line-1',
+          'estimate_id': 'estimate-1',
+          'item_name': 'Plywood',
+          'calculation': '{"quantity": 2.0}',
+        };
+        late FakeCostItemRefusalDatabase phone;
+        late SupabasePowerSyncConnector clockedConnector;
+
+        setUp(() {
+          phone = FakeCostItemRefusalDatabase()..seedCostItem(phoneLine);
+          clockedConnector = SupabasePowerSyncConnector(
+            supabaseWrapper: fakeSupabase,
+            envLoader: fakeEnvLoader,
+            clock: FakeClockImpl(refusedAt),
+          );
+        });
+
+        void refuseWithRlsDenial({required bool onUpdate}) {
+          if (onUpdate) {
+            fakeSupabase.shouldThrowOnUpdate = true;
+            fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          } else {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          }
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+        }
+
+        CrudEntry putLine() =>
+            CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+              'estimate_id': 'estimate-1',
+              'item_name': 'Plywood',
+              'calculation': '{"quantity": 2.0}',
+            });
+
+        CrudEntry deleteOtherRow() =>
+            CrudEntry(2, UpdateType.delete, 'projects', 'proj-1', null, null);
+
+        test('refused with 42501 on a PUT is recorded with the line, the time '
+            'and the reason, and the queue moves on', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          final transaction = FakeCrudTransaction([
+            putLine(),
+            deleteOtherRow(),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          final record = phone.refusals['line-1']!;
+          expect(record['estimate_id'], 'estimate-1');
+          expect(record['reason'], '42501');
+          expect(record['refused_at'], '2026-11-18T09:30:00.000Z');
+          expect(jsonDecode(record['line']! as String), phoneLine);
+          expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        test('refused with 42501 on a PATCH is recorded and the transaction '
+            'completes', () async {
+          refuseWithRlsDenial(onUpdate: true);
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'cost_items', 'line-1', null, {
+              'calculation': '{"quantity": 3.0}',
+            }),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals.keys, ['line-1']);
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        for (final text in ['not json', '']) {
+          test('a calculation text of "$text" is recorded as not JSON and '
+              'the queue moves on', () async {
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+                'estimate_id': 'estimate-1',
+                'calculation': text,
+              }),
+              deleteOtherRow(),
+            ]);
+            phone.setNextTransaction(transaction);
+
+            await clockedConnector.uploadData(phone);
+
+            expect(
+              phone.refusals['line-1']!['reason'],
+              'calculation is not JSON',
+            );
+            expect(fakeSupabase.getMethodCallsFor('upsert'), isEmpty);
+            expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          });
+        }
+
+        test('a refused DELETE records nothing and the transaction '
+            'completes', () async {
+          fakeSupabase.shouldThrowOnDelete = true;
+          fakeSupabase.deleteExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.delete, 'cost_items', 'line-1', null, null),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        test('a later upload of the same line that the server accepts removes '
+            'its refusal record', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          phone.setNextTransaction(FakeCrudTransaction([putLine()]));
+          await clockedConnector.uploadData(phone);
+          fakeSupabase.shouldThrowOnUpsert = false;
+          phone.setNextTransaction(FakeCrudTransaction([putLine()]));
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+        });
+
+        test(
+          'a refusal that cannot be recorded does not stop the queue',
+          () async {
+            refuseWithRlsDenial(onUpdate: false);
+            phone.statementError = StateError('disk full');
+            final transaction = FakeCrudTransaction([
+              putLine(),
+              deleteOtherRow(),
+            ]);
+            phone.setNextTransaction(transaction);
+
+            await clockedConnector.uploadData(phone);
+
+            expect(fakeSupabase.getMethodCallsFor('delete'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          },
+        );
+
+        test('another server error on a cost line is retried: nothing is '
+            'recorded and the transaction stays queued', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.timeout;
+          final transaction = FakeCrudTransaction([putLine()]);
+          phone.setNextTransaction(transaction);
+
+          await expectLater(
+            clockedConnector.uploadData(phone),
+            throwsA(anything),
+          );
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isFalse);
+        });
+
+        test('a 42501 on another table records no cost line refusal', () async {
+          refuseWithRlsDenial(onUpdate: false);
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'project_name': 'House',
+            }),
+          ]);
+          phone.setNextTransaction(transaction);
+
+          await clockedConnector.uploadData(phone);
+
+          expect(phone.refusals, isEmpty);
+          expect(transaction.isCompleted, isTrue);
+        });
+      });
+
+      test(
+        'a cost item uploaded twice with one id stays one server row',
+        () async {
+          for (final changeId in [1, 2]) {
+            fakeDatabase.setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(
+                  changeId,
+                  UpdateType.put,
+                  'cost_items',
+                  'line-1',
+                  null,
+                  {
+                    'estimate_id': 'estimate-1',
+                    'item_name': 'Plywood',
+                    'calculation': '{}',
+                  },
+                ),
+              ]),
+            );
+            await connector.uploadData(fakeDatabase);
+          }
+
+          final rows = await fakeSupabase.selectMatch(
+            table: 'cost_items',
+            filters: const {},
+          );
+          expect(rows.map((row) => row['id']), ['line-1']);
+        },
+      );
+
+      test('the later of two uploads of one cost item is the one the server '
+          'keeps', () async {
+        for (final entry in [(1, 'Plywood'), (2, 'Plywood 3/4 in')]) {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(
+                entry.$1,
+                UpdateType.put,
+                'cost_items',
+                'line-1',
+                null,
+                {'item_name': entry.$2, 'calculation': '{}'},
+              ),
+            ]),
+          );
+          await connector.uploadData(fakeDatabase);
+        }
+
+        final rows = await fakeSupabase.selectMatch(
+          table: 'cost_items',
+          filters: const {},
+        );
+        expect(rows.single['item_name'], 'Plywood 3/4 in');
       });
 
       test('another table\'s JSON text is sent as the text it is', () async {
