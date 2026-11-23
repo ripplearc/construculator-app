@@ -892,6 +892,232 @@ void main() {
     });
   });
 
+  group('waste row', () {
+    final wasteRow = find.byKey(const Key('material_waste_row'));
+    final wasteField = find.byKey(const Key('material_waste_field'));
+    const suggestedHint =
+        'Suggested for a new material — change or clear anytime';
+    const emptyHint = 'No suggested waste for this material — add your own';
+
+    Finder summary(String text) => find.text(text, findRichText: true);
+
+    Future<void> openRow(WidgetTester tester) async {
+      await tester.tap(summary('Waste 10%'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> typeWaste(WidgetTester tester, String text) async {
+      await tester.enterText(wasteField, text);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('starts closed, reading the 10% a new material starts with', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+
+      expect(summary('Waste 10%'), findsOneWidget);
+      expect(wasteField, findsNothing);
+      expect(dataOf().wastePercent, 10);
+    });
+
+    testWidgets('sits under the rate row', (tester) async {
+      await pumpFields(tester);
+
+      expect(
+        tester.getRect(wasteRow).top,
+        greaterThan(tester.getRect(rateField).bottom),
+      );
+    });
+
+    testWidgets('opens on a tap to the waste field holding 10 and the '
+        'new-material hint, with no focus', (tester) async {
+      await pumpFields(tester);
+
+      await openRow(tester);
+
+      expect(textOf(tester, wasteField), '10');
+      expect(find.text(suggestedHint), findsOneWidget);
+      expect(find.text('%'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: wasteField, matching: find.byType(TextField)),
+            )
+            .focusNode!
+            .hasFocus,
+        isFalse,
+      );
+    });
+
+    testWidgets('a typed waste reaches the form, updates the closed row\'s '
+        'summary and hides the hint', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+
+      await typeWaste(tester, '15');
+
+      expect(dataOf().wastePercent, 15);
+      expect(summary('Waste 15%'), findsOneWidget);
+      expect(find.text(suggestedHint), findsNothing);
+      expect(find.text(emptyHint), findsNothing);
+    });
+
+    testWidgets('a typed 0 reads 0.0%, apart from an empty waste', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await openRow(tester);
+
+      await typeWaste(tester, '0');
+
+      expect(dataOf().wastePercent, 0);
+      expect(summary('Waste 0.0%'), findsOneWidget);
+    });
+
+    testWidgets('an emptied waste reads as a dash with its own hint and '
+        'stays open while it has focus', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+
+      await typeWaste(tester, '');
+
+      expect(dataOf().wastePercent, isNull);
+      expect(summary('Waste —'), findsOneWidget);
+      expect(find.text(emptyHint), findsOneWidget);
+      expect(wasteField, findsOneWidget);
+    });
+
+    testWidgets('an emptied waste folds the row once it loses focus, and the '
+        'suggestion does not come back', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      await typeWaste(tester, '');
+
+      await tester.tap(nameField);
+      await tester.pumpAndSettle();
+
+      expect(wasteField, findsNothing);
+      expect(summary('Waste —'), findsOneWidget);
+      expect(dataOf().wastePercent, isNull);
+    });
+
+    testWidgets('a waste that is not empty keeps the row open when it loses '
+        'focus', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      await typeWaste(tester, '15');
+
+      await tester.tap(nameField);
+      await tester.pumpAndSettle();
+
+      expect(wasteField, findsOneWidget);
+    });
+
+    testWidgets('a second tap on the row closes it, keeps the typed waste '
+        'and closes the number pad', (tester) async {
+      final numberPad = ValueNotifier<NumberPadSession?>(null);
+      addTearDown(numberPad.dispose);
+      await pumpFields(tester, numberPad: numberPad);
+      await openRow(tester);
+      await tester.tap(wasteField);
+      await tester.pump();
+      numberPad.value!
+        ..typeDigit(1)
+        ..typeDigit(5);
+      await tester.pumpAndSettle();
+
+      await tester.tap(summary('Waste 15%'));
+      await tester.pumpAndSettle();
+
+      expect(wasteField, findsNothing);
+      expect(dataOf().wastePercent, 15);
+      expect(numberPad.value, isNull);
+    });
+
+    for (final (typed, kept) in [
+      ('100', '100'),
+      ('100.1', '100.'),
+      ('101', '10'),
+      ('12.55', '12.5'),
+      ('7,5', '7.5'),
+      ('1a', '1'),
+    ]) {
+      testWidgets('typing "$typed" key by key keeps "$kept"', (tester) async {
+        await pumpFields(tester);
+        await openRow(tester);
+        await tester.enterText(wasteField, '');
+
+        for (final key in typed.split('')) {
+          await tester.enterText(wasteField, textOf(tester, wasteField) + key);
+        }
+        await tester.pumpAndSettle();
+
+        expect(textOf(tester, wasteField), kept);
+      });
+    }
+
+    testWidgets('with the app\'s own number pad, the waste opens it with 10 '
+        'selected and the put-back key reading Back to 10%', (tester) async {
+      final numberPad = ValueNotifier<NumberPadSession?>(null);
+      addTearDown(numberPad.dispose);
+      await pumpFields(tester, numberPad: numberPad);
+      await openRow(tester);
+
+      await tester.tap(wasteField);
+      await tester.pump();
+
+      final session = numberPad.value!;
+      expect(session.controller.text, '10');
+      expect(
+        session.controller.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 2),
+      );
+      expect(session.putBackLabel, 'Back to 10%');
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: wasteField, matching: find.byType(TextField)),
+            )
+            .keyboardType,
+        TextInputType.none,
+      );
+
+      session.typeDigit(1);
+      session.typeDigit(5);
+      await tester.pumpAndSettle();
+
+      expect(dataOf().wastePercent, 15);
+      expect(summary('Waste 15%'), findsOneWidget);
+    });
+
+    testWidgets('with the app\'s own number pad, a waste emptied on the pad '
+        'keeps the row open while the pad is up, and folds when it closes', (
+      tester,
+    ) async {
+      final numberPad = ValueNotifier<NumberPadSession?>(null);
+      addTearDown(numberPad.dispose);
+      await pumpFields(tester, numberPad: numberPad);
+      await openRow(tester);
+      await tester.tap(wasteField);
+      await tester.pump();
+
+      numberPad.value!.backspace();
+      await tester.pumpAndSettle();
+
+      expect(dataOf().wastePercent, isNull);
+      expect(numberPad.value, isNotNull);
+      expect(wasteField, findsOneWidget);
+
+      await tester.tap(nameField);
+      await tester.pumpAndSettle();
+
+      expect(numberPad.value, isNull);
+      expect(wasteField, findsNothing);
+      expect(summary('Waste —'), findsOneWidget);
+    });
+  });
+
   testWidgets('draws the trailing widget under the rate, inside the scroll', (
     tester,
   ) async {

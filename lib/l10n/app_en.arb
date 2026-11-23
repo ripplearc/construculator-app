@@ -4161,6 +4161,34 @@
       }
     }
   },
+  "numberPadWasteValue": "{value}%",
+  "@numberPadWasteValue": {
+    "description": "A waste percentage as the put-back button names it: the number the field held with its % sign, for example '10%'",
+    "context": "Storyboard CUJ 4, sub-flow F screen 4 Waste changed: Back to 10%",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "materialWasteLabel": "Waste",
+  "@materialWasteLabel": {
+    "description": "Label of the material waste row and of its percentage field"
+  },
+  "materialWasteUnsetText": "—",
+  "@materialWasteUnsetText": {
+    "description": "Shown after Waste on the closed row while the waste field is empty; distinct from a typed 0.0%"
+  },
+  "materialWasteSuggestedHint": "Suggested for a new material — change or clear anytime",
+  "@materialWasteSuggestedHint": {
+    "description": "Hint under the waste field while it holds the 10% a brand-new material starts with",
+    "context": "Storyboard CUJ 4, sub-flow F screen 2 Details open, helper text"
+  },
+  "materialWasteNoSuggestionHint": "No suggested waste for this material — add your own",
+  "@materialWasteNoSuggestionHint": {
+    "description": "Hint under the waste field while it is empty",
+    "context": "Storyboard CUJ 4, sub-flow F screen 2 Details open, helper text"
+  },
   "numberPadRateValue": "${value}",
   "@numberPadRateValue": {
     "description": "A rate as the put-back button names it: the currency sign in front of the number the field held, with no cents added, for example '$52'",

@@ -21,6 +21,7 @@ import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const size = Size(390.0, 300.0);
+  const openWasteSize = Size(390.0, 480.0);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeSupabaseWrapper fakeSupabase;
@@ -59,8 +60,12 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Future<void> pumpFields(WidgetTester tester, ThemeData theme) async {
-    tester.view.physicalSize = size;
+  Future<void> pumpFields(
+    WidgetTester tester,
+    ThemeData theme, {
+    Size viewSize = size,
+  }) async {
+    tester.view.physicalSize = viewSize;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     bloc = Modular.get<MaterialCostFormBloc>();
@@ -124,5 +129,51 @@ void main() {
         ),
       );
     });
+
+    Future<void> openWaste(WidgetTester tester) async {
+      await tester.tap(find.text('Waste 10%', findRichText: true));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> typeWaste(WidgetTester tester, String text) async {
+      await tester.enterText(
+        find.byKey(const Key('material_waste_field')),
+        text,
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+    }
+
+    final wasteStates = <String, Future<void> Function(WidgetTester)>{
+      'waste_open': openWaste,
+      'waste_typed': (tester) async {
+        await openWaste(tester);
+        await typeWaste(tester, '15');
+      },
+      'waste_emptied': (tester) async {
+        await openWaste(tester);
+        await typeWaste(tester, '');
+      },
+      'waste_zero': (tester) async {
+        await openWaste(tester);
+        await typeWaste(tester, '0');
+      },
+    };
+    for (final entry in wasteStates.entries) {
+      testWidgets('renders the ${entry.key.replaceAll('_', ' ')} state', (
+        tester,
+      ) async {
+        await pumpFields(tester, theme, viewSize: openWasteSize);
+        await fillAllFields(tester);
+        await entry.value(tester);
+
+        await expectLater(
+          find.byType(MaterialCostFormFields),
+          matchesGoldenFile(
+            'goldens/material_cost_form_fields/material_${entry.key}$suffix.png',
+          ),
+        );
+      });
+    }
   });
 }

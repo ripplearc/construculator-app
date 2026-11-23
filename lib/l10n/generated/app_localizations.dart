@@ -4824,6 +4824,36 @@ abstract class AppLocalizations {
   /// **'Back to {value}'**
   String numberPadPutBackButton(String value);
 
+  /// A waste percentage as the put-back button names it: the number the field held with its % sign, for example '10%'
+  ///
+  /// In en, this message translates to:
+  /// **'{value}%'**
+  String numberPadWasteValue(String value);
+
+  /// Label of the material waste row and of its percentage field
+  ///
+  /// In en, this message translates to:
+  /// **'Waste'**
+  String get materialWasteLabel;
+
+  /// Shown after Waste on the closed row while the waste field is empty; distinct from a typed 0.0%
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get materialWasteUnsetText;
+
+  /// Hint under the waste field while it holds the 10% a brand-new material starts with
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested for a new material — change or clear anytime'**
+  String get materialWasteSuggestedHint;
+
+  /// Hint under the waste field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No suggested waste for this material — add your own'**
+  String get materialWasteNoSuggestionHint;
+
   /// A rate as the put-back button names it: the currency sign in front of the number the field held, with no cents added, for example '$52'
   ///
   /// In en, this message translates to:

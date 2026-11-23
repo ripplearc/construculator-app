@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -80,6 +81,46 @@ void main() {
         handle.dispose();
       });
     }
+
+    testWidgets('a11y: the closed waste row meets tap target and label '
+        'guidelines in both themes and reads its value', (tester) async {
+      await setupA11yTest(tester);
+      final row = find.byKey(const Key('material_waste_row'));
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        row,
+      );
+      final handle = tester.ensureSemantics();
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.bySemanticsLabel(RegExp(r'^Waste\W+10%$')),
+        ),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a11y: the open waste field reads as a text field labelled '
+        'Waste', (tester) async {
+      await setupA11yTest(tester);
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.tap(find.text('Waste 10%', findRichText: true));
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(
+        find.descendant(
+          of: find.byKey(const Key('material_waste_field')),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(semantics.flagsCollection.isTextField, isTrue);
+      expect(semantics.label, contains('Waste'));
+      handle.dispose();
+    });
 
     testWidgets('a11y: the unit button meets tap target and label guidelines '
         'in both themes', (tester) async {

@@ -247,14 +247,14 @@ void main() {
       expect(find.text('Add to estimate'), findsOneWidget);
     });
 
-    testWidgets('shows the line total and the estimate before and after', (
-      tester,
-    ) async {
+    testWidgets('shows the line total with the 10% a new material starts '
+        'with, and the estimate before and after', (tester) async {
       await pumpFooter(tester);
       await fillAll(tester);
 
-      expect(find.text(r'$17.85'), findsOneWidget);
-      expect(find.text(r'$2,110.87'), findsOneWidget);
+      expect(find.text(r'$19.64'), findsOneWidget);
+      expect(find.text('incl. 10% waste'), findsOneWidget);
+      expect(find.text(r'$2,112.66'), findsOneWidget);
       expect(find.textContaining('Bedroom 2'), findsOneWidget);
     });
 
@@ -367,6 +367,7 @@ void main() {
         quantity: '0.5',
         unit: Unit.boxes,
         rate: '2.01',
+        waste: '',
       );
 
       expect(find.text(r'$1.01'), findsOneWidget);
@@ -558,7 +559,7 @@ void main() {
       await tester.tap(find.byKey(const Key('calc_key_five')));
       await tester.pumpAndSettle();
       expect(quantity.text, '71.5');
-      expect(find.text(r'$182.33'), findsOneWidget);
+      expect(find.text(r'$200.56'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('calc_key_delete')));
       await tester.pumpAndSettle();
@@ -650,7 +651,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(quantity.text, '7');
-      expect(find.text(r'$17.85'), findsOneWidget);
+      expect(find.text(r'$19.64'), findsOneWidget);
       expect(focus.hasFocus, isFalse);
       expect(database.rows, isEmpty);
     });
