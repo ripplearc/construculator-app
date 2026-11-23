@@ -22,8 +22,9 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
   /// That estimate's name, shown on the card.
   final String estimateName;
 
-  /// That estimate's running total before this line is added.
-  final double estimateTotal;
+  /// That estimate's running total before this line is added, or null while
+  /// it is not known.
+  final double? estimateTotal;
 
   const EquipmentAddToEstimateFooter({
     super.key,

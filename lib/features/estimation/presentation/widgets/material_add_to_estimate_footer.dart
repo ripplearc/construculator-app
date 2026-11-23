@@ -32,8 +32,9 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
   /// The estimate's name, shown on the card.
   final String estimateName;
 
-  /// The estimate's running total before this line is added.
-  final double estimateTotal;
+  /// The estimate's running total before this line is added, or null while it
+  /// is not known.
+  final double? estimateTotal;
 
   /// The field the number pad is typing into, or null while the pad is down.
   final NumberPadSession? numberPad;

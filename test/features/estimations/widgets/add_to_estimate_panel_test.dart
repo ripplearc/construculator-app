@@ -10,6 +10,7 @@ void main() {
     double lineTotal = 520,
     double? deliveryFee,
     String estimateName = 'Bedroom 2',
+    double? estimateTotal = 2993.62,
     AddToEstimateBlock? block,
     bool isEditingExistingLine = false,
   }) async {
@@ -24,7 +25,7 @@ void main() {
             lineTotal: lineTotal,
             deliveryFee: deliveryFee,
             estimateName: estimateName,
-            estimateTotal: 2993.62,
+            estimateTotal: estimateTotal,
             block: block,
             isEditingExistingLine: isEditingExistingLine,
           ),
@@ -92,6 +93,62 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  group('estimate total not known', () {
+    testWidgets('shows a dash before and after instead of a total', (
+      tester,
+    ) async {
+      await pumpPanel(tester, estimateTotal: null);
+
+      expect(find.text('Bedroom 2'), findsOneWidget);
+      expect(find.text(r' total  — →'), findsOneWidget);
+      expect(find.text('—'), findsOneWidget);
+    });
+
+    testWidgets('never shows a made-up total', (tester) async {
+      await pumpPanel(tester, estimateTotal: null);
+
+      expect(find.textContaining(r'$0.00'), findsNothing);
+      expect(find.text(r'$520.00'), findsOneWidget);
+      expect(find.textContaining(r'$2,993.62'), findsNothing);
+    });
+
+    testWidgets('keeps the line amount and the delivery row', (tester) async {
+      await pumpPanel(
+        tester,
+        lineTotal: 605,
+        deliveryFee: 85,
+        estimateTotal: null,
+      );
+
+      expect(find.text(r'$605.00'), findsOneWidget);
+      expect(find.text('incl. delivery'), findsOneWidget);
+      expect(find.text(r'+$85.00'), findsOneWidget);
+    });
+
+    testWidgets('a known total of zero is shown as an amount, not a dash', (
+      tester,
+    ) async {
+      await pumpPanel(tester, estimateTotal: 0);
+
+      expect(find.text(r' total  $0.00 →'), findsOneWidget);
+      expect(find.text('—'), findsNothing);
+    });
+
+    testWidgets('a blocked line still shows its note', (tester) async {
+      await pumpPanel(
+        tester,
+        estimateTotal: null,
+        block: const AddToEstimateBlock(
+          note: 'Needs a rate before it can total',
+          buttonLabel: 'Enter a rate to continue',
+        ),
+      );
+
+      expect(find.text('Needs a rate before it can total'), findsOneWidget);
+      expect(find.textContaining(' total  '), findsNothing);
     });
   });
 

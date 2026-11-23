@@ -1090,13 +1090,21 @@ void main() {
     });
 
     group('Add to estimate', () {
-      Future<void> openEquipmentSheet(WidgetTester tester) async {
+      Future<void> openEquipmentSheet(
+        WidgetTester tester, {
+        bool seedsEstimate = true,
+        void Function()? beforePump,
+      }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        seedEstimate();
-        await pumpAppAtRoute(tester, testEstimationRoute);
+        if (seedsEstimate) seedEstimate();
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: beforePump,
+        );
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
@@ -1161,6 +1169,40 @@ void main() {
         expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
         expect(find.text(r'$3,573.62'), findsOneWidget);
         expect(find.text('Add to estimate'), findsOneWidget);
+      });
+
+      testWidgets('shows a dash for the estimate total when the estimate '
+          'could not be loaded', (tester) async {
+        await openEquipmentSheet(tester, seedsEstimate: false);
+
+        await fillValidDayForm(tester);
+
+        expect(find.text(r'$580.00'), findsOneWidget);
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(find.textContaining(r'$0.00'), findsNothing);
+      });
+
+      testWidgets('shows a dash for the estimate total while the estimate is '
+          'still loading, then the total once it arrives', (tester) async {
+        final estimateLoad = Completer<void>();
+        await openEquipmentSheet(
+          tester,
+          beforePump: () {
+            fakeSupabase.shouldDelayOperations = true;
+            fakeSupabase.completer = estimateLoad;
+          },
+        );
+
+        await fillValidDayForm(tester);
+
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(find.textContaining(r'$0.00'), findsNothing);
+
+        estimateLoad.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
+        expect(find.text(r'$3,573.62'), findsOneWidget);
       });
 
       testWidgets('adding saves the line, closes the sheet and shows the '
@@ -1653,13 +1695,21 @@ void main() {
     });
 
     group('New material cost sheet', () {
-      Future<void> openMaterialSheet(WidgetTester tester) async {
+      Future<void> openMaterialSheet(
+        WidgetTester tester, {
+        bool seedsEstimate = true,
+        void Function()? beforePump,
+      }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        seedEstimate();
-        await pumpAppAtRoute(tester, testEstimationRoute);
+        if (seedsEstimate) seedEstimate();
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: beforePump,
+        );
         await tapAddCost(tester, CostItemType.material);
         await tester.pumpAndSettle();
       }
@@ -1706,6 +1756,40 @@ void main() {
         expect(find.text('Enter a material name to continue'), findsOneWidget);
       });
 
+      testWidgets('shows a dash for the estimate total when the estimate '
+          'could not be loaded', (tester) async {
+        await openMaterialSheet(tester, seedsEstimate: false);
+
+        await fillValidMaterialForm(tester);
+
+        expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(find.textContaining(r'$0.00'), findsNothing);
+      });
+
+      testWidgets('shows a dash for the estimate total while the estimate is '
+          'still loading, then the total once it arrives', (tester) async {
+        final estimateLoad = Completer<void>();
+        await openMaterialSheet(
+          tester,
+          beforePump: () {
+            fakeSupabase.shouldDelayOperations = true;
+            fakeSupabase.completer = estimateLoad;
+          },
+        );
+
+        await fillValidMaterialForm(tester);
+
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(find.textContaining(r'$0.00'), findsNothing);
+
+        estimateLoad.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
+        expect(find.text(r'$3,149.62'), findsOneWidget);
+      });
+
       testWidgets('opens the sheet even when the estimate cannot be loaded', (
         tester,
       ) async {
@@ -1729,6 +1813,7 @@ void main() {
         await fillValidMaterialForm(tester);
 
         expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
         expect(find.text(r'$3,149.62'), findsOneWidget);
       });
 

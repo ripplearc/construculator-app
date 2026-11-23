@@ -42,8 +42,9 @@ class AddToEstimateFooter extends StatelessWidget {
   /// The name of the estimate the line is added to.
   final String estimateName;
 
-  /// That estimate's running total before this line is added.
-  final double estimateTotal;
+  /// That estimate's running total before this line is added, or null while
+  /// it is not known.
+  final double? estimateTotal;
 
   /// Null when the form is ready to submit.
   final AddToEstimateBlock? block;

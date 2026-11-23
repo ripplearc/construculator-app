@@ -3453,6 +3453,11 @@
       "after": {"type": "String", "example": "$3,598.62"}
     }
   },
+  "addsToEstimateTotalUnknownSemantics": "Estimate total not available",
+  "@addsToEstimateTotalUnknownSemantics": {
+    "description": "Screen reader label for the summary card's last row while the estimate's total is not known because the estimate has not loaded or failed to load. It names no estimate, because the name is not known either in that case. No storyboard or Figma frame covers this case.",
+    "context": "N/A"
+  },
   "addToEstimateButton": "Add to estimate",
   "@addToEstimateButton": {
     "description": "Label of the full-width submit button on the equipment cost sheet",

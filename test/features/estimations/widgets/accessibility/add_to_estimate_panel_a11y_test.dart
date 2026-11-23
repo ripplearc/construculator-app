@@ -12,6 +12,7 @@ void main() {
     WidgetTester tester, {
     AddToEstimateBlock? block,
     double? deliveryFee,
+    double? estimateTotal = 2993.62,
   }) async {
     await setupA11yTest(tester);
     await tester.pumpWidget(
@@ -26,7 +27,7 @@ void main() {
             lineTotal: 520,
             deliveryFee: deliveryFee,
             estimateName: 'Bedroom 2',
-            estimateTotal: 2993.62,
+            estimateTotal: estimateTotal,
             block: block,
           ),
         ),
@@ -57,6 +58,22 @@ void main() {
       final semantics = await pumpAndReadPanel(tester, deliveryFee: 85);
 
       expect(semantics.label, contains(r'incl. delivery +$85.00'));
+    });
+
+    testWidgets('a11y: an unknown estimate total is read as not available', (
+      tester,
+    ) async {
+      final semantics = await pumpAndReadPanel(tester, estimateTotal: null);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        semantics.label,
+        [
+          l10n.addsToEstimateLabel,
+          r'$520.00',
+          l10n.addsToEstimateTotalUnknownSemantics,
+        ].join('\n'),
+      );
     });
 
     testWidgets('a11y: typing a valid amount is not announced', (tester) async {
