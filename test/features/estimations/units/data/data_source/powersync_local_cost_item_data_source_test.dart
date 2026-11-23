@@ -139,6 +139,77 @@ void main() {
         );
       });
     });
+
+    group('watchCostItemIdsWithPendingUpload', () {
+      test(
+        'lists a line saved on the phone that is waiting to upload',
+        () async {
+          await dataSource.saveCostItemOnPhone(line(id: 'line-1'));
+
+          await expectLater(
+            dataSource.watchCostItemIdsWithPendingUpload('estimate-1'),
+            emits({'line-1'}),
+          );
+        },
+      );
+
+      test('leaves out a line the server delivered', () async {
+        database.seedRow({...line().toJson(), 'calculation': '{}'});
+
+        await expectLater(
+          dataSource.watchCostItemIdsWithPendingUpload('estimate-1'),
+          emits(<String>{}),
+        );
+      });
+
+      test('drops a line once its upload finishes', () async {
+        await dataSource.saveCostItemOnPhone(line(id: 'line-1'));
+
+        final seen = expectLater(
+          dataSource.watchCostItemIdsWithPendingUpload('estimate-1'),
+          emitsInOrder([
+            {'line-1'},
+            <String>{},
+          ]),
+        );
+        database.finishUpload('line-1');
+
+        await seen;
+      });
+
+      test('adds a line saved while watching', () async {
+        await dataSource.saveCostItemOnPhone(line(id: 'line-1'));
+
+        final seen = expectLater(
+          dataSource.watchCostItemIdsWithPendingUpload('estimate-1'),
+          emitsInOrder([
+            {'line-1'},
+            {'line-1', 'line-2'},
+          ]),
+        );
+        await dataSource.saveCostItemOnPhone(line(id: 'line-2'));
+
+        await seen;
+      });
+
+      test('leaves other estimates\' lines out and stays quiet when only '
+          'they change', () async {
+        final seen = expectLater(
+          dataSource.watchCostItemIdsWithPendingUpload('estimate-1').take(2),
+          emitsInOrder([
+            <String>{},
+            {'line-1'},
+            emitsDone,
+          ]),
+        );
+        await dataSource.saveCostItemOnPhone(
+          line(id: 'theirs', estimateId: 'estimate-2'),
+        );
+        await dataSource.saveCostItemOnPhone(line(id: 'line-1'));
+
+        await seen;
+      });
+    });
   });
 }
 
