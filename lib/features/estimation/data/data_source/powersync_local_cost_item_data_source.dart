@@ -16,7 +16,9 @@ import 'package:flutter/foundation.dart';
 ///
 /// A line's upload is waiting while PowerSync's `ps_crud` queue holds an entry
 /// for it. Each entry is JSON text with the table name and the row id, and
-/// PowerSync deletes it when the connector completes the upload.
+/// PowerSync deletes it when the connector completes the upload. The connector
+/// also completes it when the server refuses the line for good (an RLS denial,
+/// code 42501), so a refused line leaves the queue too.
 ///
 /// A failed read or write is logged here, at the storage boundary, and
 /// rethrown for the repository to translate. A failed watch arrives as an

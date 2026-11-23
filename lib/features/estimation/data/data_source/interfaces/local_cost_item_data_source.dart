@@ -31,9 +31,12 @@ abstract class LocalCostItemDataSource {
   /// Watches the ids of the lines of [estimateId] on the phone whose upload to
   /// the server is still waiting.
   ///
-  /// A line leaves the set when the server has taken it. A line that is not in
-  /// the set is either on the server or not on the phone, because no sync
-  /// stream keeps an uploaded line on the phone.
+  /// A line leaves the set when the server has taken it, and also when the
+  /// server refused it for good (an RLS denial, code 42501), because the
+  /// connector then drops the queue entry. This set alone cannot tell those two
+  /// apart. A line that is not in the set is on the server, was refused, or is
+  /// not on the phone, because no sync stream keeps an uploaded line on the
+  /// phone.
   ///
   /// Emits now, and again whenever a line is saved or an upload finishes.
   Stream<Set<String>> watchCostItemIdsWithPendingUpload(String estimateId);
