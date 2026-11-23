@@ -51,9 +51,19 @@ class CostItemRepositoryImpl implements CostItemRepository {
 
   @override
   Future<Either<Failure, CostItem>> addCostItemOnPhone(CostItem item) async {
-    if (item.id.isEmpty) return const Left(_unexpectedFailure);
+    if (item.id.isEmpty) {
+      _logger.error('Refused to save a cost line with no id on the phone');
+      return const Left(_unexpectedFailure);
+    }
+    final CostItemDto dto;
     try {
-      await localDataSource.saveCostItemOnPhone(CostItemDto.fromEntity(item));
+      dto = CostItemDto.fromEntity(item);
+    } catch (e, stack) {
+      _logger.error('Failed to convert a cost line for the phone', e, stack);
+      return const Left(_unexpectedFailure);
+    }
+    try {
+      await localDataSource.saveCostItemOnPhone(dto);
       return Right(item);
     } catch (_) {
       return const Left(_phoneStorageFailure);

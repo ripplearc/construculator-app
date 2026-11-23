@@ -25,17 +25,21 @@ abstract class CostItemRepository {
   /// Saves [item] on this phone under its own id and returns it. The server
   /// gets the line later, so this never waits for a signal.
   ///
-  /// Saving the same id again replaces the line, so a retry never adds a
-  /// second one. Returns `Left(EstimationFailure)` when the phone cannot
-  /// write or the line has no id.
+  /// Saving the same id again replaces the line on this phone, so a retry never
+  /// adds a second one. The upload leaves out null fields, so a field cleared by
+  /// a second save keeps its old value on the server. Returns
+  /// `Left(EstimationFailure)` when the phone cannot write or the line has no
+  /// id.
   Future<Either<Failure, CostItem>> addCostItemOnPhone(CostItem item);
 
   /// Watches the ids of the lines of [estimateId] on this phone that the
   /// server has not received yet.
   ///
-  /// A line leaves the set once the server has it. A line that is not in the
-  /// set is on the server or not on this phone, so a screen that lists the
-  /// lines marks a line as not synced when its id is in the set.
+  /// A line leaves the set once the server has it, and also when the server
+  /// refused it for good (an RLS denial), so the set alone cannot tell those
+  /// two apart. A line that is not in the set is on the server, was refused, or
+  /// is not on this phone, so a screen that lists the lines marks a line as not
+  /// synced when its id is in the set.
   ///
   /// Emits now, and again whenever a line is saved or an upload finishes. A
   /// failed read arrives as a `Left` and the stream stays open.
