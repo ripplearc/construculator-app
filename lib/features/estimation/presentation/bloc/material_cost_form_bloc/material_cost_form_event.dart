@@ -43,6 +43,26 @@ class MaterialRateUpdated extends MaterialCostFormEvent {
   final String value;
 }
 
+/// Fired when a saved price is attached to the line. Its unit becomes the
+/// line's unit.
+// TODO: [CA-1527] fire this when a rate is put on the form from Your recents, the look-up or a sample cost file. https://ripplearc.youtrack.cloud/issue/CA-1527
+class MaterialPriceAttached extends MaterialCostFormEvent {
+  const MaterialPriceAttached({
+    required this.rate,
+    required this.rateStatus,
+    required this.price,
+  });
+
+  /// The price of one [AttachedPrice.buyUnit].
+  final double rate;
+
+  /// Confidence level of [rate].
+  final RateStatus rateStatus;
+
+  /// The units the price can be counted in.
+  final AttachedPrice price;
+}
+
 /// Fired when the user taps Add to estimate.
 class MaterialCostFormSubmitted extends MaterialCostFormEvent {
   const MaterialCostFormSubmitted({required this.estimateId});

@@ -53,7 +53,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final bloc = context.read<MaterialCostFormBloc>();
-    return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+    return BlocConsumer<MaterialCostFormBloc, MaterialCostFormState>(
+      // An attached price fills or clears the rate without the user typing.
+      // A second price can share the first one's units, so its rate is
+      // watched too.
+      listenWhen: (previous, current) =>
+          previous.data.attachedPrice != current.data.attachedPrice ||
+          previous.data.rate != current.data.rate,
+      listener: (context, state) => _showAttachedRate(state.data),
       buildWhen: (previous, current) =>
           previous.data.unit != current.data.unit ||
           _isSaving(previous) != _isSaving(current),
@@ -150,6 +157,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
     );
+  }
+
+  void _showAttachedRate(MaterialCostFormData data) {
+    final rate = data.rate;
+    if (double.tryParse(_rateController.text) == rate) return;
+    _rateController.text = rate?.toStringAsFixed(2) ?? '';
   }
 
   bool _isSaving(MaterialCostFormState state) =>
