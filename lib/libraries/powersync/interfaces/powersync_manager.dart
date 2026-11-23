@@ -6,12 +6,12 @@ import 'package:powersync/powersync.dart';
 ///
 /// The local database is opened during app bootstrap and is usable offline at
 /// all times. Syncing with the backend, however, requires an authenticated
-/// session, so the manager [connect]s once the user signs in and
-/// [disconnectAndClear]s when they sign out.
+/// session, so the sign-in check [connect]s it once the user's data is known
+/// to belong to them, and [disconnectAndClear]s it after a sign-out until the
+/// sign-out handler (CA-1462) exists.
 ///
-/// Implementations subscribe to authentication changes themselves, so callers
-/// generally do not need to invoke [connect] / [disconnectAndClear] manually —
-/// they are exposed for explicit control and testing.
+/// Implementations do not listen to authentication changes: the caller decides
+/// when to connect and disconnect.
 abstract class PowerSyncManager {
   /// The opened local PowerSync database.
   ///
@@ -22,8 +22,12 @@ abstract class PowerSyncManager {
   /// Starts syncing with the backend using the configured connector.
   ///
   /// Safe to call when already connected — implementations guard against
-  /// establishing duplicate connections.
+  /// establishing duplicate connections. Throws when it did not connect.
   Future<void> connect();
+
+  /// Stops syncing and keeps the synced rows. Does nothing when not connected.
+  /// The next [connect] clears the kept rows first.
+  Future<void> disconnectKeepingData();
 
   /// Stops syncing and clears all synced data from the local database.
   ///

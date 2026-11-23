@@ -1,6 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
-import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -50,24 +49,20 @@ void main() {
   }
 
   group('PowerSyncModule', () {
-    test('manager listens to auth events without being resolved', () async {
-      // Deliberately no Modular.get before the events: the eager singleton is
-      // already subscribed at module commit. Signing out afterwards means a
-      // lazy singleton constructed by the settle() lookup below would see
-      // isAuthenticated == false and never connect, leaving the count at 0.
-      signIn();
-      fakeSupabase.setCurrentUser(null);
+    test(
+      'the manager connects only when asked, never on an auth event',
+      () async {
+        signIn();
+        fakeSupabase.setCurrentUser(null);
+        signIn();
 
-      await (Modular.get<PowerSyncManager>() as PowerSyncManagerImpl)
-          .pendingOperations;
+        final manager = Modular.get<PowerSyncManager>();
+        await manager.disconnectAndClearOrThrow();
 
-      expect(
-        fakeDatabase.connectCallCount,
-        1,
-        reason: 'the manager must be eager, not resolved on first use',
-      );
-      expect(fakeDatabase.disconnectAndClearCallCount, 1);
-    });
+        expect(fakeDatabase.connectCallCount, 0);
+        expect(fakeDatabase.disconnectAndClearCallCount, 1);
+      },
+    );
 
     test('injects the bootstrap database and the module connector', () {
       final manager = Modular.get<PowerSyncManager>();

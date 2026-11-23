@@ -9,6 +9,9 @@ class FakePowerSyncManager implements PowerSyncManager {
   /// How many times [connect] was called.
   int connectCallCount = 0;
 
+  /// How many times [disconnectAndClear] was called.
+  int clearCallCount = 0;
+
   /// When true, [connect] throws.
   bool shouldThrowOnConnect = false;
 
@@ -26,8 +29,20 @@ class FakePowerSyncManager implements PowerSyncManager {
     if (shouldThrowOnConnect) throw StateError('connect failed');
   }
 
+  /// How many times [disconnectKeepingData] was called.
+  int disconnectKeepingDataCallCount = 0;
+
+  /// When true, [disconnectKeepingData] throws.
+  bool shouldThrowOnDisconnect = false;
+
   @override
-  Future<void> disconnectAndClear() async {}
+  Future<void> disconnectKeepingData() async {
+    disconnectKeepingDataCallCount++;
+    if (shouldThrowOnDisconnect) throw StateError('disconnect failed');
+  }
+
+  @override
+  Future<void> disconnectAndClear() async => clearCallCount++;
 
   @override
   Future<void> disconnectAndClearOrThrow() async {}

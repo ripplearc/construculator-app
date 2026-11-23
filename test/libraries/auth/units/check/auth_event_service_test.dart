@@ -28,6 +28,7 @@ void main() {
   late CheckFinishedStateImpl state;
   late AuthEventQueue queue;
   late AuthEventService service;
+  late SignInCheck check;
   late int identityResets;
   late int unstoppedRuns;
 
@@ -54,7 +55,7 @@ void main() {
       onUnstoppedRun: () => unstoppedRuns++,
     );
     // ignore: no_direct_instantiation, reason: the service under test is built from its collaborators
-    final check = SignInCheck(
+    check = SignInCheck(
       ownerRecords: ownerRecords,
       // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
       deleteService: LocalDataDeleteService(
@@ -154,6 +155,61 @@ void main() {
       expect(ownerRecords.record, OwnerRecord(userId: 'user-b'));
       expect(identityResets, 1);
       expect(sessionService.endCount, 1);
+    });
+
+    test('an event for a different user disconnects PowerSync before the event '
+        'is handled', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      powerSync.connectGate = Completer<void>();
+
+      signIn('user-b');
+
+      expect(powerSync.disconnectKeepingDataCallCount, 1);
+      expect(powerSync.connectCallCount, 1);
+      powerSync.connectGate?.complete();
+    });
+
+    test('the first sign-in and a token renewal for the same user disconnect '
+        'nothing', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+
+      signIn('user-a', event: supabase.AuthChangeEvent.tokenRefreshed);
+      await queue.enqueue(
+        eventNumber: queue.numberNextEvent(),
+        item: (run) async {},
+        settle: (outcome) async {},
+      );
+
+      expect(powerSync.disconnectKeepingDataCallCount, 0);
+    });
+
+    test('a failed disconnect is logged and the check still runs', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      powerSync.shouldThrowOnDisconnect = true;
+      final secondFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-b')),
+      );
+
+      signIn('user-b');
+      await secondFinished;
+
+      expect(ownerRecords.record, OwnerRecord(userId: 'user-b'));
     });
 
     test('a token renewal for the same user changes nothing', () async {
@@ -282,6 +338,53 @@ void main() {
 
       expect(powerSync.connectCallCount, 0);
       expect(state.value, const RestartRequired());
+    });
+
+    test(
+      'a sign-out clears PowerSync and ends with nobody signed in',
+      () async {
+        final firstFinished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-a')),
+        );
+        signIn('user-a');
+        await firstFinished;
+        final signedOut = expectLater(
+          state.changes,
+          emitsThrough(const FinishedNobodySignedIn()),
+        );
+
+        wrapper.setCurrentUser(null);
+        await signedOut;
+
+        expect(powerSync.clearCallCount, 1);
+      },
+    );
+
+    test('the same user signing in again after a sign-out connects PowerSync '
+        'again', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      final signedOut = expectLater(
+        state.changes,
+        emitsThrough(const FinishedNobodySignedIn()),
+      );
+      wrapper.setCurrentUser(null);
+      await signedOut;
+      final signedInAgain = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+
+      signIn('user-a', event: supabase.AuthChangeEvent.tokenRefreshed);
+      await signedInAgain;
+
+      expect(powerSync.connectCallCount, 2);
+      expect(check.activeModuleUserId, 'user-a');
     });
 
     test('a failed check blocks the state for the signed-in user', () async {

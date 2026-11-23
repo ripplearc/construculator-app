@@ -4,7 +4,6 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
 import 'package:construculator/libraries/powersync/interfaces/synced_data_service.dart';
 import 'package:construculator/libraries/powersync/models/local_only_table_registry.dart';
-import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/powersync_synced_data_service.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
@@ -16,7 +15,6 @@ import 'package:construculator/libraries/storage/local_data_delete_service.dart'
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/storage/prefixed_preferences.dart';
 import 'package:construculator/libraries/storage/shared_pref_service.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -74,7 +72,6 @@ void main() {
     late FakePowerSyncDatabaseWrapper tables;
 
     setUp(() async {
-      (Modular.get<PowerSyncManager>() as Disposable).dispose();
       Modular.dispose<PowerSyncManager>();
       fakeSupabase.reset();
       fakeDatabase.reset();
@@ -85,21 +82,6 @@ void main() {
     });
 
     tearDown(() => directory.delete(recursive: true));
-
-    Future<void> settle() async {
-      await (Modular.get<PowerSyncManager>() as PowerSyncManagerImpl)
-          .pendingOperations;
-    }
-
-    void signIn() {
-      fakeSupabase.setCurrentUser(
-        FakeUser(
-          id: 'user-1',
-          email: 'user@example.com',
-          createdAt: '2000-01-01T00:00:00.000Z',
-        ),
-      );
-    }
 
     test('replaces the record on disk with the arriving user', () async {
       await ownerRecords.write(OwnerRecord(userId: 'user-1'));
@@ -180,9 +162,8 @@ void main() {
     test(
       'clears PowerSync through the real manager and lets it reconnect',
       () async {
-        signIn();
         final manager = Modular.get<PowerSyncManager>();
-        await settle();
+        await manager.connect();
         expect(fakeDatabase.connectCallCount, 1);
         await ownerRecords.write(OwnerRecord(userId: 'user-1'));
         final routine = buildRoutine(
@@ -205,9 +186,8 @@ void main() {
     test(
       'keeps the flag when the PowerSync clear fails, and a retry finishes',
       () async {
-        signIn();
         final manager = Modular.get<PowerSyncManager>();
-        await settle();
+        await manager.connect();
         await ownerRecords.write(OwnerRecord(userId: 'user-1'));
         final routine = buildRoutine(
           ownerRecords: ownerRecords,

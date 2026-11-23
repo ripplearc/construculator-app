@@ -26,6 +26,7 @@ class SignInCheck {
   final Future<void> Function() _resetIdentity;
 
   String? _moduleUserId;
+  bool _isConnected = false;
 
   /// [resetIdentity] clears the Sentry and analytics identity when another
   /// user was active.
@@ -39,9 +40,21 @@ class SignInCheck {
   });
 
   /// The user whose session module is added and connected, or null. It is null
-  /// once the session ended, so a logout needs no call here.
+  /// once the session ended or PowerSync was disconnected.
   String? get activeModuleUserId =>
-      _sessionService.isActive ? _moduleUserId : null;
+      _sessionService.isActive && _isConnected ? _moduleUserId : null;
+
+  /// Stops syncing and clears the synced data after a sign-out. The module stays.
+  Future<void> clearAfterSignOut(QueueRun run) async {
+    _isConnected = false;
+    await run.step(_powerSync.disconnectAndClear);
+  }
+
+  /// Stops syncing at once, keeping the rows, for an event of another user.
+  Future<void> stopSyncing() {
+    _isConnected = false;
+    return _powerSync.disconnectKeepingData();
+  }
 
   /// Checks the session of [userId] during [run].
   ///
@@ -149,8 +162,10 @@ class SignInCheck {
     if (_isOtherUserActive(userId)) _sessionService.endSession();
     _sessionService.startSession();
     _moduleUserId = userId;
+    _isConnected = false;
     try {
       await run.step(_powerSync.connect);
+      _isConnected = true;
     } catch (_) {
       _sessionService.endSession();
       _moduleUserId = null;

@@ -12,7 +12,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// Takes every Supabase auth event, tells the check-finished state about it
 /// and handles it on the queue.
 ///
-/// An event that carries a session runs the [SignInCheck]. Every item ends
+/// An event for a user other than the connected one stops PowerSync at once,
+/// before it joins the queue. An event with a session runs the [SignInCheck]. Every item ends
 /// with a settle step that sets the state from what is true by then: no
 /// session gives [FinishedNobodySignedIn], a session whose module is added and
 /// connected gives [FinishedFor], anything else gives [Blocked].
@@ -47,6 +48,7 @@ class AuthEventService implements Disposable {
     if (key == _lastEvent) return;
     _lastEvent = key;
 
+    _stopSyncingForOtherUser(userId);
     _state.sessionEventArrived(
       userId: userId,
       sessionModuleAdded: _signInCheck.activeModuleUserId == userId,
@@ -62,9 +64,29 @@ class AuthEventService implements Disposable {
     );
   }
 
+  void _stopSyncingForOtherUser(String? userId) {
+    final connectedUserId = _signInCheck.activeModuleUserId;
+    if (connectedUserId == null || userId == connectedUserId) return;
+    if (userId == null) return;
+    unawaited(
+      _signInCheck.stopSyncing().onError<Object>(
+        (error, _) => _logger.warning(
+          'Could not disconnect PowerSync for a different user',
+          error.runtimeType,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handle(QueueRun run, supabase.AuthState event) async {
     final userId = event.session?.user.id;
-    if (userId == null) return;
+    if (userId == null) {
+      // TODO: [CA-1462] Replace this clear with the sign-out handler, which
+      // decides by the reason whether to delete or keep the data.
+      // https://ripplearc.youtrack.cloud/issue/CA-1462
+      await _signInCheck.clearAfterSignOut(run);
+      return;
+    }
     await _signInCheck.run(
       run,
       userId: userId,
