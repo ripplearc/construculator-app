@@ -22,7 +22,9 @@ class MaterialCostFormBloc
   final LastUsedUnitRepository _lastUsedUnitRepository;
   final Clock _clock;
 
-  MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
+  static const _formValuesAtOpening = MaterialCostFormData();
+  RememberedUnits _rememberedUnits = RememberedUnits.none;
+  bool _unitPicked = false;
 
   MaterialCostFormBloc({
     required this._repository,
@@ -31,15 +33,19 @@ class MaterialCostFormBloc
   }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialCostItemTypeChanged>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(itemName: e.value)),
+      (e, emit) => _emit(
+        emit,
+        (d) => _withRememberedUnit(d.copyWith(itemName: e.value)),
+      ),
     );
     on<MaterialQuantityUpdated>(
       (e, emit) =>
           _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value))),
     );
-    on<MaterialUnitSelected>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(unit: e.unit)),
-    );
+    on<MaterialUnitSelected>((e, emit) {
+      _unitPicked = true;
+      _emit(emit, (d) => d.copyWith(unit: e.unit));
+    });
     on<MaterialRateUpdated>(_onRateUpdated);
     on<MaterialCostFormSubmitted>(_onSubmitted);
   }
@@ -48,14 +54,24 @@ class MaterialCostFormBloc
     MaterialCostFormStarted event,
     Emitter<MaterialCostFormState> emit,
   ) async {
-    final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
+    _rememberedUnits = await _lastUsedUnitRepository.getLastUnits(
       CostItemType.material,
     );
-    _formValuesAtOpening = MaterialCostFormData(unit: rememberedUnit);
-    if (rememberedUnit != null && _current().unit == null) {
-      _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
+    final current = _current();
+    if (_withRememberedUnit(current).unit != current.unit) {
+      _emit(emit, _withRememberedUnit);
     }
   }
+
+  MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
+    // A name change must not swap the unit under a number already entered.
+    if (_keepsShownUnit(data)) return data;
+    return data.copyWith(unit: _rememberedUnits.forItem(data.itemName));
+  }
+
+  bool _keepsShownUnit(MaterialCostFormData data) =>
+      data.unit != null &&
+      (_unitPicked || data.quantity != null || data.rate != null);
 
   void _onRateUpdated(
     MaterialRateUpdated event,
@@ -123,7 +139,11 @@ class MaterialCostFormBloc
     await result.fold(
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
       (created) async {
-        await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
+        await _lastUsedUnitRepository.saveLastUnit(
+          CostItemType.material,
+          draft.itemName,
+          unit,
+        );
         emit(MaterialCostFormSuccess(draft, created));
       },
     );
