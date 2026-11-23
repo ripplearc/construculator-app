@@ -103,6 +103,16 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// handle is unsubscribed. Same rationale as [syncStreamInvokedSignal].
   Completer<void>? syncStreamUnsubscribeSignal;
 
+  /// What [countUnsentEdits] returns: the number of queued write operations,
+  /// not of user edits. Tests set it by hand: it does not change when
+  /// [execute] or [writeTransaction] run.
+  int unsentEditCount = 0;
+
+  /// When set, [countUnsentEdits] throws this error on every call until
+  /// explicitly cleared (`countUnsentEditsError = null`) or [reset] is called.
+  /// It does NOT self-clear after one use.
+  Object? countUnsentEditsError;
+
   /// Scripts [rows] as the result of [getAll] for [sql].
   void stubGetAll(String sql, List<Map<String, dynamic>> rows) {
     _getAllResults[sql] = rows;
@@ -233,6 +243,15 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     });
   }
 
+  @override
+  Future<int> countUnsentEdits() async {
+    final error = countUnsentEditsError;
+    if (error != null) {
+      throw error;
+    }
+    return unsentEditCount;
+  }
+
   /// Clears recorded calls, scripted results, errors, and watch seeds, and
   /// closes any open [watch] controllers — returning the fake to its initial
   /// state so it can be reused across tests.
@@ -250,6 +269,8 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     executeError = null;
     writeTransactionError = null;
     syncStreamError = null;
+    unsentEditCount = 0;
+    countUnsentEditsError = null;
     syncStreamActivationGate = null;
     syncStreamInvokedSignal = null;
     watchInvokedSignal = null;
