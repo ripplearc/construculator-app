@@ -4,6 +4,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -23,6 +24,8 @@ void main() {
     double? deliveryFee,
     AddToEstimateBlock? block,
     bool isBusy = false,
+    Widget? keypad,
+    Size size = size,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -49,6 +52,7 @@ void main() {
                     block: block,
                     isBusy: isBusy,
                     onAdd: () {},
+                    keypad: keypad,
                   ),
                 ),
               ),
@@ -83,6 +87,24 @@ void main() {
     testWidgets('submitting', (tester) async {
       await pumpFooter(tester, theme, isBusy: true);
       await expectGolden(tester, 'submitting', suffix);
+    });
+
+    testWidgets('number pad up', (tester) async {
+      await pumpFooter(
+        tester,
+        theme,
+        size: const Size(412, 620),
+        keypad: CoreNumberKeypad(
+          onDigitPressed: (_) {},
+          onDecimalPressed: () {},
+          onBackspacePressed: () {},
+          onClearPressed: () {},
+          onConfirmPressed: () {},
+          clearLabel: 'Back to 25',
+          confirmLabel: 'Add to estimate',
+        ),
+      );
+      await expectGolden(tester, 'number_pad_up', suffix);
     });
 
     const blocks = {

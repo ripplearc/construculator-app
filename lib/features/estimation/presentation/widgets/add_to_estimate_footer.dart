@@ -39,6 +39,12 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Called when the enabled button is tapped.
   final VoidCallback onAdd;
 
+  /// The app's own number pad, drawn in place of the button while it is up.
+  /// The pad spans the sheet with its own side insets, and its confirm key
+  /// stands in for the button (storyboard CUJ 4, Keys up). Null draws the
+  /// button.
+  final Widget? keypad;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -49,22 +55,24 @@ class AddToEstimateFooter extends StatelessWidget {
     this.isBusy = false,
     this.errorMessage,
     required this.onAdd,
+    this.keypad,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final block = this.block;
+    const sideInset = EdgeInsets.symmetric(horizontal: CoreSpacing.space5);
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.only(bottom: CoreSpacing.space7),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space5),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AddToEstimatePanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: sideInset,
+            child: AddToEstimatePanel(
               key: panelKey,
               lineTotal: lineTotal,
               deliveryFee: deliveryFee,
@@ -72,23 +80,30 @@ class AddToEstimateFooter extends StatelessWidget {
               estimateTotal: estimateTotal,
               block: block,
             ),
-            if (errorMessage case final message?) ...[
-              const SizedBox(height: CoreSpacing.space4),
-              CoreInlineErrorRow(
+          ),
+          if (errorMessage case final message?) ...[
+            const SizedBox(height: CoreSpacing.space4),
+            Padding(
+              padding: sideInset,
+              child: CoreInlineErrorRow(
                 key: AddToEstimateFooter.errorKey,
                 message: message,
               ),
-              const SizedBox(height: CoreSpacing.space2),
-            ] else
-              const SizedBox(height: CoreSpacing.space4),
-            CoreButton(
-              key: buttonKey,
-              label: block?.buttonLabel ?? l10n.addToEstimateButton,
-              isDisabled: block != null || isBusy,
-              onPressed: onAdd,
             ),
-          ],
-        ),
+            const SizedBox(height: CoreSpacing.space2),
+          ] else
+            const SizedBox(height: CoreSpacing.space4),
+          keypad ??
+              Padding(
+                padding: sideInset,
+                child: CoreButton(
+                  key: buttonKey,
+                  label: block?.buttonLabel ?? l10n.addToEstimateButton,
+                  isDisabled: block != null || isBusy,
+                  onPressed: onAdd,
+                ),
+              ),
+        ],
       ),
     );
   }
