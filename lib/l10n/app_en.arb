@@ -3726,8 +3726,7 @@
     "description": "Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3760,8 +3759,7 @@
     "description": "Lowercase name of the unit hours, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3770,8 +3768,7 @@
     "description": "Lowercase name of the unit days, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3780,8 +3777,7 @@
     "description": "Lowercase name of the unit boxes, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3790,8 +3786,7 @@
     "description": "Lowercase name of the unit bags, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3800,8 +3795,7 @@
     "description": "Lowercase name of the unit rolls, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3810,8 +3804,7 @@
     "description": "Lowercase name of the unit sheets, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3868,8 +3861,7 @@
     "description": "Lowercase name of the unit pairs, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3878,8 +3870,7 @@
     "description": "Lowercase name of the unit dozens, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3888,8 +3879,7 @@
     "description": "Lowercase name of the unit bundles, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3898,8 +3888,7 @@
     "description": "Lowercase name of the unit pallets, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },
@@ -3908,8 +3897,7 @@
     "description": "Lowercase name of the unit tubes, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
     "placeholders": {
       "count": {
-        "type": "num",
-        "format": "decimalPattern"
+        "type": "num"
       }
     }
   },

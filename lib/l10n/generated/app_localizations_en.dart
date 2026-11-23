@@ -2504,10 +2504,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNamePieces(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2537,10 +2533,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameHours(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2552,10 +2544,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameDays(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2567,10 +2555,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameBoxes(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2582,10 +2566,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameBags(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2597,10 +2577,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameRolls(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2612,10 +2588,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameSheets(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2663,10 +2635,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNamePairs(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2678,10 +2646,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameDozens(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2693,10 +2657,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameBundles(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2708,10 +2668,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNamePallets(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -2723,10 +2679,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unitNameTubes(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
