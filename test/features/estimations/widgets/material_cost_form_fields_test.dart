@@ -1057,6 +1057,96 @@ void main() {
       });
     }
 
+    final noteField = find.byKey(const Key('material_note_field'));
+
+    bool hasFocus(WidgetTester tester, Finder field) => tester
+        .widget<TextField>(
+          find.descendant(of: field, matching: find.byType(TextField)),
+        )
+        .focusNode!
+        .hasFocus;
+
+    testWidgets('the Add note link opens the row with the cursor in an empty '
+        'note field', (tester) async {
+      await pumpFields(tester);
+
+      await tester.tap(find.text('Add note'));
+      await tester.pumpAndSettle();
+
+      expect(noteField, findsOneWidget);
+      expect(textOf(tester, noteField), isEmpty);
+      expect(find.text('Add a note (optional)'), findsOneWidget);
+      expect(hasFocus(tester, noteField), isTrue);
+    });
+
+    testWidgets('the Add note link moves the cursor into the note of a row '
+        'that is already open', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      await tester.tap(wasteField);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add note'));
+      await tester.pumpAndSettle();
+
+      expect(wasteField, findsOneWidget);
+      expect(hasFocus(tester, noteField), isTrue);
+    });
+
+    testWidgets('a typed note reaches the form, with no length limit', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      final note = 'Bedroom walls, two coats. ' * 20;
+
+      await tester.enterText(noteField, note);
+      await tester.pumpAndSettle();
+
+      expect(dataOf().note, note);
+      expect(textOf(tester, noteField), note);
+    });
+
+    testWidgets('keeps a typed note on one line when the row is closed and '
+        'opened again', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      await tester.enterText(noteField, 'Bedroom walls only');
+      await tester.pumpAndSettle();
+
+      await tester.tap(summary('Waste 10%'));
+      await tester.pumpAndSettle();
+      expect(noteField, findsNothing);
+      await openRow(tester);
+
+      expect(dataOf().note, 'Bedroom walls only');
+      expect(textOf(tester, noteField), 'Bedroom walls only');
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: noteField, matching: find.byType(TextField)),
+            )
+            .maxLines,
+        1,
+      );
+    });
+
+    testWidgets('an emptied waste keeps the row open while the cursor moves '
+        'to the note, and folds once it leaves the row', (tester) async {
+      await pumpFields(tester);
+      await openRow(tester);
+      await typeWaste(tester, '');
+
+      await tester.tap(noteField);
+      await tester.pumpAndSettle();
+      expect(noteField, findsOneWidget);
+
+      await tester.tap(nameField);
+      await tester.pumpAndSettle();
+      expect(noteField, findsNothing);
+      expect(summary('Waste —'), findsOneWidget);
+    });
+
     testWidgets('with the app\'s own number pad, the waste opens it with 10 '
         'selected and the put-back key reading Back to 10%', (tester) async {
       final numberPad = ValueNotifier<NumberPadSession?>(null);

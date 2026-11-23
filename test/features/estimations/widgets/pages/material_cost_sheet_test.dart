@@ -244,9 +244,8 @@ void main() {
     expect(find.text('New material cost'), findsNothing);
   });
 
-  testWidgets('locks the open waste field while the line is being saved', (
-    tester,
-  ) async {
+  testWidgets('locks the open waste and note fields while the line is being '
+      'saved', (tester) async {
     await openSheet(tester);
     await fillAllFields(tester);
     await tester.tap(find.text('Waste 10%', findRichText: true));
@@ -256,17 +255,20 @@ void main() {
     await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
     await tester.pump();
 
-    expect(
-      tester
-          .widget<TextField>(
-            find.descendant(
-              of: find.byKey(const Key('material_waste_field')),
-              matching: find.byType(TextField),
-            ),
-          )
-          .readOnly,
-      isTrue,
-    );
+    for (final key in ['material_waste_field', 'material_note_field']) {
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(Key(key)),
+                matching: find.byType(TextField),
+              ),
+            )
+            .readOnly,
+        isTrue,
+        reason: key,
+      );
+    }
 
     database.writeGate!.complete();
     await tester.pumpAndSettle();
@@ -296,6 +298,58 @@ void main() {
     expect(tester.widget<TextField>(wasteInput).readOnly, isFalse);
     expect(find.text('Waste 20%', findRichText: true), findsOneWidget);
     expect(find.text('incl. 20% waste'), findsOneWidget);
+  });
+
+  testWidgets('saves a note typed after Add note as the line description', (
+    tester,
+  ) async {
+    await openSheet(tester);
+    await fillAllFields(tester);
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('material_note_field')),
+      'Bedroom walls only',
+    );
+    final focus = FocusManager.instance.primaryFocus;
+    expect(focus, isNotNull);
+    focus!.unfocus();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+    await tester.pumpAndSettle();
+
+    final row = database.rows.single;
+    expect(row['description'], 'Bedroom walls only');
+  });
+
+  testWidgets('saves a note typed after a failed save on the next try', (
+    tester,
+  ) async {
+    database.executeError = StateError('disk full');
+    await openSheet(tester);
+    await fillAllFields(tester);
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+
+    await tester.tap(find.text('Add note'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('material_note_field')),
+      'Bedroom walls only',
+    );
+    final focus = FocusManager.instance.primaryFocus;
+    expect(focus, isNotNull);
+    focus!.unfocus();
+    await tester.pumpAndSettle();
+    database.executeError = null;
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+    await tester.pumpAndSettle();
+
+    final row = database.rows.single;
+    expect(row['description'], 'Bedroom walls only');
   });
 
   testWidgets('keeps the sheet and its values when adding fails', (
