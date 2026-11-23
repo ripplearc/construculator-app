@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CHECK FINISHED STATE MUTATION TESTING -->
+
+    <files>
+        <file>lib/libraries/auth/check/check_finished_state_impl.dart</file>
+    </files>
+
+    <rules>
+        <regex pattern="BehaviorSubject&lt;CheckState&gt;\.seeded\(const Checking\(\)\)" id="seed.initial_state">
+            <mutation text="BehaviorSubject&lt;CheckState&gt;.seeded(const FinishedNobodySignedIn())"/>
+            <mutation text="BehaviorSubject&lt;CheckState&gt;.seeded(const RestartRequired())"/>
+        </regex>
+
+        <regex pattern="FinishedFor\(:final userId\) =&gt; userId,\n    _ =&gt; null,\n  \};\n\n  @override\n  Future&lt;String\?&gt; whenFinished" id="active.default_value">
+            <mutation text="FinishedFor(:final userId) =&gt; userId,
+    _ =&gt; '',
+  };
+
+  @override
+  Future&lt;String?&gt; whenFinished"/>
+        </regex>
+
+        <regex pattern="\(state\) =&gt; state\.isFinished" id="when_finished.predicate">
+            <mutation text="(state) =&gt; !state.isFinished"/>
+            <mutation text="(state) =&gt; true"/>
+        </regex>
+
+        <regex pattern="orElse: \(\) =&gt; const Checking\(\)" id="when.else_branch">
+            <mutation text="orElse: () =&gt; const FinishedFor('x')"/>
+            <mutation text="orElse: () =&gt; const FinishedNobodySignedIn()"/>
+        </regex>
+
+        <regex pattern="state is FinishedFor &amp;&amp; state\.userId == userId" id="when_for.predicate">
+            <mutation text="state is FinishedFor || state.userId == userId"/>
+            <mutation text="state is FinishedFor &amp;&amp; state.userId != userId"/>
+            <mutation text="state is FinishedFor"/>
+            <mutation text="state is! FinishedFor &amp;&amp; state.userId == userId"/>
+        </regex>
+
+        <regex pattern="return finished is FinishedFor;" id="when_for.result">
+            <mutation text="return finished is! FinishedFor;"/>
+            <mutation text="return true;"/>
+            <mutation text="return false;"/>
+        </regex>
+
+        <regex pattern="if \(current is! FinishedFor &amp;&amp; current is! FinishedNobodySignedIn\) return;" id="event.finished_guard">
+            <mutation text="if (current is! FinishedFor || current is! FinishedNobodySignedIn) return;"/>
+            <mutation text="if (current is FinishedFor &amp;&amp; current is FinishedNobodySignedIn) return;"/>
+            <mutation text="if (current is! FinishedFor) return;"/>
+            <mutation text="if (current is! FinishedNobodySignedIn) return;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="final isActiveUser = userId == activeUserId;" id="event.is_active_user">
+            <mutation text="final isActiveUser = userId != activeUserId;"/>
+            <mutation text="final isActiveUser = true;"/>
+            <mutation text="final isActiveUser = false;"/>
+        </regex>
+
+        <regex pattern="userId != null &amp;&amp; !sessionModuleAdded" id="event.module_missing">
+            <mutation text="userId == null &amp;&amp; !sessionModuleAdded"/>
+            <mutation text="userId != null &amp;&amp; sessionModuleAdded"/>
+            <mutation text="userId != null || !sessionModuleAdded"/>
+            <mutation text="userId != null"/>
+            <mutation text="!sessionModuleAdded"/>
+            <mutation text="false"/>
+        </regex>
+
+        <regex pattern="if \(isActiveUser &amp;&amp; !moduleMissing\) return;" id="event.keep_condition">
+            <mutation text="if (isActiveUser || !moduleMissing) return;"/>
+            <mutation text="if (!isActiveUser &amp;&amp; !moduleMissing) return;"/>
+            <mutation text="if (isActiveUser &amp;&amp; moduleMissing) return;"/>
+            <mutation text="if (isActiveUser) return;"/>
+            <mutation text="if (!moduleMissing) return;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="setValue\(const Checking\(\)\);" id="event.back_to_checking">
+            <mutation text="setValue(const FinishedNobodySignedIn());"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(!isNewestEvent\) return;" id="settle.newest_guard">
+            <mutation text="if (isNewestEvent) return;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="result is Checking \|\| result is RestartRequired" id="settle.invalid_values">
+            <mutation text="result is Checking &amp;&amp; result is RestartRequired"/>
+            <mutation text="result is Checking"/>
+            <mutation text="result is RestartRequired"/>
+            <mutation text="false"/>
+        </regex>
+
+        <regex pattern="throw ArgumentError\.value\(result, 'result', 'is not a settled value'\);" id="settle.skip_throw">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="setValue\(result\);" id="settle.skip_set">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="void requireRestart\(\) =&gt; setValue\(const RestartRequired\(\)\);" id="restart.skip">
+            <mutation text="void requireRestart() {}"/>
+            <mutation text="void requireRestart() =&gt; setValue(const Checking());"/>
+        </regex>
+
+        <regex pattern="if \(value is RestartRequired \|\| next == value\) return;" id="set.guard">
+            <mutation text="if (value is RestartRequired &amp;&amp; next == value) return;"/>
+            <mutation text="if (value is! RestartRequired || next == value) return;"/>
+            <mutation text="if (value is RestartRequired || next != value) return;"/>
+            <mutation text="if (value is RestartRequired) return;"/>
+            <mutation text="if (next == value) return;"/>
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_subject\.add\(next\);" id="set.skip_add">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="unawaited\(_subject\.close\(\)\);" id="dispose.skip_close">
+            <mutation text=""/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="check_finished_state_impl" expected-return="0">flutter test test/libraries/auth/units/check/check_finished_state_impl_test.dart</command>
+    </commands>
+</mutations>
