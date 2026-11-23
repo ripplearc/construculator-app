@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- NUMBER PAD SESSION MUTATION TESTING -->
+    <!-- Targets: where a key edits the field, what the formatter refuses, what put-back restores -->
+
+    <files>
+        <file>lib/features/estimation/presentation/widgets/number_pad_session.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import .*$" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="_replaceSelection\('\$digit'\);" dotAll="false" id="session.digit.off_by_one">
+            <mutation text="_replaceSelection('${digit + 1}');"/>
+        </regex>
+        <regex pattern="_replaceSelection\('\.'\);" dotAll="false" id="session.decimal.wrong_key">
+            <mutation text="_replaceSelection('0');"/>
+        </regex>
+        <regex pattern="if \(!selection\.isCollapsed\)" dotAll="false" id="session.backspace.selection_branch">
+            <mutation text="if (selection.isCollapsed)"/>
+        </regex>
+        <regex pattern="else if \(selection\.start &gt; 0\)" dotAll="false" id="session.backspace.always_delete">
+            <mutation text="else if (true)"/>
+        </regex>
+        <regex pattern="TextRange\(start: selection\.start - 1, end: selection\.start\)" dotAll="false" id="session.backspace.after_caret">
+            <mutation text="TextRange(start: selection.start, end: selection.start + 1)"/>
+        </regex>
+        <regex pattern="selection: TextSelection\.collapsed\(offset: openedWith\.length\)," dotAll="false" id="session.put_back.caret_at_start">
+            <mutation text="selection: const TextSelection.collapsed(offset: 0),"/>
+        </regex>
+        <regex pattern="onChanged\(openedWith\);" dotAll="false" id="session.put_back.silent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\? value\.selection\s*: TextSelection\.collapsed\(offset: value\.text\.length\);" dotAll="true" id="session.selection.fallback_at_start">
+            <mutation text="? value.selection : const TextSelection.collapsed(offset: 0);"/>
+        </regex>
+        <regex pattern="value\.selection\.isValid\s*\?" dotAll="true" id="session.selection.ignore_valid">
+            <mutation text="false ?"/>
+        </regex>
+        <regex pattern="offset: range\.start \+ text\.length" dotAll="false" id="session.apply.caret_before_typed">
+            <mutation text="offset: range.start"/>
+        </regex>
+        <regex pattern="if \(formatted\.text != previous\.text\) onChanged" dotAll="false" id="session.apply.report_unchanged">
+            <mutation text="onChanged"/>
+        </regex>
+        <regex pattern="formatter\.formatEditUpdate\(previous, next\)" dotAll="false" id="session.apply.skip_formatter">
+            <mutation text="next"/>
+        </regex>
+        <regex pattern="if \(formatted\.text != previous\.text\) onChanged\(formatted\.text\);" dotAll="false" id="session.apply.silent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="controller\.value = formatted;" dotAll="false" id="session.apply.not_written">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="controller\.value = formatted;" dotAll="false" id="session.apply.caret_kept_on_same_text">
+            <mutation text="if (formatted.text != previous.text) controller.value = formatted;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="session" expected-return="0">fvm flutter test test/features/estimations/units/presentation/widgets/number_pad_session_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
