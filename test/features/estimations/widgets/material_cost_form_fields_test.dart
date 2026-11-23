@@ -767,6 +767,9 @@ void main() {
       await tester.tap(rateField);
       await tester.pump();
       numberPad.value!.typeDecimal();
+      // One frame per key, as a user's taps arrive: the form must hear "."
+      // before "5", or its attached-rate listener rewrites the field.
+      await tester.pump();
       numberPad.value!.typeDigit(5);
       await tester.pumpAndSettle();
 
