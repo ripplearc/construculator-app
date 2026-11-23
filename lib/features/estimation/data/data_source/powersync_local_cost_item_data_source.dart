@@ -10,7 +10,8 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 ///
 /// A write lands in local SQLite at once and PowerSync uploads it when a
 /// signal returns. No sync stream delivers `cost_items` yet, so a read finds
-/// only the lines written on this phone.
+/// the lines written on this phone that have not uploaded yet, plus uploaded
+/// lines until PowerSync removes them at the next checkpoint.
 ///
 /// Failures are logged here, at the storage boundary, and rethrown for the
 /// repository to translate.
@@ -21,7 +22,8 @@ class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
   static const _selectByEstimateSql =
       'SELECT * FROM ${DatabaseConstants.costItemsTable} '
       'WHERE ${DatabaseConstants.estimateIdColumn} = ? '
-      'ORDER BY ${DatabaseConstants.createdAtColumn} ASC';
+      'ORDER BY ${DatabaseConstants.createdAtColumn} ASC, '
+      '${DatabaseConstants.idColumn} ASC';
 
   /// Creates a data source over [_database].
   PowerSyncLocalCostItemDataSource({required this._database});

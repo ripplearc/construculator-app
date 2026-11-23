@@ -92,12 +92,19 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
       for (final row in _rowsById.values)
         if (row[column] == parameters.single) {...row},
     ];
-    if (sql.contains('ORDER BY ${DatabaseConstants.createdAtColumn} ASC')) {
-      matching.sort(
-        (a, b) => (a[DatabaseConstants.createdAtColumn]! as String).compareTo(
-          b[DatabaseConstants.createdAtColumn]! as String,
-        ),
-      );
+    if (sql.contains(
+      'ORDER BY ${DatabaseConstants.createdAtColumn} ASC, '
+      '${DatabaseConstants.idColumn} ASC',
+    )) {
+      matching.sort((a, b) {
+        final byCreatedAt = (a[DatabaseConstants.createdAtColumn]! as String)
+            .compareTo(b[DatabaseConstants.createdAtColumn]! as String);
+        return byCreatedAt != 0
+            ? byCreatedAt
+            : (a[DatabaseConstants.idColumn]! as String).compareTo(
+                b[DatabaseConstants.idColumn]! as String,
+              );
+      });
     }
     return matching;
   }

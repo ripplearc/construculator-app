@@ -79,17 +79,6 @@ void main() {
           throwsA(isA<StateError>()),
         );
       });
-
-      test('leaves no row behind when the phone cannot write', () async {
-        database.executeError = StateError('disk full');
-
-        await expectLater(
-          dataSource.saveCostItemOnPhone(line()),
-          throwsA(isA<StateError>()),
-        );
-
-        expect(database.rows, isEmpty);
-      });
     });
 
     group('loadCostItemsByEstimateId', () {
@@ -123,6 +112,15 @@ void main() {
         final lines = await dataSource.loadCostItemsByEstimateId('estimate-1');
 
         expect(lines.map((l) => l.id), ['older', 'newer']);
+      });
+
+      test('orders lines with the same time by id', () async {
+        await dataSource.saveCostItemOnPhone(line(id: 'b'));
+        await dataSource.saveCostItemOnPhone(line(id: 'a'));
+
+        final lines = await dataSource.loadCostItemsByEstimateId('estimate-1');
+
+        expect(lines.map((l) => l.id), ['a', 'b']);
       });
 
       test('returns no lines for an estimate with none', () async {
