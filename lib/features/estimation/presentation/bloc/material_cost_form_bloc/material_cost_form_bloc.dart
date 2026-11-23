@@ -62,6 +62,13 @@ class MaterialCostFormBloc
       _emit(emit, (d) => _withPickedUnit(d, e.unit));
     });
     on<MaterialRateUpdated>(_onRateUpdated);
+    on<MaterialWasteUpdated>(_onWasteUpdated);
+    on<MaterialNoteUpdated>(
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(note: e.value.trim().isEmpty ? null : e.value),
+      ),
+    );
     on<MaterialPriceAttached>((e, emit) {
       _unitPicked = true;
       _emit(
@@ -91,6 +98,8 @@ class MaterialCostFormBloc
         unit: item.quantity.unit,
         rate: item.unitPrice.amount,
         rateStatus: item.rateStatus,
+        wastePercent: item.wastePercent,
+        note: item.description,
         editedItem: item,
       ),
     );
@@ -214,6 +223,18 @@ class MaterialCostFormBloc
     });
   }
 
+  void _onWasteUpdated(
+    MaterialWasteUpdated event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final waste = double.tryParse(event.value);
+    if (waste != null &&
+        !(waste >= 0 && waste <= MaterialCostFormData.maxWastePercent)) {
+      return;
+    }
+    _emit(emit, (d) => d.copyWith(wastePercent: waste));
+  }
+
   void _emit(
     Emitter<MaterialCostFormState> emit,
     MaterialCostFormData Function(MaterialCostFormData) update,
@@ -309,6 +330,7 @@ class MaterialCostFormBloc
       currency: 'USD',
       unitPrice: Money(amount: rate),
       quantity: Quantity(value: quantity, unit: unit),
+      wastePercent: draft.wastePercent,
       rateStatus: draft.rateStatus,
       quantityProvenance:
           existing != null && quantity == existing.quantity.value
@@ -317,9 +339,8 @@ class MaterialCostFormBloc
       calculatorFormula: existing != null && quantity == existing.quantity.value
           ? existing.calculatorFormula
           : null,
-      wastePercent: existing?.wastePercent,
       productLink: existing?.productLink,
-      description: existing?.description,
+      description: draft.note,
     );
   }
 
@@ -327,7 +348,9 @@ class MaterialCostFormBloc
       data.itemName.trim() != _formValuesAtOpening.itemName.trim() ||
       data.quantity != _formValuesAtOpening.quantity ||
       data.unit != _formValuesAtOpening.unit ||
-      data.rate != _formValuesAtOpening.rate;
+      data.rate != _formValuesAtOpening.rate ||
+      data.wastePercent != _formValuesAtOpening.wastePercent ||
+      data.note != _formValuesAtOpening.note;
 
   MaterialCostFormData _current() {
     return switch (state) {
@@ -351,7 +374,7 @@ class MaterialCostFormBloc
       draft.rate,
     )) {
       (true, true, final quantity?, final rate?) => _validateLineTotal(
-        quantity,
+        quantity * (1 + (draft.wastePercent ?? 0) / 100),
         rate,
         errors,
       ),

@@ -376,6 +376,68 @@ void main() {
     );
 
     blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'opens with the stored waste and note, unchanged',
+      setUp: seedRichLine,
+      build: () => bloc,
+      act: open,
+      verify: (bloc) {
+        expect(bloc.state.data.wastePercent, 10.0);
+        expect(bloc.state.data.note, 'Back wall only');
+        expect(bloc.state.data.hasUnsavedChanges, isFalse);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'opens a stored line with no waste with the waste empty',
+      setUp: seedLine,
+      build: () => bloc,
+      act: open,
+      verify: (bloc) {
+        expect(bloc.state.data.wastePercent, isNull);
+        expect(bloc.state.data.lineTotal, 500.0);
+        expect(bloc.state.data.hasUnsavedChanges, isFalse);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving a changed waste and note stores them with the new total',
+      setUp: seedRichLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialWasteUpdated('15'))
+          ..add(const MaterialNoteUpdated('Front wall too'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async {
+        final line = await storedLine();
+        expect(line.wastePercent, 15.0);
+        expect(line.description, 'Front wall too');
+        expect(line.itemTotalCost, 575.0);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving a cleared waste and note stores them as empty',
+      setUp: seedRichLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialWasteUpdated(''))
+          ..add(const MaterialNoteUpdated(''))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async {
+        final line = await storedLine();
+        expect(line.wastePercent, isNull);
+        expect(line.description, isNull);
+        expect(line.itemTotalCost, 500.0);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
       'saving keeps the other values stored in the line\'s calculation',
       setUp: () =>
           fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
