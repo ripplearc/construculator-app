@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 /// A cost sheet while the app's own number pad is up: [header] pinned at the
 /// top, [controls] (the pad) at the bottom, [panel] pinned on top of the pad,
 /// and [form] scrolling in the height left (storyboard CUJ 4, "When a
-/// keyboard comes up").
+/// keyboard comes up"). Needs a bounded height, as in a bottom sheet.
 class NumberPadSheetLayout extends StatelessWidget {
   /// The sheet's title row, pinned at the top.
   final Widget header;
@@ -46,7 +46,6 @@ enum _Slot { header, form, panel, controls }
 class _PinnedLayout extends MultiChildLayoutDelegate {
   @override
   void performLayout(Size size) {
-    // Unbounded height, as a Column gives its fixed children.
     final rows = BoxConstraints.tightFor(width: size.width);
     final header = layoutChild(_Slot.header, rows).height;
     final controls = layoutChild(_Slot.controls, rows).height;
