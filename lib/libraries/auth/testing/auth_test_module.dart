@@ -38,6 +38,9 @@ class AuthTestModule extends Module {
     i.addSingleton<CurrentCompanyResolver>(
       () => CurrentCompanyResolverImpl(
         supabaseWrapper: i(),
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => i<SupabaseWrapper>().currentUser?.id,
+        ),
         localDataSource: PowerSyncLocalCurrentCompanyDataSource(
           database: FakePowerSyncDatabaseWrapper(),
         ),

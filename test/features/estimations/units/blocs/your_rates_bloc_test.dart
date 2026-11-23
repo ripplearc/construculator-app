@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -70,6 +72,11 @@ void main() {
           FakeAppBootstrapFactory.create(
             supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
           ),
+        ),
+      );
+      Modular.replaceInstance<ActiveUserProvider>(
+        FakeActiveUserProvider(
+          userIdOf: () => Modular.get<SupabaseWrapper>().currentUser?.id,
         ),
       );
       startTestSession();

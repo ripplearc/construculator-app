@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
@@ -299,6 +300,9 @@ void main() {
       // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
       final raceResolver = CurrentCompanyResolverImpl(
         supabaseWrapper: perCallWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => perCallWrapper.currentUser?.id,
+        ),
         localDataSource: localDataSource,
       );
 
@@ -333,6 +337,9 @@ void main() {
       // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
       final app = CurrentCompanyResolverImpl(
         supabaseWrapper: perCallWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => perCallWrapper.currentUser?.id,
+        ),
         localDataSource: localDataSource,
       );
 
@@ -936,6 +943,9 @@ class _CompanyTestAppModule extends Module {
     i.addSingleton<CurrentCompanyResolver>(
       () => CurrentCompanyResolverImpl(
         supabaseWrapper: supabaseWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => supabaseWrapper.currentUser?.id,
+        ),
         localDataSource: i(),
       ),
     );
@@ -944,6 +954,9 @@ class _CompanyTestAppModule extends Module {
     i.add<CurrentCompanyResolver>(
       () => CurrentCompanyResolverImpl(
         supabaseWrapper: supabaseWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => supabaseWrapper.currentUser?.id,
+        ),
         localDataSource: i(),
       ),
       key: 'restartedApp',
@@ -951,6 +964,9 @@ class _CompanyTestAppModule extends Module {
     i.add<CurrentCompanyResolver>(
       () => CurrentCompanyResolverImpl(
         supabaseWrapper: supabaseWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => supabaseWrapper.currentUser?.id,
+        ),
         localDataSource: PowerSyncLocalCurrentCompanyDataSource(
           database: failingWrites,
         ),
@@ -960,6 +976,9 @@ class _CompanyTestAppModule extends Module {
     i.add<CurrentCompanyResolver>(
       () => CurrentCompanyResolverImpl(
         supabaseWrapper: supabaseWrapper,
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => supabaseWrapper.currentUser?.id,
+        ),
         localDataSource: PowerSyncLocalCurrentCompanyDataSource(
           database: failingReads,
         ),
@@ -973,6 +992,9 @@ CurrentCompanyResolver _resolverOver(FakeSupabaseWrapper wrapper) =>
     // ignore: no_direct_instantiation, reason: needs a wrapper that answers or fails each rpc function separately, which Modular's shared fake cannot do
     CurrentCompanyResolverImpl(
       supabaseWrapper: wrapper,
+      activeUserProvider: FakeActiveUserProvider(
+        userIdOf: () => wrapper.currentUser?.id,
+      ),
       localDataSource: Modular.get<LocalCurrentCompanyDataSource>(),
     );
 

@@ -6,10 +6,13 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -35,6 +38,11 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<ActiveUserProvider>(
+      FakeActiveUserProvider(
+        userIdOf: () => Modular.get<SupabaseWrapper>().currentUser?.id,
+      ),
+    );
     startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     l10n = lookupAppLocalizations(const Locale('en'));

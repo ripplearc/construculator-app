@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
@@ -47,6 +48,7 @@ void _registerPerUserObjects(Injector i) {
     () => CurrentCompanyResolverImpl(
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
       localDataSource: Modular.get<LocalCurrentCompanyDataSource>(),
+      activeUserProvider: Modular.get<ActiveUserProvider>(),
     ),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_results_dto.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
@@ -16,9 +17,13 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// silently when no user is authenticated.
 class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   final SupabaseWrapper _supabaseWrapper;
+  final ActiveUserProvider _activeUserProvider;
   static final _logger = AppLogger().tag('RemoteGlobalSearchDataSource');
 
-  const RemoteGlobalSearchDataSource({required this._supabaseWrapper});
+  const RemoteGlobalSearchDataSource({
+    required this._supabaseWrapper,
+    required this._activeUserProvider,
+  });
 
   @override
   Future<SearchResultsDto> search(SearchParamsDto params) async {
@@ -44,7 +49,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   @override
   Future<List<String>> getRecentSearches(SearchScopeDto scope) async {
     try {
-      final userId = _supabaseWrapper.currentUser?.id;
+      final userId = _activeUserProvider.activeUserId;
       if (userId == null) {
         _logger.debug('No user logged in, returning empty recent searches');
         return [];
@@ -88,7 +93,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
       final normalized = searchTerm.toLowerCase().trim();
       if (normalized.isEmpty) return;
 
-      final userId = _supabaseWrapper.currentUser?.id;
+      final userId = _activeUserProvider.activeUserId;
       if (userId == null) {
         _logger.debug('No user logged in, skipping save recent search');
         return;
@@ -131,7 +136,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
       final normalized = searchTerm.toLowerCase().trim();
       if (normalized.isEmpty) return;
 
-      final userId = _supabaseWrapper.currentUser?.id;
+      final userId = _activeUserProvider.activeUserId;
       if (userId == null) {
         _logger.debug('No user logged in, skipping delete recent search');
         return;
@@ -162,7 +167,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   Future<List<String>> getSearchSuggestions() async {
     try {
       _logger.debug('Fetching search suggestions');
-      final userId = _supabaseWrapper.currentUser?.id;
+      final userId = _activeUserProvider.activeUserId;
       if (userId == null) {
         _logger.debug('No user logged in, returning empty search suggestions');
         return [];

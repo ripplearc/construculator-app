@@ -4,6 +4,8 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -59,6 +61,11 @@ void main() {
       supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
     );
     Modular.init(_GlobalSearchPageA11yTestModule(bootstrap));
+    Modular.replaceInstance<ActiveUserProvider>(
+      FakeActiveUserProvider(
+        userIdOf: () => Modular.get<SupabaseWrapper>().currentUser?.id,
+      ),
+    );
     final supabase = Modular.get<SupabaseWrapper>();
     expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;
