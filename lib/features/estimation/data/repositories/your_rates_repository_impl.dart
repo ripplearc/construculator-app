@@ -20,6 +20,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     required this.refusalDataSource,
     required this.authRepository,
     this.saveTimeLimit = yourRatesSaveTimeLimit,
+    this.saveFirstSyncWait = yourRatesSaveFirstSyncWait,
   });
 
   final YourRatesDataSource dataSource;
@@ -37,6 +38,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   /// undone, so the failure the user was shown stays true: a new row is
   /// deleted and a replaced row gets its old price back.
   final Duration saveTimeLimit;
+
+  /// How long [save] waits for the phone's first sync of Your rates before it
+  /// goes on with the rows the phone holds. A save never waits longer than
+  /// half of the time it has left, so the wait alone does not make it time out.
+  final Duration saveFirstSyncWait;
 
   Future<void>? _pendingUndo;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
@@ -112,9 +118,17 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     Duration? within,
     String? replacesRateId,
   }) async {
-    final saving = _saveAfterPendingUndo(entry, replacesRateId);
+    final limit = within ?? saveTimeLimit;
+    final halfLimit = limit ~/ 2;
+    final saving = _saveAfterPendingUndo(
+      entry,
+      replacesRateId,
+      firstSyncWait: halfLimit < saveFirstSyncWait
+          ? halfLimit
+          : saveFirstSyncWait,
+    );
     final result = await saving.timeout(
-      within ?? saveTimeLimit,
+      limit,
       onTimeout: () {
         _pendingUndo = _undoWhenSaved(saving);
         return const Left(
@@ -129,11 +143,12 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   Future<Either<Failure, _SavedOnPhone>> _saveAfterPendingUndo(
     YourRateEntry entry,
-    String? replacesRateId,
-  ) async {
+    String? replacesRateId, {
+    required Duration firstSyncWait,
+  }) async {
     final pendingUndo = _pendingUndo;
     if (pendingUndo != null) await pendingUndo;
-    return _saveOnPhone(entry, replacesRateId);
+    return _saveOnPhone(entry, replacesRateId, firstSyncWait: firstSyncWait);
   }
 
   Future<void> _undoWhenSaved(
@@ -151,10 +166,12 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   Future<Either<Failure, _SavedOnPhone>> _saveOnPhone(
     YourRateEntry entry,
-    String? replacesRateId,
-  ) async {
+    String? replacesRateId, {
+    required Duration firstSyncWait,
+  }) async {
     if (entry.companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
+      await dataSource.waitForFirstSync(atMost: firstSyncWait);
       final normalizedEntry = entry.copyWith(
         itemName: entry.itemName.trim(),
         entryLabel: _normalizeLabel(entry.entryLabel) ?? clearField,

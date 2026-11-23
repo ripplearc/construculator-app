@@ -286,6 +286,21 @@
         <regex pattern="errorType: EstimationErrorType\.notFoundError" dotAll="false" id="your_rates_repo.missing_row.wrong_error">
             <mutation text="errorType: EstimationErrorType.duplicateEntry"/>
         </regex>
+        <regex pattern="await dataSource\.waitForFirstSync\(atMost: saveFirstSyncWait\);" dotAll="false" id="your_rates_repo.save.skip_first_sync_wait">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="atMost: firstSyncWait" dotAll="false" id="your_rates_repo.save.first_sync_wait_is_save_limit">
+            <mutation text="atMost: saveTimeLimit"/>
+        </regex>
+        <regex pattern="atMost: firstSyncWait" dotAll="false" id="your_rates_repo.save.first_sync_wait_is_zero">
+            <mutation text="atMost: Duration.zero"/>
+        </regex>
+        <regex pattern="final halfLimit = limit ~/ 2;" dotAll="false" id="your_rates_repo.save.first_sync_wait_is_whole_limit">
+            <mutation text="final halfLimit = limit;"/>
+        </regex>
+        <regex pattern="halfLimit &lt; saveFirstSyncWait" dotAll="false" id="your_rates_repo.save.first_sync_wait_ignores_budget">
+            <mutation text="halfLimit &gt; saveFirstSyncWait"/>
+        </regex>
     </rules>
 
     <commands>

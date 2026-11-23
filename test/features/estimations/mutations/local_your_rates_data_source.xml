@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/data/data_source/local_your_rates_data_source.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+        <regex pattern="AppLogger" dotAll="false"/>
+        <regex pattern="_logger" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="_streamHandle != null \|\| _stoppedWaitingForFirstSync" dotAll="false" id="your_rates_source.first_sync.ignore_given_up_flag">
+            <mutation text="_streamHandle != null"/>
+        </regex>
+        <regex pattern="_streamHandle != null \|\| _stoppedWaitingForFirstSync" dotAll="false" id="your_rates_source.first_sync.ignore_started_handle">
+            <mutation text="_stoppedWaitingForFirstSync"/>
+        </regex>
+        <regex pattern="_streamHandle != null \|\| _stoppedWaitingForFirstSync" dotAll="false" id="your_rates_source.first_sync.negate_started_handle">
+            <mutation text="_streamHandle == null || _stoppedWaitingForFirstSync"/>
+        </regex>
+        <regex pattern="_stoppedWaitingForFirstSync = true;" dotAll="false" id="your_rates_source.first_sync.never_give_up">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_stoppedWaitingForFirstSync = true;" dotAll="false" id="your_rates_source.first_sync.give_up_set_false">
+            <mutation text="_stoppedWaitingForFirstSync = false;"/>
+        </regex>
+        <regex pattern="_stoppedWaitingForFirstSync = false;\n\s*\}\);" dotAll="false" id="your_rates_source.first_sync.give_up_stays_after_failed_start">
+            <mutation text="_stoppedWaitingForFirstSync = true;&#10;  });"/>
+        </regex>
+        <regex pattern="^\s+atMost,$" dotAll="false" id="your_rates_source.first_sync.no_wait">
+            <mutation text="      Duration.zero,"/>
+        </regex>
+        <regex pattern="^\s+atMost,$" dotAll="false" id="your_rates_source.first_sync.wait_for_ever">
+            <mutation text="      const Duration(days: 1),"/>
+        </regex>
+        <regex pattern="static const _firstSyncWait = Duration\(seconds: 3\);" dotAll="false" id="your_rates_source.first_sync.default_wait_shorter">
+            <mutation text="static const _firstSyncWait = Duration(milliseconds: 500);"/>
+        </regex>
+        <regex pattern="await _startOnce\(\);" dotAll="false" id="your_rates_source.first_sync.read_skips_start">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="your_rates_source" expected-return="0" timeout="120">fvm flutter test --no-pub test/features/estimations/units/data/data_source/local_your_rates_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>

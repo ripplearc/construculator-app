@@ -8,6 +8,12 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// to the write on the phone, before it counts as failed.
 const Duration yourRatesSaveTimeLimit = Duration(seconds: 2);
 
+/// How long a save waits for the phone's first sync of Your rates before it
+/// goes on with the rows the phone holds. It is half of
+/// [yourRatesSaveTimeLimit], which leaves the other half for the reads and
+/// the write on the phone.
+const Duration yourRatesSaveFirstSyncWait = Duration(seconds: 1);
+
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
