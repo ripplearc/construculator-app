@@ -111,4 +111,10 @@ abstract class AuthManager {
 
   /// Returns an [AuthResult] of [List<ProfessionalRole>] with the list of professional roles.
   Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles();
+
+  /// Stops listening to Supabase auth state changes. After this call they no
+  /// longer reach the auth notifier. Call it when the manager is torn down.
+  ///
+  /// Safe to call more than once. The other methods keep working afterwards.
+  Future<void> dispose();
 }

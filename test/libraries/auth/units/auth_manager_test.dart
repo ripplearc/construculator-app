@@ -82,6 +82,25 @@ void main() {
 
   group('AuthManagerImpl', () {
     group('Initialization and State Management', () {
+      test('should stop forwarding auth state events after dispose', () async {
+        authNotifier.reset();
+        final user = FakeUser(
+          email: testEmail,
+          id: 'test-id',
+          createdAt: clock.now().toIso8601String(),
+          appMetadata: {},
+        );
+
+        supabaseWrapper.setCurrentUser(user);
+        expect(authNotifier.stateChangedEvents, hasLength(1));
+
+        authNotifier.reset();
+        await authManager.dispose();
+        supabaseWrapper.setCurrentUser(null);
+
+        expect(authNotifier.stateChangedEvents, isEmpty);
+      });
+
       test(
         'should initialize with authenticated state when user exists',
         () async {

@@ -85,4 +85,7 @@ class StubAuthManager implements AuthManager {
   @override
   Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() =>
       throw UnimplementedError();
+
+  @override
+  Future<void> dispose() async {}
 }

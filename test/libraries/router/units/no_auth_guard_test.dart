@@ -44,6 +44,8 @@ class _StubAuthManager implements AuthManager {
   Future<AuthResult<void>> logout() => throw UnimplementedError();
   @override
   Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() => throw UnimplementedError();
+  @override
+  Future<void> dispose() async {}
 }
 
 class _NoAuthGuardTestModule extends Module {

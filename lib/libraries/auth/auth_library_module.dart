@@ -41,6 +41,7 @@ class AuthLibraryModule extends Module {
         currentCompanyResolver: i<CurrentCompanyResolver>(),
         sessionService: appBootstrap.sessionService,
       ),
+      config: BindConfig(onDispose: (manager) => manager.dispose()),
     );
   }
 }

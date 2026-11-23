@@ -55,6 +55,9 @@ class FakeAuthManager implements AuthManager {
   /// List of logout attempts
   final List<void> logoutAttempts = [];
 
+  /// Whether [dispose] has been called
+  bool isDisposed = false;
+
   /// Creates a new [FakeAuthManager]
   FakeAuthManager({
     required this._authNotifier,
@@ -383,6 +386,11 @@ class FakeAuthManager implements AuthManager {
   /// Get the auth repository for testing purposes
   AuthRepository get authRepository => _authRepository;
 
+  @override
+  Future<void> dispose() async {
+    isDisposed = true;
+  }
+
   /// Reset all tracking lists and state
   void reset() {
     loginAttempts.clear();
@@ -392,6 +400,7 @@ class FakeAuthManager implements AuthManager {
     passwordResetAttempts.clear();
     emailCheckAttempts.clear();
     logoutAttempts.clear();
+    isDisposed = false;
     _authShouldSucceed = true;
     _errorType = AuthErrorType.serverError;
     getUserProfileErrorType = null;
