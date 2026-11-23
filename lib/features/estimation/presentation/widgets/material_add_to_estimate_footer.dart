@@ -33,12 +33,17 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
   /// The field the number pad is typing into, or null while the pad is down.
   final NumberPadSession? numberPad;
 
+  /// Which parts to draw. Only a part with the button or pad closes the sheet
+  /// after a successful add, so a split footer closes it once.
+  final AddToEstimateFooterPart part;
+
   const MaterialAddToEstimateFooter({
     super.key,
     required this.estimateId,
     required this.estimateName,
     required this.estimateTotal,
     this.numberPad,
+    this.part = AddToEstimateFooterPart.all,
   });
 
   @override
@@ -49,6 +54,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
       MaterialCostFormSubmitted(estimateId: estimateId),
     );
     return BlocConsumer<MaterialCostFormBloc, MaterialCostFormState>(
+      listenWhen: (_, _) => part != AddToEstimateFooterPart.panel,
       listener: (context, state) {
         switch (state) {
           case MaterialCostFormSuccess():
@@ -80,6 +86,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
               ? l10n.addToEstimateFailedError
               : null,
           onAdd: submit,
+          part: part,
           keypad: session == null
               ? null
               : CoreNumberKeypad(

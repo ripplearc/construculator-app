@@ -17,6 +17,7 @@ void main() {
     bool isBusy = false,
     String? errorMessage,
     Widget? keypad,
+    AddToEstimateFooterPart part = AddToEstimateFooterPart.all,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -35,6 +36,7 @@ void main() {
             errorMessage: errorMessage,
             onAdd: () => addCount++,
             keypad: keypad,
+            part: part,
           ),
         ),
       ),
@@ -152,5 +154,52 @@ void main() {
     await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
 
     expect(addCount, 1);
+  });
+
+  group('parts', () {
+    testWidgets('the panel part draws only the card, 16 below its top', (
+      tester,
+    ) async {
+      await pumpFooter(
+        tester,
+        part: AddToEstimateFooterPart.panel,
+        errorMessage: 'Could not add.',
+      );
+
+      final card = tester.getRect(find.byKey(AddToEstimateFooter.panelKey));
+      final footer = tester.getRect(find.byType(AddToEstimateFooter));
+      expect(find.byKey(AddToEstimateFooter.buttonKey), findsNothing);
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
+      expect(card.top - footer.top, CoreSpacing.space4);
+      expect(footer.bottom, card.bottom);
+    });
+
+    testWidgets('the controls part draws the error line and the pad, not '
+        'the card', (tester) async {
+      await pumpFooter(
+        tester,
+        part: AddToEstimateFooterPart.controls,
+        keypad: keypad,
+        errorMessage: 'Could not add.',
+      );
+
+      expect(find.byKey(AddToEstimateFooter.panelKey), findsNothing);
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+      expect(
+        tester.getRect(find.byKey(AddToEstimateFooter.errorKey)).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byKey(keypadKey)).top),
+      );
+    });
+
+    testWidgets('the controls part keeps the button when no pad is up', (
+      tester,
+    ) async {
+      await pumpFooter(tester, part: AddToEstimateFooterPart.controls);
+
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+
+      expect(find.byKey(AddToEstimateFooter.panelKey), findsNothing);
+      expect(addCount, 1);
+    });
   });
 }

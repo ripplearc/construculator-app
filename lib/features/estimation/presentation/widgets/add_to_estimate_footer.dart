@@ -3,8 +3,23 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Which parts of an [AddToEstimateFooter] to draw.
+enum AddToEstimateFooterPart {
+  /// The card, then the error line and the button or number pad.
+  all,
+
+  /// The card alone, with the gap above it, to scroll with the form.
+  panel,
+
+  /// The error line and the button or number pad, without the card.
+  controls,
+}
+
 /// The "Adds to this estimate" summary card and the full-width submit button
-/// at the bottom of the equipment cost sheet.
+/// at the bottom of the material, equipment and labor cost sheets.
+///
+/// [part] splits the two, so a phone too short to pin both the card and the
+/// number pad can scroll the card with the form.
 class AddToEstimateFooter extends StatelessWidget {
   /// Key of the summary card.
   static const panelKey = Key('adds_to_estimate_panel');
@@ -45,6 +60,9 @@ class AddToEstimateFooter extends StatelessWidget {
   /// button.
   final Widget? keypad;
 
+  /// Which parts to draw; [AddToEstimateFooterPart.all] by default.
+  final AddToEstimateFooterPart part;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -56,6 +74,7 @@ class AddToEstimateFooter extends StatelessWidget {
     this.errorMessage,
     required this.onAdd,
     this.keypad,
+    this.part = AddToEstimateFooterPart.all,
   });
 
   @override
@@ -63,6 +82,23 @@ class AddToEstimateFooter extends StatelessWidget {
     final l10n = context.l10n;
     final block = this.block;
     const sideInset = EdgeInsets.symmetric(horizontal: CoreSpacing.space5);
+    final panel = Padding(
+      padding: sideInset,
+      child: AddToEstimatePanel(
+        key: panelKey,
+        lineTotal: lineTotal,
+        deliveryFee: deliveryFee,
+        estimateName: estimateName,
+        estimateTotal: estimateTotal,
+        block: block,
+      ),
+    );
+    if (part == AddToEstimateFooterPart.panel) {
+      return Padding(
+        padding: const EdgeInsets.only(top: CoreSpacing.space4),
+        child: panel,
+      );
+    }
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.only(bottom: CoreSpacing.space7),
@@ -70,17 +106,7 @@ class AddToEstimateFooter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: sideInset,
-            child: AddToEstimatePanel(
-              key: panelKey,
-              lineTotal: lineTotal,
-              deliveryFee: deliveryFee,
-              estimateName: estimateName,
-              estimateTotal: estimateTotal,
-              block: block,
-            ),
-          ),
+          if (part == AddToEstimateFooterPart.all) panel,
           if (errorMessage case final message?) ...[
             const SizedBox(height: CoreSpacing.space4),
             Padding(
