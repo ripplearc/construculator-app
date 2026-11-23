@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:construculator/features/calculator/data/models/calculator_preferences_dto.dart';
 import 'package:construculator/features/calculator/data/repositories/calculator_preferences_repository_impl.dart';
+import 'package:construculator/libraries/auth/check/check_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_check_finished_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -120,6 +123,9 @@ void main() {
     repository = CalculatorPreferencesRepositoryImpl(
       authNotifier: authNotifier,
       authManager: authManager,
+      activeUserProvider: FakeActiveUserProvider(
+        userIdOf: () => authManager.getCurrentCredentials().data?.id,
+      ),
     );
   });
 
@@ -129,6 +135,93 @@ void main() {
   });
 
   group('CalculatorPreferencesRepositoryImpl', () {
+    group('while the sign-in check runs', () {
+      late FakeCheckFinishedState checkState;
+      late CalculatorPreferencesRepositoryImpl heldRepository;
+
+      setUp(() {
+        checkState = FakeCheckFinishedState();
+        // ignore: no_direct_instantiation, reason: the subject under test, held back by a fake check state
+        heldRepository = CalculatorPreferencesRepositoryImpl(
+          authNotifier: authNotifier,
+          authManager: authManager,
+          activeUserProvider: checkState,
+        );
+      });
+
+      tearDown(() {
+        heldRepository.dispose();
+        checkState.dispose();
+      });
+
+      test('reads no profile until the check finished', () async {
+        signIn(
+          userWith({
+            'calculator': {'system': 'metric'},
+          }),
+        );
+        final applied = expectLater(
+          heldRepository.watchPreferences(),
+          emitsThrough(
+            predicate<CalculatorPreferences>(
+              (preferences) => preferences.system == MeasurementSystem.metric,
+            ),
+          ),
+        );
+        await checkState.whenFinishedAsked;
+
+        expect(authRepository.getUserProfileCalls, isEmpty);
+
+        checkState.emit(const FinishedFor('cred-1'));
+        await applied;
+
+        expect(authRepository.getUserProfileCalls, ['cred-1']);
+      });
+
+      test('a save waits for the check and then saves to the profile of the '
+          'user it finished for', () async {
+        signIn(userWith({'theme': 'dark'}));
+        final saved = heldRepository.savePreferences(metric);
+        await checkState.whenFinishedAsked;
+
+        expect(authRepository.getUserProfileCalls, isEmpty);
+        expect(authRepository.updateProfileCalls, isEmpty);
+
+        checkState.emit(const FinishedFor('cred-1'));
+        final result = await saved;
+
+        expect(savedOf(result), metric);
+        expect(authRepository.getUserProfileCalls, ['cred-1']);
+      });
+
+      test('a save that waits for the check answers not found when the '
+          'repository was disposed meanwhile', () async {
+        signIn(userWith({'theme': 'dark'}));
+        final saved = heldRepository.savePreferences(metric);
+        await checkState.whenFinishedAsked;
+        heldRepository.dispose();
+
+        checkState.emit(const FinishedFor('cred-1'));
+        final result = await saved;
+
+        expect(savedOf(result), isNull);
+        expect(authRepository.updateProfileCalls, isEmpty);
+      });
+
+      test('a repository disposed while it waits reads nothing', () async {
+        signIn(userWith({'theme': 'dark'}));
+        heldRepository.watchPreferences().listen((_) {});
+        await checkState.whenFinishedAsked;
+        heldRepository.dispose();
+
+        checkState.emit(const FinishedFor('cred-1'));
+        await checkState.whenFinished();
+        await authManager.getUserProfile('sentinel');
+
+        expect(authRepository.getUserProfileCalls, ['sentinel']);
+      });
+    });
+
     group('watchPreferences', () {
       test('emits the defaults before any profile has arrived', () async {
         expect(

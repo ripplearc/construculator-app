@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/calculator/data/models/calculator_preferences_dto.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
@@ -70,6 +71,7 @@ class CalculatorPreferencesRepositoryImpl
 
   final AuthNotifier _authNotifier;
   final AuthManager _authManager;
+  final ActiveUserProvider _activeUserProvider;
   final _preferences = StreamController<CalculatorPreferences>.broadcast();
 
   StreamSubscription<User?>? _profileSubscription;
@@ -84,6 +86,7 @@ class CalculatorPreferencesRepositoryImpl
   CalculatorPreferencesRepositoryImpl({
     required this._authNotifier,
     required this._authManager,
+    required this._activeUserProvider,
   });
 
   @override
@@ -104,6 +107,10 @@ class CalculatorPreferencesRepositoryImpl
     CalculatorPreferences preferences,
   ) async {
     _followProfile();
+    if (_activeUserProvider.activeUserId == null) {
+      await _activeUserProvider.whenFinished();
+      if (_isDisposed) return Left(UserNotFoundFailure());
+    }
     final credentials = _authManager.getCurrentCredentials();
     if (credentials.isSuccess &&
         credentials.data?.id != _followedCredentialId) {
@@ -194,6 +201,19 @@ class CalculatorPreferencesRepositoryImpl
   }
 
   Future<AuthErrorType?> _loadSignedInProfile() {
+    if (_activeUserProvider.activeUserId != null) {
+      return _loadProfileOfFinishedUser();
+    }
+    return _loadProfileAfterCheck();
+  }
+
+  Future<AuthErrorType?> _loadProfileAfterCheck() async {
+    await _activeUserProvider.whenFinished();
+    if (_isDisposed) return null;
+    return _loadProfileOfFinishedUser();
+  }
+
+  Future<AuthErrorType?> _loadProfileOfFinishedUser() {
     if (_signedInProfileFetch case final inFlight?) return inFlight.result;
     final credentialId = _authManager.getCurrentCredentials().data?.id;
     if (credentialId == null || credentialId.isEmpty) return Future.value();
