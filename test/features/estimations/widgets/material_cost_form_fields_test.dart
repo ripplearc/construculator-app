@@ -66,12 +66,13 @@ void main() {
   Future<void> pumpFields(
     WidgetTester tester, {
     ValueNotifier<NumberPadSession?>? numberPad,
+    ThemeData? theme,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
     await tester.pumpWidget(
       MaterialApp(
-        theme: CoreTheme.light(),
+        theme: theme ?? CoreTheme.light(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -647,10 +648,10 @@ void main() {
   group('with the app\'s own number pad', () {
     late ValueNotifier<NumberPadSession?> numberPad;
 
-    Future<void> pumpWithPad(WidgetTester tester) async {
+    Future<void> pumpWithPad(WidgetTester tester, {ThemeData? theme}) async {
       numberPad = ValueNotifier(null);
       addTearDown(numberPad.dispose);
-      await pumpFields(tester, numberPad: numberPad);
+      await pumpFields(tester, numberPad: numberPad, theme: theme);
     }
 
     TextField textFieldOf(WidgetTester tester, Finder field) =>
@@ -693,6 +694,27 @@ void main() {
       );
       expect(session.putBackLabel, 'Back to 3');
     });
+
+    for (final (name, theme) in [
+      ('light', CoreTheme.light()),
+      ('dark', CoreTheme.dark()),
+    ]) {
+      testWidgets('the selected value is tinted with the focus colour at 30 % '
+          'in the $name theme, as the storyboard draws it', (tester) async {
+        await pumpWithPad(tester, theme: theme);
+        await tester.enterText(quantityField, '25');
+        await tester.pump();
+
+        final editable = tester.widget<EditableText>(
+          find.descendant(
+            of: quantityField,
+            matching: find.byType(EditableText),
+          ),
+        );
+        final focus = theme.extension<AppColorsExtension>()!.outlineFocus;
+        expect(editable.selectionColor, focus.withValues(alpha: 0.30));
+      });
+    }
 
     testWidgets('a tap anywhere on the quantity row opens the pad too', (
       tester,

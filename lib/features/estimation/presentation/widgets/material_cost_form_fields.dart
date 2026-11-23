@@ -260,6 +260,7 @@ class _SheetTextField extends StatelessWidget {
   static const double _tapHeight = CoreSpacing.space12;
   static const double _tapWidth = CoreSpacing.space12;
   static const double _cursorAllowance = 3;
+  static const double _selectionAlpha = 0.30;
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -309,26 +310,35 @@ class _SheetTextField extends StatelessWidget {
             maxWidth: width == null ? null : math.max(width, _tapWidth),
             child: Semantics(
               label: label,
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                readOnly: readOnly,
-                keyboardType: keyboardType,
-                inputFormatters: inputFormatters,
-                onChanged: onChanged,
-                onTap: onTap,
-                maxLines: 1,
-                cursorColor: colorTheme.textHeadline,
-                style: textStyle,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: (_tapHeight - _drawnHeight) / 2,
+              child: TextSelectionTheme(
+                data: TextSelectionTheme.of(context).copyWith(
+                  // The storyboard tints a selection with the accent at 30 %,
+                  // the alpha Android uses (cuj456_screen.css .tsel).
+                  selectionColor: colorTheme.outlineFocus.withValues(
+                    alpha: _selectionAlpha,
                   ),
-                  hintText: hintText,
-                  hintStyle: textTheme.bodyLargeRegular.copyWith(
-                    color: colorTheme.textDisable,
+                ),
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  readOnly: readOnly,
+                  keyboardType: keyboardType,
+                  inputFormatters: inputFormatters,
+                  onChanged: onChanged,
+                  onTap: onTap,
+                  maxLines: 1,
+                  cursorColor: colorTheme.textHeadline,
+                  style: textStyle,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: (_tapHeight - _drawnHeight) / 2,
+                    ),
+                    hintText: hintText,
+                    hintStyle: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textDisable,
+                    ),
                   ),
                 ),
               ),
