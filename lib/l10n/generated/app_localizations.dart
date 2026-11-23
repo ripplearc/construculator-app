@@ -4805,6 +4805,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\${value}'**
   String numberPadRateValue(String value);
+
+  /// Placeholder of the Materials section while it holds no lines but the estimate does
+  ///
+  /// In en, this message translates to:
+  /// **'No material costs yet'**
+  String get costSectionEmptyMaterial;
+
+  /// Placeholder of the Labor section while it holds no lines but the estimate does
+  ///
+  /// In en, this message translates to:
+  /// **'No labor costs yet'**
+  String get costSectionEmptyLabor;
+
+  /// Placeholder of the Equipment section while it holds no lines but the estimate does
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment costs yet'**
+  String get costSectionEmptyEquipment;
 }
 
 class _AppLocalizationsDelegate
