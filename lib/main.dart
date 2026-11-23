@@ -1,6 +1,7 @@
 import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
+import 'package:construculator/app/check_gate/check_gate_bloc.dart';
 import 'package:construculator/app/per_user_registrations.dart';
 import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
 import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
         child: AppWidget(
           analyticsRepository: appBootstrap.analyticsRepository,
           currentScreenTracker: appBootstrap.currentScreenTracker,
+          createCheckGateBloc: Modular.get<CheckGateBloc>,
         ),
       ),
     );
