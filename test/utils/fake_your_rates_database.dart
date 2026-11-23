@@ -377,8 +377,6 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     }
   }
 
-  /// Whether [sql] reads or writes `cost_items` or its refusal records, which
-  /// [costItems] answers.
   static bool _isCostItemStatement(String sql) =>
       sql.contains(DatabaseConstants.costItemsTable) ||
       sql.contains(DatabaseConstants.costItemRefusalsTable);

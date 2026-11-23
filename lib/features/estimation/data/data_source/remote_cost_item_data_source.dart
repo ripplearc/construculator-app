@@ -22,8 +22,8 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   /// How long the estimate lookup waits for the server before it gives up.
   final Duration lookupTimeout;
 
-  /// How long the estimate total waits for the server before the total counts
-  /// only the lines on this phone.
+  /// How long the estimate total waits for the server before it returns the
+  /// timeout failure.
   final Duration totalsTimeout;
 
   /// How many of the newest matching lines the estimate lookup reads. A line

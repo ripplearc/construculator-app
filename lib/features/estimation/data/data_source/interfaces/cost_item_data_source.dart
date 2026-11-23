@@ -37,7 +37,7 @@ abstract class CostItemDataSource {
   ///
   /// Does not retry. Throws a `TimeoutException` if the server does not
   /// answer within a few seconds, and a `SocketException` when there is no
-  /// connection, so a caller can fall back to the lines on the phone.
+  /// connection, so a caller returns the timeout or connection failure.
   Future<Map<String, double>> fetchItemTotalCostsByEstimateId(
     String estimateId,
   );
