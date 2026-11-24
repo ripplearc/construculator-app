@@ -325,7 +325,10 @@ final class NamedDensity extends Equatable {
 /// The volume is weighed as the display shows it, at two decimals in its
 /// own unit (Section 6, "Rounding at display": weight uses the quantity
 /// shown on screen): 22ft of footing shows 0.72yd³ and weighs 1.46 ton of
-/// concrete, not the 1.47 ton its exact 0.7243yd³ would come to (S50).
+/// concrete, not the 1.47 ton its exact 0.7243yd³ would come to (S50). A
+/// volume too small to show as a number is weighed at its stored value
+/// (same section: "a result shown in words uses the stored value"), so
+/// 0.004yd³ of concrete weighs 16.2lbs and never exactly 0.
 final class MaterialWeight extends Equatable {
   /// The key the strip labels the offer and the accepted weight by.
   static const String key = 'Weight';
@@ -349,11 +352,14 @@ final class MaterialWeight extends Equatable {
 
   /// The cubic yards the display shows for [volume]: its amount in its
   /// own unit — board feet, or the cube of a length unit — rounded as a
-  /// result is, half up to two decimals, and read back.
+  /// result is, half up to two decimals, and read back. An amount that
+  /// rounds to 0.00 is shown in words, not as a number, so it is read
+  /// back as stored.
   double get shownCubicYards {
-    final perCubicFoot = _unitsPerCubicFoot(volume.unit);
-    final shown = _roundedAsAResult(volume.cubicFeet * perCubicFoot);
-    return shown / perCubicFoot / _cubicFeetPerCubicYard;
+    final stored = _amountInItsUnit(volume);
+    final shown = _roundedAsAResult(stored);
+    final weighed = shown == 0 ? stored : shown;
+    return weighed / _unitsPerCubicFoot(volume.unit) / _cubicFeetPerCubicYard;
   }
 
   /// The weight, kept exact in hundredths of a pound and rounded at
@@ -405,6 +411,12 @@ double _unitsPerCubicFoot(Unit unit) {
   if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble();
   final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit;
   return feetPerUnit * feetPerUnit * feetPerUnit;
+}
+
+double _amountInItsUnit(Volume volume) {
+  if (volume.unit == Unit.boardFoot) return volume.boardFeet;
+  final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+  return volume.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
 }
 
 double _roundedAsAResult(double amount) {

@@ -219,10 +219,18 @@
         <!-- E2 (CA-1068) -->
         <!-- RULE 19: the volume is weighed exactly instead of as shown, is
              not read back from its unit, or is taken in cubic feet -->
-        <regex pattern="final shown = _roundedAsAResult\(volume\.cubicFeet \* perCubicFoot\);\s*return shown / perCubicFoot / _cubicFeetPerCubicYard;" dotAll="true" id="trades.weight.shown_cubic_yards">
+        <regex pattern="final weighed = shown == 0 \? stored : shown;\s*return weighed / _unitsPerCubicFoot\(volume\.unit\) / _cubicFeetPerCubicYard;" dotAll="true" id="trades.weight.shown_cubic_yards">
             <mutation text="return volume.cubicFeet / _cubicFeetPerCubicYard;"/>
-            <mutation text="final shown = _roundedAsAResult(volume.cubicFeet * perCubicFoot); return shown / _cubicFeetPerCubicYard;"/>
-            <mutation text="final shown = _roundedAsAResult(volume.cubicFeet * perCubicFoot); return shown / perCubicFoot;"/>
+            <mutation text="final weighed = shown == 0 ? stored : shown; return weighed / _cubicFeetPerCubicYard;"/>
+            <mutation text="final weighed = shown == 0 ? stored : shown; return weighed / _unitsPerCubicFoot(volume.unit);"/>
+        </regex>
+
+        <!-- RULE 19b: a volume that shows as 0.00 weighs exactly 0 (the
+             stored-value branch is gone), or the branch is the other way
+             round -->
+        <regex pattern="final weighed = shown == 0 \? stored : shown;" dotAll="true" id="trades.weight.in_words_is_weighed_as_stored">
+            <mutation text="final weighed = shown;"/>
+            <mutation text="final weighed = shown != 0 ? stored : shown;"/>
         </regex>
 
         <!-- RULE 20: the weight is in pounds, not hundredths; or always in
@@ -262,6 +270,16 @@
         <regex pattern="if \(unit == Unit\.boardFoot\) return Volume\.boardFeetPerCubicFoot\.toDouble\(\);\s*final feetPerUnit = Length\.ticksPerFoot / unit\.ticksPerUnit;\s*return feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="trades.weight.units_per_cubic_foot">
             <mutation text="final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit * feetPerUnit;"/>
             <mutation text="if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble(); final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit;"/>
+        </regex>
+
+        <!-- RULE 24b: the amount the display rounds is taken in another
+             order than the formatter's (0.725yd³ then weighs as 0.73 where
+             the screen writes 0.72), board feet are read as a length unit,
+             or the cube is a square -->
+        <regex pattern="if \(volume\.unit == Unit\.boardFoot\) return volume\.boardFeet;\s*final feetPerUnit = Length\.ticksPerFoot / volume\.unit\.ticksPerUnit;\s*return volume\.cubicFeet \* feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="trades.weight.amount_in_its_unit">
+            <mutation text="if (volume.unit == Unit.boardFoot) return volume.boardFeet; final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * (feetPerUnit * feetPerUnit * feetPerUnit);"/>
+            <mutation text="final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;"/>
+            <mutation text="if (volume.unit == Unit.boardFoot) return volume.boardFeet; final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * feetPerUnit * feetPerUnit;"/>
         </regex>
 
         <!-- RULE 25: the display rounding is rounded down, to one decimal,

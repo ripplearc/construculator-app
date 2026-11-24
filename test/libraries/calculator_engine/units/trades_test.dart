@@ -871,6 +871,22 @@ void main() {
         system: MeasurementSystem.imperial,
       );
 
+      double writtenNumber(Volume volume) => double.parse(
+        formatter
+            .format(volume)
+            .replaceAll(',', '')
+            .replaceAll(RegExp(r'[^0-9.]+$'), ''),
+      );
+
+      double inTheUnitOf(Volume volume, double cubicYards) {
+        final cubicFeet = cubicYards * 27;
+        if (volume.unit == Unit.boardFoot) {
+          return cubicFeet * Volume.boardFeetPerCubicFoot;
+        }
+        final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+        return cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+      }
+
       test('S48, row 243: 11yd³ is 22.28 ton of concrete, 16.5 ton of '
           'gravel and 14.85 ton of sand, in the store\'s order', () {
         expect(texts(imperial(elevenCubicYards)), [
@@ -1008,18 +1024,80 @@ void main() {
         );
       });
 
-      test('the smallest volume that shows weighs, and one that shows as '
-          '0.00 weighs nothing on screen but is still offered', () {
+      test('the smallest volume that shows weighs as shown, and 0.004yd³, '
+          'which shows as 0.00, is weighed at its stored value: 16.2lbs of '
+          'concrete, never 0', () {
         const oneHundredth = Volume(0.01 * 27, unit: Unit.yard);
         expect(texts(imperial(oneHundredth)).first, '0.02 ton (concrete)');
         const underADisplayStep = Volume(0.004 * 27, unit: Unit.yard);
         final weights = imperial(underADisplayStep);
         expect(weights, hasLength(3));
-        expect(weights.first.shownCubicYards, 0);
+        expect(weights.first.shownCubicYards, closeTo(0.004, 1e-12));
+        expect(weights.first.weight.hundredthsOfPound, closeTo(1620, 1e-6));
+        expect(weights.last.weight.hundredthsOfPound, closeTo(1080, 1e-6));
       });
 
+      test('a volume below the display step weighs its stored value in '
+          'every unit: 0.001ft³ is 0.15lbs of concrete, 1/8in x 1/8in x '
+          '1/8in is 0.00017lbs and 0.004bf is 0.05lbs', () {
+        final cubicFoot = imperial(const Volume(0.001)).first.weight;
+        expect(cubicFoot.hundredthsOfPound, closeTo(15, 1e-9));
+        const eighthInchCube = Volume(0.125 * 0.125 * 0.125 / 1728);
+        final cubicInch = imperial(eighthInchCube.spelledIn(Unit.inch)).first;
+        expect(cubicInch.weight.hundredthsOfPound, closeTo(0.016954, 1e-6));
+        const boardFeet = Volume(0.004 / 12, unit: Unit.boardFoot);
+        expect(
+          imperial(boardFeet).first.weight.hundredthsOfPound,
+          closeTo(5, 1e-9),
+        );
+      });
+
+      test('a volume that rounds up to the display step is weighed as '
+          'shown: 0.006yd³ shows 0.01yd³ and weighs 40.5lbs of concrete, '
+          'not the 24.3lbs of its stored value', () {
+        const roundsUp = Volume(0.006 * 27, unit: Unit.yard);
+        expect(formatter.format(roundsUp), '0.01yd³');
+        final weight = imperial(roundsUp).first;
+        expect(weight.shownCubicYards, closeTo(0.01, 1e-12));
+        expect(weight.weight.hundredthsOfPound, closeTo(4050, 1e-6));
+      });
+
+      test('the shown volume is the number the formatter writes, in every '
+          'unit and at the half-way values 0.725yd³ and 1.005yd³', () {
+        const volumes = [
+          Volume(0.725 * 27, unit: Unit.yard),
+          Volume(1.005 * 27, unit: Unit.yard),
+          Volume(2.675 * 27, unit: Unit.yard),
+          Volume(0.7243 * 27, unit: Unit.yard),
+          Volume(1750.7 * 27, unit: Unit.yard),
+          Volume(19999999.99 * 27, unit: Unit.yard),
+          Volume(20.005),
+          Volume(0.125),
+          Volume(1.005 / 1728, unit: Unit.inch),
+          Volume(123.455 / 1728, unit: Unit.inch),
+          Volume(0.725 / 12, unit: Unit.boardFoot),
+          Volume(50.1751 / 12, unit: Unit.boardFoot),
+          Volume(35.31466672148859 * 1.005, unit: Unit.metre),
+          Volume(35.31466672148859 * 0.725, unit: Unit.metre),
+        ];
+        for (final volume in volumes) {
+          expect(
+            inTheUnitOf(volume, imperial(volume).first.shownCubicYards),
+            closeTo(writtenNumber(volume), 1e-6),
+            reason: 'the display writes ${formatter.format(volume)}',
+          );
+        }
+      });
+
+      // The engine returns the weight as it is. This one is above the
+      // limit of 19,999,999.99 in the largest weight unit, so the user never
+      // reads this text: the strip step that offers and lands a weight
+      // (CA-1072) puts it through the Too large check of CA-1236
+      // (`QuantityFormatter.isTooLarge`), and the answer reads "Over
+      // 19,999,999.99" (Section 5.3).
       test('the largest volume the parser accepts, 19,999,999.99yd³ of '
-          'concrete, is 40,499,999.98 ton', () {
+          'concrete, comes out of the engine as the raw weight '
+          '40,499,999.98 ton, above the Too large limit', () {
         const largest = Volume(19999999.99 * 27, unit: Unit.yard);
         expect(texts(imperial(largest)).first, '40,499,999.98 ton (concrete)');
       });
