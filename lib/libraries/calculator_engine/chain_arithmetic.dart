@@ -54,14 +54,16 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// 1/512 of a tick instead, as a rule's answer is; the tick limit is read
 /// off the double of the exact inches, so that the check itself never
 /// outgrows the store and 19999999ft + 1/9999973in stays exact, with its
-/// small part kept for the step that takes the big one away again. A real
-/// length below 1/512 of a tick, that is 1/32768 of an inch, is too small
-/// to keep on either path (1in ÷ 9999999 three times; 19999999ft +
-/// 1/9999973in − 19999999ft) and is refused as [CalculationError.tooSmall]
-/// (Section 5, "Too small"). A length scaled by a number with no finite
-/// decimal spelling is rounded to a whole tick, and one that rounds to no
-/// whole tick is kept to 1/512 of a tick instead ([SIN] 1 × 1/64in reads
-/// Under 1/16in) or refused as too small (1in × 1e-7): on no path is a zero
+/// small part kept for the step that takes the big one away again. While
+/// its exact fraction fits, a length is kept exactly however small it is:
+/// 1in ÷ 40000 reads Under 1/16in, and 1in ÷ 100000 × 100000 is 1in again.
+/// Only a length that left the exact path can be too small to keep: a real
+/// one below 1/512 of a tick, that is 1/32768 of an inch, is refused as
+/// [CalculationError.tooSmall] (Section 5, "Too small"; 1in ÷ 9999999
+/// three times). A length scaled by a number with no finite decimal
+/// spelling is rounded to a whole tick, and one that rounds to no whole
+/// tick is kept to 1/512 of a tick instead ([SIN] 1 × 1/64in reads Under
+/// 1/16in) or refused as too small (1in × 1e-7): on no path is a zero
 /// written that says two lengths match when they do not (Section 6). A
 /// length answer beyond [maxTicks] in either direction, or any answer that
 /// overflowed to infinity, is refused as [CalculationError.outOfRange]
@@ -379,9 +381,6 @@ class ChainArithmetic extends Equatable {
     final ticks = inches.toDouble() * Length.ticksPerInch;
     if (!ticks.isFinite || ticks.abs() > maxTicks) {
       throw const _TicksOutOfRange();
-    }
-    if (!inches.isZero && (ticks * Length.partsPerTick).abs() < 1) {
-      throw const _TooSmall();
     }
     return Length.exact(inches, unit: unit);
   }

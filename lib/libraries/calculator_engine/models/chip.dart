@@ -40,13 +40,13 @@ enum CalculationError {
   /// overflowed to infinity.
   outOfRange,
 
-  /// A real length too small to keep: its exact fraction outgrew a
-  /// [Rational] and, in double math, it is below the 1/512 of a tick a
-  /// computed length holds (1in ÷ 9999999 three times), or it was scaled by
-  /// a number with no finite decimal spelling and rounds to no whole tick
-  /// (1in × 1e-7), so it is refused as "Too small" rather than kept as a
-  /// zero that would say two lengths match when they do not (Section 6,
-  /// "Under 1/16in").
+  /// A real length result below 1/32768 inch (1/512 of a tick) that is no
+  /// longer exact: its exact fraction outgrew a [Rational] (1in ÷ 9999999
+  /// three times), or it was scaled by a number with no finite decimal
+  /// spelling (1in × 1e-7). It is refused as "Too small" rather than kept
+  /// as a zero that would say two lengths match when they do not (Section
+  /// 5, "Too small"). A length whose exact fraction fits is never too
+  /// small: 1in ÷ 40000 is kept and reads "Under 1/16in" (Section 6).
   tooSmall,
 }
 

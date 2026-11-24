@@ -1085,22 +1085,46 @@ void main() {
         },
       );
 
-      test('a real length below 1/512 of a tick is Too small, not Too large: '
-          '1in ÷ 9999999, exact or kept', () {
+      test('a length is kept exactly while its exact fraction fits, however '
+          'small, and is Too small only once the fraction outgrows the store: '
+          '1in ÷ 9999999, once, twice and three times', () {
         const inch = Length(Length.ticksPerInch, unit: Unit.inch);
         const divisor = Scalar(9999999);
-        expect(
+        final once = valueOf(
           arithmetic.combine(inch, Operator.divide, divisor),
+        );
+        expect((once as Length).inches, const Rational(1, 9999999));
+        expect(
+          formatter.format(once),
+          'Under 1/16in',
+          reason: '1/9999999in is below 1/32768in, and its fraction fits',
+        );
+        final twice = valueOf(
+          arithmetic.combine(once, Operator.divide, divisor),
+        );
+        expect((twice as Length).inches, const Rational(1, 9999999 * 9999999));
+        expect(
+          arithmetic.combine(twice, Operator.divide, divisor),
           const ArithmeticFailed(CalculationError.tooSmall),
-          reason: '1/9999999in is below 1/32768in, exact as it is',
+          reason:
+              'the third division outgrows the store, and what double '
+              'math keeps of it is below 1/32768in',
         );
         final hundredth = valueOf(
           arithmetic.combine(inch, Operator.divide, const Scalar(100)),
         );
         expect(formatter.format(hundredth), 'Under 1/16in');
         expect(
-          arithmetic.combine(hundredth, Operator.divide, const Scalar(1000)),
-          const ArithmeticFailed(CalculationError.tooSmall),
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                hundredth,
+                Operator.divide,
+                const Scalar(1000),
+              ),
+            ),
+          ),
+          'Under 1/16in',
         );
         expect(
           arithmetic.combine(
@@ -1109,7 +1133,43 @@ void main() {
             const Length.exact(Rational(1, lastExact - 2), unit: Unit.inch),
           ),
           const ArithmeticFailed(CalculationError.tooSmall),
+          reason: 'the sum of the two fractions outgrows the store',
         );
+      });
+
+      test('a tiny quotient whose fraction fits is a length, never Too '
+          'small: 1in ÷ 40000 reads Under 1/16in, 1mm ÷ 2000 reads Under '
+          '1mm, and 1in ÷ 100000 × 100000 is 1in again', () {
+        const inch = Length.exact(Rational(1), unit: Unit.inch);
+        final fortyThousandth = valueOf(
+          arithmetic.combine(inch, Operator.divide, const Scalar(40000)),
+        );
+        expect(
+          (fortyThousandth as Length).inches,
+          const Rational(1, 40000),
+          reason: '1/40000in is below 1/32768in, and is kept as it is',
+        );
+        expect(formatter.format(fortyThousandth), 'Under 1/16in');
+        final millimetre = Length.exact(
+          Unit.millimetre.inchesPer,
+          unit: Unit.millimetre,
+        );
+        final twoThousandth = valueOf(
+          arithmetic.combine(millimetre, Operator.divide, const Scalar(2000)),
+        );
+        expect(
+          (twoThousandth as Length).inches,
+          Unit.millimetre.inchesPer / const Rational(2000),
+        );
+        expect(formatter.format(twoThousandth), 'Under 1mm');
+        final back = valueOf(
+          chain(inch, const [
+            (Operator.divide, Scalar(100000)),
+            (Operator.multiply, Scalar(100000)),
+          ]),
+        );
+        expect((back as Length).inches, const Rational(1));
+        expect(formatter.format(back), '0ft 1in');
       });
 
       test('a length made from an area is Too small below that too, and a '
@@ -1177,20 +1237,23 @@ void main() {
         );
       });
 
-      test('a sum near the limit keeps its small part exactly, so '
-          'taking the big part away again reads Too small, never 0ft 0in', () {
+      test('a sum near the limit keeps its small part exactly, so taking '
+          'the big part away again gives the small part back, never 0ft 0in '
+          'and never Too small', () {
         const big = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
         const tiny = Length.exact(Rational(1, 9999973), unit: Unit.inch);
         final sum = valueOf(arithmetic.combine(big, Operator.add, tiny));
         expect(formatter.format(sum), '19999999ft 0in');
         expect((sum as Length).inches, big.inches + tiny.inches);
-        expect(
-          arithmetic.combine(sum, Operator.subtract, big),
-          const ArithmeticFailed(CalculationError.tooSmall),
-        );
+        final left = valueOf(arithmetic.combine(sum, Operator.subtract, big));
+        expect((left as Length).inches, tiny.inches);
+        expect(formatter.format(left), 'Under 1/16in');
         expect(
           arithmetic.combine(tiny, Operator.multiply, const Scalar(1)),
-          const ArithmeticFailed(CalculationError.tooSmall),
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
+          reason: 'a typed length below 1/32768in computes as it is',
         );
         expect(
           arithmetic.combine(
@@ -1198,13 +1261,17 @@ void main() {
             Operator.add,
             const Length(0, unit: Unit.inch),
           ),
-          const ArithmeticFailed(CalculationError.tooSmall),
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
         );
         const inch = Length(Length.ticksPerInch, unit: Unit.inch);
         expect(
           arithmetic.combine(inch, Operator.divide, const Scalar(9999973)),
-          const ArithmeticFailed(CalculationError.tooSmall),
-          reason: '1in ÷ 9999973 is below 1/32768in on its own',
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
+          reason: '1in ÷ 9999973 is below 1/32768in, and its fraction fits',
         );
         final hair = valueOf(
           arithmetic.combine(inch, Operator.divide, const Scalar(9999)),
@@ -1226,19 +1293,6 @@ void main() {
           '0ft 1in',
           reason: 'the small part walked through the sum exactly',
         );
-        const smallest = Length.exact(
-          Rational(1, Length.ticksPerInch * Length.partsPerTick),
-          unit: Unit.inch,
-        );
-        expect(
-          formatter.format(
-            valueOf(
-              arithmetic.combine(smallest, Operator.multiply, const Scalar(1)),
-            ),
-          ),
-          'Under 1/16in',
-          reason: '1/32768in is the smallest length the store keeps',
-        );
         expect(
           arithmetic.combine(
             const Length.exact(
@@ -1248,17 +1302,13 @@ void main() {
             Operator.multiply,
             const Scalar(1),
           ),
-          const ArithmeticFailed(CalculationError.tooSmall),
-          reason: 'under half of that rounds to nothing',
-        );
-        expect(
-          arithmetic.combine(
-            const Length.exact(Rational(1), unit: Unit.inch),
-            Operator.divide,
-            const Scalar(40000),
+          const ArithmeticValue(
+            Length.exact(
+              Rational(1, Length.ticksPerInch * Length.partsPerTick * 2 + 1),
+              unit: Unit.footInch,
+            ),
           ),
-          const ArithmeticFailed(CalculationError.tooSmall),
-          reason: '1/40000in is below 1/32768in, though above half of it',
+          reason: 'under half of 1/32768in is kept too while it is exact',
         );
         expect(
           arithmetic.combine(
@@ -1267,7 +1317,10 @@ void main() {
             const Scalar(1 / 700),
           ),
           const ArithmeticFailed(CalculationError.tooSmall),
-          reason: 'one tick ÷ 700 is under one part, though above half of it',
+          reason:
+              '1/700 has no decimal the store keeps, so the result left '
+              'the exact path, and one tick ÷ 700 is under one part of a '
+              'tick, though above half of it',
         );
         expect(
           formatter.format(

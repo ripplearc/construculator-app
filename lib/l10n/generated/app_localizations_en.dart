@@ -2028,6 +2028,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorErrorTooLarge => 'Too large';
 
   @override
+  String get calculatorErrorTooSmall => 'Too small';
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override

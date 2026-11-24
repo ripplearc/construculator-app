@@ -313,34 +313,55 @@ void main() {
         expect(tape.chips.last, const ErrorChip(CalculationError.tooSmall));
       });
 
-      test('19999999 ft + 1/9999973 in − 19999999 ft = reads Too small, never '
-          '0ft 0in, and a tiny typed length is Too small at the first step '
-          'that uses it', () {
-        const tooSmall = ErrorChip(CalculationError.tooSmall);
+      test('19999999 ft + 1/9999973 in − 19999999 ft = reads Under 1/16in, '
+          'never 0ft 0in and never Too small, and a tiny typed length '
+          'computes as it was typed', () {
         String landed(Tape tape) =>
             formatter.format((tape.chips.last as ResultChip).value);
         final walked = press(
           const Tape(),
           '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in − 1 9 9 9 9 9 9 9 ft =',
         );
-        expect(walked.chips.last, tooSmall);
+        expect(landed(walked), 'Under 1/16in');
         final summed = press(
           const Tape(),
           '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in =',
         );
         expect(landed(summed), '19999999ft 0in');
         expect(
-          press(const Tape(), '1 / 9 9 9 9 9 7 3 in × 1 =').chips.last,
-          tooSmall,
+          landed(press(const Tape(), '1 / 9 9 9 9 9 7 3 in × 1 =')),
+          'Under 1/16in',
         );
         expect(
-          press(
-            const Tape(),
-            '1 in ÷ 9 9 9 9 9 7 3 + 1 9 9 9 9 9 9 9 ft − 1 9 9 9 9 9 9 9 ft =',
-          ).chips.last,
-          tooSmall,
+          landed(
+            press(
+              const Tape(),
+              '1 in ÷ 9 9 9 9 9 7 3 + 1 9 9 9 9 9 9 9 ft − 1 9 9 9 9 9 9 9 ft =',
+            ),
+          ),
+          'Under 1/16in',
         );
         expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      });
+
+      test('a tiny answer whose exact fraction fits is kept, never Too small: '
+          '1in ÷ 40000 = reads Under 1/16in, 1mm ÷ 2000 = reads Under 1mm, '
+          'and 1in ÷ 100000 × 100000 = is 0ft 1in', () {
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        expect(
+          landed(press(const Tape(), '1 in ÷ 4 0 0 0 0 =')),
+          'Under 1/16in',
+        );
+        expect(landed(press(const Tape(), '1 mm ÷ 2 0 0 0 =')), 'Under 1mm');
+        expect(
+          landed(press(const Tape(), '1 in ÷ 1 0 0 0 0 0 × 1 0 0 0 0 0 =')),
+          '0ft 1in',
+        );
+        expect(
+          landed(press(const Tape(), '1 in ÷ 3 2 7 6 8 =')),
+          'Under 1/16in',
+        );
       });
 
       test('a length typed with fifteen digits computes exactly, as the trade '

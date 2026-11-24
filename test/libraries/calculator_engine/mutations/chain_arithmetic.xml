@@ -275,17 +275,17 @@
 
         <!-- RULE CA-1339 (R2, B1): the tick limit is read off a Rational
              product that outgrows the store before the check, so an exact
-             sum near the limit is kept and loses its small part; or an
-             exact length below 1/512 of a tick is written instead of
-             refused -->
+             sum near the limit is kept and loses its small part -->
         <regex pattern="final ticks = inches\.toDouble\(\) \* Length\.ticksPerInch;" dotAll="true" id="chain_arithmetic.exact_length.range_check_overflows">
             <mutation text="final ticks = (inches * const Rational(Length.ticksPerInch)).toDouble();"/>
         </regex>
-        <regex pattern="if \(!inches\.isZero &amp;&amp; \(ticks \* Length\.partsPerTick\)\.abs\(\) &lt; 1\) \{\s*throw const _TooSmall\(\);\s*\}\s*return Length\.exact\(inches, unit: unit\);" dotAll="true" id="chain_arithmetic.exact_length.too_small_written">
-            <mutation text="return Length.exact(inches, unit: unit);"/>
-            <mutation text="if ((ticks * Length.partsPerTick).abs() &lt; 1) { throw const _TooSmall(); } return Length.exact(inches, unit: unit);"/>
+        <!-- RULE CA-1339 (R3, B2): a length whose exact fraction fits is
+             refused as too small, or rounded to 1/512 of a tick, instead of
+             kept as it is -->
+        <regex pattern="return Length\.exact\(inches, unit: unit\);" dotAll="true" id="chain_arithmetic.exact_length.tiny_exact_refused">
+            <mutation text="if (!inches.isZero &amp;&amp; (ticks * Length.partsPerTick).abs() &lt; 1) { throw const _TooSmall(); } return Length.exact(inches, unit: unit);"/>
             <mutation text="if (!inches.isZero &amp;&amp; (ticks * Length.partsPerTick).round() == 0) { throw const _TooSmall(); } return Length.exact(inches, unit: unit);"/>
-            <mutation text="if (!inches.isZero &amp;&amp; (ticks * Length.partsPerTick).abs() &lt;= 1) { throw const _TooSmall(); } return Length.exact(inches, unit: unit);"/>
+            <mutation text="return _keptLength(ticks, unit);"/>
         </regex>
 
         <regex pattern="\(\) =&gt; length\.preciseTicks \* factor\.value," dotAll="true" id="chain_arithmetic.overflow.scale_fallback">

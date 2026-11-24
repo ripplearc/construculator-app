@@ -152,6 +152,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
         CalculationError.dimensionError => l10n.calculatorErrorDimension,
         CalculationError.divisionByZero => l10n.calculatorErrorDivisionByZero,
         CalculationError.outOfRange => l10n.calculatorErrorTooLarge,
+        CalculationError.tooSmall => l10n.calculatorErrorTooSmall,
       };
 
   String _keyLabelFor(AppLocalizations l10n, String id) => switch (id) {
