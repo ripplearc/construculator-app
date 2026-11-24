@@ -154,6 +154,26 @@
         <regex pattern="filters: \{DatabaseConstants\.estimateIdColumn: estimateId\},\s*retry: false," dotAll="true" id="cost_item.totals.retries">
             <mutation text="filters: {DatabaseConstants.estimateIdColumn: estimateId}, retry: true,"/>
         </regex>
+
+        <!-- RULE: the update sends the id column too -->
+        <regex pattern="\.\.remove\(DatabaseConstants\.idColumn\)" dotAll="false" id="cost_item.update.sends_id">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the update sends the estimate_id column too -->
+        <regex pattern="\.\.remove\(DatabaseConstants\.estimateIdColumn\)" dotAll="false" id="cost_item.update.sends_estimate_id">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the update sends the item_type column too -->
+        <regex pattern="\.\.remove\(DatabaseConstants\.itemTypeColumn\)" dotAll="false" id="cost_item.update.sends_item_type">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the update sends the created_at column too -->
+        <regex pattern="\.\.remove\(DatabaseConstants\.createdAtColumn\)" dotAll="false" id="cost_item.update.sends_created_at">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

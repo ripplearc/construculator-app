@@ -53,6 +53,28 @@ abstract class CostItemDataSource {
   /// Throws an exception if the create operation fails.
   Future<CostItemDto> createCostItem(CostItemDto item);
 
+  /// Replaces the stored fields of the cost item with [item]'s id.
+  ///
+  /// Writes every field of [item] except `id`, `estimate_id`, `item_type` and
+  /// `created_at`, which an update never changes.
+  ///
+  /// The database does not set `updated_at` on an update, so a caller sets it
+  /// on [item] to the time of the change.
+  ///
+  /// Returns the updated [CostItemDto] as the server now holds it.
+  ///
+  /// Throws an exception if no item has that id, or if the update fails.
+  Future<CostItemDto> updateCostItem(CostItemDto item);
+
+  /// Deletes the cost item with [itemId].
+  ///
+  /// The database keeps the row and hides it from every later read (the
+  /// `soft_delete_cost_items` migration of the backend turns this delete into
+  /// a soft delete), so the item is gone for the app but is not lost for good.
+  ///
+  /// Throws an exception if the delete fails.
+  Future<void> deleteCostItemById(String itemId);
+
   /// Fetches the name of the estimate of [companyId]'s projects holding the
   /// newest equipment line whose item name is [itemName], priced by
   /// [pricingMethod] ('day' or 'job') at exactly [rateAmount].

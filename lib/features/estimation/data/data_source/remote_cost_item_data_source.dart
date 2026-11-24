@@ -106,6 +106,33 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   }
 
   @override
+  Future<CostItemDto> updateCostItem(CostItemDto item) async {
+    _logger.debug('Updating cost item: ${item.id}');
+    final response = await _supabaseWrapper.update(
+      table: DatabaseConstants.costItemsTable,
+      data: Map.of(item.toJson())
+        ..remove(DatabaseConstants.idColumn)
+        ..remove(DatabaseConstants.estimateIdColumn)
+        ..remove(DatabaseConstants.itemTypeColumn)
+        ..remove(DatabaseConstants.createdAtColumn),
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: item.id,
+    );
+
+    return CostItemDto.fromJson(response);
+  }
+
+  @override
+  Future<void> deleteCostItemById(String itemId) async {
+    _logger.debug('Deleting cost item: $itemId');
+    await _supabaseWrapper.delete(
+      table: DatabaseConstants.costItemsTable,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: itemId,
+    );
+  }
+
+  @override
   Future<String?> fetchNewestEstimateNameByEquipmentRate({
     required String companyId,
     required String itemName,
