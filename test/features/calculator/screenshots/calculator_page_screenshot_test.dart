@@ -150,5 +150,37 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the "View all" sheet with the groups in a dragged '
+        'order (Section 1.5)', (tester) async {
+      tester.view.physicalSize = sheetSize;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      blocOf(
+        tester,
+      ).add(const CalculatorGroupsReordered(oldIndex: 4, newIndex: 0));
+      await tester.pump();
+      await tester.tap(find.text('View all'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        tester
+            .widget<CoreKeyboard>(find.byType(CoreKeyboard))
+            .allGroups
+            .first
+            .name
+            .id,
+        CalculatorGroupId.trigonometry,
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/calculator_page/${sheetSize.width}x${sheetSize.height}/calculator_page_view_all_sheet_reordered$suffix.png',
+        ),
+      );
+    });
   });
 }

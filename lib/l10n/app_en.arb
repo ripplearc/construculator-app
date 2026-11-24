@@ -3659,6 +3659,24 @@
     "description": "Name of the Equipment section on the estimate screen",
     "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
   },
+  "calculatorBracketKeySemantics": "Bracket key",
+  "@calculatorBracketKeySemantics": {
+    "description": "Screen reader label of the calculator keyboard's ( ) key, bottom left (UX Design Doc Section 1.3)"
+  },
+  "calculatorBracketKeyHint": "Opens a bracket; the next press closes it",
+  "@calculatorBracketKeyHint": {
+    "description": "Screen reader hint of the ( ) key; withheld while the key is disabled"
+  },
+  "calculatorReorderGroupSemantics": "Drag to move the {group} group",
+  "@calculatorReorderGroupSemantics": {
+    "description": "Screen reader label of a group's drag handle in the calculator's View all sheet (UX Design Doc Section 1.5)",
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "example": "Shapes"
+      }
+    }
+  },
   "unitNamePieces": "{count, plural, =1{piece} other{pieces}}",
   "@unitNamePieces": {
     "description": "Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit",

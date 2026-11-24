@@ -18,19 +18,19 @@ class CalculatorLabelFormatter {
   const CalculatorLabelFormatter(this.l10n);
 
   /// The id of the Basic geometry group.
-  static const String basicGeometryGroupId = 'Basic Geometry';
+  static const String basicGeometryGroupId = CalculatorGroupId.basicGeometry;
 
   /// The id of the Shapes group.
-  static const String shapesGroupId = 'Shapes';
+  static const String shapesGroupId = CalculatorGroupId.shapes;
 
   /// The id of the Materials group.
-  static const String materialsGroupId = 'Materials';
+  static const String materialsGroupId = CalculatorGroupId.materials;
 
   /// The id of the Unit group.
-  static const String unitGroupId = 'Unit';
+  static const String unitGroupId = CalculatorGroupId.unit;
 
   /// The id of the Trigonometry group.
-  static const String trigonometryGroupId = 'Trigonometry';
+  static const String trigonometryGroupId = CalculatorGroupId.trigonometry;
 
   /// The visible name of a function-key group.
   String groupLabel(String groupId) => switch (groupId) {

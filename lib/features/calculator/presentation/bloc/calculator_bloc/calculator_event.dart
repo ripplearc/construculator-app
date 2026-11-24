@@ -111,6 +111,24 @@ class CalculatorGroupSelected extends CalculatorEvent {
   List<Object?> get props => [groupIndex];
 }
 
+/// A group was dragged to a new place in the "View all" sheet (Section 1.5:
+/// "The ⠿ handle drags a group into a new order").
+class CalculatorGroupsReordered extends CalculatorEvent {
+  /// Where the group was in the order the keyboard showed.
+  final int oldIndex;
+
+  /// Where the drag left it; the groups between shift by one.
+  final int newIndex;
+
+  const CalculatorGroupsReordered({
+    required this.oldIndex,
+    required this.newIndex,
+  });
+
+  @override
+  List<Object?> get props => [oldIndex, newIndex];
+}
+
 /// The System of units toggle was switched.
 class CalculatorUnitSystemChanged extends CalculatorEvent {
   /// The newly selected system.
