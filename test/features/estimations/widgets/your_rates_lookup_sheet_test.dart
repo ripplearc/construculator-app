@@ -568,7 +568,7 @@ void main() {
               of: find.byKey(key),
               matching: find.byElementPredicate(
                 (element) =>
-                    element == FocusManager.instance.primaryFocus?.context,
+                    element == FocusManager.instance.primaryFocus!.context,
               ),
             )
             .evaluate()
