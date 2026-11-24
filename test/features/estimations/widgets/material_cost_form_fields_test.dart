@@ -842,10 +842,20 @@ void main() {
       unit: Unit.liters,
     );
 
-    Future<void> pickSample(WidgetTester tester) async {
+    const premiumPlus = SampleRateRow(
+      id: 'premium',
+      productName: 'Premium Plus',
+      rate: Money(amount: 38),
+      unit: Unit.liters,
+    );
+
+    Future<void> pickSample(
+      WidgetTester tester, {
+      String id = 'proclassic',
+    }) async {
       await tester.tap(find.byKey(const Key('lookup_rate_button')));
       await tester.pumpAndSettle();
-      final row = find.byKey(const Key('sample_rate_row_proclassic'));
+      final row = find.byKey(Key('sample_rate_row_$id'));
       await tester.ensureVisible(row);
       await tester.pumpAndSettle();
       await tester.tap(row);
@@ -865,6 +875,35 @@ void main() {
       expect(textOf(tester, rateField), '52');
       expect(bloc.state.data.itemName, 'Interior paint · ProClassic');
       expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
+    });
+
+    testWidgets('a second sample pick replaces the first product in the '
+        'name', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic, premiumPlus]);
+      await tester.enterText(nameField, 'Interior paint');
+      await pickSample(tester);
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+
+      await pickSample(tester, id: 'premium');
+
+      expect(textOf(tester, nameField), 'Interior paint · Premium Plus');
+      expect(textOf(tester, rateField), '38');
+      expect(bloc.state.data.itemName, 'Interior paint · Premium Plus');
+    });
+
+    testWidgets('a name typed after a sample pick is the one the next pick '
+        'adds to', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic, premiumPlus]);
+      await tester.enterText(nameField, 'Interior paint');
+      await pickSample(tester);
+      await tester.enterText(nameField, 'Exterior paint');
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+
+      await pickSample(tester, id: 'premium');
+
+      expect(textOf(tester, nameField), 'Exterior paint · Premium Plus');
     });
 
     testWidgets('uses the product alone as the name while none is typed', (

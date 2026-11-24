@@ -816,5 +816,19 @@ void main() {
         expect(find.textContaining('/Meters'), findsNothing);
       });
     }
+
+    testWidgets('the price-per-unit footnote leaves 8 dp between its icon '
+        'and its text', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      final icon = tester.getRect(
+        find.descendant(of: footnote, matching: find.byType(CoreIconWidget)),
+      );
+      final text = tester.getRect(
+        find.descendant(of: footnote, matching: find.byType(Text)),
+      );
+      expect(text.left - icon.right, CoreSpacing.space2);
+    });
   });
 }

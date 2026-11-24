@@ -359,7 +359,7 @@ class _SampleGroup extends StatelessWidget {
           Row(
             key: const Key('material_lookup_price_per_unit_footnote'),
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: CoreSpacing.space1,
+            spacing: CoreSpacing.space2,
             children: [
               CoreIconWidget(
                 icon: CoreIcons.info,

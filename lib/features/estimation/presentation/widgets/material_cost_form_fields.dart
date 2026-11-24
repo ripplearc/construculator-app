@@ -68,6 +68,7 @@ class MaterialCostFormFields extends StatefulWidget {
 
 class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameController = TextEditingController();
+  String? _typedNameBeforeSample;
   final _quantityController = TextEditingController();
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
@@ -106,7 +107,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         }
         bloc.add(MaterialRateLookedUp(entry));
       case MaterialLookupSampleRate(:final row):
-        _nameController.text = row.materialNameAfter(_nameController.text);
+        final typedName = _typedNameBeforeSample ??= _nameController.text;
+        _nameController.text = row.materialNameAfter(typedName);
         bloc.add(
           MaterialSampleRatePicked(
             itemName: _nameController.text,
@@ -156,8 +158,10 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(_maxNameLength),
                 ],
-                onChanged: (value) =>
-                    bloc.add(MaterialCostItemTypeChanged(value)),
+                onChanged: (value) {
+                  _typedNameBeforeSample = null;
+                  bloc.add(MaterialCostItemTypeChanged(value));
+                },
               ),
             ),
             SheetFieldRow(
