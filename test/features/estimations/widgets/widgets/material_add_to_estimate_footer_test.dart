@@ -277,7 +277,7 @@ void main() {
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pumpAndSettle();
 
-      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(database.rows, hasLength(1));
       expect(find.byType(MaterialAddToEstimateFooter), findsNothing);
       expect(find.byKey(const Key('open_sheet')), findsOneWidget);
     });
@@ -470,7 +470,7 @@ void main() {
       await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
       await tester.pumpAndSettle();
 
-      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(database.rows, hasLength(1));
       expect(find.byType(MaterialAddToEstimateFooter), findsNothing);
     });
 
@@ -489,7 +489,7 @@ void main() {
         isFalse,
       );
       expect(find.text('Add to estimate'), findsOneWidget);
-      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+      expect(database.rows, isEmpty);
     });
 
     testWidgets('locks every key while the line saves, as the read-only '
@@ -499,8 +499,7 @@ void main() {
       await pumpFooter(tester, numberPad: quantityPad, fieldFocus: focus);
       await fillOthers(tester);
       focus.requestFocus();
-      fakeSupabase.shouldDelayOperations = true;
-      holdInserts();
+      holdSaves();
       await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
       await tester.pump();
 
@@ -520,15 +519,14 @@ void main() {
           .isConfirmEnabled;
       // Release the save before asserting, so a failure cannot leave the
       // test waiting on it.
-      fakeSupabase.completer!.complete();
-      fakeSupabase.shouldDelayOperations = false;
+      database.writeGate!.complete();
       await tester.pumpAndSettle();
 
       expect(afterTyping, '7');
       expect(afterBackspace, '7');
       expect(focusedAfterPutBack, isTrue);
       expect(isConfirmEnabled, isFalse);
-      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(database.rows, hasLength(1));
     });
 
     testWidgets('the put-back key restores the opened value, totals it and '
@@ -550,7 +548,7 @@ void main() {
       expect(quantity.text, '7');
       expect(find.text(r'$17.85'), findsOneWidget);
       expect(focus.hasFocus, isFalse);
-      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+      expect(database.rows, isEmpty);
     });
   });
 }
