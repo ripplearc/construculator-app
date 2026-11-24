@@ -732,7 +732,7 @@ void main() {
         verify: (b) {
           expect(savedRow()['id'], FakeIdGeneratorImpl.idAt(1));
           expect(
-            (b.state as MaterialCostFormSuccess).createdItem.id,
+            (b.state as MaterialCostFormSuccess).savedItem.id,
             FakeIdGeneratorImpl.idAt(1),
           );
         },

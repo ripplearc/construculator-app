@@ -28,7 +28,7 @@ class MaterialCostFormBloc
   final Clock _clock;
   final String _lineId;
 
-  static const _formValuesAtOpening = MaterialCostFormData();
+  MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
   bool _unitPicked = false;
 
@@ -127,7 +127,6 @@ class MaterialCostFormBloc
       _emit(emit, _withRememberedUnit);
     }
     _formValuesAtOpening = _current();
-    }
   }
 
   MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {

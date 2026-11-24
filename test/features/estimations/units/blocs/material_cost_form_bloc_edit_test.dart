@@ -266,7 +266,9 @@ void main() {
         bloc.add(const MaterialCostFormSubmitted(estimateId: estimateId));
       },
       verify: (_) async => expect(
-        await lastUsedUnits.getLastUnit(CostItemType.material),
+        (await lastUsedUnits.getLastUnits(
+          CostItemType.material,
+        )).forItem('Rebar'),
         isNull,
       ),
     );
@@ -375,26 +377,24 @@ void main() {
 
     blocTest<MaterialCostFormBloc, MaterialCostFormState>(
       'saving keeps the other values stored in the line\'s calculation',
-      setUp: () => fakeSupabaseWrapper.addTableData(
-        DatabaseConstants.costItemsTable,
-        [
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: itemId,
-            estimateId: estimateId,
-            itemName: 'Rebar',
-            unitPrice: 100.0,
-            quantity: 5.0,
-            unit: 'pieces',
-            itemTotalCost: 500.0,
-            rateStatus: 'own_rate_confirmed',
-            calculation: {
-              'unit_price': 100.0,
-              'quantity': 5.0,
-              'waste_percent': 10.0,
-            },
-          ),
-        ],
-      ),
+      setUp: () =>
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
+            CostItemTestDataMapFactory.createMaterialItemData(
+              id: itemId,
+              estimateId: estimateId,
+              itemName: 'Rebar',
+              unitPrice: 100.0,
+              quantity: 5.0,
+              unit: 'pieces',
+              itemTotalCost: 500.0,
+              rateStatus: 'own_rate_confirmed',
+              calculation: {
+                'unit_price': 100.0,
+                'quantity': 5.0,
+                'waste_percent': 10.0,
+              },
+            ),
+          ]),
       build: () => bloc,
       act: (bloc) async {
         await open(bloc);
@@ -419,8 +419,7 @@ void main() {
         await open(bloc);
         bloc.add(const MaterialQuantityUpdated(''));
       },
-      verify: (bloc) =>
-          expect(bloc.state.data.changeInEstimateTotal, isNull),
+      verify: (bloc) => expect(bloc.state.data.changeInEstimateTotal, isNull),
     );
 
     blocTest<MaterialCostFormBloc, MaterialCostFormState>(
@@ -461,7 +460,11 @@ void main() {
       'a remembered unit that arrives late does not replace the stored unit',
       setUp: () {
         seedLine();
-        return lastUsedUnits.saveLastUnit(CostItemType.material, Unit.meters);
+        return lastUsedUnits.saveLastUnit(
+          CostItemType.material,
+          'Rebar',
+          Unit.meters,
+        );
       },
       build: () => bloc,
       act: (bloc) async {
@@ -480,7 +483,11 @@ void main() {
       'saving a change to a line does not change the remembered unit',
       setUp: () {
         seedLine();
-        return lastUsedUnits.saveLastUnit(CostItemType.material, Unit.meters);
+        return lastUsedUnits.saveLastUnit(
+          CostItemType.material,
+          'Rebar',
+          Unit.meters,
+        );
       },
       build: () => bloc,
       act: (bloc) async {
@@ -490,7 +497,9 @@ void main() {
           ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
       },
       verify: (_) async => expect(
-        await lastUsedUnits.getLastUnit(CostItemType.material),
+        (await lastUsedUnits.getLastUnits(
+          CostItemType.material,
+        )).forItem('Rebar'),
         Unit.meters,
       ),
     );
