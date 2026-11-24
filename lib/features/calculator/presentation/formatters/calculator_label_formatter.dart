@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter/foundation.dart';
@@ -493,6 +494,25 @@ class CalculatorLabelFormatter {
     reorderHandle: l10n.calculatorReorderGroupSemantics,
   );
 
+  /// The words under a field of the size editor that spells no size, or
+  /// `null` for one that does: "Size must be more than zero." (term 2.16),
+  /// "Finish this value first" for a value the calculator would not take
+  /// as finished either, "Can't append `<unit>` here" (Section 5.2) and
+  /// "Too large" (Section 5.3).
+  String? sizeEntryError(SizeEntry entry) => switch (entry) {
+    SizeEntryLength() => null,
+    SizeEntryRefused(reason: SizeEntryRefusal.zero) =>
+      l10n.calculatorSizeEditorSizeError,
+    SizeEntryRefused(reason: SizeEntryRefusal.unfinished) =>
+      l10n.calculatorToastFinishValueTitle,
+    SizeEntryRefused(reason: SizeEntryRefusal.cannotAppendUnit, :final unit?) =>
+      l10n.calculatorToastCannotAppendTitle(unitName(unit)),
+    SizeEntryRefused(reason: SizeEntryRefusal.cannotAppendUnit) =>
+      l10n.calculatorToastFinishValueTitle,
+    SizeEntryRefused(reason: SizeEntryRefusal.tooLarge) =>
+      l10n.calculatorErrorTooLarge,
+  };
+
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
@@ -508,6 +528,7 @@ class CalculatorLabelFormatter {
     ),
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
+    CalculatorSizeNotAddedToast() => l10n.calculatorToastSizeNotAddedTitle,
     CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyTitle,
     CalculatorMinutesTwoDigitsToast() =>
       l10n.calculatorToastMinutesTwoDigitsTitle,
@@ -569,6 +590,7 @@ class CalculatorLabelFormatter {
         value,
         displayLabel(key),
       ),
+    CalculatorSizeNotAddedToast() => l10n.calculatorToastSizeNotAddedBody,
     CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyBody,
     CalculatorMinutesTwoDigitsToast() =>
       l10n.calculatorToastMinutesTwoDigitsBody,

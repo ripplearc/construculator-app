@@ -309,9 +309,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       resultLabel: labels.l10n.calculatorSizeEditorAddButton,
       keyboardSemantics: labels.keyboardSemantics,
       keyboardLabels: labels.keyboardLabels,
-      validator: (text) => state.sizeEntryLength(text) == null
-          ? labels.l10n.calculatorSizeEditorSizeError
-          : null,
+      validator: (text) => labels.sizeEntryError(state.sizeEntry(text)),
     );
     _bloc.add(CalculatorSizeEditorClosed(entry?.values ?? const []));
   }

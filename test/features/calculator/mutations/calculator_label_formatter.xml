@@ -176,6 +176,27 @@
         <regex pattern="groupHeader: l10n\.calculatorGroupHeader," dotAll="true" id="calculator_label_formatter.keyboard.visible_group_header">
             <mutation text="groupHeader: l10n.calculatorGroupHeaderSemantics,"/>
         </regex>
+        <!-- T2a 3/3 R1 (CA-1095): a field of the size editor is answered in
+             another reason's words, and the "Size not added" Alert loses its
+             title or reads its title twice -->
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.zero\) =&gt;\s*l10n\.calculatorSizeEditorSizeError," dotAll="true" id="calculator_label_formatter.size_entry.zero_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.zero) =&gt; l10n.calculatorToastFinishValueTitle,"/>
+        </regex>
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.unfinished\) =&gt;\s*l10n\.calculatorToastFinishValueTitle," dotAll="true" id="calculator_label_formatter.size_entry.unfinished_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.unfinished) =&gt; l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <regex pattern="l10n\.calculatorToastCannotAppendTitle\(unitName\(unit\)\),\s*SizeEntryRefused\(reason: SizeEntryRefusal\.cannotAppendUnit\) =&gt;" dotAll="true" id="calculator_label_formatter.size_entry.unit_not_named">
+            <mutation text="l10n.calculatorToastFinishValueTitle, SizeEntryRefused(reason: SizeEntryRefusal.cannotAppendUnit) =&gt;"/>
+        </regex>
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.tooLarge\) =&gt;\s*l10n\.calculatorErrorTooLarge," dotAll="true" id="calculator_label_formatter.size_entry.too_large_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.tooLarge) =&gt; l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <regex pattern="CalculatorSizeNotAddedToast\(\) =&gt; l10n\.calculatorToastSizeNotAddedTitle," dotAll="true" id="calculator_label_formatter.size_not_added.no_title">
+            <mutation text="CalculatorSizeNotAddedToast() =&gt; null,"/>
+        </regex>
+        <regex pattern="CalculatorSizeNotAddedToast\(\) =&gt; l10n\.calculatorToastSizeNotAddedBody," dotAll="true" id="calculator_label_formatter.size_not_added.title_as_body">
+            <mutation text="CalculatorSizeNotAddedToast() =&gt; l10n.calculatorToastSizeNotAddedTitle,"/>
+        </regex>
     </rules>
 
     <commands>

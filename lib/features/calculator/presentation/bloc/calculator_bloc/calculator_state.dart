@@ -78,6 +78,11 @@ class CalculatorState extends Equatable {
   /// otherwise, and cleared by the next key like [notice].
   final List<String> removedResults;
 
+  /// Whether the store refused the size the size editor sent, so the page
+  /// says it was not added (requirement N2 of CA-1095 3/3); the next key
+  /// clears it, as it does [notice] and [refusal].
+  final bool sizeNotAdded;
+
   /// How many times a key has raised a message ([toast]) since the screen
   /// opened. The same guard raised twice leaves the same [toast] in the
   /// state twice over, so the page watches this count to announce it again
@@ -124,6 +129,7 @@ class CalculatorState extends Equatable {
     this.refusedUnit,
     this.groupEditsNoticed = 0,
     this.materialCounts = const [],
+    this.sizeNotAdded = false,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -145,6 +151,7 @@ class CalculatorState extends Equatable {
     Unit? Function()? refusedUnit,
     int? groupEditsNoticed,
     List<TradeCount>? materialCounts,
+    bool? sizeNotAdded,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -158,6 +165,7 @@ class CalculatorState extends Equatable {
     refusedUnit: refusedUnit != null ? refusedUnit() : this.refusedUnit,
     groupEditsNoticed: groupEditsNoticed ?? this.groupEditsNoticed,
     materialCounts: materialCounts ?? this.materialCounts,
+    sizeNotAdded: sizeNotAdded ?? this.sizeNotAdded,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -491,12 +499,18 @@ class CalculatorState extends Equatable {
     );
   }
 
-  /// The length a field of the size editor spells under the unit system in
-  /// force (term 2.18: Length and Width for a size), or `null` for a field
-  /// that spells no size or a size of zero, which the editor refuses
-  /// ("Size must be more than zero."; term 2.16).
-  Length? sizeEntryLength(String text) =>
-      const SizeEntryParser().lengthOf(text, tape.preferences.system);
+  /// What a field of the size editor spells under the unit system in force
+  /// (term 2.18: Length and Width for a size): the length, read by the
+  /// calculator's own entry rules, or why the editor refuses the field.
+  SizeEntry sizeEntry(String text) =>
+      const SizeEntryParser().read(text, tape.preferences.system);
+
+  /// The length a field of the size editor spells, or `null` for a field
+  /// the editor refuses ([sizeEntry]).
+  Length? sizeEntryLength(String text) => switch (sizeEntry(text)) {
+    SizeEntryLength(:final length) => length,
+    SizeEntryRefused() => null,
+  };
 
   /// Whether the detail panel has anything to show: dimension tiles or the
   /// sheet table.
@@ -836,6 +850,7 @@ class CalculatorState extends Equatable {
     groupOrder,
     notice,
     refusal,
+    sizeNotAdded,
     closesCalculator,
     removedResults,
     refusedUnit,
@@ -866,6 +881,7 @@ class CalculatorState extends Equatable {
   /// take no tap on the page, so the tape's refusal of one never reaches a
   /// message.
   CalculatorToast? get toast {
+    if (sizeNotAdded) return const CalculatorSizeNotAddedToast();
     if (removedResults.isNotEmpty) {
       return CalculatorResultRemovedToast(keys: removedResults);
     }

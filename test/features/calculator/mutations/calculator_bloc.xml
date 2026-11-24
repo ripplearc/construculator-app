@@ -413,6 +413,23 @@
         <regex pattern="if \(event\.fields case \[final lengthText, final widthText\]\)" dotAll="true" id="calculator_bloc.size_added.fields_swapped">
             <mutation text="if (event.fields case [final widthText, final lengthText])"/>
         </regex>
+        <!-- T2a 3/3 R1 (N2): nobody signed in raises the Alert, a size the
+             store refuses raises none, or the next key leaves it up -->
+        <regex pattern="if \(failure case CalculatorFailure\(\s*errorType: CalculatorErrorType\.notSignedIn,\s*\)\) \{\s*return;\s*\}" dotAll="true" id="calculator_bloc.size_added.signed_out_alerted">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="state\.copyWith\(sizeNotAdded: true, toastClosed: false\)," dotAll="true" id="calculator_bloc.size_added.refusal_silent">
+            <mutation text="state.copyWith(toastClosed: false),"/>
+        </regex>
+        <regex pattern="refusedUnit: \(\) =&gt; null,\s*toastClosed: false,\s*sizeNotAdded: false," dotAll="true" id="calculator_bloc.size_added.alert_outlives_the_next_key">
+            <mutation text="refusedUnit: () =&gt; null, toastClosed: false,"/>
+        </regex>
+        <regex pattern="refusedUnit: \(\) =&gt; unit,\s*toastClosed: false,\s*sizeNotAdded: false," dotAll="true" id="calculator_bloc.size_added.alert_outlives_a_refused_key">
+            <mutation text="refusedUnit: () =&gt; unit, toastClosed: false,"/>
+        </regex>
+        <regex pattern="refusal,\s*sizeNotAdded,\s*closesCalculator," dotAll="true" id="calculator_state.props.size_not_added_ignored">
+            <mutation text="refusal, closesCalculator,"/>
+        </regex>
         <regex pattern="await _addMaterialSize\(\s*trade: Trade\.drywall," dotAll="true" id="calculator_bloc.size_added.to_masonry">
             <mutation text="await _addMaterialSize(trade: Trade.masonry,"/>
         </regex>

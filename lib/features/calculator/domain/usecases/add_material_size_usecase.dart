@@ -27,6 +27,8 @@ class AddMaterialSizeUseCase {
       store: trade.sizeStore,
       width: width,
       height: height,
+      // The repository gives the size its place, after the last one; this
+      // value is not read.
       position: 0,
     ),
   );

@@ -3188,6 +3188,14 @@
   "@calculatorSizeEditorAddButton": {
     "description": "Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes"
   },
+  "calculatorToastSizeNotAddedTitle": "Size not added",
+  "@calculatorToastSizeNotAddedTitle": {
+    "description": "Title of the red Alert when the store refuses a size sent from the calculator's size editor (CA-1095)"
+  },
+  "calculatorToastSizeNotAddedBody": "This size was not added. Try again.",
+  "@calculatorToastSizeNotAddedBody": {
+    "description": "Body of the 'Size not added' Alert of the calculator (CA-1095)"
+  },
   "calculatorSizeEditorSizeError": "Size must be more than zero.",
   "@calculatorSizeEditorSizeError": {
     "description": "Error under a field of the calculator's size editor when the field holds no size, or a size of zero"

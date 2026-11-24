@@ -1,5 +1,6 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
+import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter/widgets.dart';
@@ -257,6 +258,55 @@ void main() {
         l10n.calculatorToastCannotAppendBody('18ft 8in 78', 'yards'),
       );
       expect(labels.toastBody(toast), contains('steps down'));
+    });
+
+    test('a field of the size editor that spells no size is answered in the '
+        'words of its reason, and one that spells a size in none (B1, B2)', () {
+      expect(
+        labels.sizeEntryError(
+          const SizeEntryLength(
+            Length(48 * Length.ticksPerInch, unit: Unit.inch),
+          ),
+        ),
+        isNull,
+      );
+      expect(
+        labels.sizeEntryError(const SizeEntryRefused(SizeEntryRefusal.zero)),
+        'Size must be more than zero.',
+      );
+      expect(
+        labels.sizeEntryError(
+          const SizeEntryRefused(SizeEntryRefusal.unfinished),
+        ),
+        'Finish this value first',
+      );
+      expect(
+        labels.sizeEntryError(
+          const SizeEntryRefused(
+            SizeEntryRefusal.cannotAppendUnit,
+            unit: Unit.centimetre,
+          ),
+        ),
+        "Can't append centimeters here",
+      );
+      expect(
+        labels.sizeEntryError(
+          const SizeEntryRefused(SizeEntryRefusal.cannotAppendUnit),
+        ),
+        'Finish this value first',
+      );
+      expect(
+        labels.sizeEntryError(
+          const SizeEntryRefused(SizeEntryRefusal.tooLarge),
+        ),
+        'Too large',
+      );
+    });
+
+    test('"Size not added" tells the user the store refused the size (N2)', () {
+      const toast = CalculatorSizeNotAddedToast();
+      expect(labels.toastTitle(toast), 'Size not added');
+      expect(labels.toastBody(toast), 'This size was not added. Try again.');
     });
 
     test('"<Key> takes a length, not <kind>" names the key and the kind of '

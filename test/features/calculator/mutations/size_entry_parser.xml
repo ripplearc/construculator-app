@@ -7,26 +7,55 @@
     </files>
 
     <rules>
-        <regex pattern="parts\.map\(\(part\) =&gt; part\[0\]\)\.join\(\) != trimmed" dotAll="true" id="size_entry_parser.whole_field.leftovers_ignored">
-            <mutation text="false"/>
+        <!-- RULE 1: what is left of a field after its key faces is ignored -->
+        <regex pattern="if \(faces\.join\(\) != typed\) \{" dotAll="true" id="size_entry_parser.whole_field.leftovers_ignored">
+            <mutation text="if (false) {"/>
         </regex>
-        <regex pattern="null when parts\.length == 1 =&gt; _bareNumberUnit\(system\)," dotAll="true" id="size_entry_parser.bare_number.inside_a_compound">
-            <mutation text="null =&gt; _bareNumberUnit(system),"/>
+        <!-- RULE 2 (R1, B1): a unit that cannot continue the value is not
+             named, or an empty field is not a size of zero -->
+        <regex pattern="unit == null\s*\? SizeEntryRefusal\.unfinished\s*: SizeEntryRefusal\.cannotAppendUnit," dotAll="true" id="size_entry_parser.refusal.unit_not_named">
+            <mutation text="SizeEntryRefusal.unfinished,"/>
         </regex>
-        <regex pattern="spelledIn \?\?= unit;" dotAll="true" id="size_entry_parser.unit.of_the_last_part">
-            <mutation text="spelledIn = unit;"/>
+        <regex pattern="if \(buffer\.isEmpty\) return const SizeEntryRefused\(SizeEntryRefusal\.zero\);" dotAll="true" id="size_entry_parser.empty.not_zero">
+            <mutation text="if (buffer.isEmpty) return const SizeEntryRefused(SizeEntryRefusal.unfinished);"/>
         </regex>
-        <regex pattern="\} on RationalOverflow \{" dotAll="true" id="size_entry_parser.overflow.escapes">
-            <mutation text="} on FormatException {"/>
+        <!-- RULE 3 (R1, B1): Add does not close as the equals key does: a
+             number after feet, a fraction after whole inches, a bare number -->
+        <regex pattern="\[\.\.\., Token\(unit: Unit\.foot\), _\] =&gt; Unit\.inch," dotAll="true" id="size_entry_parser.equals.inches_after_feet">
+            <mutation text="[..., Token(unit: Unit.foot), _] =&gt; null,"/>
         </regex>
-        <regex pattern="if \(spelledIn == null \|\| inches\.isZero\) return null;" dotAll="true" id="size_entry_parser.zero.is_a_size">
-            <mutation text="if (spelledIn == null) return null;"/>
+        <regex pattern="final finished = buffer\.withFractionClosedAsInches;" dotAll="true" id="size_entry_parser.equals.fraction_after_inches">
+            <mutation text="final finished = buffer;"/>
         </regex>
-        <regex pattern="'CM': Unit\.centimetre," dotAll="true" id="size_entry_parser.face.cm_as_mm">
-            <mutation text="'CM': Unit.millimetre,"/>
+        <regex pattern="\[_\] =&gt; _bareNumberUnit\(system\)," dotAll="true" id="size_entry_parser.bare_number.refused">
+            <mutation text="[_] =&gt; null,"/>
         </regex>
         <regex pattern="MeasurementSystem\.metric =&gt; Unit\.millimetre," dotAll="true" id="size_entry_parser.bare_number.inches_under_metric">
             <mutation text="MeasurementSystem.metric =&gt; Unit.inch,"/>
+        </regex>
+        <!-- RULE 4 (R1, B2): a number above the limit is a size, by what was
+             typed or by what the row would show; the limit moves; or the
+             limit itself is refused -->
+        <regex pattern="if \(closed\.tokens\.any\(\(token\) =&gt; token\.value &gt; largestNumber\) \|\|\s*_storedNumberOf\(length, system\) &gt; largestNumber\) \{" dotAll="true" id="size_entry_parser.too_large">
+            <mutation text="if (closed.tokens.any((token) =&gt; token.value &gt; largestNumber)) {"/>
+            <mutation text="if (_storedNumberOf(length, system) &gt; largestNumber) {"/>
+            <mutation text="if (closed.tokens.any((token) =&gt; token.value &gt;= largestNumber) || _storedNumberOf(length, system) &gt; largestNumber) {"/>
+            <mutation text="if (closed.tokens.any((token) =&gt; token.value &gt; largestNumber) || _storedNumberOf(length, system) &gt;= largestNumber) {"/>
+        </regex>
+        <regex pattern="static const double largestNumber = 19999999\.99;" dotAll="true" id="size_entry_parser.too_large.limit">
+            <mutation text="static const double largestNumber = 199999999.99;"/>
+        </regex>
+        <regex pattern="\(length\.inches\.toDouble\(\) \* QuantityFormatter\.millimetresPerInch\)" dotAll="true" id="size_entry_parser.too_large.metric_in_inches">
+            <mutation text="(length.inches.toDouble())"/>
+        </regex>
+        <!-- RULE 5 (R1, B2): a size that shows as zero is a size -->
+        <regex pattern="if \(writer\.formatStoredLength\(length\) ==\s*writer\.formatStoredLength\(Length\(0, unit: length\.unit\)\)\) \{" dotAll="true" id="size_entry_parser.zero.shown_zero_is_a_size">
+            <mutation text="if (length.inches.isZero) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
+        <!-- RULE 6: a key face reads as another unit -->
+        <regex pattern="UnitType\.centimeter\.label: Unit\.centimetre," dotAll="true" id="size_entry_parser.face.cm_as_mm">
+            <mutation text="UnitType.centimeter.label: Unit.millimetre,"/>
         </regex>
     </rules>
 

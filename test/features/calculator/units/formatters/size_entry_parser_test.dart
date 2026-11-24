@@ -12,6 +12,9 @@ Rational? inchesOf(String text, [MeasurementSystem system = imperial]) =>
 Unit? unitOf(String text, [MeasurementSystem system = imperial]) =>
     parser.lengthOf(text, system)?.unit;
 
+SizeEntry refused(SizeEntryRefusal reason, {Unit? unit}) =>
+    SizeEntryRefused(reason, unit: unit);
+
 void main() {
   group('SizeEntryParser', () {
     test('4 [Feet] reads 48in and 12 [Feet] reads 144in (walkthrough '
@@ -29,10 +32,45 @@ void main() {
       expect(inchesOf('254MM'), const Rational(10));
     });
 
-    test('a compound adds its parts and keeps the unit of the first', () {
+    test('a compound steps down within one system, as on the tape: 4ft 6in, '
+        '1m 20cm (rule 4.5)', () {
       expect(inchesOf('4Feet6Inch'), const Rational(54));
       expect(inchesOf('4Feet 6Inch'), const Rational(54));
-      expect(unitOf('4Feet6Inch'), Unit.foot);
+      expect(inchesOf('1M20CM', metric), const Rational(6000, 127));
+    });
+
+    test('Add is the equals key: a number typed after feet closes as inches, '
+        'so 4 [Feet] 6 is 4ft 6in (B1; rule 4.5)', () {
+      expect(inchesOf('4Feet6'), const Rational(54));
+      expect(inchesOf('8Feet0'), const Rational(96));
+    });
+
+    test('a fraction is kept exactly: 48in 1/2 is 48-1/2in, 1ft 1/16in, and '
+        '1/2in alone (B1; Section 6, "Compound values and fractions")', () {
+      expect(inchesOf('48Inch1/2'), const Rational(97, 2));
+      expect(inchesOf('1Feet1/16Inch'), const Rational(193, 16));
+      expect(inchesOf('1/2Inch'), const Rational(1, 2));
+      expect(inchesOf('7/16Inch'), const Rational(7, 16));
+    });
+
+    test('a unit that cannot continue the value is refused and named, never '
+        'added up: a second Feet, centimetres after feet, feet after inches '
+        '(B1; Section 5.2, "Can\'t append here")', () {
+      expect(
+        parser.read('4Feet4Feet', imperial),
+        refused(SizeEntryRefusal.cannotAppendUnit, unit: Unit.foot),
+      );
+      expect(
+        parser.read('4Feet20CM', imperial),
+        refused(SizeEntryRefusal.cannotAppendUnit, unit: Unit.centimetre),
+      );
+      expect(
+        parser.read('6Inch4Feet', imperial),
+        refused(SizeEntryRefusal.cannotAppendUnit, unit: Unit.foot),
+      );
+      for (final text in ['4Feet4Feet', '4Feet20CM', '6Inch4Feet']) {
+        expect(parser.lengthOf(text, imperial), isNull, reason: text);
+      }
     });
 
     test('a decimal reads exactly', () {
@@ -49,35 +87,87 @@ void main() {
       expect(unitOf('254', metric), Unit.millimetre);
     });
 
-    test('a size of zero is no size ("Size must be more than zero.")', () {
-      expect(parser.lengthOf('0Feet', imperial), isNull);
-      expect(parser.lengthOf('0', imperial), isNull);
-      expect(parser.lengthOf('0Feet0Inch', imperial), isNull);
-      expect(parser.lengthOf('0.0MM', metric), isNull);
+    test('a size of zero, an empty field, and a size that shows as zero are '
+        'no size ("Size must be more than zero."; B2; term 2.16)', () {
+      for (final (text, system) in [
+        ('0Feet', imperial),
+        ('0', imperial),
+        ('0Feet0Inch', imperial),
+        ('', imperial),
+        ('   ', imperial),
+        ('0.0001Inch', imperial),
+        ('0.004Inch', imperial),
+        ('0.0MM', metric),
+        ('0.4MM', metric),
+      ]) {
+        expect(
+          parser.read(text, system),
+          refused(SizeEntryRefusal.zero),
+          reason: '"$text"',
+        );
+      }
+      expect(inchesOf('0.01Inch'), const Rational(1, 100));
+      expect(inchesOf('1MM', metric), const Rational(5, 127));
     });
 
-    test('a field that spells no length is no size', () {
+    test('a number above 19,999,999.99 is Too large, typed in any unit, and '
+        '19,999,999.99 itself is a size (B2; Section 5.3)', () {
       for (final text in [
-        '',
-        '   ',
+        '99999999999999Inch',
+        '20000000Inch',
+        '19999999.999Inch',
+        '2000000Feet',
+      ]) {
+        expect(
+          parser.read(text, imperial),
+          refused(SizeEntryRefusal.tooLarge),
+          reason: text,
+        );
+      }
+      expect(inchesOf('19999999.99Inch'), const Rational(1999999999, 100));
+      expect(
+        parser.read('20000000MM', metric),
+        refused(SizeEntryRefusal.tooLarge),
+      );
+      expect(
+        parser.read('20000000MM', imperial),
+        refused(SizeEntryRefusal.tooLarge),
+        reason: 'the number typed is above the limit, whatever it shows as',
+      );
+      expect(
+        parser.read('20000M', metric),
+        refused(SizeEntryRefusal.tooLarge),
+        reason: 'the row would show 20,000,000mm',
+      );
+      expect(inchesOf('19999M', metric), isNotNull);
+    });
+
+    test('a field the calculator would not take as a finished value is '
+        'unfinished: a fraction with nothing under its line, a number after '
+        'metres with no unit, an unknown face', () {
+      for (final text in [
         'Feet',
         '.',
-        '4Feet6',
+        '1/',
+        '4Feet1/',
+        '1M20',
         '4+2Feet',
         '4×12',
-        '1/2Inch',
         '4Feet!',
         'x4Feet',
       ]) {
+        expect(
+          parser.read(text, imperial),
+          isA<SizeEntryRefused>(),
+          reason: text,
+        );
         expect(parser.lengthOf(text, imperial), isNull, reason: text);
       }
-    });
-
-    test('a number too long to keep exactly is no size: too many digits, '
-        'or a number whose inches outgrow an exact value', () {
-      expect(parser.lengthOf('9' * 30, imperial), isNull);
-      expect(parser.lengthOf('${'9' * 15}Yards', imperial), isNull);
-      expect(inchesOf('${'9' * 14}Inch'), Rational(int.parse('9' * 14)));
+      expect(parser.read('1M20', metric), refused(SizeEntryRefusal.unfinished));
+      expect(
+        parser.read('4+2Feet', imperial),
+        refused(SizeEntryRefusal.unfinished),
+      );
     });
   });
 }

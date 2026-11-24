@@ -2164,6 +2164,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorSizeEditorAddButton => 'Add';
 
   @override
+  String get calculatorToastSizeNotAddedTitle => 'Size not added';
+
+  @override
+  String get calculatorToastSizeNotAddedBody =>
+      'This size was not added. Try again.';
+
+  @override
   String get calculatorSizeEditorSizeError => 'Size must be more than zero.';
 
   @override

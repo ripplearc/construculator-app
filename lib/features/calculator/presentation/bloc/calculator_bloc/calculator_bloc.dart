@@ -5,6 +5,8 @@ import 'package:construculator/features/calculator/domain/usecases/delete_materi
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/errors/calculator_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -185,11 +187,27 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       final width = state.sizeEntryLength(lengthText);
       final height = state.sizeEntryLength(widthText);
       if (width == null || height == null) return;
-      await _addMaterialSize(
+      final added = await _addMaterialSize(
         trade: Trade.drywall,
         width: width,
         height: height,
       );
+      added.fold((failure) {
+        // Nobody signed in is the app's to answer, with the sign-in
+        // screen; any other refusal the user is told about here.
+        // TODO: [CA-1538] Keep the editor open with both values instead,
+        // once CoreUI lets the app answer Add before the sheet closes.
+        // https://ripplearc.youtrack.cloud/issue/CA-1538
+        if (failure case CalculatorFailure(
+          errorType: CalculatorErrorType.notSignedIn,
+        )) {
+          return;
+        }
+        _emitCountingToast(
+          emit,
+          state.copyWith(sizeNotAdded: true, toastClosed: false),
+        );
+      }, (_) {});
     }
   }
 
@@ -447,6 +465,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             removedResults: removed,
             refusedUnit: () => null,
             toastClosed: false,
+            sizeNotAdded: false,
             groupEditsNoticed: notice == TapeNotice.editingThisGroup
                 ? state.groupEditsNoticed + 1
                 : null,
@@ -462,6 +481,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             removedResults: const [],
             refusedUnit: () => unit,
             toastClosed: false,
+            sizeNotAdded: false,
           ),
         );
     }

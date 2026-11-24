@@ -3796,6 +3796,18 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get calculatorSizeEditorAddButton;
 
+  /// Title of the red Alert when the store refuses a size sent from the calculator's size editor (CA-1095)
+  ///
+  /// In en, this message translates to:
+  /// **'Size not added'**
+  String get calculatorToastSizeNotAddedTitle;
+
+  /// Body of the 'Size not added' Alert of the calculator (CA-1095)
+  ///
+  /// In en, this message translates to:
+  /// **'This size was not added. Try again.'**
+  String get calculatorToastSizeNotAddedBody;
+
   /// Error under a field of the calculator's size editor when the field holds no size, or a size of zero
   ///
   /// In en, this message translates to:

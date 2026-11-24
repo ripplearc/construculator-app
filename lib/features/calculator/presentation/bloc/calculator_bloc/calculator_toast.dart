@@ -103,6 +103,7 @@ final class CalculatorPitchUnitToast extends CalculatorToast {
   @override
   List<Object?> get props => [unit, value];
 }
+
 /// "Editing this group. Press ( ) to close it. If you type nothing,
 /// everything stays as it was." — a closed bracket reopened, shown the first
 /// three times only (Section 5.6; Section 7, "Editing a bracket").
@@ -268,4 +269,14 @@ final class CalculatorPercentDividesByZeroToast extends CalculatorToast {
 
   @override
   List<Object?> get props => [bracket];
+}
+
+/// "Size not added" / "This size was not added. Try again.": the store
+/// refused the size the size editor sent, for any reason but nobody being
+/// signed in, which the app answers with the sign-in screen (CA-1095 3/3).
+final class CalculatorSizeNotAddedToast extends CalculatorToast {
+  const CalculatorSizeNotAddedToast();
+
+  @override
+  List<Object?> get props => const [];
 }
