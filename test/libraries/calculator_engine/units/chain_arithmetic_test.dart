@@ -1007,6 +1007,386 @@ void main() {
       expect(formatter.format(sum), '100ft 0in');
     });
 
+    group('CA-1339: an exact fraction that outgrows a Rational', () {
+      const formatter = QuantityFormatter();
+      const lastExact = Rational.maxMagnitude - 1;
+      const nearOne = Length.exact(
+        Rational(lastExact, lastExact - 2),
+        unit: Unit.inch,
+      );
+      Quantity valueOf(ArithmeticOutcome outcome) =>
+          (outcome as ArithmeticValue).value;
+      ArithmeticOutcome chain(
+        Quantity start,
+        List<(Operator, Quantity)> steps,
+      ) => steps.fold<ArithmeticOutcome>(
+        ArithmeticValue(start),
+        (running, step) => switch (running) {
+          ArithmeticValue(:final value) => arithmetic.combine(
+            value,
+            step.$1,
+            step.$2,
+          ),
+          ArithmeticFailed() => running,
+        },
+      );
+
+      test('a chain of small fractions whose exact answer still fits renders: '
+          '65085/555951ft + 81712/3171mm ÷ 48011 reads Under 1/16in', () {
+        final outcome = chain(
+          Length.exact(
+            const Rational(65085, 555951) * Unit.foot.inchesPer,
+            unit: Unit.foot,
+          ),
+          [
+            (
+              Operator.add,
+              Length.exact(
+                const Rational(81712, 3171) * Unit.millimetre.inchesPer,
+                unit: Unit.millimetre,
+              ),
+            ),
+            (Operator.divide, const Scalar(48011)),
+          ],
+        );
+        final exact = valueOf(outcome) as Length;
+        expect(exact.preciseTicks, closeTo(0.0032250542393091807, 1e-15));
+        expect(exact.inches.denominator, greaterThan(Length.maxTicks ~/ 12));
+        expect(formatter.format(exact), 'Under 1/16in');
+      });
+
+      test(
+        'a sum, a scaling and a division that outgrow the store are kept',
+        () {
+          const half = Length.exact(Rational(1, 2), unit: Unit.inch);
+          final sum = valueOf(arithmetic.combine(nearOne, Operator.add, half));
+          expect(formatter.format(sum), '0ft 1-1/2in');
+          expect((sum as Length).preciseTicks, closeTo(96, 1e-9));
+          expect(
+            formatter.format(
+              valueOf(
+                arithmetic.combine(
+                  nearOne,
+                  Operator.multiply,
+                  const Scalar(0.5),
+                ),
+              ),
+            ),
+            '0ft 0-1/2in',
+          );
+          expect(
+            formatter.format(
+              valueOf(
+                arithmetic.combine(nearOne, Operator.divide, const Scalar(2)),
+              ),
+            ),
+            '0ft 0-1/2in',
+          );
+        },
+      );
+
+      test('a length is kept exactly while its exact fraction fits, however '
+          'small, and is Too small only once the fraction outgrows the store: '
+          '1in ÷ 9999999, once, twice and three times', () {
+        const inch = Length(Length.ticksPerInch, unit: Unit.inch);
+        const divisor = Scalar(9999999);
+        final once = valueOf(
+          arithmetic.combine(inch, Operator.divide, divisor),
+        );
+        expect((once as Length).inches, const Rational(1, 9999999));
+        expect(
+          formatter.format(once),
+          'Under 1/16in',
+          reason: '1/9999999in is below 1/32768in, and its fraction fits',
+        );
+        final twice = valueOf(
+          arithmetic.combine(once, Operator.divide, divisor),
+        );
+        expect((twice as Length).inches, const Rational(1, 9999999 * 9999999));
+        expect(
+          arithmetic.combine(twice, Operator.divide, divisor),
+          const ArithmeticFailed(CalculationError.tooSmall),
+          reason:
+              'the third division outgrows the store, and what double '
+              'math keeps of it is below 1/32768in',
+        );
+        final hundredth = valueOf(
+          arithmetic.combine(inch, Operator.divide, const Scalar(100)),
+        );
+        expect(formatter.format(hundredth), 'Under 1/16in');
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                hundredth,
+                Operator.divide,
+                const Scalar(1000),
+              ),
+            ),
+          ),
+          'Under 1/16in',
+        );
+        expect(
+          arithmetic.combine(
+            const Length.exact(Rational(1, lastExact), unit: Unit.inch),
+            Operator.add,
+            const Length.exact(Rational(1, lastExact - 2), unit: Unit.inch),
+          ),
+          const ArithmeticFailed(CalculationError.tooSmall),
+          reason: 'the sum of the two fractions outgrows the store',
+        );
+      });
+
+      test('a tiny quotient whose fraction fits is a length, never Too '
+          'small: 1in ÷ 40000 reads Under 1/16in, 1mm ÷ 2000 reads Under '
+          '1mm, and 1in ÷ 100000 × 100000 is 1in again', () {
+        const inch = Length.exact(Rational(1), unit: Unit.inch);
+        final fortyThousandth = valueOf(
+          arithmetic.combine(inch, Operator.divide, const Scalar(40000)),
+        );
+        expect(
+          (fortyThousandth as Length).inches,
+          const Rational(1, 40000),
+          reason: '1/40000in is below 1/32768in, and is kept as it is',
+        );
+        expect(formatter.format(fortyThousandth), 'Under 1/16in');
+        final millimetre = Length.exact(
+          Unit.millimetre.inchesPer,
+          unit: Unit.millimetre,
+        );
+        final twoThousandth = valueOf(
+          arithmetic.combine(millimetre, Operator.divide, const Scalar(2000)),
+        );
+        expect(
+          (twoThousandth as Length).inches,
+          Unit.millimetre.inchesPer / const Rational(2000),
+        );
+        expect(formatter.format(twoThousandth), 'Under 1mm');
+        final back = valueOf(
+          chain(inch, const [
+            (Operator.divide, Scalar(100000)),
+            (Operator.multiply, Scalar(100000)),
+          ]),
+        );
+        expect((back as Length).inches, const Rational(1));
+        expect(formatter.format(back), '0ft 1in');
+      });
+
+      test('a length made from an area is Too small below that too, and a '
+          'true zero is still zero', () {
+        final squareInch = Area(
+          Area.squareTicksPerSquareInch.toDouble(),
+          unit: Unit.inch,
+        );
+        const longRun = Length(99999999 * Length.ticksPerFoot, unit: Unit.foot);
+        expect(
+          arithmetic.combine(squareInch, Operator.divide, longRun),
+          const ArithmeticFailed(CalculationError.tooSmall),
+        );
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                const Area(0, unit: Unit.foot),
+                Operator.divide,
+                const Length(4 * Length.ticksPerFoot, unit: Unit.foot),
+              ),
+            ),
+          ),
+          '0ft 0in',
+        );
+      });
+
+      test('a length scaled by a number with no finite decimal spelling is '
+          'Too small when it rounds to no tick, and a zero length stays '
+          'zero: 1in × 1e-7', () {
+        const noDecimalSpelling = Scalar(1e-7);
+        expect(
+          arithmetic.combine(inches(1), Operator.multiply, noDecimalSpelling),
+          const ArithmeticFailed(CalculationError.tooSmall),
+        );
+        expect(
+          arithmetic.combine(inches(1), Operator.divide, const Scalar(1e22)),
+          const ArithmeticFailed(CalculationError.tooSmall),
+        );
+        expect(
+          arithmetic.combine(
+            const Length(5000001, unit: Unit.inch),
+            Operator.multiply,
+            noDecimalSpelling,
+          ),
+          const ArithmeticValue(Length(1, unit: Unit.footInch)),
+          reason: 'a hair over half a tick rounds to one, as before',
+        );
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                const Length(4999999, unit: Unit.inch),
+                Operator.multiply,
+                noDecimalSpelling,
+              ),
+            ),
+          ),
+          'Under 1/16in',
+          reason: 'a hair under half a tick is kept, where it used to read 0in',
+        );
+        expect(
+          arithmetic.combine(inches(0), Operator.multiply, noDecimalSpelling),
+          const ArithmeticValue(Length(0, unit: Unit.footInch)),
+        );
+      });
+
+      test('a sum near the limit keeps its small part exactly, so taking '
+          'the big part away again gives the small part back, never 0ft 0in '
+          'and never Too small', () {
+        const big = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
+        const tiny = Length.exact(Rational(1, 9999973), unit: Unit.inch);
+        final sum = valueOf(arithmetic.combine(big, Operator.add, tiny));
+        expect(formatter.format(sum), '19999999ft 0in');
+        expect((sum as Length).inches, big.inches + tiny.inches);
+        final left = valueOf(arithmetic.combine(sum, Operator.subtract, big));
+        expect((left as Length).inches, tiny.inches);
+        expect(formatter.format(left), 'Under 1/16in');
+        expect(
+          arithmetic.combine(tiny, Operator.multiply, const Scalar(1)),
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
+          reason: 'a typed length below 1/32768in computes as it is',
+        );
+        expect(
+          arithmetic.combine(
+            tiny,
+            Operator.add,
+            const Length(0, unit: Unit.inch),
+          ),
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
+        );
+        const inch = Length(Length.ticksPerInch, unit: Unit.inch);
+        expect(
+          arithmetic.combine(inch, Operator.divide, const Scalar(9999973)),
+          const ArithmeticValue(
+            Length.exact(Rational(1, 9999973), unit: Unit.footInch),
+          ),
+          reason: '1in ÷ 9999973 is below 1/32768in, and its fraction fits',
+        );
+        final hair = valueOf(
+          arithmetic.combine(inch, Operator.divide, const Scalar(9999)),
+        );
+        final walked = valueOf(
+          arithmetic.combine(
+            valueOf(arithmetic.combine(hair, Operator.add, big)),
+            Operator.subtract,
+            big,
+          ),
+        );
+        expect((walked as Length).inches, (hair as Length).inches);
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(walked, Operator.multiply, const Scalar(9999)),
+            ),
+          ),
+          '0ft 1in',
+          reason: 'the small part walked through the sum exactly',
+        );
+        expect(
+          arithmetic.combine(
+            const Length.exact(
+              Rational(1, Length.ticksPerInch * Length.partsPerTick * 2 + 1),
+              unit: Unit.inch,
+            ),
+            Operator.multiply,
+            const Scalar(1),
+          ),
+          const ArithmeticValue(
+            Length.exact(
+              Rational(1, Length.ticksPerInch * Length.partsPerTick * 2 + 1),
+              unit: Unit.footInch,
+            ),
+          ),
+          reason: 'under half of 1/32768in is kept too while it is exact',
+        );
+        expect(
+          arithmetic.combine(
+            const Length(1, unit: Unit.inch),
+            Operator.multiply,
+            const Scalar(1 / 700),
+          ),
+          const ArithmeticFailed(CalculationError.tooSmall),
+          reason:
+              '1/700 has no decimal the store keeps, so the result left '
+              'the exact path, and one tick ÷ 700 is under one part of a '
+              'tick, though above half of it',
+        );
+        expect(
+          formatter.format(
+            valueOf(arithmetic.combine(big, Operator.subtract, big)),
+          ),
+          '0ft 0in',
+          reason: 'a true zero is still zero',
+        );
+      });
+
+      test('a length scaled by a number with no finite spelling keeps '
+          'a result under one tick instead of rounding it to nothing: '
+          '[SIN] 1 × 1/64in and [SIN] 30 × 1/256in', () {
+        const sine1 = Scalar(0.01745240643728351);
+        const sine30 = Scalar(0.49999999999999994);
+        expect(
+          formatter.format(
+            valueOf(arithmetic.combine(inches(1), Operator.multiply, sine1)),
+          ),
+          'Under 1/16in',
+        );
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                const Length.exact(Rational(1, 256), unit: Unit.inch),
+                Operator.multiply,
+                sine30,
+              ),
+            ),
+          ),
+          'Under 1/16in',
+        );
+        expect(
+          formatter.format(
+            valueOf(
+              arithmetic.combine(
+                const Length.exact(Rational(1, 256), unit: Unit.inch),
+                Operator.divide,
+                Scalar(1 / sine30.value),
+              ),
+            ),
+          ),
+          'Under 1/16in',
+        );
+        expect(
+          formatter.format(
+            valueOf(arithmetic.combine(feet(1), Operator.multiply, sine30)),
+          ),
+          '0ft 6in',
+          reason: 'a result of whole ticks is still rounded to them',
+        );
+      });
+
+      test('a kept length past the tick limit is still out of range', () {
+        expect(
+          arithmetic.combine(
+            const Length.exact(Rational(lastExact), unit: Unit.inch),
+            Operator.multiply,
+            const Scalar(0.3),
+          ),
+          const ArithmeticFailed(CalculationError.outOfRange),
+        );
+      });
+    });
+
     group('a mixed sum follows the System of units setting (CA-1233)', () {
       const formatter = QuantityFormatter();
       const metric = ChainArithmetic(system: MeasurementSystem.metric);

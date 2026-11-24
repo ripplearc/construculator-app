@@ -2986,6 +2986,10 @@
   "@calculatorErrorTooLarge": {
     "description": "Title of the calculator error chip landed when an answer is above 19,999,999.99 in its unit"
   },
+  "calculatorErrorTooSmall": "Too small",
+  "@calculatorErrorTooSmall": {
+    "description": "Title of the calculator error chip landed when a real length result is below 1/32768 inch after its exact fraction outgrew the store, so it cannot be kept"
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"

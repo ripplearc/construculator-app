@@ -36,11 +36,18 @@ enum CalculationError {
 
   /// The answer cannot be kept or shown: above [Quantity.largestShown] in
   /// the unit it is written in, which the chip reads as "Too large" (Section
-  /// 5), a length beyond [ChainArithmetic.maxTicks], a number that
-  /// overflowed to infinity, or an exact fraction that overflowed on the way
-  /// to a tiny answer (1in ÷ 9999999 four times), which is too small to keep
-  /// rather than too large and lands the same chip.
+  /// 5), a length beyond [ChainArithmetic.maxTicks], or a number that
+  /// overflowed to infinity.
   outOfRange,
+
+  /// A real length result below 1/32768 inch (1/512 of a tick) that is no
+  /// longer exact: its exact fraction outgrew a [Rational] (1in ÷ 9999999
+  /// three times), or it was scaled by a number with no finite decimal
+  /// spelling (1in × 1e-7). It is refused as "Too small" rather than kept
+  /// as a zero that would say two lengths match when they do not (Section
+  /// 5, "Too small"). A length whose exact fraction fits is never too
+  /// small: 1in ÷ 40000 is kept and reads "Under 1/16in" (Section 6).
+  tooSmall,
 }
 
 /// The exact quantity a conversion re-spelled an entry from, with the entry

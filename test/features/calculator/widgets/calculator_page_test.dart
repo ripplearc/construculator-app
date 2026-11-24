@@ -416,6 +416,38 @@ void main() {
     }
   });
 
+  testWidgets('a length too small to keep is titled Too small from the '
+      'localization layer', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final context = tester.element(find.byType(CoreDisplayArea));
+    final l10n = AppLocalizations.of(context)!;
+    final bloc = BlocProvider.of<CalculatorBloc>(context)
+      ..add(const CalculatorDigitPressed('1'))
+      ..add(const CalculatorUnitSelected(Unit.inch));
+    for (final divisor in const ['9999999', '9999999', '9999999']) {
+      bloc.add(const CalculatorOperatorPressed(Operator.divide));
+      for (final digit in divisor.split('')) {
+        bloc.add(CalculatorDigitPressed(digit));
+      }
+    }
+    bloc.add(const CalculatorEqualsPressed());
+    await tester.pump();
+
+    final displayArea = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(displayArea.label, equals(l10n.calculatorErrorTooSmall));
+    expect(displayArea.chipsList.last.label, l10n.calculatorErrorTooSmall);
+  });
+
   testWidgets('a result past the limit is titled Too large from the '
       'localization layer', (tester) async {
     await tester.pumpWidget(

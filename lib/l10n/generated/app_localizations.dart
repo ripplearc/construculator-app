@@ -3556,6 +3556,12 @@ abstract class AppLocalizations {
   /// **'Too large'**
   String get calculatorErrorTooLarge;
 
+  /// Title of the calculator error chip landed when a real length result is below 1/32768 inch after its exact fraction outgrew the store, so it cannot be kept
+  ///
+  /// In en, this message translates to:
+  /// **'Too small'**
+  String get calculatorErrorTooSmall;
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:
