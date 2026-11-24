@@ -1,7 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
-import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -163,6 +163,7 @@ void main() {
       await pumpSheet(
         tester,
         theme,
+        initialQuery: 'proclassic',
         sampleRows: [
           paint('premium', 'Premium Plus interior', 38),
           paint('contractor', 'Contractor Grade interior', 28),
@@ -170,6 +171,35 @@ void main() {
       );
 
       await expectGolden('both_groups', suffix);
+    });
+
+    testWidgets('displays the sample group under the error row', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await pumpSheet(
+        tester,
+        theme,
+        sampleRows: [
+          paint('premium', 'Premium Plus interior', 38),
+          paint('contractor', 'Contractor Grade interior', 28),
+        ],
+      );
+
+      await expectGolden('load_error_with_samples', suffix);
+    });
+
+    testWidgets('displays the sample group first when no saved rate matches', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        theme,
+        initialQuery: 'premium',
+        sampleRows: [paint('premium', 'Premium Plus interior', 38)],
+      );
+
+      await expectGolden('sample_group_first', suffix);
     });
   });
 }

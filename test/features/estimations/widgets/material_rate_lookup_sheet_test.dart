@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/extensions/build_context_extensions.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -620,6 +621,44 @@ void main() {
 
       expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
       expect(notice, findsOneWidget);
+    });
+
+    testWidgets('the notice uses Body Small text with 12 dp above and below '
+        'and 16 dp at the sides', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      final text = find.descendant(of: notice, matching: find.byType(Text));
+      final box = tester.getRect(notice);
+      final textRect = tester.getRect(text);
+      const border = 1;
+      expect(textRect.top - box.top, CoreSpacing.space3 + border);
+      expect(box.bottom - textRect.bottom, CoreSpacing.space3 + border);
+      expect(textRect.left - box.left, CoreSpacing.space4 + border);
+      final style = tester.widget<Text>(text).style!;
+      final bodySmall = tester.element(notice).textTheme.bodySmallRegular;
+      expect(style.fontSize, bodySmall.fontSize);
+      expect(style.height, bodySmall.height);
+    });
+
+    testWidgets('the sample heading sits as far under the search box as '
+        'YOUR RATES does when it comes first', (tester) async {
+      sampleRows = [paint('a', 52)];
+      double gapUnderSearch(String heading) =>
+          tester.getRect(find.text(heading)).top -
+          tester
+              .getRect(find.byKey(const Key('your_rates_search_field')))
+              .bottom;
+
+      await openSheet(tester);
+      final yourRatesGap = gapUnderSearch(l10n.yourRatesName.toUpperCase());
+
+      await typeQuery(tester, 'no saved rate matches this');
+      final sampleGap = gapUnderSearch(
+        l10n.materialLookupSampleHeading.toUpperCase(),
+      );
+
+      expect(sampleGap, yourRatesGap);
     });
   });
 }
