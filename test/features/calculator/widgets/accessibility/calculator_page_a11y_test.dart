@@ -295,6 +295,12 @@ void main() {
           tester,
           find.text(l10n.calculatorNotePitchUnderRightAngle),
           checkTapTargetSize: false,
+          checkTextContrast: theme.brightness == Brightness.dark,
+        );
+        await _expectLightThemeContrastOf(
+          tester,
+          theme,
+          find.text(l10n.calculatorNotePitchUnderRightAngle),
         );
       }
     });
