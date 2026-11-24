@@ -178,8 +178,16 @@ void main() {
       ),
     ]);
     fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
-      {'estimate_id': testEstimationId, 'item_total_cost': 2000},
-      {'estimate_id': testEstimationId, 'item_total_cost': 993.62},
+      {
+        'id': 'seed-1',
+        'estimate_id': testEstimationId,
+        'item_total_cost': 2000,
+      },
+      {
+        'id': 'seed-2',
+        'estimate_id': testEstimationId,
+        'item_total_cost': 993.62,
+      },
     ]);
   }
 
@@ -1221,7 +1229,11 @@ void main() {
           ),
         ]);
         fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
-          {'estimate_id': testEstimationId, 'item_total_cost': 100},
+          {
+            'id': 'seed-1',
+            'estimate_id': testEstimationId,
+            'item_total_cost': 100,
+          },
         ]);
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tester.tap(find.text(l10n.equipmentsTab));
@@ -1333,6 +1345,9 @@ void main() {
         await openNewEquipmentSheet(tester);
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
+
+        fakeSupabase.completer!.complete();
+        await tester.pumpAndSettle();
       });
     });
 

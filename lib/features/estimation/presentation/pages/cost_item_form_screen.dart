@@ -138,12 +138,16 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     CostItemType.material => MaterialAddToEstimateFooter(
       estimateId: widget.estimationId,
       estimateName: estimate?.estimateName ?? '',
+      // TODO: [CA-1483] Show an unknown total, not $0.00, while the estimate summary has not loaded.
+      // https://ripplearc.youtrack.cloud/issue/CA-1483
       estimateTotal: estimate?.totalCost ?? 0,
     ),
     CostItemType.labor ||
     CostItemType.equipment => EquipmentAddToEstimateFooter(
       estimateId: widget.estimationId,
       estimateName: estimate?.estimateName ?? '',
+      // TODO: [CA-1483] Show an unknown total, not $0.00, while the estimate summary has not loaded.
+      // https://ripplearc.youtrack.cloud/issue/CA-1483
       estimateTotal: estimate?.totalCost ?? 0,
     ),
   };

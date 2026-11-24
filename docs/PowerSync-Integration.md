@@ -427,6 +427,26 @@ review threads and direct code reading — not from re-running the app:
 - **RLS-denial conflicts are silent to the user.** `SupabasePowerSyncConnector` already
   distinguishes permanent RLS denials from transient errors correctly, but surfacing that
   to the UI is an explicit `TODO: [CA-660]` — not yet implemented.
+- **`cost_items` is written on the phone and has no sync stream.** The Material form saves a
+  line to the phone's `cost_items` table first (CA-1289). No backend stream sends that table
+  down, so the phone holds only the lines it wrote itself, and PowerSync removes a line from
+  the phone at the next sync checkpoint after its upload, because no stream covers it. The estimate total therefore joins
+  the server's lines, the phone's lines and the lines the server refused (below) by id. When
+  the server does not answer within 5 seconds the total returns its normal failure, so the page
+  shows its error with Try again, and never a total made of the phone's lines alone. The cost
+  items stream is part of CA-648.
+- **Sign-out removes lines that were not sent yet.** Every clear of the PowerSync database
+  deletes writes still in the upload queue, including `clearLocal: false`. The design in
+  "Keep or delete local-only data on sign-out, per account" (CA-1297) warns before a logout
+  with unsent edits and keeps them after an expired session. Neither is built yet.
+- **`cost_items` upload details.** PowerSync leaves a null column out of a queued PUT, so the
+  connector sends every `cost_items` column on a PUT (null where the line has no value), and a
+  resend can clear a field. It also decodes `calculation` from JSON text to an object. A
+  `cost_items` line the server refuses with `42501` (an estimate that was deleted, or access that
+  was removed) is kept. The connector saves the phone's row as JSON in the local-only
+  `cost_item_refusals` table (with the time and the reason), skips the change so the queue
+  moves on, and the estimate total still counts the line. A `calculation` text that is not JSON
+  is handled the same way. The red card with move and discard is `TODO: [CA-1291]`.
 - **CA-644 and CA-647** (local dev environment, core-entity sync streams) have no
   corresponding PR in this repo and weren't independently verified — their deliverables
   live in the backend repo.

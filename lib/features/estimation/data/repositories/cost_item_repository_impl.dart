@@ -99,19 +99,34 @@ class CostItemRepositoryImpl implements CostItemRepository {
   Future<Either<Failure, double>> getEstimateItemsTotal(
     String estimateId,
   ) async {
+    final Map<String, double> onThisPhone;
     try {
-      final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+      final lines = await localDataSource.loadCostItemsByEstimateId(estimateId);
+      final refused = await localDataSource.loadRefusedLineTotalsByEstimateId(
         estimateId,
       );
-      if (totals.length >= _maxRowsPerRequest) {
+      onThisPhone = {
+        ...refused,
+        for (final line in lines) line.id: line.itemTotalCost,
+      };
+    } catch (_) {
+      return const Left(_phoneStorageFailure);
+    }
+    try {
+      final onServer = await dataSource.fetchItemTotalCostsByEstimateId(
+        estimateId,
+      );
+      if (onServer.length >= _maxRowsPerRequest) {
         return _rowLimitFailure(estimateId);
       }
-      final cents = totals.fold<int>(0, (sum, t) => sum + (t * 100).round());
-      return Right(cents / 100);
+      return Right(_sumToCent({...onServer, ...onThisPhone}));
     } catch (e) {
       return _handleError(e, 'summing cost items');
     }
   }
+
+  static double _sumToCent(Map<String, double> totalsById) =>
+      totalsById.values.fold<int>(0, (sum, t) => sum + (t * 100).round()) / 100;
 
   @override
   Future<Either<Failure, List<CostItem>>> getCostItemsForEstimate(
