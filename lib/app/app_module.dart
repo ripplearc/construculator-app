@@ -6,6 +6,7 @@ import 'package:construculator/features/consent/consent_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/analytics/analytics_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/check/auth_check_module.dart';
 import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
@@ -26,6 +27,7 @@ class AppModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
     PowerSyncModule(appBootstrap),
+    AuthCheckModule(appBootstrap),
   ];
 
   @override
