@@ -15,6 +15,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -559,6 +560,34 @@ void main() {
         await tester.pumpAndSettle();
       });
 
+      testWidgets('Enter on Try again does not move focus into the search '
+          'field', (tester) async {
+        await openFailedSheetAndHoldRetry(tester);
+        bool hasFocus(Key key) => find
+            .descendant(
+              of: find.byKey(key),
+              matching: find.byElementPredicate(
+                (element) =>
+                    element == FocusManager.instance.primaryFocus?.context,
+              ),
+            )
+            .evaluate()
+            .isNotEmpty;
+        for (var tabs = 0; tabs < 6 && !hasFocus(tryAgainKey); tabs++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        }
+        expect(hasFocus(tryAgainKey), isTrue);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+
+        expect(hasFocus(const Key('your_rates_search_field')), isFalse);
+        expect(find.byKey(errorKey), findsOneWidget);
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+      });
+
       testWidgets('the rows replace the error row when the retry works', (
         tester,
       ) async {
@@ -576,15 +605,14 @@ void main() {
       testWidgets('the row stays and Try again works again when the retry '
           'fails', (tester) async {
         await openFailedSheetAndHoldRetry(tester);
-        database.getAllError = StateError('database locked');
         await tester.tap(find.byKey(tryAgainKey));
         await tester.pumpAndSettle();
+        expect(find.byKey(errorKey), findsOneWidget);
 
-        database.getAllGate!.complete();
+        database.getAllGate!.completeError(StateError('database locked'));
         await tester.pumpAndSettle();
 
         expect(find.byKey(errorKey), findsOneWidget);
-        database.getAllError = null;
         database.getAllGate = null;
         await tester.tap(find.byKey(tryAgainKey));
         await tester.pumpAndSettle();

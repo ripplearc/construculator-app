@@ -121,6 +121,11 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     );
   }
 
+  void _retry() {
+    FocusScope.of(context).unfocus();
+    _search(_searchController.text, immediate: true);
+  }
+
   void _announceFailedRetry(BuildContext context) {
     unawaited(
       SemanticsService.sendAnnouncement(
@@ -242,7 +247,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
         message: l10n.yourRatesLoadError,
         actionLabel: l10n.yourRatesTryAgain,
         actionKey: const Key('your_rates_try_again_button'),
-        onAction: () => _search(_searchController.text, immediate: true),
+        onAction: _retry,
         isActionDisabled: state is YourRatesRetrying,
       );
     }
