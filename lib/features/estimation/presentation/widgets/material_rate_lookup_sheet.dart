@@ -74,6 +74,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 
   List<YourRateEntry> _shownEntries = const [];
   String? _selectedId;
+  bool _retrying = false;
 
   @override
   void initState() {
@@ -91,11 +92,21 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     YourRatesSearched(query, category: CostItemType.material),
   );
 
+  void _retry() {
+    setState(() => _retrying = true);
+    _search(_searchController.text);
+  }
+
   void _onRowTap(YourRateEntry entry) =>
       setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
 
   void _onStateChanged(BuildContext context, YourRatesState state) {
+    if (state is YourRatesError) {
+      _retrying = false;
+      _shownEntries = const [];
+    }
     if (state is! YourRatesSearchResults) return;
+    _retrying = false;
     _shownEntries = state.results;
     if (!state.results.any((entry) => entry.id == _selectedId)) {
       _selectedId = null;
@@ -113,6 +124,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
           YourRatesError() => const <YourRateEntry>[],
           _ => _shownEntries,
         };
+        final hasReadError = state is YourRatesError || _retrying;
         final selected = entries
             .where((entry) => entry.id == _selectedId)
             .firstOrNull;
@@ -148,16 +160,29 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                         ),
                         // TODO: [CA-1482] show CoreUI's progress bar here while a search runs, above the rows kept from the last search. https://ripplearc.youtrack.cloud/issue/CA-1482
                         const SizedBox(height: CoreSpacing.space6),
-                        if (state is YourRatesError)
+                        if (entries.isNotEmpty || hasReadError)
+                          Padding(
+                            padding: _textInset.copyWith(
+                              bottom: CoreSpacing.space2,
+                            ),
+                            child: Text(
+                              l10n.yourRatesName.toUpperCase(),
+                              style: context.textTheme.bodySmallSemiBold
+                                  .copyWith(color: context.colorTheme.textBody),
+                            ),
+                          ),
+                        if (hasReadError)
                           CoreInlineErrorRow(
                             key: const Key('your_rates_load_error'),
                             message: l10n.yourRatesLoadError,
                             actionLabel: l10n.yourRatesTryAgain,
                             actionKey: const Key('your_rates_try_again_button'),
-                            onAction: () => _search(_searchController.text),
+                            isActionDisabled: _retrying,
+                            onAction: _retry,
                           )
                         else if (entries.isEmpty &&
-                            state is YourRatesSearchResults)
+                            state is YourRatesSearchResults &&
+                            state.query.trim().isNotEmpty)
                           Padding(
                             key: const Key('material_lookup_no_match'),
                             padding: const EdgeInsets.symmetric(
@@ -167,17 +192,6 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                               l10n.yourRatesNoMatchState(state.query),
                               textAlign: TextAlign.center,
                               style: context.textTheme.bodyMediumRegular
-                                  .copyWith(color: context.colorTheme.textBody),
-                            ),
-                          ),
-                        if (entries.isNotEmpty)
-                          Padding(
-                            padding: _textInset.copyWith(
-                              bottom: CoreSpacing.space2,
-                            ),
-                            child: Text(
-                              l10n.yourRatesName.toUpperCase(),
-                              style: context.textTheme.bodySmallSemiBold
                                   .copyWith(color: context.colorTheme.textBody),
                             ),
                           ),
