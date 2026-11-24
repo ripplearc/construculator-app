@@ -44,8 +44,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
-import '../../helpers/cost_item_test_data_map_factory.dart';
 import '../../../../utils/toast_test_utils.dart';
+import '../../helpers/cost_item_test_data_map_factory.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
   final AppBootstrap appBootstrap;
