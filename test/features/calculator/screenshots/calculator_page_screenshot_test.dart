@@ -115,13 +115,29 @@ void main() {
       addTearDown(tester.view.reset);
       await pumpCalculatorPage(tester: tester, theme: theme);
 
+      // The picture is taken on a finished value, Run 12ft, so the label
+      // draws no typing dots: they are a Lottie file that loads in the
+      // background, and a picture with them depends on which test ran
+      // before this one. The note stays while the pitch does.
       blocOf(tester)
         ..add(const CalculatorKeySelected('Pitch'))
         ..add(const CalculatorDigitPressed('9'))
-        ..add(const CalculatorDigitPressed('5'));
+        ..add(const CalculatorDigitPressed('5'))
+        ..add(const CalculatorKeySelected('Run'))
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorUnitSelected(Unit.foot));
       await tester.pump();
       await tester.pump();
 
+      expect(
+        blocOf(tester).state.displayLabel,
+        isA<CalculatorDisplayLabel>().having(
+          (label) => label.isTyping,
+          'isTyping',
+          isFalse,
+        ),
+      );
       expect(
         blocOf(tester).state.stripNote,
         const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
