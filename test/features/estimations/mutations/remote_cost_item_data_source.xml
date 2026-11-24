@@ -143,6 +143,17 @@
         <regex pattern="_estimateLookupLineLimit = 50;" id="cost_item.lookup.change_limit">
             <mutation text="_estimateLookupLineLimit = 5;"/>
         </regex>
+
+
+        <!-- RULE: the estimate total waits for the server without a time limit -->
+        <regex pattern="\.timeout\(totalsTimeout\)" dotAll="false" id="cost_item.totals.no_timeout">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the estimate total retries a failed read -->
+        <regex pattern="filters: \{DatabaseConstants\.estimateIdColumn: estimateId\},\s*retry: false," dotAll="true" id="cost_item.totals.retries">
+            <mutation text="filters: {DatabaseConstants.estimateIdColumn: estimateId}, retry: true,"/>
+        </regex>
     </rules>
 
     <commands>

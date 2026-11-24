@@ -145,6 +145,13 @@
         <regex pattern="CostItemType\.material,\s+draft\.itemName," dotAll="true" id="bloc.submit.remember_unit_per_material">
             <mutation text="CostItemType.material, '',"/>
         </regex>
+
+        <regex pattern="_clock\.now\(\)\.toUtc\(\)" dotAll="false" id="bloc.submit.created_at_utc">
+            <mutation text="_clock.now()"/>
+        </regex>
+        <regex pattern="id: _lineId," dotAll="false" id="bloc.submit.new_id_each_save">
+            <mutation text="id: '$_lineId-${now.microsecondsSinceEpoch}',"/>
+        </regex>
     </rules>
 
     <commands>
