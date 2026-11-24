@@ -391,27 +391,34 @@ class CalculatorState extends Equatable {
   /// The area the trade follow-ons count (rule 4.4): the finished area on
   /// the display — an accepted Area (rung 2a) or a typed 180ft² (rung 5;
   /// Section 9: "A typed area is as good as a computed one"), never a Calc,
-  /// whose rung (4) offers its cost and conversions and no sheet counts —
-  /// or, with a count already on the tape, the area that count was made
-  /// from, so the other sizes stay on offer after one is accepted (row 218)
-  /// and while a chip before them is reopened (row 219). `null` when
-  /// nothing on the display is an area, which is also when a function key
-  /// has just opened an empty chip (rung 6 is the memory's, G2). The bloc
-  /// watches the store for this area; nothing is counted here.
+  /// whose rung (4) offers its cost and conversions and no sheet counts.
+  /// While the tape ends on the counts accepted from that area it is still
+  /// the area before them, so every other size stays on offer after one
+  /// count is accepted, and after a second (row 218; Section 9, "the other
+  /// sizes stay on the strip"), and while a chip before them is reopened
+  /// (row 219). A key after the counts puts something else on the display,
+  /// and the area leaves with it: a length, a Calc or a new number earns no
+  /// count. `null` when nothing on the display is an area, which is also
+  /// when a function key has just opened an empty chip (rung 6 is the
+  /// memory's, G2). The bloc watches the store for this area; nothing is
+  /// counted here.
   Area? get areaForCounts {
-    if (_areaOf(_chipRead) case final area?) return area;
-    final chips = tape.chips;
-    for (var index = chips.length - 1; index > 0; index--) {
-      if (chips[index] case ResultChip(:final key) when _isACountKey(key)) {
-        return _areaOf(chips[index - 1]);
-      }
-    }
-    return null;
+    final counts = _countsTheTapeEndsOn;
+    if (counts.isEmpty) return _finishedAreaIn(_chipRead);
+    final before = tape.chips.length - counts.length - 1;
+    return before < 0 ? null : _finishedAreaIn(tape.chips[before]);
   }
 
-  // The finished area a chip holds: a typed 180ft², or an Area result,
-  // never a Calc (rule 4.4, rung 4) and never a count or a bracket.
-  Area? _areaOf(TapeChip? chip) => switch (chip) {
+  List<ResultChip> get _countsTheTapeEndsOn => [
+    for (final chip in tape.chips.reversed.takeWhile(_isACount))
+      chip as ResultChip,
+  ];
+
+  static bool _isACount(TapeChip chip) =>
+      chip is ResultChip &&
+      Trade.values.any((trade) => trade.resultKey == chip.key);
+
+  Area? _finishedAreaIn(TapeChip? chip) => switch (chip) {
     final ValueChip chip => switch (chip.value(tape.parser)) {
       final Area area => area,
       _ => null,
@@ -423,15 +430,22 @@ class CalculatorState extends Equatable {
 
   /// The sheet counts of the strip (term 2.10; Section 9, "One chip per
   /// stored size"): [materialCounts] for [areaForCounts], in the store's
-  /// order, each with its size inside the chip, minus a count already
-  /// landed as a result chip ("the other sizes stay on the strip", row
-  /// 218). Empty while the store's answer for the area on screen is still
-  /// on its way.
+  /// order, each with its size inside the chip, minus the counts already
+  /// accepted from that area ("the other sizes stay on the strip", row
+  /// 218). An accepted count hides one offer of its value and no more, so
+  /// two stored sizes that count the same (48in x 96in and 96in x 48in) do
+  /// not leave together, and a count accepted from an earlier area hides
+  /// nothing of this one. Empty while the store's answer for the area on
+  /// screen is still on its way.
   List<CalculatorSuggestion> get materialOffers {
     final area = areaForCounts;
+    final accepted = [
+      for (final chip in _countsTheTapeEndsOn) (chip.key, chip.value),
+    ];
     return [
       for (final count in materialCounts)
-        if (count.area == area && !_hasLandedCount(count))
+        if (count.area == area &&
+            !accepted.remove((count.trade.resultKey, count.value)))
           CalculatorSuggestion(
             key: count.trade.offerKey,
             value: count.value,
@@ -442,16 +456,6 @@ class CalculatorState extends Equatable {
           ),
     ];
   }
-
-  static bool _isACountKey(String key) =>
-      Trade.values.any((trade) => trade.resultKey == key);
-
-  bool _hasLandedCount(TradeCount count) => tape.chips.any(
-    (chip) =>
-        chip is ResultChip &&
-        chip.key == count.trade.resultKey &&
-        chip.value == count.value,
-  );
 
   /// The tiles of the detail panel (Section 1.4: "Diagonal, Perimeter and
   /// the other derived values of the current inputs"): every answer the

@@ -3483,6 +3483,115 @@ void main() {
         );
       });
 
+      /// [state] with the count at [index] of row 1 accepted; the store's
+      /// answer stays in the state, as it does until the watch brings the
+      /// next one.
+      CalculatorState accepting(CalculatorState state, int index) {
+        final count = state.suggestions[index].count!;
+        return state.copyWith(
+          tape:
+              (state.tape.landAnswer(count.trade.resultKey, count.value)
+                      as TapeChanged)
+                  .tape,
+        );
+      }
+
+      for (final keys in [
+        '[Length] 3 ft',
+        '× 2 =',
+        '+ 3 =',
+        '÷ 4 =',
+        '× 2 = 7',
+      ]) {
+        test('a key after an accepted count takes the counts off the strip '
+            'with the area: 180 ft ft, Drywall 5.63 accepted, then $keys '
+            '(B1; rule 4.4)', () {
+          final counted = accepting(withCounts('1 8 0 ft ft'), 0);
+          expect(
+            rowOne(counted),
+            ['Drywall: 5.00 (48in x 108in)', 'Drywall: 4.50 (48in x 120in)'],
+            reason: 'right after the count the other sizes stay (row 218)',
+          );
+
+          final after = counted.copyWith(
+            tape: pressed(keys, tape: counted.tape),
+          );
+          expect(after.areaForCounts, isNull);
+          expect(after.materialOffers, isEmpty);
+          expect(
+            after.equalsLands,
+            isNot(
+              isA<CalculatorSuggestion>().having(
+                (chip) => chip.kind,
+                'kind',
+                CalculatorSuggestionKind.materialCount,
+              ),
+            ),
+            reason: '= never lands a sheet count of an area the user left',
+          );
+        });
+      }
+
+      test('every size not yet accepted stays on offer, after a second count '
+          'and after the last (Section 9, "the other sizes stay on the '
+          'strip")', () {
+        final one = accepting(withCounts('', tape: areaAccepted()), 0);
+        final two = accepting(one, 0);
+        expect(two.areaForCounts, one.areaForCounts);
+        expect(rowOne(two), [
+          'Drywall: 4.50 (48in x 120in)',
+          'Diagonal: 21.93ft',
+          'Perimeter: 58ft',
+        ]);
+        final three = accepting(two, 0);
+        expect(three.areaForCounts, one.areaForCounts);
+        expect(rowOne(three), ['Diagonal: 21.93ft', 'Perimeter: 58ft']);
+      });
+
+      test('a count accepted from an earlier area hides no count of the area '
+          'now on the display, the same value included: 180ft² counted as '
+          '5.00, then 160 ft ft (Section 9, "One chip per stored size")', () {
+        final counted = accepting(withCounts('', tape: areaAccepted()), 1);
+        final typed = CalculatorState(
+          tape: pressed('1 6 0 ft ft', tape: counted.tape),
+        );
+        final next = typed.copyWith(materialCounts: sheetCountsOf(typed));
+        expect(rowOne(next).take(3), [
+          'Drywall: 5.00 (48in x 96in)',
+          'Drywall: 4.44 (48in x 108in)',
+          'Drywall: 4.00 (48in x 120in)',
+        ]);
+      });
+
+      test('two stored sizes that count the same do not leave together: with '
+          '48in x 96in and 96in x 48in stored, accepting one 5.63 leaves the '
+          'other on the strip (N2)', () {
+        final sheets = appendixBSheets();
+        final turned = PieceSize(
+          width: sheets.first.height,
+          height: sheets.first.width,
+        );
+        final area = CalculatorState(tape: areaAccepted());
+        final stored = area.copyWith(
+          materialCounts: const Trades().countsFor(
+            Trade.drywall,
+            area.areaForCounts!,
+            [sheets.first, turned, sheets[1]],
+          ),
+        );
+        expect(rowOne(stored).take(3), [
+          'Drywall: 5.63 (48in x 96in)',
+          'Drywall: 5.63 (96in x 48in)',
+          'Drywall: 5.00 (48in x 108in)',
+        ]);
+        expect(rowOne(accepting(stored, 0)), [
+          'Drywall: 5.63 (96in x 48in)',
+          'Drywall: 5.00 (48in x 108in)',
+          'Diagonal: 21.93ft',
+          'Perimeter: 58ft',
+        ]);
+      });
+
       test('Calc takes row 1 from the counts while an operator has values on '
           'both sides, as it does from the rule answers (term 2.15)', () {
         final chained = CalculatorState(tape: pressed('1 8 0 ft ft × 2'));
