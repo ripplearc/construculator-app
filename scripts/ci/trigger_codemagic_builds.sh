@@ -10,8 +10,8 @@ set -euo pipefail
 #   DRY_RUN=true                           print each request body and send nothing
 #   SKIP_WORKFLOWS                         space-separated workflow ids to leave out
 #   COMMENT_BODY                           text of the #RunCheck comment; "#RunCheck ios"
-#                                          sends FORCE_IOS_BUILD=true so the iOS build
-#                                          cannot skip itself
+#                                          sends FORCE_IOS_BUILD=true so the Pre-check
+#                                          starts the iOS build whatever changed
 #
 # Every workflow is attempted even if an earlier one fails. The script exits
 # non-zero if any request fails or the response has no buildId.

@@ -58,7 +58,7 @@ reset_repos() {
 }
 
 run_target() {
-  STDOUT_TEXT="$(cd "$CLONE" && IOS_SKIP_ENABLED="${IOS_SKIP_ENABLED-true}" "$TARGET" 2>&1)"
+  STDOUT_TEXT="$(cd "$CLONE" && "$TARGET" 2>&1)"
   EXIT_CODE=$?
 }
 
@@ -139,14 +139,13 @@ FORCE_IOS_BUILD=1 run_target
 assert_true "does not read FORCE_IOS_BUILD=1 as true" starts_with "skip:"
 
 reset_repos
-commit_files "$CLONE" "dart" lib/a.dart
-IOS_SKIP_ENABLED=false run_target
-assert_true "runs iOS when IOS_SKIP_ENABLED is false" contains "skipping is switched off"
-
-reset_repos
-commit_files "$CLONE" "dart" lib/a.dart
-IOS_SKIP_ENABLED= run_target
-assert_true "runs iOS when IOS_SKIP_ENABLED is empty" contains "skipping is switched off"
+commit_files "$CLONE" "ios" lib/a.dart ios/Podfile
+git_in "$CLONE" push -q origin feature:release
+git_in "$CLONE" checkout -q -b topic
+commit_files "$CLONE" "dart" lib/b.dart
+printf 'other .\nother *\n' >"${WORK_DIR}/everything_is_other.conf"
+IOS_SKIP_ENABLED=true BASE_BRANCH=release IOS_BUILD_PATHS_FILE="${WORK_DIR}/everything_is_other.conf" run_target
+assert_true "ignores IOS_SKIP_ENABLED, BASE_BRANCH and IOS_BUILD_PATHS_FILE, which cannot turn a build into a skip" contains "ios/Podfile matches ios/"
 
 reset_repos
 git_in "$CLONE" checkout -q main
@@ -172,14 +171,14 @@ commit_files "$CLONE" "dart" lib/a.dart
 git_in "$CLONE" push -q origin feature
 rm -rf "${WORK_DIR}/shallow"
 git clone -q --depth 1 --branch feature "file://$ORIGIN" "${WORK_DIR}/shallow"
-STDOUT_TEXT="$(cd "${WORK_DIR}/shallow" && IOS_SKIP_ENABLED=true "$TARGET" 2>&1)"
+STDOUT_TEXT="$(cd "${WORK_DIR}/shallow" && "$TARGET" 2>&1)"
 EXIT_CODE=$?
 assert_true "skips from a shallow clone after fetching the history" starts_with "skip:"
 
 rm -rf "${WORK_DIR}/shallow"
 git clone -q --depth 1 --branch feature "file://$ORIGIN" "${WORK_DIR}/shallow"
 git_in "${WORK_DIR}/shallow" remote set-url origin "${WORK_DIR}/missing.git"
-STDOUT_TEXT="$(cd "${WORK_DIR}/shallow" && IOS_SKIP_ENABLED=true "$TARGET" 2>&1)"
+STDOUT_TEXT="$(cd "${WORK_DIR}/shallow" && "$TARGET" 2>&1)"
 EXIT_CODE=$?
 assert_true "runs iOS when a shallow clone cannot fetch the history" contains "could not fetch the full history"
 assert_true "still exits 0 when the history cannot be fetched" exit_code_is 0
@@ -191,16 +190,6 @@ commit_files "${WORK_DIR}/seed" "main moved on" ios/Podfile
 git_in "${WORK_DIR}/seed" push -q "$ORIGIN" main
 run_target
 assert_true "ignores an iOS change that landed on main after the branch started" starts_with "skip:"
-
-reset_repos
-commit_files "$CLONE" "ios" ios/Podfile
-git_in "$CLONE" push -q origin feature:release
-git_in "$CLONE" checkout -q -b topic
-commit_files "$CLONE" "dart" lib/b.dart
-run_target
-assert_true "compares with main by default" contains "ios/Podfile matches ios/"
-BASE_BRANCH=release run_target
-assert_true "compares with BASE_BRANCH when it is set" starts_with "skip:"
 
 # Classification against the real repository
 for entry in $(cd "$REPO_ROOT" && git ls-tree --name-only HEAD); do

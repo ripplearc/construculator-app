@@ -1,0 +1,187 @@
+#!/bin/bash
+#
+# Manual test harness for scripts/ci/start_ios_build_and_wait.sh (CA-1534).
+#
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
+# no shell-test framework, non-zero exit if any case fails. curl is replaced by
+# a fake Codemagic API on PATH:
+#   POST .../builds             answers according to FAKE_START_MODE
+#   GET  .../builds/<id>        answers the statuses in $FAKE_DIR/statuses, one
+#                               per poll, and the last one for every later poll
+#   POST .../builds/<id>/cancel is recorded in $FAKE_DIR/cancelled
+# A status of "api_error" makes the fake fail the way curl --fail-with-body does,
+# and "no_status" answers a build with no status.
+#
+# Usage:
+#   scripts/ci/start_ios_build_and_wait_test.sh
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET="${SCRIPT_DIR}/start_ios_build_and_wait.sh"
+
+FAILURES=0
+
+WORK_DIR="$(mktemp -d)"
+cleanup() {
+  rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
+
+mkdir -p "${WORK_DIR}/bin" "${WORK_DIR}/fake"
+
+cat >"${WORK_DIR}/bin/curl" <<'EOF2'
+#!/bin/bash
+url=""
+method=GET
+body=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift ;;
+    -d) body="$2"; shift ;;
+  esac
+  url="$1"
+  shift
+done
+case "$method $url" in
+  "POST "*/builds)
+    echo "$body" >"$FAKE_DIR/start_body"
+    case "$FAKE_START_MODE" in
+      reject) echo '{"message":"unauthorized"}'; exit 22 ;;
+      no_build_id) echo '{}' ;;
+      bad_build_id) echo '{"buildId":"../x"}' ;;
+      *) echo '{"buildId":"mac1"}' ;;
+    esac
+    ;;
+  "POST "*/cancel)
+    echo "$url" >>"$FAKE_DIR/cancelled"
+    echo '{}'
+    ;;
+  "GET "*/builds/mac1)
+    polls=$(cat "$FAKE_DIR/polls" 2>/dev/null || echo 0)
+    polls=$((polls + 1))
+    echo "$polls" >"$FAKE_DIR/polls"
+    status=$(sed -n "${polls}p" "$FAKE_DIR/statuses")
+    [ -z "$status" ] && status=$(tail -n 1 "$FAKE_DIR/statuses")
+    case "$status" in
+      api_error) echo '{"message":"Server Error"}'; exit 22 ;;
+      no_status) echo '{"build":{}}' ;;
+      *) echo "{\"build\":{\"status\":\"$status\"}}" ;;
+    esac
+    ;;
+  *) echo "unexpected request $method $url" >&2; exit 2 ;;
+esac
+EOF2
+chmod +x "${WORK_DIR}/bin/curl"
+
+# statuses_are <status>...   one status per poll
+statuses_are() {
+  rm -f "${WORK_DIR}/fake/polls" "${WORK_DIR}/fake/cancelled" "${WORK_DIR}/fake/start_body"
+  printf '%s\n' "$@" >"${WORK_DIR}/fake/statuses"
+}
+
+run_target() {
+  OUTPUT="$(
+    cd "$WORK_DIR" &&
+      PATH="${WORK_DIR}/bin:${PATH}" FAKE_DIR="${WORK_DIR}/fake" \
+      FAKE_START_MODE="${FAKE_START_MODE:-ok}" \
+      CODEMAGIC_API_TOKEN="${CODEMAGIC_API_TOKEN-test-token}" \
+      CODEMAGIC_APP_ID="${CODEMAGIC_APP_ID-test-app}" \
+      POLL_INTERVAL_SECONDS=0 MAX_POLLS="${MAX_POLLS:-5}" \
+      "$TARGET" "$@" 2>&1
+  )"
+  EXIT_CODE=$?
+}
+
+assert_true() {
+  local description="$1"
+  shift
+  if "$@"; then
+    echo "✅ PASS: ${description}"
+  else
+    echo "❌ FAIL: ${description}"
+    echo "   output: ${OUTPUT}"
+    FAILURES=$((FAILURES + 1))
+  fi
+}
+
+exit_code_is() { [ "$EXIT_CODE" -eq "$1" ]; }
+output_contains() { echo "$OUTPUT" | grep -Fq -- "$1"; }
+polls_made() { [ "$(cat "${WORK_DIR}/fake/polls" 2>/dev/null || echo 0)" -eq "$1" ]; }
+start_body_is() { [ "$(jq -r "$1" "${WORK_DIR}/fake/start_body")" = "$2" ]; }
+cancelled_build() { grep -Fq -- "/builds/$1/cancel" "${WORK_DIR}/fake/cancelled" 2>/dev/null; }
+cancelled_nothing() { [ ! -e "${WORK_DIR}/fake/cancelled" ]; }
+
+statuses_are finished
+run_target feature/x
+assert_true "passes when the Mac build finished" exit_code_is 0
+assert_true "starts ios-debug-build" start_body_is .workflowId ios-debug-build
+assert_true "starts it on the given branch" start_body_is .branch feature/x
+assert_true "starts it for the app id" start_body_is .appId test-app
+assert_true "says the build finished" output_contains "build mac1 finished"
+
+statuses_are queued preparing building finishing finished
+run_target feature/x
+assert_true "waits through every running status until the build finishes" exit_code_is 0
+assert_true "polls once per status" polls_made 5
+
+for ended in failed canceled timeout skipped warning something_new; do
+  statuses_are building "$ended"
+  run_target feature/x
+  assert_true "fails when the Mac build ends as $ended" exit_code_is 1
+  assert_true "names the status $ended" output_contains "ended with status $ended"
+  assert_true "stops polling at $ended" polls_made 2
+  assert_true "does not cancel a build that already ended as $ended" cancelled_nothing
+done
+
+statuses_are building api_error
+run_target feature/x
+assert_true "fails when the API errors while waiting" exit_code_is 1
+assert_true "says it could not read the build" output_contains "Could not read build mac1 while waiting"
+
+statuses_are no_status
+run_target feature/x
+assert_true "fails when the API answers a build with no status" exit_code_is 1
+assert_true "says the status is missing" output_contains "No build status"
+
+statuses_are building
+MAX_POLLS=3 run_target feature/x
+assert_true "fails when the build does not end in time" exit_code_is 1
+assert_true "stops after the last poll" polls_made 3
+assert_true "says it ran out of polls" output_contains "did not end within 3 polls"
+assert_true "tries to cancel the build it gave up on" cancelled_build mac1
+
+statuses_are finished
+FAKE_START_MODE=reject run_target feature/x
+assert_true "fails when Codemagic rejects the start" exit_code_is 1
+assert_true "reports the rejection" output_contains "Codemagic rejected ios-debug-build"
+assert_true "does not poll a build that never started" polls_made 0
+
+FAKE_START_MODE=no_build_id run_target feature/x
+assert_true "fails when the start answer has no buildId" exit_code_is 1
+assert_true "says the buildId is missing" output_contains "No buildId"
+
+FAKE_START_MODE=bad_build_id run_target feature/x
+assert_true "fails when the buildId is not an id" exit_code_is 1
+assert_true "does not poll a malformed id" polls_made 0
+
+# shellcheck disable=SC2016 # the shell metacharacters must stay literal
+HOSTILE_BRANCH='a";touch pwned;"$(touch pwned)'
+run_target "$HOSTILE_BRANCH"
+assert_true "keeps a hostile branch name as plain data" start_body_is .branch "$HOSTILE_BRANCH"
+assert_true "does not run commands hidden in a branch name" test ! -e "${WORK_DIR}/pwned"
+
+run_target ""
+assert_true "rejects an empty branch" exit_code_is 2
+
+CODEMAGIC_API_TOKEN="" run_target feature/x
+assert_true "fails loudly when the token is missing" output_contains "CODEMAGIC_API_TOKEN is not set"
+
+CODEMAGIC_APP_ID="" run_target feature/x
+assert_true "fails loudly when the app id is missing" output_contains "CODEMAGIC_APP_ID is not set"
+
+if [ "$FAILURES" -gt 0 ]; then
+  echo "❌ ${FAILURES} case(s) failed"
+  exit 1
+fi
+echo "✅ All cases passed"

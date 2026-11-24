@@ -86,7 +86,7 @@ jobs:
           SKIP_PRECHECK: ${{ vars.RUNCHECK_SKIP_PRECHECK }}
           DEDUPE_ENABLED: ${{ vars.RUNCHECK_DEDUPE == 'true' }}
         run: |
-          WORKFLOWS="comprehensive-check ios-debug-build"
+          WORKFLOWS="comprehensive-check"
           [ "$SKIP_PRECHECK" = "true" ] || WORKFLOWS="pre-check $WORKFLOWS"
           # shellcheck disable=SC2086 # WORKFLOWS is a list of ids
           PLAN=$(bash scripts/ci/plan_runcheck.sh $WORKFLOWS)
@@ -131,6 +131,10 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           COMMENT_BODY: ${{ github.event.comment.body || inputs.comment }}
           SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check ' || '' }}${{ vars.RUNCHECK_DEDUPE == 'true' && steps.plan.outputs.skip || '' }}
+          SKIP_PRECHECK: ${{ vars.RUNCHECK_SKIP_PRECHECK }}
         run: |
+          if [ "$SKIP_PRECHECK" = "true" ]; then
+            echo "- ⚠️ RUNCHECK_SKIP_PRECHECK is true: Pre-check does not run, so no iOS build is decided or started" >> "$GITHUB_STEP_SUMMARY"
+          fi
           bash scripts/ci/trigger_codemagic_builds.sh "$BRANCH_NAME" \
-            pre-check comprehensive-check ios-debug-build
+            pre-check comprehensive-check

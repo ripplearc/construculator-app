@@ -519,6 +519,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 - Block `[skip ci]` commits
 - Analyze changed Dart files
 - Run changed tests with coverage. A new `lib/` file with no covering test fails, and new files must meet the coverage target (`scripts/ci/run_changed_tests_with_coverage.sh`)
+- Decide whether an iOS-related file changed, with the rules on `main` (first step), and when one did, start `ios-debug-build` and wait for it (last step). The Pre-check fails if the Mac build does not finish
 - Fast feedback (~5-10 min)
 
 **Notifications:** Email + Slack (#build-notifications)
@@ -544,12 +545,11 @@ The project uses **CodeMagic** for continuous integration and deployment.
 
 #### 3. ios-debug-build
 
-**Trigger:** Manual via `#RunCheck` comment. The first step stops the build early, still reported as passed, when the commit changes no iOS-related file compared with `main`; `#RunCheck ios` forces the full build (`docs/Testing/CI-Scripts.md`)
+**Trigger:** Started by the `pre-check` workflow, and by the nightly build, not by `#RunCheck` itself. The Pre-check starts it only when the commit changes an iOS-related file compared with `main`; `#RunCheck ios` forces it (`docs/Testing/CI-Scripts.md`)
 **Instance:** mac_mini_m2
 **Purpose:** iOS build validation
 
 **Checks:**
-- Decision step (`scripts/ci/ios_build_needed.sh`)
 - iOS pod installation
 - iOS debug build (no codesign)
 
@@ -568,7 +568,7 @@ To manually trigger CI checks on a PR, add a comment with:
 #runcheck
 ```
 
-This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows. `pre-check` is left out when `RUNCHECK_SKIP_PRECHECK` is `true`.
+This will trigger the `comprehensive-check` and `pre-check` workflows. `pre-check` is left out when `RUNCHECK_SKIP_PRECHECK` is `true`, and then no iOS build is started. The Pre-check decides on Linux whether an iOS-related file changed (`scripts/ci/decide_ios_build.sh`), and starts `ios-debug-build` and waits for it only when one did.
 
 A second `#RunCheck` on a commit that already has results starts nothing and says so in a pull request comment, and `#RunCheck force` runs it again. A new `#RunCheck` cancels builds still running on older commits of the pull request. Both are off until the repository variable `RUNCHECK_DEDUPE` is `true` (`docs/Testing/CI-Scripts.md`).
 
