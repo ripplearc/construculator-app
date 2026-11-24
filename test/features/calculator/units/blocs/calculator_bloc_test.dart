@@ -2062,6 +2062,21 @@ void main() {
         );
       });
 
+      test('a reopened percent bracket reads like any open bracket, "5+5" in '
+          'the open-bracket chip, and shows its % again once it closes', () {
+        final reopened = CalculatorState(
+          tape: pressed('2 0 0 + ( 5 + 5 ( % + 3 tap:1'),
+        ).chipsList[1];
+        expect(reopened.value, '5+5');
+        expect(reopened.type, CoreCalculatorChipType.bracketOpen);
+
+        final closedAgain = CalculatorState(
+          tape: pressed('2 0 0 + ( 5 + 5 ( % + 3 tap:1 ('),
+        ).chipsList[1];
+        expect(closedAgain.value, '(5+5)%');
+        expect(closedAgain.type, CoreCalculatorChipType.editable);
+      });
+
       test('each refusal raises its red Alert in the words of rule 4.12', () {
         final cases = {
           '1 2 +': (

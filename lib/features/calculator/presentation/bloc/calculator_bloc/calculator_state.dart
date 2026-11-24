@@ -666,7 +666,7 @@ class CalculatorState extends Equatable {
           },
           value: switch (chip) {
             ErrorChip() => null,
-            BracketChip(isPercent: true, :final inner) =>
+            BracketChip(isPercent: true, isOpen: false, :final inner) =>
               '(${inner.map(_valueTextOf).join()})%',
             BracketChip(:final inner) => inner.map(_valueTextOf).join(),
             ResultChip() when openIndex != null && index > openIndex =>
@@ -712,7 +712,7 @@ class CalculatorState extends Equatable {
       :final isPercent,
     ) =>
       '${_lead(operator)}(${inner.map(_valueTextOf).join()}${isOpen ? '' : ')'}'
-          '${_percentSign(isPercent)}',
+          '${_percentSign(isPercent && !isOpen)}',
     ErrorChip() => '',
   };
 
