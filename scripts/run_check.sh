@@ -114,6 +114,7 @@ pre_check() {
   # CA-1534: self-test the iOS decision on main's rules and the Mac build wait
   bash scripts/ci/decide_ios_build_test.sh
   bash scripts/ci/start_ios_build_and_wait_test.sh
+  bash scripts/ci/build_ios_when_needed_test.sh
 
   # CA-1240, CA-1346: self-test the #RunCheck plan, the build cancel, the build list and the PR comment
   bash scripts/ci/plan_runcheck_test.sh

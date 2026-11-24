@@ -2,10 +2,12 @@ workflows:
   pre-check:
     name: Pre-check
     instance_type: linux_x2
+    max_build_duration: 90
     environment:
       groups:
         - notification_emails
         - ripple_arc
+        - codemagic_api
     cache:
       cache_paths:
         - .fvm/
@@ -16,9 +18,7 @@ workflows:
     scripts:
       - name: Decide whether the iOS build is needed
         script: |
-          DECISION=$(bash scripts/ci/decide_ios_build.sh)
-          echo "iOS build: $DECISION"
-          echo "IOS_BUILD_DECISION=${DECISION%%:*}" >> "$CM_ENV"
+          bash scripts/ci/decide_ios_build.sh | tee "$HOME/ios_build_decision.txt"
       - name: Install FVM
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
@@ -52,13 +52,8 @@ workflows:
 
       - name: Build iOS when needed
         script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
           command -v jq >/dev/null || sudo apt-get install -y jq
-          export CODEMAGIC_APP_ID="${CODEMAGIC_APP_ID:-$CM_PROJECT_ID}"
-          bash scripts/ci/start_ios_build_and_wait.sh "${CM_BRANCH:?CM_BRANCH is not set}"
+          bash scripts/ci/build_ios_when_needed.sh "${CM_BRANCH:-}" "$HOME/ios_build_decision.txt"
     publishing:
       email:
         recipients:

@@ -520,7 +520,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 - Analyze changed Dart files
 - Run changed tests with coverage. A new `lib/` file with no covering test fails, and new files must meet the coverage target (`scripts/ci/run_changed_tests_with_coverage.sh`)
 - Decide whether an iOS-related file changed, with the rules on `main` (first step), and when one did, start `ios-debug-build` and wait for it (last step). The Pre-check fails if the Mac build does not finish
-- Fast feedback (~5-10 min)
+- Fast feedback (~5-10 min, plus the Mac build time when an iOS-related file changed)
 
 **Notifications:** Email + Slack (#build-notifications)
 

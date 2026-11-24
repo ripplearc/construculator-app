@@ -158,10 +158,16 @@ first_step_script() {
   workflow_block "$1" | awk '/^      - name:/ { seen++ } seen == 1 { print }'
 }
 STDOUT_TEXT="(codemagic.yaml)"
-assert_true "the Pre-check decides in its first step, with the rules on main" \
-  bash -c "$(declare -f workflow_block first_step_script); CODEMAGIC_YAML='$CODEMAGIC_YAML'; first_step_script pre-check | grep -Fq 'scripts/ci/decide_ios_build.sh'"
-assert_true "the Pre-check waits for the Mac build in its last step" \
-  bash -c "$(declare -f workflow_block); CODEMAGIC_YAML='$CODEMAGIC_YAML'; workflow_block pre-check | grep -F -- '- name:' | tail -n 1 | grep -Fq 'Build iOS when needed'"
+assert_true "the Pre-check decides in its first step, with the rules on main, and keeps the answer in a file" \
+  bash -c "$(declare -f workflow_block first_step_script); CODEMAGIC_YAML='$CODEMAGIC_YAML'; first_step_script pre-check | grep -F 'scripts/ci/decide_ios_build.sh' | grep -Fq 'ios_build_decision.txt'"
+assert_true "the Pre-check builds iOS in its last step, reading the same file" \
+  bash -c "$(declare -f workflow_block); CODEMAGIC_YAML='$CODEMAGIC_YAML'; workflow_block pre-check | grep -F -- '- name:' | tail -n 1 | grep -Fq 'Build iOS when needed' && workflow_block pre-check | grep -F 'build_ios_when_needed.sh' | grep -Fq 'ios_build_decision.txt'"
+assert_true "the Pre-check sets a build time limit" \
+  bash -c "$(declare -f workflow_block); CODEMAGIC_YAML='$CODEMAGIC_YAML'; workflow_block pre-check | grep -Eq '^    max_build_duration: [0-9]+$'"
+assert_true "the Pre-check takes the API token from its own group" \
+  bash -c "$(declare -f workflow_block); CODEMAGIC_YAML='$CODEMAGIC_YAML'; workflow_block pre-check | grep -Fq -- '- codemagic_api'"
+assert_true "only the Pre-check uses that group" \
+  bash -c "[ \"\$(grep -c -- '- codemagic_api' '$CODEMAGIC_YAML')\" = 1 ]"
 assert_true "the iOS workflow does not decide for itself" \
   bash -c "$(declare -f workflow_block); CODEMAGIC_YAML='$CODEMAGIC_YAML'; ! workflow_block ios-debug-build | grep -Eq 'ios_build_needed|IOS_BUILD_DECISION'"
 

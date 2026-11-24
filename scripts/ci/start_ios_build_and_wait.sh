@@ -7,7 +7,8 @@ set -uo pipefail
 # Exits 0 only when the Mac build finished successfully. Every other end fails the
 # calling build: a failed, canceled or timed out Mac build, an unknown status, a
 # Codemagic API error (on start or while waiting), or no end after MAX_POLLS
-# polls. On that last one the script also tries to cancel the Mac build.
+# polls. Whenever the script stops while the Mac build may still be running (a
+# polling error, the last poll, SIGTERM or SIGINT) it tries to cancel that build.
 #
 # Environment:
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID  required
@@ -32,6 +33,18 @@ POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-30}"
 MAX_POLLS="${MAX_POLLS:-90}"
 WORKFLOW_ID="ios-debug-build"
 
+BUILD_ID=""
+BUILD_MAY_BE_RUNNING=false
+
+# shellcheck disable=SC2329 # runs from the EXIT trap
+cancel_unfinished_build() {
+  if [ "$BUILD_MAY_BE_RUNNING" = "true" ]; then
+    bash "$SCRIPT_DIR/cancel_codemagic_builds.sh" "$BUILD_ID"
+  fi
+}
+trap cancel_unfinished_build EXIT
+trap 'exit 143' TERM INT
+
 fail() {
   echo "❌ $1"
   exit 1
@@ -52,8 +65,9 @@ RESPONSE=$(curl -sS --fail-with-body --max-time 30 -X POST \
 BUILD_ID=$(jq -er '.buildId' <<< "$RESPONSE") ||
   fail "No buildId in the Codemagic response for $WORKFLOW_ID: $(head -c 300 <<< "$RESPONSE")"
 case "$BUILD_ID" in
-  *[!A-Za-z0-9]*) fail "The buildId Codemagic sent is not an id: $BUILD_ID" ;;
+  "" | *[!A-Za-z0-9]*) fail "The buildId Codemagic sent is not an id: $BUILD_ID" ;;
 esac
+BUILD_MAY_BE_RUNNING=true
 echo "Started $WORKFLOW_ID on $BRANCH: build $BUILD_ID"
 
 for ((POLL = 1; POLL <= MAX_POLLS; POLL++)); do
@@ -66,6 +80,7 @@ for ((POLL = 1; POLL <= MAX_POLLS; POLL++)); do
 
   case "$STATUS" in
     finished)
+      BUILD_MAY_BE_RUNNING=false
       echo "✅ $WORKFLOW_ID build $BUILD_ID finished"
       exit 0
       ;;
@@ -74,10 +89,10 @@ for ((POLL = 1; POLL <= MAX_POLLS; POLL++)); do
       sleep "$POLL_INTERVAL_SECONDS"
       ;;
     *)
+      BUILD_MAY_BE_RUNNING=false
       fail "$WORKFLOW_ID build $BUILD_ID ended with status $STATUS"
       ;;
   esac
 done
 
-bash "$SCRIPT_DIR/cancel_codemagic_builds.sh" "$BUILD_ID"
 fail "$WORKFLOW_ID build $BUILD_ID did not end within $MAX_POLLS polls"
