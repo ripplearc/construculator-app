@@ -176,53 +176,56 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
             ),
             SheetFieldRow(
               label: l10n.materialRateLabel,
-              valueGap: CoreSpacing.space2,
+              valueGap: 0,
+              bottomPadding: 0,
+              trailingInset: CoreSpacing.space5,
               onTap: _rateFocus.requestFocus,
-              child: Row(
-                spacing: CoreSpacing.space1,
-                children: [
-                  Expanded(
-                    child: Row(
-                      spacing: CoreSpacing.space1,
-                      children: [
-                        _SheetTextField(
-                          key: const Key('material_rate_field'),
-                          fitsText: true,
-                          readOnly: _isSaving(state),
-                          controller: _rateController,
-                          focusNode: _rateFocus,
-                          label: l10n.materialRateLabel,
-                          hintText: l10n.materialRatePlaceholder,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            _decimalLimitFormatter(decimals: 2),
-                          ],
-                          onChanged: (value) =>
-                              bloc.add(MaterialRateUpdated(value)),
-                        ),
-                        if (state.data.unit case final unit?)
-                          Flexible(
-                            child: Text(
-                              l10n.materialRatePerUnitSuffix(
-                                unit.displayName(l10n),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.textTheme.bodyMediumRegular
-                                  .copyWith(color: context.colorTheme.textBody),
+              child: SizedBox(
+                height: _lookupButtonTapSize,
+                child: Row(
+                  spacing: CoreSpacing.space1,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        spacing: CoreSpacing.space1,
+                        children: [
+                          _SheetTextField(
+                            key: const Key('material_rate_field'),
+                            fitsText: true,
+                            readOnly: _isSaving(state),
+                            controller: _rateController,
+                            focusNode: _rateFocus,
+                            label: l10n.materialRateLabel,
+                            hintText: l10n.materialRatePlaceholder,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
+                            inputFormatters: [
+                              _decimalLimitFormatter(decimals: 2),
+                            ],
+                            onChanged: (value) =>
+                                bloc.add(MaterialRateUpdated(value)),
                           ),
-                      ],
+                          if (state.data.unit case final unit?)
+                            Flexible(
+                              child: Text(
+                                l10n.materialRatePerUnitSuffix(
+                                  unit.displayName(l10n),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.bodyMediumRegular
+                                    .copyWith(
+                                      color: context.colorTheme.textBody,
+                                    ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (_isRateMissing(state))
-                    SizedBox(
-                      width: _lookupButtonTapSize,
-                      height: _SheetTextField._drawnHeight,
-                      child: OverflowBox(
-                        maxHeight: _lookupButtonTapSize,
+                    if (_isRateMissing(state))
+                      SizedBox.square(
+                        dimension: _lookupButtonTapSize,
                         child: CoreOutlinedIconButton(
                           key: const Key('lookup_rate_button'),
                           icon: CoreIcons.search,
@@ -230,8 +233,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                           onTap: () => unawaited(_openRateLookup()),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
             if (_isRateMissing(state)) const _RateLookupHint(),
@@ -266,17 +269,23 @@ class _RateLookupHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final l10n = context.l10n;
+    final searchIcon = l10n.materialRateLookupHintSearchIcon;
+    final [before, after] = l10n
+        .materialRateLookupHint(searchIcon)
+        .split(searchIcon);
     return Padding(
       key: const Key('material_rate_lookup_hint'),
       padding: const EdgeInsets.fromLTRB(
         CoreSpacing.space5,
-        CoreSpacing.space2,
+        CoreSpacing.space3,
         CoreSpacing.space5,
         0,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: CoreSpacing.space1,
+        spacing: CoreSpacing.space2,
         children: [
           CoreIconWidget(
             icon: CoreIcons.info,
@@ -284,9 +293,20 @@ class _RateLookupHint extends StatelessWidget {
             color: colorTheme.iconGrayMid,
           ),
           Expanded(
-            child: Text(
-              context.l10n.materialRateLookupHint,
-              style: context.textTheme.bodySmallRegular.copyWith(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: before),
+                  TextSpan(
+                    text: searchIcon,
+                    style: textTheme.bodySmallSemiBold.copyWith(
+                      color: colorTheme.textHeadline,
+                    ),
+                  ),
+                  TextSpan(text: after),
+                ],
+              ),
+              style: textTheme.bodySmallRegular.copyWith(
                 color: colorTheme.textBody,
               ),
             ),

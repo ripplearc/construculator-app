@@ -9,6 +9,7 @@ import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/extensions/build_context_extensions.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
@@ -179,14 +180,42 @@ void main() {
       expect(value.top - label.bottom, 4);
     });
 
-    testWidgets('the rate row leaves 8 dp between its label and value', (
-      tester,
-    ) async {
+    testWidgets('the rate value sits in the middle of a 48 dp row, 12 dp '
+        'under its label', (tester) async {
       await pumpFields(tester);
 
       final label = tester.getRect(find.text('Rate'));
       final value = tester.getRect(find.text('Set your rate'));
-      expect(value.top - label.bottom, 8);
+      final button = tester.getRect(
+        find.byKey(const Key('lookup_rate_button')),
+      );
+      expect(value.top - label.bottom, 12);
+      expect(button.height, 48);
+      expect(button.top, label.bottom);
+      expect(value.center.dy, button.center.dy);
+    });
+
+    testWidgets('the search button ends where the rate underline ends, and '
+        'the hint sits 12 dp under it with 8 dp after its icon', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      final hint = find.byKey(const Key('material_rate_lookup_hint'));
+
+      final button = tester.getRect(
+        find.byKey(const Key('lookup_rate_button')),
+      );
+      final screenWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      expect(button.right, screenWidth - CoreSpacing.space5);
+      final icon = tester.getRect(
+        find.descendant(of: hint, matching: find.byType(CoreIconWidget)),
+      );
+      final text = tester.getRect(
+        find.descendant(of: hint, matching: find.byType(RichText)).last,
+      );
+      expect(text.left - icon.right, CoreSpacing.space2);
+      expect(icon.top - button.bottom, CoreSpacing.space3 + 1);
     });
   });
 
@@ -676,12 +705,24 @@ void main() {
 
       expect(lookupButton, findsOneWidget);
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(
-        find.descendant(
-          of: hint,
-          matching: find.text(l10n.materialRateLookupHint),
+      final searchIcon = l10n.materialRateLookupHintSearchIcon;
+      final hintText = find.descendant(
+        of: hint,
+        matching: find.text(
+          l10n.materialRateLookupHint(searchIcon),
+          findRichText: true,
         ),
-        findsOneWidget,
+      );
+      expect(hintText, findsOneWidget);
+      final spans = <TextSpan>[];
+      tester.widget<RichText>(hintText).text.visitChildren((span) {
+        if (span is TextSpan) spans.add(span);
+        return true;
+      });
+      final boldSpan = spans.singleWhere((span) => span.text == searchIcon);
+      expect(
+        boldSpan.style?.fontWeight,
+        tester.element(hint).textTheme.bodySmallSemiBold.fontWeight,
       );
     });
 
@@ -714,6 +755,24 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_paint-rate')), findsOneWidget);
     });
 
+    for (final offset in [-15, 15]) {
+      testWidgets('a tap ${offset.abs()} dp ${offset < 0 ? 'above' : 'below'} '
+          'the search button centre opens Look up a rate', (tester) async {
+        await pumpFields(tester);
+        await tester.enterText(nameField, 'interior paint');
+
+        await tester.tapAt(
+          tester.getCenter(lookupButton) + Offset(0, offset.toDouble()),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('your_rates_search_field')),
+          findsOneWidget,
+        );
+      });
+    }
+
     testWidgets('a picked rate fills the rate and unit, keeps the typed name '
         'and removes the search button', (tester) async {
       await pumpFields(tester);
@@ -730,6 +789,21 @@ void main() {
       );
       expect(lookupButton, findsNothing);
       expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+    });
+
+    testWidgets('clearing a picked rate brings the search button and the '
+        'hint back', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'interior paint');
+      await pickFromLookup(tester);
+      expect(lookupButton, findsNothing);
+
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+
+      expect(lookupButton, findsOneWidget);
+      expect(hint, findsOneWidget);
+      expect(bloc.state.data.rateStatus, RateStatus.missing);
     });
 
     testWidgets('a picked rate fills the name too while it is empty', (
