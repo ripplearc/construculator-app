@@ -242,6 +242,13 @@
             <mutation text="power: 3,"/>
         </regex>
 
+        <!-- RULE R4: a ton token is written without the space the chip
+             shows, or every weight gets one -->
+        <regex pattern="unitAfterSpace: unit == Unit\.ton," dotAll="true" id="formatter.tokens.ton_space">
+            <mutation text="unitAfterSpace: false,"/>
+            <mutation text="unitAfterSpace: true,"/>
+        </regex>
+
         <!-- RULE R3c: a token is written grouped, as the strip chip is -->
         <regex pattern="Token\(digits: _decimalLengthNumber\(value, false\), unit: unit\)," dotAll="true" id="formatter.tokens.grouped_length">
             <mutation text="Token(digits: _decimalLengthNumber(value, true), unit: unit),"/>

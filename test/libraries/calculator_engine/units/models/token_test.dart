@@ -101,6 +101,22 @@ void main() {
         expect(token.copyWith(unit: () => Unit.foot).unit, Unit.foot);
       });
 
+      test('a unit set or cleared is written the typed way again, and any '
+          'other copy keeps the space of an accepted ton', () {
+        const accepted = Token(
+          digits: '2.5',
+          unit: Unit.ton,
+          unitAfterSpace: true,
+        );
+        expect(accepted.copyWith(digits: '2.50').unitAfterSpace, isTrue);
+        expect(
+          accepted.copyWith(unit: () => Unit.ton),
+          const Token(digits: '2.5', unit: Unit.ton),
+        );
+        expect(accepted.copyWith(unit: () => null), const Token(digits: '2.5'));
+        expect(accepted, isNot(const Token(digits: '2.5', unit: Unit.ton)));
+      });
+
       test('can open, fill and clear the angle segments', () {
         const angle = Token(digits: '38', minutes: '30', seconds: '');
         expect(

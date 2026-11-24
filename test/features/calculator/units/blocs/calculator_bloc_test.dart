@@ -1505,6 +1505,7 @@ void main() {
             'yd' => const CalculatorUnitSelected(Unit.yard),
             'm' => const CalculatorKeySelected('m'),
             'bf' => const CalculatorKeySelected('bf'),
+            'lbs' => const CalculatorKeySelected('lbs'),
             '/' => const CalculatorFractionPressed(),
             '×' => const CalculatorOperatorPressed(Operator.multiply),
             '÷' => const CalculatorOperatorPressed(Operator.divide),
@@ -1642,6 +1643,7 @@ void main() {
         ('1 m', 1, '39-3/8in'),
         ('[Width] 7 / 1 6 in', 0, '0ft 0-7/16in'),
         ('1 0 bf', 0, '0.83ft³'),
+        ('5 0 0 0 lbs', 1, '2.5 ton'),
         ('1 2 ft × 5 ft =', 0, '6.67yd²'),
       ]) {
         blocTest<CalculatorBloc, CalculatorState>(

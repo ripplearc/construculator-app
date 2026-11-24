@@ -9,6 +9,7 @@
 
     <files>
         <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+        <file>lib/libraries/calculator_engine/models/token.dart</file>
     </files>
 
     <rules>
@@ -89,6 +90,17 @@
         </regex>
         <regex pattern="text\.write\(_isMixedNumber\(tokens\[index - 1\], token\) \? '-' : ' '\);" dotAll="true" id="entry_buffer.text.mixed_without_dash">
             <mutation text="text.write(' ');"/>
+        </regex>
+
+        <!-- RULE R4 (CA-1088 3/6): a ton accepted from the strip loses the
+             space the chip wrote, a typed ton gains one, or the space
+             outlives the unit key that re-closes the number -->
+        <regex pattern="'\$\{token\.unitAfterSpace \? ' ' : ''\}'" dotAll="true" id="entry_buffer.text.accepted_ton_space">
+            <mutation text="''"/>
+            <mutation text="' '"/>
+        </regex>
+        <regex pattern="unitAfterSpace: unit == null &amp;&amp; unitAfterSpace," dotAll="true" id="token.copy_with.space_outlives_unit">
+            <mutation text="unitAfterSpace: unitAfterSpace,"/>
         </regex>
 
         <!-- RULE: a zero under the line is accepted, or every 0 under the

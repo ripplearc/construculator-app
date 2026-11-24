@@ -58,6 +58,13 @@ class Token extends Equatable {
   /// it, since the way back belongs to the digits it was made from.
   final String? typedAs;
 
+  /// Whether the unit is written after a space, the way the formatter
+  /// writes a ton (2.5 ton, where a typed ton reads 78ton): `true` only on
+  /// the number of a conversion accepted from the strip, so that the tape
+  /// reads as the chip did (Section 1.2). A unit key pressed on the number,
+  /// or taken off it, writes the unit the typed way again.
+  final bool unitAfterSpace;
+
   const Token({
     required this.digits,
     this.denominator,
@@ -66,6 +73,7 @@ class Token extends Equatable {
     this.minutes,
     this.seconds,
     this.typedAs,
+    this.unitAfterSpace = false,
   }) : assert(power >= 1 && power <= 3, 'the unit ladder stops at cubic'),
        assert(
          seconds == null || minutes != null,
@@ -111,6 +119,7 @@ class Token extends Equatable {
   /// Returns a copy with the given fields replaced. [denominator], [unit],
   /// [minutes], [seconds] and [typedAs] take a `Function()?` wrapper so that
   /// clearing them to `null` can be told apart from leaving them as they are.
+  /// A copy with another [unit] writes it the typed way ([unitAfterSpace]).
   Token copyWith({
     String? digits,
     String? Function()? denominator,
@@ -128,6 +137,7 @@ class Token extends Equatable {
       minutes: minutes != null ? minutes() : this.minutes,
       seconds: seconds != null ? seconds() : this.seconds,
       typedAs: typedAs != null ? typedAs() : this.typedAs,
+      unitAfterSpace: unit == null && unitAfterSpace,
     );
   }
 
@@ -140,5 +150,6 @@ class Token extends Equatable {
     minutes,
     seconds,
     typedAs,
+    unitAfterSpace,
   ];
 }

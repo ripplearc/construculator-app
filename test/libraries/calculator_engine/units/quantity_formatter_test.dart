@@ -103,8 +103,13 @@ void main() {
         const fivePounds = Weight(500, unit: Unit.ton);
         expect(formatter.format(fivePounds), '0 ton');
         expect(formatter.tokens(fivePounds), const [
-          Token(digits: '0', unit: Unit.ton),
+          Token(digits: '0', unit: Unit.ton, unitAfterSpace: true),
         ]);
+        expect(
+          formatter.tokens(const Weight(500000, unit: Unit.pound)),
+          const [Token(digits: '5000', unit: Unit.pound)],
+          reason: 'only a ton is written after a space',
+        );
         expect(formatter.tokens(const Scalar(1.5)), isEmpty);
         expect(formatter.tokens(const Angle(45)), isEmpty);
       });

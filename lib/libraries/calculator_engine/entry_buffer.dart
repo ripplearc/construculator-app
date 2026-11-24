@@ -225,7 +225,9 @@ class EntryBuffer extends Equatable {
   /// A fraction closed in inches right after whole inches is written the
   /// way the trade writes it, 5ft 7-1/2in (Section 6), a zero whole part
   /// included, as the strip writes it: 0ft 0-7/16in accepted from the strip
-  /// reads 0ft 0-7/16in on the tape (walkthrough 21.2, step 18).
+  /// reads 0ft 0-7/16in on the tape (walkthrough 21.2, step 18). A ton
+  /// accepted from the strip keeps the space the chip wrote (2.5 ton), where
+  /// a typed ton reads 78ton ([Token.unitAfterSpace]).
   String get text {
     final text = StringBuffer();
     for (final (index, token) in tokens.indexed) {
@@ -243,6 +245,7 @@ class EntryBuffer extends Equatable {
     if (token.isDegreesMinutesSeconds) return _degreesMinutesSeconds(token);
     return '${token.digits}'
         '${token.denominator == null ? '' : '/${token.denominator}'}'
+        '${token.unitAfterSpace ? ' ' : ''}'
         '${token.unit?.suffix ?? ''}'
         '${_exponent(token.power)}';
   }

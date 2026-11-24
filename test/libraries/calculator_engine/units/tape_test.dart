@@ -539,7 +539,8 @@ void main() {
           '0ft 0-7/16in → 0ft 0-7/16in',
         );
         expect(accepted('1 0 bf', Unit.foot), '0.83ft³ → 0.83ft³');
-        expect(accepted('5 lbs', Unit.ton), '0 ton → 0ton');
+        expect(accepted('5 lbs', Unit.ton), '0 ton → 0 ton');
+        expect(accepted('5 0 0 0 lbs', Unit.ton), '2.5 ton → 2.5 ton');
         expect(
           changed(
             press(const Tape(), '1 m').pressUnit(Unit.inch),

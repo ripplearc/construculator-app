@@ -213,7 +213,7 @@ class QuantityFormatter extends Equatable {
   /// [footInchTokens], inches as whole inches and the fraction of an inch
   /// at the Fractional resolution setting (39-3/8in), every other unit as
   /// the number [format] writes under it, with the unit's power (0.83ft³,
-  /// 1777.78yd², 0.91m, 0.03ton). So a chip accepted from the strip reads
+  /// 1777.78yd², 0.91m, 0.03 ton). So a chip accepted from the strip reads
   /// on the tape as it read on the strip, never a respelling of the same
   /// value (Section 1.2; decision tree row 201), where the unit key alone
   /// would read 39.37in or 0.8333ft³ ([QuantitySpeller]). The tokens are
@@ -241,7 +241,11 @@ class QuantityFormatter extends Equatable {
       ),
     ],
     Weight(:final unit) => [
-      Token(digits: _weightNumber(value, false), unit: unit),
+      Token(
+        digits: _weightNumber(value, false),
+        unit: unit,
+        unitAfterSpace: unit == Unit.ton,
+      ),
     ],
     Angle() || Scalar() => const [],
   };
