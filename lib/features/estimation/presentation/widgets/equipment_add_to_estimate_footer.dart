@@ -53,6 +53,8 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
         return AddToEstimateFooter(
           lineTotal: data.lineTotal,
           deliveryFee: data.deliveryFee,
+          changeInEstimateTotal: data.changeInEstimateTotal,
+          hasUnsavedChanges: data.hasUnsavedChanges,
           estimateName: estimateName,
           estimateTotal: estimateTotal,
           block: blocker == null ? null : _blockFor(blocker, l10n),

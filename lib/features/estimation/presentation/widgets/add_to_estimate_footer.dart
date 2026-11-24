@@ -23,8 +23,10 @@ enum AddToEstimateFooterPart {
 class AddToEstimateFooter extends StatelessWidget {
   /// Key of the summary card.
   static const panelKey = Key('adds_to_estimate_panel');
+
   /// Key of the submit button.
   static const buttonKey = Key('add_to_estimate_button');
+
   /// Key of the save-error line.
   static const errorKey = Key('add_to_estimate_error');
 
@@ -63,6 +65,15 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Which parts to draw; [AddToEstimateFooterPart.all] by default.
   final AddToEstimateFooterPart part;
 
+  /// How much saving moves the estimate total, in dollars, when the footer
+  /// saves changes to a line already on the estimate; `null` when it adds a
+  /// new line. Switches the panel and the button label to their edit wording.
+  final double? changeInEstimateTotal;
+
+  /// Whether any field of the line being edited has changed. Only read when
+  /// [changeInEstimateTotal] is not null; it picks the title of the panel.
+  final bool hasUnsavedChanges;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -75,6 +86,8 @@ class AddToEstimateFooter extends StatelessWidget {
     required this.onAdd,
     this.keypad,
     this.part = AddToEstimateFooterPart.all,
+    this.changeInEstimateTotal,
+    this.hasUnsavedChanges = false,
   });
 
   @override
@@ -91,6 +104,8 @@ class AddToEstimateFooter extends StatelessWidget {
         estimateName: estimateName,
         estimateTotal: estimateTotal,
         block: block,
+        changeInEstimateTotal: changeInEstimateTotal,
+        hasUnsavedChanges: hasUnsavedChanges,
       ),
     );
     if (part == AddToEstimateFooterPart.panel) {
@@ -124,7 +139,11 @@ class AddToEstimateFooter extends StatelessWidget {
                 padding: sideInset,
                 child: CoreButton(
                   key: buttonKey,
-                  label: block?.buttonLabel ?? l10n.addToEstimateButton,
+                  label:
+                      block?.buttonLabel ??
+                      (changeInEstimateTotal == null
+                          ? l10n.addToEstimateButton
+                          : l10n.saveThisLineButton),
                   isDisabled: block != null || isBusy,
                   onPressed: onAdd,
                 ),
