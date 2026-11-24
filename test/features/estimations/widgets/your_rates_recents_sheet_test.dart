@@ -935,5 +935,14 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('a category with no words of its own fails instead of '
+        'showing the equipment words', (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await openSheet(tester, category: CostItemType.labor);
+
+      expect(tester.takeException(), isA<UnsupportedError>());
+      expect(find.text(l10n.yourRatesRecentsTitle), findsNothing);
+    });
   });
 }
