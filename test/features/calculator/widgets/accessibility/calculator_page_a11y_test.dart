@@ -233,6 +233,44 @@ void main() {
       },
     );
 
+    testWidgets('the Read-as pill meets the label and contrast guidelines '
+        'in both themes, and say what a tap does', (tester) async {
+      await setupA11yTest(tester);
+      final l10n = AppLocalizationsEn();
+      Future<void> type(List<String> keys) async {
+        for (final key in keys) {
+          await tester.tap(find.byKey(ValueKey(key)));
+          await tester.pump();
+        }
+        await tester.pump(CoreSuggestionArea.animationDuration);
+        await tester.pump();
+      }
+
+      final pill = find.byKey(CoreDisplayArea.dependentKeyTestKey(0));
+      // Tap target size is disabled as in the close-button test.
+      for (final theme in kA11yTestThemes) {
+        // The page keeps its bloc across the theme pumps, so each round
+        // starts from an empty tape.
+        await tester.pumpWidget(makeTestableWidget(theme: theme));
+        await type(const [
+          'calc_key_clearAll',
+          'calc_key_Pitch',
+          'calc_key_eight',
+          'calc_key_decimal',
+          'calc_key_four',
+          'calc_key_five',
+        ]);
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          pill,
+          checkTapTargetSize: false,
+          checkTextContrast: theme.brightness == Brightness.dark,
+        );
+        await _expectLightThemeContrastOf(tester, theme, pill);
+        expect(tester.getSemantics(pill).hint, l10n.calculatorPillReadAsHint);
+      }
+    });
+
     testWidgets(
       'an abbreviated key is read by its full name',
       (tester) async {
