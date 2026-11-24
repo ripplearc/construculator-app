@@ -26,6 +26,8 @@ class MaterialRateLookupSheet extends StatefulWidget {
   /// Dates the "Used …" and "Saved …" line under each saved rate.
   final Clock clock;
 
+  static const double _storyboardHeightRatio = 0.887;
+
   const MaterialRateLookupSheet({
     super.key,
     required this.initialQuery,
@@ -47,6 +49,9 @@ class MaterialRateLookupSheet extends StatefulWidget {
     return CoreQuickSheet.show<YourRateEntry>(
       context: context,
       backgroundColor: sheetSurface(context),
+      isFixedHeight: true,
+      fixedHeightRatio: _storyboardHeightRatio,
+      useSafeArea: true,
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
         child: MaterialRateLookupSheet(
@@ -87,16 +92,24 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
   void _onRowTap(YourRateEntry entry) =>
       setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
 
+  void _onStateChanged(BuildContext context, YourRatesState state) {
+    if (state is! YourRatesSearchResults) return;
+    _shownEntries = state.results;
+    if (!state.results.any((entry) => entry.id == _selectedId)) {
+      _selectedId = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocBuilder<YourRatesBloc, YourRatesState>(
+    return BlocConsumer<YourRatesBloc, YourRatesState>(
+      listener: _onStateChanged,
       builder: (context, state) {
         final entries = switch (state) {
           YourRatesSearchResults(:final results) => results,
           _ => _shownEntries,
         };
-        _shownEntries = entries;
         final selected = entries
             .where((entry) => entry.id == _selectedId)
             .firstOrNull;
@@ -109,7 +122,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SheetHeader(title: l10n.yourRatesLookupTitle),
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
