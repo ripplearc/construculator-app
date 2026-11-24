@@ -28,9 +28,7 @@ class DeleteCostEstimationBloc
   ) async {
     final projectId = _currentProjectNotifier.currentProjectId;
     if (projectId == null || projectId.isEmpty) {
-      _logger.error(
-        'Current project ID is null or empty, cannot delete estimation',
-      );
+      _logger.error('Current project ID is null or empty, cannot delete estimation');
       emit(
         const DeleteCostEstimationFailure(
           failure: EstimationFailure(

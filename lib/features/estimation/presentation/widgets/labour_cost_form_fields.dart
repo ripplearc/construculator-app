@@ -79,13 +79,10 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       return;
     }
     final rawCrewRate = double.tryParse(_crewRateController.text) ?? 0;
-    final rawConditionalValue =
-        double.tryParse(_conditionalValueController.text) ?? 0;
+    final rawConditionalValue = double.tryParse(_conditionalValueController.text) ?? 0;
     final rawCrewSize = double.tryParse(_crewSizeController.text) ?? 0;
     final crewRate = rawCrewRate.isFinite ? rawCrewRate : 0.0;
-    final conditionalValue = rawConditionalValue.isFinite
-        ? rawConditionalValue
-        : 0.0;
+    final conditionalValue = rawConditionalValue.isFinite ? rawConditionalValue : 0.0;
     final crewSize = rawCrewSize.isFinite ? rawCrewSize : 0.0;
     widget.onTotalChanged?.call(crewRate * conditionalValue * crewSize);
   }
@@ -167,16 +164,14 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     return [
       BlocBuilder<LabourCostFormBloc, LabourCostFormState>(
         builder: (_, state) {
-          final error = state is LabourCostFormEditing
-              ? state.itemTypeError
-              : null;
+          final error =
+              state is LabourCostFormEditing ? state.itemTypeError : null;
           return CoreTextField(
             key: const Key('labour_type_field'),
             label: l10n.labourTypeLabel,
             controller: _labourTypeController,
-            errorTextList: error != null
-                ? [l10n.labourTypeRequiredError]
-                : null,
+            errorTextList:
+                error != null ? [l10n.labourTypeRequiredError] : null,
           );
         },
       ),

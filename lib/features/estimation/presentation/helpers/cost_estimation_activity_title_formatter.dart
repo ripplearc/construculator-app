@@ -134,9 +134,7 @@ class CostEstimationActivityTitleFormatter {
         if (changedItems.length > 1) {
           return l10n.activityCostFileUpdatedCount(changedItems.length);
         }
-        final itemName = CostFileChangedItemParser.singleFrom(
-          details,
-        )?.itemName;
+        final itemName = CostFileChangedItemParser.singleFrom(details)?.itemName;
         if (itemName != null) {
           return l10n.activityCostFileUpdated(itemName);
         }

@@ -19,7 +19,9 @@ abstract class DeleteCostEstimationEvent extends Equatable {
 class DeleteCostEstimationRequested extends DeleteCostEstimationEvent {
   final String estimationId;
 
-  const DeleteCostEstimationRequested({required this.estimationId});
+  const DeleteCostEstimationRequested({
+    required this.estimationId,
+  });
 
   @override
   List<Object?> get props => [estimationId];

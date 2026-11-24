@@ -55,8 +55,7 @@ class CalcMethodCard extends StatelessWidget {
                 key: const Key('per_hours_option'),
                 label: l10n.perHoursOption,
                 isSelected: calcMethod == LaborCalculationMethodType.perHour,
-                onTap: () =>
-                    onMethodChanged(LaborCalculationMethodType.perHour),
+                onTap: () => onMethodChanged(LaborCalculationMethodType.perHour),
               ),
               // TODO: [CA-319] Add Per Unit calculation option
             ],
