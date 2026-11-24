@@ -1867,9 +1867,10 @@ void main() {
         expect(notWhole.conversions, isEmpty);
         expect(
           CalculatorState(
-            tape: pressed('[Diameter] 1 2 ft [Sides] 2'),
+            tape: pressed('[Sides] 2 [Diameter] 1 2 ft'),
           ).stripNote,
           const CalculatorSidesNotWholeNote(),
+          reason: 'a count of 2 finished by the next key',
         );
         final whole = CalculatorState(
           tape: pressed('[Diameter] 1 2 ft [Sides] 6'),
@@ -1882,6 +1883,31 @@ void main() {
           ).stripText(const CalculatorSidesNotWholeNote()),
           'Sides needs a whole number, 3 or more.',
         );
+      });
+
+      test('the Sides note waits while the count is still being typed: after '
+          '[Sides] 1 the answers stay and no note shows, 12 is a count, and a '
+          '0 or a decimal part is noted at once (Section 1.8, "Shown only '
+          'once the entry is finished")', () {
+        final one = CalculatorState(
+          tape: pressed('[Diameter] 1 2 ft [Sides] 1'),
+        );
+        expect(one.stripNote, isNull);
+        final twelve = CalculatorState(
+          tape: pressed('[Diameter] 1 2 ft [Sides] 1 2'),
+        );
+        expect(twelve.stripNote, isNull);
+        expect(twelve.suggestions, isNotEmpty);
+        for (final keys in [
+          '[Diameter] 1 2 ft [Sides] 0',
+          '[Diameter] 1 2 ft [Sides] 1 . 5',
+        ]) {
+          expect(
+            CalculatorState(tape: pressed(keys)).stripNote,
+            const CalculatorSidesNotWholeNote(),
+            reason: keys,
+          );
+        }
       });
 
       blocTest<CalculatorBloc, CalculatorState>(

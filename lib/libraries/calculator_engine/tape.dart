@@ -1212,10 +1212,10 @@ class Tape extends Equatable {
   /// then the way back. Under Pitch it offers the other plausible reading,
   /// degrees or inches of rise per 12in of run, and then the way back
   /// (8.45° → 8.45in/12in → 8.45°); it never offers D:M:S, which is not a
-  /// pitch reading (decision tree rows 197 and 260; walkthrough 17.4's
-  /// D:M:S stop is a doc error), nor the roof nobody could frame (over
-  /// 24in/12in, the same line Slope draws at a ratio of 2; a number the
-  /// Inch key made that steep gets no pill either). A D:M:S opened by a
+  /// pitch reading (decision tree rows 197 and 260), nor the roof nobody
+  /// could frame (over 24in/12in, the same line Slope draws at a ratio of
+  /// 2; a number the Inch key made that steep gets no pill either). A D:M:S
+  /// opened by a
   /// second point keeps the way back to the degrees its digits were typed
   /// as (8.45. offers 8.45°). A number still ending in its point, an angle
   /// typed with the D:M:S key, a fraction, a squared inch, or a length in

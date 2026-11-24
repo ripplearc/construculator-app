@@ -567,13 +567,17 @@ class CalculatorState extends Equatable {
 
   /// The note that takes the place of the suggestions (Section 1.8), or
   /// `null`: a warning first — a pitch, a slope or a Sides count the rules
-  /// cannot use (Sections 5.4 and 1.8), a prefix trig chip its function
-  /// cannot answer — then
+  /// cannot use (Sections 5.4 and 1.8; the Sides note only once the count
+  /// is finished, or holds a 0 or a decimal part), a prefix trig chip its
+  /// function cannot answer — then
   /// the D:M:S key that changed nothing on a pitch answer, which the next
   /// key closes.
   CalculatorStripNote? get stripNote {
     if (_stripIsSilent) return null;
-    switch (const DeterministicRules().refusalFor(tape.namedValues)) {
+    switch (const DeterministicRules().refusalFor(
+      tape.namedValues,
+      sidesStillTyped: tape.beingTyped?.key == PlainNumberKeys.sides,
+    )) {
       case RuleRefusal.pitchOutOfRange:
         return CalculatorPitchOutOfRangeNote(
           isAtLeastARightAngle: _pitchDegrees >= DeterministicRules.rightAngle,

@@ -133,10 +133,22 @@
 
         <!-- CA-1094 (decision tree row 339): a Sides count no polygon has is
              used, or a tape with no Sides, or a whole count, is refused -->
-        <regex pattern="if \(namedValues\.containsKey\(DimensionKey\.sides\.id\) &amp;&amp;\s*_sidesOf\(namedValues\) == null\) \{" dotAll="true" id="pitch_grammar.sides.not_whole">
-            <mutation text="if (_sidesOf(namedValues) == null) {"/>
-            <mutation text="if (namedValues.containsKey(DimensionKey.sides.id)) {"/>
+        <regex pattern="if \(namedValues\.containsKey\(DimensionKey\.sides\.id\) &amp;&amp;\s*_sidesOf\(namedValues\) == null &amp;&amp;\s*!\(sidesStillTyped &amp;&amp; _isTheStartOfACount\(namedValues\)\)\) \{" dotAll="true" id="pitch_grammar.sides.not_whole">
+            <mutation text="if (_sidesOf(namedValues) == null &amp;&amp; !(sidesStillTyped &amp;&amp; _isTheStartOfACount(namedValues))) {"/>
+            <mutation text="if (namedValues.containsKey(DimensionKey.sides.id) &amp;&amp; !(sidesStillTyped &amp;&amp; _isTheStartOfACount(namedValues))) {"/>
             <mutation text="if (false) {"/>
+        </regex>
+        <!-- R1 (Section 1.8, "Shown only once the entry is finished"): a 1
+             or a 2 still being typed is refused, every count still being
+             typed is let through, or a 0 or a decimal part is taken for the
+             start of a count -->
+        <regex pattern="!\(sidesStillTyped &amp;&amp; _isTheStartOfACount\(namedValues\)\)\) \{" dotAll="true" id="pitch_grammar.sides.waits_for_the_count">
+            <mutation text="true) {"/>
+            <mutation text="!sidesStillTyped) {"/>
+        </regex>
+        <regex pattern="Scalar\(:final value\) =&gt; value &gt;= 1 &amp;&amp; value == value\.roundToDouble\(\)," dotAll="true" id="pitch_grammar.sides.start_of_a_count">
+            <mutation text="Scalar(:final value) =&gt; value &gt;= 0 &amp;&amp; value == value.roundToDouble(),"/>
+            <mutation text="Scalar(:final value) =&gt; value &gt;= 1,"/>
         </regex>
     </rules>
 

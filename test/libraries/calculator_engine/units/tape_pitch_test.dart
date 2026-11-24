@@ -419,6 +419,39 @@ void main() {
         expect(refusalOf('[Diameter] 1 2 ft [Sides]'), isNull);
       });
 
+      test('the Sides refusal waits for the count to be finished: a 1 or a 2 '
+          'still being typed is the start of 12 or 24, while a 0 or a '
+          'decimal part is refused at once (Section 1.8, "Shown only once '
+          'the entry is finished"; row 339)', () {
+        RuleRefusal? whileTyped(String keys) => rules.refusalFor(
+          press(const Tape(), keys).namedValues,
+          sidesStillTyped: true,
+        );
+
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 1'), isNull);
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 2'), isNull);
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 1 2'), isNull);
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 0'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 6 . 5'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 1 . 5'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          rules.refusalFor(
+            press(const Tape(), '[Diameter] 1 2 ft [Sides] 1').namedValues,
+          ),
+          RuleRefusal.sidesNotWhole,
+          reason: 'a count of 1 that is finished is refused',
+        );
+      });
+
       test('a second dimension on top of it does not bury the reason', () {
         final tape = press(const Tape(), '[Pitch] 9 5 [Diag] 2 2 ft');
         expect(strip(tape), isEmpty);

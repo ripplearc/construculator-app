@@ -106,6 +106,10 @@
         <!-- CA-1094 (Section 1.8; decision tree rows 339, 375): the Sides
              note is silent, = on a warning raises no Alert, or the Alert
              names another warning -->
+        <regex pattern="sidesStillTyped: tape\.beingTyped\?\.key == PlainNumberKeys\.sides," dotAll="true" id="calculator_state.note.sides_while_typed">
+            <mutation text="sidesStillTyped: false,"/>
+            <mutation text="sidesStillTyped: true,"/>
+        </regex>
         <regex pattern="case RuleRefusal\.sidesNotWhole:\s*return const CalculatorSidesNotWholeNote\(\);" dotAll="true" id="calculator_state.note.sides_silent">
             <mutation text="case RuleRefusal.sidesNotWhole: return null;"/>
         </regex>

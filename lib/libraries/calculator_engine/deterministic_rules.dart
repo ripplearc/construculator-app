@@ -286,7 +286,16 @@ class DeterministicRules extends Equatable {
   /// less (Section 5.4), a Sides count that is not a whole number of 3 or
   /// more (Section 1.8). The reason survives a Diag or any other value
   /// named on top (S89).
-  RuleRefusal? refusalFor(Map<String, Quantity> namedValues) {
+  ///
+  /// The Sides refusal is for a finished count ("Shown only once the entry
+  /// is finished", Section 1.8). While the count is still being typed
+  /// ([sidesStillTyped]) a 1 or a 2 is the start of 12 or 24 and is not
+  /// refused; a 0 or a decimal part, which no further digit mends, is
+  /// refused at once (decision tree row 339: 6.5).
+  RuleRefusal? refusalFor(
+    Map<String, Quantity> namedValues, {
+    bool sidesStillTyped = false,
+  }) {
     if (namedValues[DimensionKey.pitch.id] case final value?) {
       if (_pitchAngleOf(value) case final pitch?) {
         if (!_isInRange(pitch)) return RuleRefusal.pitchOutOfRange;
@@ -301,11 +310,18 @@ class DeterministicRules extends Equatable {
       return RuleRefusal.slopeOutOfRange;
     }
     if (namedValues.containsKey(DimensionKey.sides.id) &&
-        _sidesOf(namedValues) == null) {
+        _sidesOf(namedValues) == null &&
+        !(sidesStillTyped && _isTheStartOfACount(namedValues))) {
       return RuleRefusal.sidesNotWhole;
     }
     return null;
   }
+
+  bool _isTheStartOfACount(Map<String, Quantity> namedValues) =>
+      switch (namedValues[DimensionKey.sides.id]) {
+        Scalar(:final value) => value >= 1 && value == value.roundToDouble(),
+        _ => false,
+      };
 
   /// The answers [namedValues] earn, in the order the strip offers them;
   /// empty when no rule matches. [namedValues] maps a chip key to the
