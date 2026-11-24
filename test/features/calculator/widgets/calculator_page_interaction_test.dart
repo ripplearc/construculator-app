@@ -1219,8 +1219,14 @@ void main() {
 
       final display = tester.getRect(find.byType(CoreDisplayArea));
       final strip = tester.getRect(find.byType(CoreSuggestionArea));
+      final detail = tester.getRect(find.byKey(panel));
       expect(strip.top, display.bottom);
-      expect(tester.getRect(find.byKey(panel)).top, strip.bottom);
+      expect(detail.top, strip.bottom);
+      expect(
+        detail.bottom,
+        tester.getRect(find.byType(CoreKeyboard)).top,
+        reason: 'the panel takes the room left above the folded keys, no more',
+      );
     });
 
     testWidgets('folding and unfolding leave the tape, the label and the '

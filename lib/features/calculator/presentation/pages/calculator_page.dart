@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -29,14 +31,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
   bool _isKeypadFolded = false;
 
-  // CoreGeometryArea always draws the heading of its Attachments section,
-  // and the detail panel of Section 1.4 has no attachments, so the heading
-  // is left without words.
-  static const String _noAttachmentsTitle = '';
+  static const String _attachmentsHeadingLeftBlank = '';
 
-  // While the display area is pulled open the room the folded keypad leaves
-  // is the display's, as it is with the keys up.
-  bool get _showsDetailPanel =>
+  bool get _showsDetailPanelUnderCollapsedDisplay =>
       _isKeypadFolded && _currentStage == DisplayAreaStage.collapsed;
 
   final ScrollController _displayScroll = ScrollController();
@@ -265,7 +262,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       dimensionsLabel: labels.l10n.calculatorDetailDimensionsTitle,
       expandLabel: labels.l10n.calculatorDetailExpandButton,
       collapseLabel: labels.l10n.calculatorDetailCollapseButton,
-      attachmentsTitleLabel: _noAttachmentsTitle,
+      attachmentsTitleLabel: _attachmentsHeadingLeftBlank,
       dimensions: _dimensionTiles(labels, dimensions),
     ),
   );
@@ -335,11 +332,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   Expanded(
                     child: Stack(
                       children: [
-                        Column(
+                        CustomMultiChildLayout(
+                          delegate: _DisplayStripPanelLayout(
+                            showsPanel: _showsDetailPanelUnderCollapsedDisplay,
+                          ),
                           children: [
-                            Flexible(
-                              flex: _showsDetailPanel ? 0 : 1,
-                              fit: FlexFit.tight,
+                            LayoutId(
+                              id: _PageSlot.display,
                               child: SingleChildScrollView(
                                 controller: _displayScroll,
                                 physics:
@@ -386,40 +385,44 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                 ),
                               ),
                             ),
-                            CoreSuggestionArea(
-                              layout: CoreSuggestionLayout.twoRows,
-                              // TODO: [CA-1094] Draw a strip note in the warning
-                              // colour, as Section 1.8 asks, once the strip has a
-                              // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
-                              suggestionAreaPlaceholder: labels.stripText(
-                                state.stripNote,
+                            LayoutId(
+                              id: _PageSlot.strip,
+                              child: CoreSuggestionArea(
+                                layout: CoreSuggestionLayout.twoRows,
+                                // TODO: [CA-1094] Draw a strip note in the warning
+                                // colour, as Section 1.8 asks, once the strip has a
+                                // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
+                                suggestionAreaPlaceholder: labels.stripText(
+                                  state.stripNote,
+                                ),
+                                aiSuggestions: _stripRow(
+                                  labels,
+                                  bloc,
+                                  state.suggestions,
+                                ),
+                                conversionSuggestions: _stripRow(
+                                  labels,
+                                  bloc,
+                                  state.conversions,
+                                ),
+                                hiddenChipsTextBuilder:
+                                    l10n.calculatorStripHiddenChips,
+                                expandToggleSemanticsLabelBuilder:
+                                    l10n.calculatorStripExpandSemantics,
+                                collapseToggleSemanticsLabel:
+                                    l10n.calculatorStripCollapseSemantics,
+                                toggleSemanticsLabel:
+                                    l10n.calculatorStripToggleSemantics,
+                                conversionsRowTagLabel:
+                                    l10n.calculatorStripConversionsTag,
+                                conversionsRowSemanticsLabel:
+                                    l10n.calculatorStripConversionsSemantics,
+                                secondRowHidden: dependentKeys.isNotEmpty,
                               ),
-                              aiSuggestions: _stripRow(
-                                labels,
-                                bloc,
-                                state.suggestions,
-                              ),
-                              conversionSuggestions: _stripRow(
-                                labels,
-                                bloc,
-                                state.conversions,
-                              ),
-                              hiddenChipsTextBuilder:
-                                  l10n.calculatorStripHiddenChips,
-                              expandToggleSemanticsLabelBuilder:
-                                  l10n.calculatorStripExpandSemantics,
-                              collapseToggleSemanticsLabel:
-                                  l10n.calculatorStripCollapseSemantics,
-                              toggleSemanticsLabel:
-                                  l10n.calculatorStripToggleSemantics,
-                              conversionsRowTagLabel:
-                                  l10n.calculatorStripConversionsTag,
-                              conversionsRowSemanticsLabel:
-                                  l10n.calculatorStripConversionsSemantics,
-                              secondRowHidden: dependentKeys.isNotEmpty,
                             ),
-                            if (_showsDetailPanel)
-                              Expanded(
+                            if (_showsDetailPanelUnderCollapsedDisplay)
+                              LayoutId(
+                                id: _PageSlot.panel,
                                 child: state.dimensions.isEmpty
                                     ? const SizedBox.shrink()
                                     : _detailPanel(labels, state.dimensions),
@@ -497,6 +500,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         child: child,
                       ),
                     ),
+                    // TODO: [CA-1535] Pass "Hide keypad" / "Show keypad" as the
+                    // handle name by the fold state (Section 1.4).
+                    // https://ripplearc.youtrack.cloud/issue/CA-1535
                     child: CoreKeyboard(
                       currentGroup:
                           groups[state.currentGroupIndex.clamp(
@@ -554,4 +560,41 @@ class _CalculatorPageState extends State<CalculatorPage> {
       ),
     );
   }
+}
+
+enum _PageSlot { display, strip, panel }
+
+class _DisplayStripPanelLayout extends MultiChildLayoutDelegate {
+  final bool showsPanel;
+
+  _DisplayStripPanelLayout({required this.showsPanel});
+
+  @override
+  void performLayout(Size size) {
+    final width = size.width;
+    final strip = layoutChild(
+      _PageSlot.strip,
+      BoxConstraints(minWidth: width, maxWidth: width, maxHeight: size.height),
+    );
+    final room = math.max(0.0, size.height - strip.height);
+    final display = layoutChild(
+      _PageSlot.display,
+      showsPanel
+          ? BoxConstraints(minWidth: width, maxWidth: width, maxHeight: room)
+          : BoxConstraints.tightFor(width: width, height: room),
+    );
+    positionChild(_PageSlot.display, Offset.zero);
+    positionChild(_PageSlot.strip, Offset(0, display.height));
+    if (hasChild(_PageSlot.panel)) {
+      layoutChild(
+        _PageSlot.panel,
+        BoxConstraints.tightFor(width: width, height: room - display.height),
+      );
+      positionChild(_PageSlot.panel, Offset(0, display.height + strip.height));
+    }
+  }
+
+  @override
+  bool shouldRelayout(_DisplayStripPanelLayout oldDelegate) =>
+      oldDelegate.showsPanel != showsPanel;
 }
