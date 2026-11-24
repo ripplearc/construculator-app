@@ -264,7 +264,9 @@ void main() {
           tester,
           pill,
           checkTapTargetSize: false,
+          checkTextContrast: theme.brightness == Brightness.dark,
         );
+        await _expectLightThemeContrastOf(tester, theme, pill);
         expect(tester.getSemantics(pill).hint, l10n.calculatorPillReadAsHint);
       }
     });
