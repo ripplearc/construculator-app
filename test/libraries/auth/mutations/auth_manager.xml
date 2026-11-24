@@ -114,18 +114,6 @@
         </regex>
 
         <!-- Session start and end -->
-        <regex pattern="if \(_sessionUserId != userId\) _sessionService\.endSession\(\);" dotAll="false" id="session.different_user_flipped">
-            <mutation text="if (_sessionUserId == userId) _sessionService.endSession();"/>
-        </regex>
-        <regex pattern="if \(_sessionUserId != userId\) _sessionService\.endSession\(\);" dotAll="false" id="session.different_user_keeps_old_session">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="_sessionUserId = userId;" dotAll="false" id="session.user_not_remembered">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="_sessionService\.startSession\(\);\s*_sessionUserId = userId;" dotAll="false" id="session.not_started">
-            <mutation text="_sessionUserId = userId;"/>
-        </regex>
         <regex pattern="await _wrapper\.signOut\(\);\s*_sessionService\.endSession\(\);" dotAll="false" id="session.logout_keeps_session">
             <mutation text="await _wrapper.signOut();"/>
         </regex>
@@ -133,10 +121,29 @@
             <mutation text="// logout or when a different user signs in.
           _sessionService.endSession();"/>
         </regex>
+        <regex pattern="if \(_isDisposed \|\| !isChecked \|\| attempt != _authenticationAttempt\) return;" dotAll="false" id="gate.disposed_ignored">
+            <mutation text="if (!isChecked || attempt != _authenticationAttempt) return;"/>
+        </regex>
+        <regex pattern="if \(_isDisposed \|\| !isChecked \|\| attempt != _authenticationAttempt\) return;" dotAll="false" id="gate.checked_ignored">
+            <mutation text="if (_isDisposed || attempt != _authenticationAttempt) return;"/>
+        </regex>
+        <regex pattern="if \(_isDisposed \|\| !isChecked \|\| attempt != _authenticationAttempt\) return;" dotAll="false" id="gate.attempt_ignored">
+            <mutation text="if (_isDisposed || !isChecked) return;"/>
+        </regex>
+        <regex pattern="final isChecked = await _activeUserProvider\.whenFinishedFor\(user\.id\);" dotAll="false" id="gate.not_waiting">
+            <mutation text="final isChecked = true;"/>
+        </regex>
+        <regex pattern="if \(identifiesUser\) \{" dotAll="false" id="gate.identify_negated">
+            <mutation text="if (!identifiesUser) {"/>
+        </regex>
+        <regex pattern="_authenticationAttempt\+\+;\s*_emitAuthStateChanged\(AuthStatus\.unauthenticated, null\);" dotAll="false" id="gate.sign_out_keeps_waiter">
+            <mutation text="_emitAuthStateChanged(AuthStatus.unauthenticated, null);"/>
+        </regex>
+
     </rules>
 
     <commands>
-        <command group="auth-manager" expected-return="0" timeout="90">flutter test --no-pub --timeout 2s test/libraries/auth/units/auth_manager_test.dart</command>
+        <command group="auth-manager" expected-return="0" timeout="90">flutter test --no-pub --timeout 2s test/libraries/auth/units/auth_manager_test.dart test/libraries/auth/units/auth_manager_check_gate_test.dart</command>
     </commands>
 
     <threshold failure="85">

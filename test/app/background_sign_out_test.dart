@@ -6,13 +6,23 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/check/auth_event_service.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/sign_in_check.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_manager.dart';
+import 'package:construculator/libraries/powersync/testing/fake_synced_data_service.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/session/session_service_impl.dart';
+import 'package:construculator/libraries/storage/local_data_delete_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -38,6 +48,8 @@ void main() {
   late AuthManager authManager;
   late SessionService sessionService;
   late AuthNotifier authNotifier;
+  late AuthEventService authEventService;
+  late SignInCheck signInCheck;
 
   FakeUser user(String id) =>
       FakeUser(id: id, email: '$id@example.com', createdAt: '2026-11-01');
@@ -73,11 +85,42 @@ void main() {
     );
     supabase = bootstrap.supabaseWrapper as FakeSupabaseWrapper;
     Modular.init(_TestModule(bootstrap));
+    final ownerRecords = FakeOwnerRecordStorageService();
+    // ignore: no_direct_instantiation, reason: the check under test runs on fakes and the real session
+    signInCheck = SignInCheck(
+      ownerRecords: ownerRecords,
+      // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
+      deleteService: LocalDataDeleteService(
+        ownerRecords: ownerRecords,
+        database: FakePowerSyncDatabaseWrapper(),
+        syncedData: FakeSyncedDataService(),
+        userSpace: FakeStorageService(),
+        registrations: const [],
+      ),
+      sessionService: sessionService,
+      powerSync: FakePowerSyncManager(),
+      wrapper: supabase,
+      resetIdentity: () async {},
+    );
+    // ignore: no_direct_instantiation, reason: the service under test is built from its fakes and the real session
+    authEventService = AuthEventService(
+      wrapper: supabase,
+      // ignore: no_direct_instantiation, reason: the queue is built from its settings
+      queue: AuthEventQueue(
+        actionTimeout: const Duration(seconds: 5),
+        onUnstoppedRun: () {},
+      ),
+      state: Modular.get<CheckFinishedState>(),
+      signInCheck: signInCheck,
+    );
     authNotifier = Modular.get<AuthNotifier>();
     authManager = Modular.get<AuthManager>();
   });
 
-  tearDownAll(Modular.destroy);
+  tearDownAll(() {
+    authEventService.dispose();
+    Modular.destroy();
+  });
 
   tearDown(() {
     sessionService.endSession();
