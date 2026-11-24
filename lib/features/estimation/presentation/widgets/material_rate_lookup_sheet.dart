@@ -100,6 +100,11 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 
   void _search(String query) {
     _sampleRows = widget.sampleRatesFor(query);
+    if (_picked case MaterialLookupSampleRate(
+      :final row,
+    ) when !_sampleRows.any((shown) => shown.id == row.id)) {
+      _picked = null;
+    }
     context.read<YourRatesBloc>().add(
       YourRatesSearched(query, category: CostItemType.material),
     );
@@ -121,8 +126,9 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     if (state is! YourRatesSearchResults) return;
     _retrying = false;
     _shownEntries = state.results;
-    if (_picked case MaterialLookupYourRate(:final entry)
-        when !state.results.any((shown) => shown.id == entry.id)) {
+    if (_picked case MaterialLookupYourRate(
+      :final entry,
+    ) when !state.results.any((shown) => shown.id == entry.id)) {
       _picked = null;
     }
   }
@@ -143,7 +149,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
           for (final entry in entries) MaterialLookupYourRate(entry),
           for (final row in _sampleRows) MaterialLookupSampleRate(row),
         ];
-        final selected = picks.contains(_picked) ? _picked : null;
+        final selected = picks.where((pick) => pick == _picked).firstOrNull;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
