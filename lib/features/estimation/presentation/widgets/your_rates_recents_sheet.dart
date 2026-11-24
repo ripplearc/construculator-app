@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/helpers/your_rat
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -97,7 +98,23 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     super.dispose();
   }
 
-  bool get _isMaterial => widget.category == CostItemType.material;
+  _RecentsWords _words(AppLocalizations l10n) => switch (widget.category) {
+    CostItemType.material => (
+      title: l10n.yourRatesMaterialRecentsTitle,
+      searchHint: l10n.yourRatesMaterialSearchHint,
+      createAction: l10n.yourRatesCreateMaterialAction,
+      newCostAction: l10n.yourRatesNewMaterialCostAction,
+      loadErrorHint: l10n.yourRatesMaterialRecentsLoadErrorHint,
+    ),
+    CostItemType.equipment => (
+      title: l10n.yourRatesRecentsTitle,
+      searchHint: l10n.yourRatesSearchHint,
+      createAction: l10n.yourRatesCreateEquipmentAction,
+      newCostAction: l10n.yourRatesNewEquipmentCostAction,
+      loadErrorHint: l10n.yourRatesRecentsLoadErrorHint,
+    ),
+    CostItemType.labor => throw UnsupportedError('No labor recents yet'),
+  };
 
   void _loadRecents() => context.read<YourRatesBloc>().add(
     YourRatesRecentsQueried('', widget.category),
@@ -187,15 +204,12 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final now = widget.clock.now();
+    final words = _words(l10n);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SheetHeader(
-          title: _isMaterial
-              ? l10n.yourRatesMaterialRecentsTitle
-              : l10n.yourRatesRecentsTitle,
-        ),
+        SheetHeader(title: words.title),
         Padding(
           padding: const EdgeInsets.only(
             left: CoreSpacing.space5,
@@ -204,9 +218,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
           ),
           child: SheetSearchField(
             controller: _searchController,
-            hintText: _isMaterial
-                ? l10n.yourRatesMaterialSearchHint
-                : l10n.yourRatesSearchHint,
+            hintText: words.searchHint,
             onChanged: _onQueryChanged,
           ),
         ),
@@ -233,12 +245,12 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                   final loadError = switch (state) {
                     YourRatesError() => _RecentsLoadError(
                       isRetrying: false,
-                      isMaterial: _isMaterial,
+                      hint: words.loadErrorHint,
                       onTryAgain: _onTryAgain,
                     ),
                     YourRatesRetrying() => _RecentsLoadError(
                       isRetrying: true,
-                      isMaterial: _isMaterial,
+                      hint: words.loadErrorHint,
                       onTryAgain: _onTryAgain,
                     ),
                     _ => null,
@@ -342,21 +354,13 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                             ? CoreListRow.action(
                                 key: const Key('create_typed_name_row'),
                                 icon: CoreIcons.add,
-                                title: _isMaterial
-                                    ? l10n.yourRatesCreateMaterialAction(
-                                        typedName,
-                                      )
-                                    : l10n.yourRatesCreateEquipmentAction(
-                                        typedName,
-                                      ),
+                                title: words.createAction(typedName),
                                 onTap: () => _onCreateTypedName(typedName),
                               )
                             : CoreListRow.action(
                                 key: const Key('new_cost_row'),
                                 icon: CoreIcons.add,
-                                title: _isMaterial
-                                    ? l10n.yourRatesNewMaterialCostAction
-                                    : l10n.yourRatesNewEquipmentCostAction,
+                                title: words.newCostAction,
                                 onTap: _onNewCost,
                               ),
                       ),
@@ -372,14 +376,22 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
+typedef _RecentsWords = ({
+  String title,
+  String searchHint,
+  String Function(String typedName) createAction,
+  String newCostAction,
+  String loadErrorHint,
+});
+
 class _RecentsLoadError extends StatelessWidget {
   final bool isRetrying;
-  final bool isMaterial;
+  final String hint;
   final VoidCallback onTryAgain;
 
   const _RecentsLoadError({
     required this.isRetrying,
-    required this.isMaterial,
+    required this.hint,
     required this.onTryAgain,
   });
 
@@ -407,9 +419,7 @@ class _RecentsLoadError extends StatelessWidget {
                 CoreInlineErrorRow(message: l10n.yourRatesLoadError),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
-                  isMaterial
-                      ? l10n.yourRatesMaterialRecentsLoadErrorHint
-                      : l10n.yourRatesRecentsLoadErrorHint,
+                  hint,
                   style: textTheme.bodySmallRegular.copyWith(
                     color: colorTheme.textBody,
                   ),
