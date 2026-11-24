@@ -156,10 +156,58 @@ void main() {
       }
     });
 
+    test('⌫ after a tap sealed the last value reopens it and removes one '
+        'step, never the whole value (B5; "⌫ removes the last token")', () {
+      for (final (keys, chips) in [
+        ('1 2 ft + 5 ft tap:1 ⌫', ['12ft', '+5']),
+        ('1 2 ft + 5 ft tap:0 tap:0 ⌫', ['12ft', '+5']),
+        (
+          '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 ⌫',
+          ['Length22ft', 'Width18ft 8'],
+        ),
+        ('1 2 ft tap:0 ⌫', ['12']),
+      ]) {
+        final sealed = press(const Tape(), keys.substring(0, keys.length - 2));
+        expect(sealed.active, isNull, reason: keys);
+        final tape = changed(sealed.backspace());
+        expect(texts(tape), chips, reason: keys);
+        expect(tape.editing, isNull, reason: keys);
+        expect(tape.active, same(tape.chips.last), reason: keys);
+      }
+      expect(
+        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 ⌫ in')),
+        ['12ft', '+5in'],
+        reason: 'the keys type into the value ⌫ reopened',
+      );
+      expect(
+        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 ⌫ ⌫ ⌫')),
+        ['12ft'],
+        reason: 'with nothing left in it the chip goes, as an active one does',
+      );
+      final resealed = press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 tap:1 ⌫');
+      expect(texts(resealed), ['12ft', '+5']);
+      expect(
+        resealed.editing,
+        isNull,
+        reason:
+            'the seal of an edit clears its mark, so the chip ⌫ reopens '
+            'after it is entry again',
+      );
+      final edited = press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 ⌫');
+      expect(texts(edited), ['12ft', '+5']);
+      expect(
+        edited.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 1),
+        reason:
+            'a second tap reopens the sealed chip as an edit, and ⌫ '
+            'removes one step there too',
+      );
+    });
+
     test('a chip ⌫ reopens at the end of the tape is entry again, once an '
         'edit of it has sealed', () {
       final tape = press(const Tape(), '1 8 ft × 4 ft tap:0 tap:0 ⌫');
-      expect(texts(tape), ['18ft']);
+      expect(texts(tape), ['18ft', '×4']);
       expect(tape.active, isNotNull);
       expect(tape.editing, isNull);
       expect(

@@ -133,6 +133,12 @@
             <mutation text=""/>
         </regex>
 
+        <!-- RULE 22 (R3, B5): ⌫ after a tap sealed the last value drops the
+             whole value, as it did before a tap could seal it -->
+        <regex pattern="if \(chips\.last case final ValueChip sealed when !sealed\.isActive\) \{" dotAll="true" id="tape_edit.backspace.sealed_value_dropped">
+            <mutation text="if (chips.last case final ValueChip sealed when !sealed.isActive &amp;&amp; false) {"/>
+        </regex>
+
         <!-- RULE 13: the Read-as pill is offered during an edit -->
         <regex pattern="if \(openBracket != null \|\| editing != null\) return null;" dotAll="true" id="tape_edit.read_as.offered_while_editing">
             <mutation text="if (openBracket != null) return null;"/>

@@ -1877,6 +1877,9 @@ class Tape extends Equatable {
   ///
   /// Straight after ) it reopens the bracket in place, with the keypad
   /// typing into its last value again (Section 7, "Editing a bracket").
+  /// A last value a tap sealed is made active again the same way and loses
+  /// one step, never the whole value: 12ft + 5ft, a tap on +5ft, then ⌫
+  /// reads 12ft | +5 ("⌫ removes the last token").
   /// Inside a bracket a chip has no name, so once ⌫ or ✕ has emptied every
   /// chip in it there is nothing left to show and the next ⌫ removes the
   /// bracket itself ("on an empty bracket it removes the bracket"), one
@@ -1908,6 +1911,12 @@ class Tape extends Equatable {
     if (editing == null && chips.isNotEmpty) {
       if (chips.last case final BracketChip closed) {
         return _replaceLastChip(_reopened(closed));
+      }
+      if (chips.last case final ValueChip sealed when !sealed.isActive) {
+        return _with([
+          ...chips.sublist(0, chips.length - 1),
+          _reactivated(sealed),
+        ]).backspace();
       }
     }
     final chip = active;
