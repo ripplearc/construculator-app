@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
-import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
@@ -236,6 +236,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                           _SampleGroup(
                             rows: _sampleRows,
                             unitSuffix: (unit) => _unitSuffix(context, unit),
+                            hasContentAbove: entries.isNotEmpty || hasReadError,
                           ),
                       ],
                     ),
@@ -284,8 +285,13 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 class _SampleGroup extends StatelessWidget {
   final List<SampleRateRow> rows;
   final String? Function(Unit? unit) unitSuffix;
+  final bool hasContentAbove;
 
-  const _SampleGroup({required this.rows, required this.unitSuffix});
+  const _SampleGroup({
+    required this.rows,
+    required this.unitSuffix,
+    required this.hasContentAbove,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +304,9 @@ class _SampleGroup extends StatelessWidget {
       spacing: CoreSpacing.space2,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: CoreSpacing.space4),
+          padding: EdgeInsets.only(
+            top: hasContentAbove ? CoreSpacing.space4 : 0,
+          ),
           child: Text(
             l10n.materialLookupSampleHeading.toUpperCase(),
             style: textTheme.bodySmallSemiBold.copyWith(
@@ -309,7 +317,10 @@ class _SampleGroup extends StatelessWidget {
         // TODO: [CA-1510] use CoreUI's inline notice once it exists. https://ripplearc.youtrack.cloud/issue/CA-1510
         Container(
           key: const Key('material_lookup_sample_notice'),
-          padding: const EdgeInsets.all(CoreSpacing.space4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space4,
+            vertical: CoreSpacing.space3,
+          ),
           decoration: BoxDecoration(
             color: colorTheme.backgroundOrangeLight,
             border: Border.all(color: colorTheme.lineOrange),
@@ -317,7 +328,7 @@ class _SampleGroup extends StatelessWidget {
           ),
           child: Text(
             l10n.materialLookupSampleNotice,
-            style: textTheme.bodyMediumRegular.copyWith(
+            style: textTheme.bodySmallRegular.copyWith(
               color: colorTheme.textHeadline,
             ),
           ),

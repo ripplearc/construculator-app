@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
+import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
