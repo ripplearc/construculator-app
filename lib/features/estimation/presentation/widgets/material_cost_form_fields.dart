@@ -64,7 +64,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       bloc.add(MaterialSavedRateRecalled(entry));
     } else if (widget.initialName case final name?) {
       _nameController.text = name;
-      bloc.add(MaterialCostItemTypeChanged(name));
+      bloc.add(MaterialNamePrefilled(name));
     }
   }
 

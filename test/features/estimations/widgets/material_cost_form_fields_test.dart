@@ -600,6 +600,7 @@ void main() {
       expect(textOf(tester, nameField), 'primer');
       expect(textOf(tester, rateField), isEmpty);
       expect(bloc.state.data.itemName, 'primer');
+      expect(bloc.state.data.hasUnsavedChanges, isFalse);
     });
   });
 }

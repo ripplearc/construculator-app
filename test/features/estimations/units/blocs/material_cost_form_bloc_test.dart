@@ -476,22 +476,34 @@ void main() {
         verify: (b) => expect(_dataOf(b.state).hasUnsavedChanges, isFalse),
       );
 
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'keeps the remembered unit, with no unsaved changes, when the saved '
-        'rate has no unit',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
-        build: () => bloc,
-        act: (b) => b
-          ..add(const MaterialCostFormStarted())
-          ..add(
-            MaterialSavedRateRecalled(savedRate.copyWith(unit: clearField)),
-          ),
-        verify: (b) {
-          expect(_dataOf(b.state).unit, Unit.bags);
-          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
-        },
-      );
+      for (final startedFirst in [true, false]) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'leaves the unit empty, with no unsaved changes, when the saved '
+          'rate has no unit (remembered unit read '
+          '${startedFirst ? 'before' : 'after'} the pick)',
+          setUp: () =>
+              lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+          build: () => bloc,
+          act: (b) {
+            final recall = MaterialSavedRateRecalled(
+              savedRate.copyWith(unit: clearField),
+            );
+            if (startedFirst) {
+              b
+                ..add(const MaterialCostFormStarted())
+                ..add(recall);
+            } else {
+              b
+                ..add(recall)
+                ..add(const MaterialCostFormStarted());
+            }
+          },
+          verify: (b) {
+            expect(_dataOf(b.state).unit, isNull);
+            expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
+          },
+        );
+      }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'marks the saved rate as used once the line is added',
@@ -506,6 +518,21 @@ void main() {
               fakeSupabase.getMethodCallsFor('insert').single['data']
                   as Map<String, dynamic>;
           expect(row['rate_status'], 'own_rate_confirmed');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'still adds the line when marking the rate as used fails',
+        setUp: () => database.failRowUpdates = true,
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (b) {
+          expect(b.state, isA<MaterialCostFormSuccess>());
+          expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+          expect(database.updatedRowIds, isEmpty);
         },
       );
 
@@ -545,6 +572,32 @@ void main() {
           ..add(const MaterialRateUpdated('60')),
         verify: (b) =>
             expect(_dataOf(b.state).rateStatus, RateStatus.ownRateUnconfirmed),
+      );
+    });
+
+    group('opened on a typed name', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the name and counts it as how the form opened',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialNamePrefilled('primer')),
+        verify: (b) {
+          expect(_dataOf(b.state).itemName, 'primer');
+          expect(_dataOf(b.state).unit, Unit.bags);
+          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'counts a later name edit as a change',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialNamePrefilled('primer'))
+          ..add(const MaterialCostItemTypeChanged('primer coat')),
+        verify: (b) => expect(_dataOf(b.state).hasUnsavedChanges, isTrue),
       );
     });
 

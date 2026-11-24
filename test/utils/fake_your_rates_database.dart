@@ -32,6 +32,10 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// without failing the save before it.
   bool failRowDeletes = false;
 
+  /// While true, an `UPDATE` throws, so a test can fail marking a saved rate
+  /// as used.
+  bool failRowUpdates = false;
+
   var _rowDeleted = Completer<void>();
 
   /// Completes once the next `DELETE` of a saved rate runs. Read it before the
@@ -306,6 +310,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       _rowDeleted = Completer<void>();
       _refusalChanges.add(null);
     } else if (sql.startsWith('UPDATE')) {
+      if (failRowUpdates) throw StateError('disk full');
       final assigned = _assignedColumns
           .allMatches(_updateAssignments.firstMatch(sql)!.group(1)!)
           .map((match) => match.group(1)!)
@@ -358,6 +363,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     getAllGate = null;
     insertGate = null;
     failRowDeletes = false;
+    failRowUpdates = false;
     deletedRowIds.clear();
     insertedRows.clear();
     updatedRowIds.clear();

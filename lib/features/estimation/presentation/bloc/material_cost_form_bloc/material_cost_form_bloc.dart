@@ -34,6 +34,7 @@ class MaterialCostFormBloc
   }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialSavedRateRecalled>(_onSavedRateRecalled);
+    on<MaterialNamePrefilled>(_onNamePrefilled);
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,
@@ -58,6 +59,8 @@ class MaterialCostFormBloc
     final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
+    // A recalled rate brings its own unit, or none so the user picks one.
+    if (_formValuesAtOpening.recalledRateId != null) return;
     if (_formValuesAtOpening.unit == null) {
       _formValuesAtOpening = _formValuesAtOpening.copyWith(
         unit: rememberedUnit,
@@ -77,12 +80,24 @@ class MaterialCostFormBloc
       final recalled = d.copyWith(
         itemName: entry.itemName,
         rate: entry.rate.amount,
-        unit: entry.unit ?? d.unit,
+        unit: entry.unit,
         rateStatus: RateStatus.ownRateConfirmed,
         recalledRateId: entry.id,
       );
       _formValuesAtOpening = recalled;
       return recalled;
+    });
+  }
+
+  void _onNamePrefilled(
+    MaterialNamePrefilled event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    _emit(emit, (d) {
+      _formValuesAtOpening = _formValuesAtOpening.copyWith(
+        itemName: event.name,
+      );
+      return d.copyWith(itemName: event.name, recalledRateId: null);
     });
   }
 
@@ -155,6 +170,8 @@ class MaterialCostFormBloc
       (created) async {
         await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
         if (draft.recalledRateId case final rateId?) {
+          // The line is already added, so a failed record must not stop the
+          // user. The rate then keeps its older "Used" date.
           await _yourRatesRepository.recordRateUse(rateId);
         }
         emit(MaterialCostFormSuccess(draft, created));
