@@ -727,5 +727,71 @@ void main() {
 
       expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
     });
+
+    testWidgets('a saved row and a sample row with the same id are two '
+        'picks: picking the sample row unpicks the saved one', (tester) async {
+      sampleRows = [paint('proclassic', 38)];
+      await openSheet(tester);
+      bool isPicked(String key) =>
+          tester.widget<CoreListRow>(find.byKey(Key(key))).selected;
+
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const Key('sample_rate_row_proclassic')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sample_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      expect(isPicked('your_rate_row_proclassic'), isFalse);
+      expect(isPicked('sample_rate_row_proclassic'), isTrue);
+      expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
+      await tester.tap(find.byKey(useButton));
+      await tester.pumpAndSettle();
+      expect(result, isA<MaterialLookupSampleRate>());
+    });
+
+    testWidgets('the button names the picked row as it is shown now, after a '
+        'search brings it back with a new price', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+      await tester.ensureVisible(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+
+      sampleRows = [paint('a', 60)];
+      await typeQuery(tester, 'interior');
+      await tester.tap(find.byKey(useButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        result,
+        isA<MaterialLookupSampleRate>().having(
+          (pick) => pick.row.rate.amount,
+          'rate',
+          60,
+        ),
+      );
+    });
+
+    testWidgets('a sample pick hidden by a search does not come back when the '
+        'row shows again', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+      await tester.ensureVisible(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sample_rate_row_a')));
+      await tester.pumpAndSettle();
+
+      sampleRows = const [];
+      await typeQuery(tester, 'drywall');
+      sampleRows = [paint('a', 52)];
+      await typeQuery(tester, 'interior paint');
+
+      expect(useButtonWidget(tester).isDisabled, isTrue);
+      expect(useButtonWidget(tester).label, l10n.materialLookupUseRateButton);
+    });
   });
 }

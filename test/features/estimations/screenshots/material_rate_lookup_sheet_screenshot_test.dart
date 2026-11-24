@@ -201,5 +201,23 @@ void main() {
 
       await expectGolden('sample_group_first', suffix);
     });
+
+    testWidgets('displays a picked sample row and its price on the button', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        theme,
+        initialQuery: 'premium',
+        sampleRows: [
+          paint('premium', 'Premium Plus interior', 38),
+          paint('proclassic', 'ProClassic interior', 52),
+        ],
+      );
+      await tester.tap(find.byKey(const Key('sample_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await expectGolden('sample_picked', suffix);
+    });
   });
 }
