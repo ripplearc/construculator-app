@@ -180,6 +180,12 @@ void main() {
             tester,
             find.text(l10n.calculatorValueError),
             checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.text(l10n.calculatorValueError),
           );
         }
       },
@@ -214,6 +220,14 @@ void main() {
               '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingDegrees}',
             ),
             checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.text(
+              '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingDegrees}',
+            ),
           );
         }
       },
