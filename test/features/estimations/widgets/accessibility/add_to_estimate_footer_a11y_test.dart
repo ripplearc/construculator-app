@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/widgets/add_to_e
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 
@@ -10,6 +11,7 @@ void main() {
   Widget Function(ThemeData) makeWidget({
     AddToEstimateBlock? block,
     double? changeInEstimateTotal,
+    VoidCallback? onDelete,
   }) =>
       (theme) => MaterialApp(
         theme: theme,
@@ -24,6 +26,7 @@ void main() {
             estimateTotal: 2993.62,
             block: block,
             changeInEstimateTotal: changeInEstimateTotal,
+            onDelete: onDelete,
             onAdd: () {},
           ),
         ),
@@ -69,5 +72,50 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'a11y: the delete button meets tap target and label guidelines in both '
+      'themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget(changeInEstimateTotal: 0, onDelete: () {}),
+          find.byKey(AddToEstimateFooter.deleteButtonKey),
+          // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card.
+          // https://ripplearc.youtrack.cloud/issue/CA-1257
+          checkTextContrast: false,
+        );
+      },
+    );
+
+    testWidgets('a screen reader can activate the delete button', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      final semantics = tester.ensureSemantics();
+      var deleteTaps = 0;
+
+      await tester.pumpWidget(
+        makeWidget(changeInEstimateTotal: 0, onDelete: () => deleteTaps++)(
+          CoreTheme.light(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+      expect(deleteTaps, 1);
+
+      deleteTaps = 0;
+      tester.semantics.tap(
+        find.semantics.byLabel(
+          lookupAppLocalizations(const Locale('en')).deleteThisLineButton,
+        ),
+      );
+      await tester.pump();
+
+      expect(deleteTaps, 1);
+      semantics.dispose();
+    });
   });
 }

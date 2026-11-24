@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_panel.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
       listener: (context, state) {
         switch (state) {
           case EquipmentCostFormSuccess():
+          case EquipmentCostFormDeleted():
             Navigator.of(context).pop();
           case EquipmentCostFormInitial():
           case EquipmentCostFormEditing():
@@ -55,22 +57,49 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
           deliveryFee: data.deliveryFee,
           changeInEstimateTotal: data.changeInEstimateTotal,
           hasUnsavedChanges: data.hasUnsavedChanges,
+          deleteFailed: switch (state) {
+            EquipmentCostFormFailure(whileDeleting: true) => true,
+            _ => false,
+          },
+          onDelete: data.isEditingExistingLine
+              ? () => _confirmDelete(context, data.lineName)
+              : null,
           estimateName: estimateName,
           estimateTotal: estimateTotal,
           block: blocker == null ? null : _blockFor(blocker, l10n),
           isBusy:
               state is EquipmentCostFormSubmitting ||
               state is EquipmentCostFormSuccess ||
+              state is EquipmentCostFormDeleted ||
               data.isRateSaveRunning,
-          errorMessage: state is EquipmentCostFormFailure
-              ? l10n.addToEstimateFailedError
-              : null,
+          errorMessage: switch (state) {
+            EquipmentCostFormFailure(whileDeleting: true) =>
+              l10n.deleteLineFailedError,
+            EquipmentCostFormFailure() when data.isEditingExistingLine =>
+              l10n.saveLineFailedError,
+            EquipmentCostFormFailure() => l10n.addToEstimateFailedError,
+            _ => null,
+          },
           onAdd: () => context.read<EquipmentCostFormBloc>().add(
             EquipmentCostSubmittedEvent(estimateId: estimateId),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, String itemName) async {
+    final l10n = context.l10n;
+    final bloc = context.read<EquipmentCostFormBloc>();
+    final keepLine = await ConfirmationDialog.show(
+      context,
+      title: l10n.deleteLineDialogTitle,
+      body: TextSpan(text: l10n.deleteLineDialogBody(itemName, estimateName)),
+      secondaryLabel: l10n.deleteLineYesDeleteButton,
+      primaryLabel: l10n.deleteLineNoKeepButton,
+      isSecondaryDestructive: true,
+    );
+    if (keepLine == false) bloc.add(const EquipmentCostDeleteRequested());
   }
 
   AddToEstimateBlock _blockFor(
