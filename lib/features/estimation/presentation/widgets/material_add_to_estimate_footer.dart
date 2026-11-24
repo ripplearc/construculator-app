@@ -58,6 +58,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
       listener: (context, state) {
         switch (state) {
           case MaterialCostFormSuccess():
+          case MaterialCostFormDeleted():
             Navigator.of(context).pop();
           case MaterialCostFormInitial():
           case MaterialCostFormEditing():
@@ -71,7 +72,8 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
         final blocker = data.blocker;
         final isSubmitting =
             state is MaterialCostFormSubmitting ||
-            state is MaterialCostFormSuccess;
+            state is MaterialCostFormSuccess ||
+            state is MaterialCostFormDeleted;
         // The fields are read-only while the line saves; the pad's keys
         // never reach the platform input, so they are locked here instead.
         VoidCallback unlessSaving(VoidCallback edit) =>
@@ -80,6 +82,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           lineTotal: data.lineTotal,
           estimateName: estimateName,
           estimateTotal: estimateTotal,
+          isEditingExistingLine: data.isEditingExistingLine,
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isBusy: isSubmitting,
           errorMessage: state is MaterialCostFormFailure

@@ -28,7 +28,7 @@ class MaterialCostFormBloc
   final Clock _clock;
   final String _lineId;
 
-  static const _formValuesAtOpening = MaterialCostFormData();
+  MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
   bool _unitPicked = false;
 
@@ -68,6 +68,50 @@ class MaterialCostFormBloc
       );
     });
     on<MaterialCostFormSubmitted>(_onSubmitted);
+    on<MaterialCostEditOpened>(_onEditOpened);
+    on<MaterialCostDeleteRequested>(_onDeleteRequested);
+  }
+
+  void _onEditOpened(
+    MaterialCostEditOpened event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final item = event.item;
+    final opened = _validated(
+      MaterialCostFormData(
+        itemName: item.itemName,
+        quantity: item.quantity.value,
+        unit: item.quantity.unit,
+        rate: item.unitPrice.amount,
+        rateStatus: item.rateStatus,
+        editedItem: item,
+      ),
+    );
+    _formValuesAtOpening = opened;
+    emit(MaterialCostFormEditing(opened));
+  }
+
+  Future<void> _onDeleteRequested(
+    MaterialCostDeleteRequested event,
+    Emitter<MaterialCostFormState> emit,
+  ) async {
+    final draft = state.data;
+    final edited = draft.editedItem;
+    if (edited == null ||
+        state is MaterialCostFormSubmitting ||
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
+      return;
+    }
+    emit(MaterialCostFormSubmitting(draft));
+    final result = await _repository.deleteCostItem(edited.id);
+    emit(
+      result.fold(
+        (failure) =>
+            MaterialCostFormFailure(draft, failure, whileDeleting: true),
+        (_) => MaterialCostFormDeleted(draft),
+      ),
+    );
   }
 
   Future<void> _onStarted(
@@ -77,10 +121,12 @@ class MaterialCostFormBloc
     _rememberedUnits = await _lastUsedUnitRepository.getLastUnits(
       CostItemType.material,
     );
+    if (_current().isEditingExistingLine) return;
     final current = _current();
     if (_withRememberedUnit(current).unit != current.unit) {
       _emit(emit, _withRememberedUnit);
     }
+    _formValuesAtOpening = _current();
   }
 
   MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
@@ -109,16 +155,19 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) {
     final rate = double.tryParse(event.value);
-    _emit(
-      emit,
-      (d) => d.copyWith(
+    _emit(emit, (d) {
+      final stored = d.editedItem;
+      return d.copyWith(
         rate: rate,
-        rateStatus: rate == null
-            ? RateStatus.missing
-            : RateStatus.ownRateUnconfirmed,
+        rateStatus: switch (rate) {
+          null => RateStatus.missing,
+          _ when stored != null && rate == stored.unitPrice.amount =>
+            stored.rateStatus,
+          _ => RateStatus.ownRateUnconfirmed,
+        },
         attachedPrice: null,
-      ),
-    );
+      );
+    });
   }
 
   void _emit(
@@ -126,7 +175,8 @@ class MaterialCostFormBloc
     MaterialCostFormData Function(MaterialCostFormData) update,
   ) {
     if (state is MaterialCostFormSubmitting ||
-        state is MaterialCostFormSuccess) {
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
       return;
     }
     final updated = _validated(update(_current()));
@@ -134,10 +184,8 @@ class MaterialCostFormBloc
       hasUnsavedChanges: _differsFromOpened(updated),
     );
     emit(switch (state) {
-      MaterialCostFormFailure(:final failure) => MaterialCostFormFailure(
-        next,
-        failure,
-      ),
+      MaterialCostFormFailure(whileDeleting: false, :final failure) =>
+        MaterialCostFormFailure(next, failure),
       _ => MaterialCostFormEditing(next),
     });
   }
@@ -147,7 +195,8 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) async {
     if (state is MaterialCostFormSubmitting ||
-        state is MaterialCostFormSuccess) {
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
       return;
     }
     final draft = _validated(_current());
@@ -159,24 +208,29 @@ class MaterialCostFormBloc
       return;
     }
     emit(MaterialCostFormSubmitting(draft));
-    final result = await _repository.addCostItemOnPhone(
-      _buildCostItem(
-        draft,
-        event.estimateId,
-        quantity: quantity,
-        rate: rate,
-        unit: unit,
-      ),
+    final edited = draft.editedItem;
+    final line = _buildCostItem(
+      draft,
+      event.estimateId,
+      quantity: quantity,
+      rate: rate,
+      unit: unit,
+      existing: edited,
     );
+    final result = edited == null
+        ? await _repository.addCostItemOnPhone(line)
+        : await _repository.updateCostItem(line);
     await result.fold(
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
-      (created) async {
-        await _lastUsedUnitRepository.saveLastUnit(
-          CostItemType.material,
-          draft.itemName,
-          unit,
-        );
-        emit(MaterialCostFormSuccess(draft, created));
+      (saved) async {
+        if (edited == null) {
+          await _lastUsedUnitRepository.saveLastUnit(
+            CostItemType.material,
+            draft.itemName,
+            unit,
+          );
+        }
+        emit(MaterialCostFormSuccess(draft, saved));
       },
     );
   }
@@ -187,22 +241,36 @@ class MaterialCostFormBloc
     required double quantity,
     required double rate,
     required Unit unit,
+    MaterialCostItem? existing,
   }) {
     final now = _clock.now().toUtc();
     return MaterialCostItem(
-      id: _lineId,
+      id: existing?.id ?? _lineId,
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
-      calculation: {'unit_price': rate, 'quantity': quantity},
+      calculation: {
+        ...?existing?.calculation,
+        'unit_price': rate,
+        'quantity': quantity,
+      },
       itemTotalCost: draft.lineTotal,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
       currency: 'USD',
       unitPrice: Money(amount: rate),
       quantity: Quantity(value: quantity, unit: unit),
       rateStatus: draft.rateStatus,
-      quantityProvenance: QuantityProvenance.manual,
+      quantityProvenance:
+          existing != null && quantity == existing.quantity.value
+          ? existing.quantityProvenance
+          : QuantityProvenance.manual,
+      calculatorFormula: existing != null && quantity == existing.quantity.value
+          ? existing.calculatorFormula
+          : null,
+      wastePercent: existing?.wastePercent,
+      productLink: existing?.productLink,
+      description: existing?.description,
     );
   }
 
@@ -218,6 +286,7 @@ class MaterialCostFormBloc
       MaterialCostFormSubmitting(:final data) => data,
       MaterialCostFormSuccess(:final data) => data,
       MaterialCostFormFailure(:final data) => data,
+      MaterialCostFormDeleted(:final data) => data,
       MaterialCostFormInitial() => const MaterialCostFormData(),
     };
   }

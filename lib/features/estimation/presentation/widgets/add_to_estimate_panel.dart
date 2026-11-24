@@ -52,6 +52,12 @@ class AddToEstimatePanel extends StatelessWidget {
   /// "Changes this estimate", also when the total stays the same.
   final bool hasUnsavedChanges;
 
+  /// Whether the panel is above a line already on the estimate. Set it even
+  /// while [changeInEstimateTotal] is `null` (a number is being retyped), so
+  /// the card keeps its edit wording and does not read "Adds to this
+  /// estimate".
+  final bool isEditingExistingLine;
+
   const AddToEstimatePanel({
     super.key,
     required this.lineTotal,
@@ -61,6 +67,7 @@ class AddToEstimatePanel extends StatelessWidget {
     required this.block,
     this.changeInEstimateTotal,
     this.hasUnsavedChanges = false,
+    this.isEditingExistingLine = false,
   });
 
   @override
@@ -70,16 +77,17 @@ class AddToEstimatePanel extends StatelessWidget {
     final block = this.block;
     final fee = deliveryFee;
     final change = changeInEstimateTotal;
-    final title = switch (change) {
-      null => l10n.addsToEstimateLabel,
-      _ when !hasUnsavedChanges => l10n.noChangeYetLabel,
-      _ => l10n.changesThisEstimateLabel,
+    final isEditing = isEditingExistingLine || change != null;
+    final title = switch (isEditing) {
+      false => l10n.addsToEstimateLabel,
+      true when !hasUnsavedChanges => l10n.noChangeYetLabel,
+      true => l10n.changesThisEstimateLabel,
     };
     if (block != null) {
       return CoreEstimateSummaryCard.empty(
-        title: change == null
-            ? l10n.addsToEstimateLabel
-            : l10n.changesThisEstimateLabel,
+        title: isEditing
+            ? l10n.changesThisEstimateLabel
+            : l10n.addsToEstimateLabel,
         note: block.note,
       );
     }
