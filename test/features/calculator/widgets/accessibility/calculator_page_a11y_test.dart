@@ -271,6 +271,40 @@ void main() {
       }
     });
 
+    testWidgets('a strip note meets the contrast guideline in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      final l10n = AppLocalizationsEn();
+      for (final theme in kA11yTestThemes) {
+        await tester.pumpWidget(makeTestableWidget(theme: theme));
+        for (final key in const [
+          'calc_key_clearAll',
+          'calc_key_Pitch',
+          'calc_key_nine',
+          'calc_key_five',
+        ]) {
+          await tester.tap(find.byKey(ValueKey(key)));
+          await tester.pump();
+        }
+        await tester.pump(CoreSuggestionArea.animationDuration);
+        await tester.pump();
+
+        // Tap target size is disabled as in the close-button test.
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          find.text(l10n.calculatorNotePitchUnderRightAngle),
+          checkTapTargetSize: false,
+          checkTextContrast: theme.brightness == Brightness.dark,
+        );
+        await _expectLightThemeContrastOf(
+          tester,
+          theme,
+          find.text(l10n.calculatorNotePitchUnderRightAngle),
+        );
+      }
+    });
+
     testWidgets(
       'an abbreviated key is read by its full name',
       (tester) async {
