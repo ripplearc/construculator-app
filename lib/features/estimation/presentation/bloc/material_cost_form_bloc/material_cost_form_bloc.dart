@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/identifiers/interfaces/id_generator.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,11 +17,16 @@ const double _lineTotalColumnLimit = 1e16;
 
 /// BLoC for managing the material cost form: name, quantity, unit and rate,
 /// and the validation that decides when Add is enabled.
+///
+/// Add saves the line on the phone and finishes without waiting for the
+/// server. The line gets its id when the form opens and keeps it through every
+/// retry, so a line the server already has is updated and never added twice.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
   final Clock _clock;
+  final String _lineId;
 
   static const _formValuesAtOpening = MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
@@ -30,7 +36,9 @@ class MaterialCostFormBloc
     required this._repository,
     required this._lastUsedUnitRepository,
     required this._clock,
-  }) : super(const MaterialCostFormInitial()) {
+    required IdGenerator idGenerator,
+  }) : _lineId = idGenerator.newId(),
+       super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
@@ -151,7 +159,7 @@ class MaterialCostFormBloc
       return;
     }
     emit(MaterialCostFormSubmitting(draft));
-    final result = await _repository.createCostItem(
+    final result = await _repository.addCostItemOnPhone(
       _buildCostItem(
         draft,
         event.estimateId,
@@ -180,10 +188,9 @@ class MaterialCostFormBloc
     required double rate,
     required Unit unit,
   }) {
-    final now = _clock.now();
+    final now = _clock.now().toUtc();
     return MaterialCostItem(
-      // TODO: [CA-643] send one id per form so a retry after a lost answer updates the same line instead of adding a second one. https://ripplearc.youtrack.cloud/issue/CA-643
-      id: '',
+      id: _lineId,
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
       calculation: {'unit_price': rate, 'quantity': quantity},

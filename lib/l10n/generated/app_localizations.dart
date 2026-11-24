@@ -4274,7 +4274,7 @@ abstract class AppLocalizations {
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
 
-  /// Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.
+  /// Message shown when saving a cost line fails: a line above the Add button, or a red alert with no timer if the sheet was closed during the save. Storyboard frames: CUJ 4, The phone could not save the line; CUJ 6, Line not added.
   ///
   /// In en, this message translates to:
   /// **'This cost was not added. Try again.'**

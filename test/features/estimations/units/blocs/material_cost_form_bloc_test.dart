@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
@@ -8,6 +9,9 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/identifiers/interfaces/id_generator.dart';
+import 'package:construculator/libraries/identifiers/testing/fake_id_generator_impl.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -17,6 +21,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_items_database.dart';
 
 MaterialCostFormData _dataOf(MaterialCostFormState state) =>
     (state as MaterialCostFormEditing).data;
@@ -25,6 +30,7 @@ void main() {
   group('MaterialCostFormBloc', () {
     late MaterialCostFormBloc bloc;
     late FakeSupabaseWrapper fakeSupabase;
+    late FakeCostItemsDatabase database;
     late FakeStorageService storage;
     late FakeAuthRepository auth;
     late LastUsedUnitRepository lastUsedUnits;
@@ -32,6 +38,7 @@ void main() {
     setUpAll(() {
       final clock = FakeClockImpl();
       fakeSupabase = FakeSupabaseWrapper(clock: clock);
+      database = FakeCostItemsDatabase();
       storage = FakeStorageService();
       auth = FakeAuthRepository(clock: clock);
       Modular.init(
@@ -39,6 +46,7 @@ void main() {
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
         ),
       );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
       Modular.replaceInstance<StorageService>(storage);
       Modular.replaceInstance<AuthRepository>(auth);
       lastUsedUnits = Modular.get<LastUsedUnitRepository>();
@@ -50,6 +58,8 @@ void main() {
 
     setUp(() {
       fakeSupabase.reset();
+      database.reset();
+      Modular.replaceInstance<IdGenerator>(FakeIdGeneratorImpl());
       storage.reset();
       auth.reset();
       auth.setCurrentCredentials(
@@ -452,9 +462,7 @@ void main() {
         MaterialRateUpdated('2.55'),
       ];
 
-      Map<String, dynamic> insertedRow() =>
-          fakeSupabase.getMethodCallsFor('insert').single['data']
-              as Map<String, dynamic>;
+      Map<String, Object?> savedRow() => database.rows.single;
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves a valid line and reports success',
@@ -473,7 +481,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          final row = insertedRow();
+          final row = savedRow();
           expect(row['estimate_id'], estimateId);
           expect(row['item_name'], 'Interior paint');
           expect(row['item_type'], 'material');
@@ -481,7 +489,10 @@ void main() {
           expect(row['unit_measurement'], 'liters');
           expect(row['unit_price'], 2.55);
           expect(row['item_total_cost'], 17.85);
-          expect(row['calculation'], {'unit_price': 2.55, 'quantity': 7.0});
+          expect(jsonDecode(row['calculation']! as String), {
+            'unit_price': 2.55,
+            'quantity': 7.0,
+          });
           expect(row['rate_status'], 'own_rate_unconfirmed');
           expect(row['quantity_provenance'], 'manual');
           expect(row['currency'], 'USD');
@@ -499,7 +510,7 @@ void main() {
             ..add(const MaterialRateUpdated('2.55'))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
-        verify: (_) => expect(insertedRow()['item_total_cost'], 3.83),
+        verify: (_) => expect(savedRow()['item_total_cost'], 3.83),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
@@ -525,7 +536,7 @@ void main() {
           ..add(const MaterialCostFormSubmitted(estimateId: estimateId)),
         verify: (b) {
           expect(b.state, isA<MaterialCostFormEditing>());
-          expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+          expect(database.executeCalls, isEmpty);
         },
       );
 
@@ -540,7 +551,7 @@ void main() {
             ..add(const MaterialRateUpdated('2.01'))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
-        verify: (_) => expect(insertedRow()['item_total_cost'], 1.01),
+        verify: (_) => expect(savedRow()['item_total_cost'], 1.01),
       );
 
       final invalidValues = <String, List<MaterialCostFormEvent>>{
@@ -560,14 +571,14 @@ void main() {
           },
           verify: (b) {
             expect(b.state, isA<MaterialCostFormEditing>());
-            expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+            expect(database.executeCalls, isEmpty);
           },
         );
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'keeps every value and the last unit when saving fails',
-        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        setUp: () => database.executeError = StateError('disk full'),
         build: () => bloc,
         act: (b) {
           filledEvents.forEach(b.add);
@@ -590,13 +601,13 @@ void main() {
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves on a second try after a failure',
-        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        setUp: () => database.executeError = StateError('disk full'),
         build: () => bloc,
         act: (b) async {
           filledEvents.forEach(b.add);
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
           await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
-          fakeSupabase.shouldThrowOnInsert = false;
+          database.executeError = null;
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
         verify: (b) => expect(b.state, isA<MaterialCostFormSuccess>()),
@@ -604,7 +615,7 @@ void main() {
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'stays failed while a field is edited, with the edited value',
-        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        setUp: () => database.executeError = StateError('disk full'),
         build: () => bloc,
         act: (b) async {
           filledEvents.forEach(b.add);
@@ -620,10 +631,7 @@ void main() {
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves once when Add is tapped twice while the first save runs',
-        setUp: () {
-          fakeSupabase.shouldDelayOperations = true;
-          fakeSupabase.completer = Completer<void>();
-        },
+        setUp: () => database.writeGate = Completer<void>(),
         build: () => bloc,
         act: (b) async {
           filledEvents.forEach(b.add);
@@ -631,20 +639,16 @@ void main() {
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
           await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
-          fakeSupabase.completer!.complete();
+          database.writeGate!.complete();
           await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
         },
-        verify: (_) =>
-            expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
+        verify: (_) => expect(database.executeCalls, hasLength(1)),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'ignores edits made while the save is in flight, so the saved line and '
         'the form stay the same',
-        setUp: () {
-          fakeSupabase.shouldDelayOperations = true;
-          fakeSupabase.completer = Completer<void>();
-        },
+        setUp: () => database.writeGate = Completer<void>(),
         build: () => bloc,
         act: (b) async {
           filledEvents.forEach(b.add);
@@ -656,7 +660,7 @@ void main() {
             ..add(const MaterialRateUpdated('1'))
             ..add(const MaterialUnitSelected(Unit.bags))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
-          fakeSupabase.completer!.complete();
+          database.writeGate!.complete();
           await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
         },
         verify: (b) {
@@ -665,23 +669,20 @@ void main() {
           expect(data.quantity, 7);
           expect(data.rate, 2.55);
           expect(data.unit, Unit.liters);
-          expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+          expect(database.executeCalls, hasLength(1));
         },
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'emits nothing for an edit made while the save is in flight',
-        setUp: () {
-          fakeSupabase.shouldDelayOperations = true;
-          fakeSupabase.completer = Completer<void>();
-        },
+        setUp: () => database.writeGate = Completer<void>(),
         build: () => bloc,
         act: (b) async {
           filledEvents.forEach(b.add);
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
           await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
           b.add(const MaterialCostItemTypeChanged('Other name'));
-          fakeSupabase.completer!.complete();
+          database.writeGate!.complete();
           await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
         },
         skip: 4,
@@ -718,9 +719,93 @@ void main() {
           await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
-        verify: (_) =>
-            expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
+        verify: (_) => expect(database.executeCalls, hasLength(1)),
       );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves the line under the id the form was opened with',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (b) {
+          expect(savedRow()['id'], FakeIdGeneratorImpl.idAt(1));
+          expect(
+            (b.state as MaterialCostFormSuccess).createdItem.id,
+            FakeIdGeneratorImpl.idAt(1),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'stamps the line with UTC times, so the server reads the same moment',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) {
+          final createdAt = DateTime.parse(savedRow()['created_at']! as String);
+          final updatedAt = DateTime.parse(savedRow()['updated_at']! as String);
+          expect(createdAt.isUtc, isTrue);
+          expect(updatedAt, createdAt);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'sends a retry after a failed save under the same id',
+        setUp: () => database.executeError = StateError('disk full'),
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          database.executeError = null;
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        verify: (_) {
+          expect(database.executeCalls.map((call) => call.parameters.first), [
+            FakeIdGeneratorImpl.idAt(1),
+            FakeIdGeneratorImpl.idAt(1),
+          ]);
+          expect(database.rows, hasLength(1));
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the sheet on the form with a failure when the phone cannot write',
+        setUp: () => database.executeError = StateError('disk full'),
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (b) => expect(b.state, isA<MaterialCostFormFailure>()),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'never asks the server to save the line',
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        verify: (_) =>
+            expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty),
+      );
+
+      test('gives each form that is opened its own id', () async {
+        final second = Modular.get<MaterialCostFormBloc>();
+        filledEvents.forEach(second.add);
+        second.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        await second.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+
+        expect(savedRow()['id'], FakeIdGeneratorImpl.idAt(2));
+        await second.close();
+      });
     });
 
     group('line total', () {
@@ -843,7 +928,7 @@ void main() {
         },
         verify: (b) {
           expect(b.state, isA<MaterialCostFormEditing>());
-          expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+          expect(database.executeCalls, isEmpty);
         },
       );
     });
