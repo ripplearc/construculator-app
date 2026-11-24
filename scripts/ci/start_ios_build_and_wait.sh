@@ -43,7 +43,6 @@ cancel_unfinished_build() {
   fi
 }
 trap cancel_unfinished_build EXIT
-trap 'exit 143' TERM INT
 
 fail() {
   echo "❌ $1"

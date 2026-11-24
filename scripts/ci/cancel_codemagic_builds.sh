@@ -36,7 +36,7 @@ for BUILD_ID in "$@"; do
   fi
 
   : "${CODEMAGIC_API_TOKEN:?CODEMAGIC_API_TOKEN is not set}"
-  if RESPONSE=$(curl -sS --fail-with-body -X POST \
+  if RESPONSE=$(curl -sS --fail-with-body --max-time 30 -X POST \
     -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
     "$API_URL/builds/$BUILD_ID/cancel"); then
     echo "✅ Cancelled build $BUILD_ID"

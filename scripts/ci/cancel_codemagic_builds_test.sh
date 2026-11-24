@@ -96,6 +96,8 @@ OUTPUT=$(cat "${WORK_DIR}/out")
 assert_true "fails loudly without a token" exit_code_is 1
 assert_true "names the missing token" output_contains "CODEMAGIC_API_TOKEN is not set"
 
+assert_true "the cancel request cannot hang the calling build" grep -Fq -- "--max-time 30" "$TARGET"
+
 if [ "$FAILURES" -gt 0 ]; then
   echo "❌ ${FAILURES} case(s) failed"
   exit 1

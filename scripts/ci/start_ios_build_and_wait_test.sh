@@ -67,6 +67,9 @@ case "$method $url" in
     echo "$url" >>"$FAKE_DIR/cancelled"
     echo '{}'
     ;;
+  "GET "*/builds/)
+    echo '{"build":{"status":"finished"}}'
+    ;;
   "GET "*/builds/mac1)
     polls=$(cat "$FAKE_DIR/polls" 2>/dev/null || echo 0)
     polls=$((polls + 1))
@@ -195,6 +198,7 @@ assert_true "says the buildId is missing" output_contains "No buildId"
 FAKE_START_MODE=empty_build_id run_target feature/x
 assert_true "fails when the buildId is empty" exit_code_is 1
 assert_true "does not poll an empty id" polls_made 0
+assert_true "says the id is not an id" output_contains "is not an id"
 
 FAKE_START_MODE=bad_build_id run_target feature/x
 assert_true "fails when the buildId is not an id" exit_code_is 1
@@ -215,7 +219,7 @@ assert_true "fails when Codemagic does not accept the token" exit_code_is 1
 assert_true "sends the token on the start request" output_contains "Codemagic rejected ios-debug-build"
 
 assert_true "waits at most 90 polls, 30 seconds apart, when nothing overrides it" \
-  bash -c "grep -Fq 'MAX_POLLS:-90' '$TARGET' && grep -Fq 'POLL_INTERVAL_SECONDS:-30' '$TARGET'"
+  bash -c "grep -Fq 'MAX_POLLS:-90}' '$TARGET' && grep -Fq 'POLL_INTERVAL_SECONDS:-30}' '$TARGET'"
 
 CODEMAGIC_API_TOKEN="" run_target feature/x
 assert_true "fails loudly when the token is missing" output_contains "CODEMAGIC_API_TOKEN is not set"

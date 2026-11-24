@@ -3,7 +3,8 @@ set -uo pipefail
 
 # Decide whether the iOS debug build is needed, with the rules on origin/main
 # instead of the rules in the checked-out commit, so a pull request cannot
-# loosen its own rules.
+# loosen the path list or the decision script for its own files. This script and
+# the Pre-check step that calls it still run from the checked-out commit.
 # Usage: ./scripts/ci/decide_ios_build.sh
 #
 # Copies ios_build_needed.sh and ios_build_paths.conf from origin/main into a
