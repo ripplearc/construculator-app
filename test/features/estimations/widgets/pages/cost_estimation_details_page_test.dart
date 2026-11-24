@@ -22,6 +22,8 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/identifiers/interfaces/id_generator.dart';
+import 'package:construculator/libraries/identifiers/testing/fake_id_generator_impl.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -1871,6 +1873,21 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
       });
 
+      void serverWillHaveTheAddedLine() {
+        Modular.replaceInstance<IdGenerator>(FakeIdGeneratorImpl());
+      }
+
+      void serverHasTheAddedLine() {
+        fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: FakeIdGeneratorImpl.idAt(1),
+            estimateId: testEstimationId,
+            itemName: 'Interior paint',
+            itemTotalCost: 156,
+          ),
+        ]);
+      }
+
       String? highlightedLine(WidgetTester tester) =>
           BlocProvider.of<AddedLineHighlightCubit>(
             tester.element(find.byType(Scaffold).first),
@@ -1889,6 +1906,7 @@ void main() {
 
       testWidgets('shows the new line in the Materials section and moves its '
           'subtotal', (tester) async {
+        serverWillHaveTheAddedLine();
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
         final subtotalBefore = tester
@@ -1896,6 +1914,7 @@ void main() {
               find.byKey(const Key('cost_section_subtotal_material')),
             )
             .data;
+        serverHasTheAddedLine();
 
         await tester.tap(addButton());
         await tester.pumpAndSettle();
@@ -1918,8 +1937,10 @@ void main() {
       });
 
       testWidgets('tapping the new line clears its highlight', (tester) async {
+        serverWillHaveTheAddedLine();
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
+        serverHasTheAddedLine();
         await tester.tap(addButton());
         await tester.pumpAndSettle();
         final line = highlightedLine(tester)!;
