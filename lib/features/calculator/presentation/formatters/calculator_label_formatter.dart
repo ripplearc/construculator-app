@@ -367,8 +367,8 @@ class CalculatorLabelFormatter {
   String unitName(Unit unit) => l10n.calculatorUnitName(unit.name);
 
   /// The kind of [unit] for "`<Key>` takes a length, not `<kind>`": weight,
-  /// area, volume, or board feet for the lumber unit (Section 5.2; product
-  /// decision of 13 November 2026).
+  /// an area, a volume, or board feet for the lumber unit (Section 5.2;
+  /// product decision of 13 November 2026).
   String unitKind(Unit unit) => l10n.calculatorUnitKind(
     unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name,
   );
@@ -397,6 +397,10 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastCannotAppendTitle(unitName(unit)),
     CalculatorNeedsLengthToast(:final key, :final unit) =>
       l10n.calculatorToastNeedsLengthTitle(displayLabel(key), unitKind(unit)),
+    CalculatorPitchUnitToast(:final unit) => l10n.calculatorToastPitchUnitTitle(
+      displayLabel(PlainNumberKeys.pitch),
+      unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name,
+    ),
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
   };
@@ -420,6 +424,9 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastCannotAppendBody(value, unitName(unit)),
     CalculatorNeedsLengthToast(:final unit) =>
       l10n.calculatorToastNeedsLengthBody(unitKeyFace(unit)),
+    CalculatorPitchUnitToast(:final value) => l10n.calculatorToastPitchUnitBody(
+      value,
+    ),
     CalculatorKeepsLengthToast(:final key, :final unit, :final value) =>
       l10n.calculatorToastKeepsLengthBody(
         unitName(unit),

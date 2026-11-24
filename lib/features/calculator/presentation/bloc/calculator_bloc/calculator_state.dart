@@ -595,7 +595,10 @@ class CalculatorState extends Equatable {
   /// and the unit guards, named for the unit the key stood for — "takes a
   /// length, not `<kind>`" (one message whether the unit came first or after
   /// a finished length) and "keeps" under a dimension key on fresh entry
-  /// and on a reopened chip alike, "Can't append" on a reopened compound. The
+  /// and on a reopened chip alike, "Can't append" on a reopened compound.
+  /// Pitch is no length: a weight or the lumber unit under it reads "Pitch
+  /// cannot use a weight" (rule 4.10), and a unit refused after a rise
+  /// already typed there has no words in the doc and none here. The
   /// key-named guards speak only while a chip under a key is being typed:
   /// the tape refuses a unit key on a result the same way (Section 5.2 has
   /// no message for that), and that refusal stays silent here. Any other
@@ -606,7 +609,8 @@ class CalculatorState extends Equatable {
     if (removedResults.isNotEmpty) {
       return CalculatorResultRemovedToast(keys: removedResults);
     }
-    final key = tape.beingTyped?.key;
+    final typed = tape.beingTyped;
+    final key = typed?.key;
     return switch ((refusal, refusedUnit, key)) {
       (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _, _) =>
         CalculatorFinishValueToast(value: valueText),
@@ -616,6 +620,18 @@ class CalculatorState extends Equatable {
         _,
       ) =>
         CalculatorCannotAppendUnitToast(value: valueText, unit: unit),
+      (
+        TapeEntryRefused(reason: EntryRefusal.needsLength),
+        final unit?,
+        PlainNumberKeys.pitch,
+      ) =>
+        CalculatorPitchUnitToast(unit: unit, value: typed?.entry.text ?? ''),
+      (
+        TapeEntryRefused(reason: EntryRefusal.tailNeedsLength),
+        _,
+        PlainNumberKeys.pitch,
+      ) =>
+        null,
       (
         TapeEntryRefused(reason: EntryRefusal.needsLength),
         final unit?,

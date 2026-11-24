@@ -175,7 +175,7 @@ void main() {
           l10n.calculatorUnitKind('weight'),
         ),
       );
-      expect(labels.toastTitle(pounds), 'Width takes a length, not weight.');
+      expect(labels.toastTitle(pounds), 'Width takes a length, not weight');
       expect(
         labels.toastBody(pounds),
         l10n.calculatorToastNeedsLengthBody(l10n.calculatorKeyLbs),
@@ -188,15 +188,41 @@ void main() {
       );
       expect(
         labels.toastTitle(boardFeet),
-        'Width takes a length, not board feet.',
+        'Width takes a length, not board feet',
       );
       expect(
         labels.toastBody(boardFeet),
         'Press ⌫ to remove Bd Ft, then press Feet or Inch.',
       );
       expect(labels.unitKind(Unit.kilogram), 'weight');
-      expect(labels.unitKind(Unit.acre), 'area');
+      expect(labels.unitKind(Unit.acre), 'an area');
+      expect(l10n.calculatorUnitKind('volume'), 'a volume');
       expect(labels.unitKind(Unit.boardFoot), 'board feet');
+    });
+
+    test('"Pitch cannot use <kind>" names a weight or board feet, and its '
+        'body the two keys that finish the number typed (B3; rule 4.10)', () {
+      const pounds = CalculatorPitchUnitToast(unit: Unit.pound, value: '6');
+      expect(labels.toastTitle(pounds), 'Pitch cannot use a weight');
+      expect(
+        labels.toastBody(pounds),
+        'Press Inch for 6in/12in. Press = for 6 degrees.',
+      );
+      expect(
+        labels.toastTitle(
+          const CalculatorPitchUnitToast(unit: Unit.metricTon, value: '6'),
+        ),
+        'Pitch cannot use a weight',
+      );
+      const boardFeet = CalculatorPitchUnitToast(
+        unit: Unit.boardFoot,
+        value: '4.5',
+      );
+      expect(labels.toastTitle(boardFeet), 'Pitch cannot use board feet');
+      expect(
+        labels.toastBody(boardFeet),
+        'Press Inch for 4.5in/12in. Press = for 4.5 degrees.',
+      );
     });
 
     test('"<Key> keeps <value>" says what the unit would make the value', () {

@@ -279,6 +279,15 @@
             <mutation text="return _press(emit, (tape) =&gt; _pressUnit(tape, unit));"/>
         </regex>
 
+        <!-- RULE (S1c 5/5 R3, B3): Pitch gets the length words for a weight
+             or board feet, or for a unit after a rise already typed -->
+        <regex pattern="\(\s*TapeEntryRefused\(reason: EntryRefusal\.needsLength\),\s*final unit\?,\s*PlainNumberKeys\.pitch,\s*\) =&gt;\s*CalculatorPitchUnitToast\(unit: unit, value: typed\?\.entry\.text \?\? ''\)," dotAll="true" id="calculator_state.toast.pitch_reads_as_a_length">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\(\s*TapeEntryRefused\(reason: EntryRefusal\.tailNeedsLength\),\s*_,\s*PlainNumberKeys\.pitch,\s*\) =&gt;\s*null," dotAll="true" id="calculator_state.toast.pitch_tail_reads_as_a_length">
+            <mutation text=""/>
+        </regex>
+
         <!-- RULE 35 (R2, B2): the second key order, a unit after a finished
              length, raises no message -->
         <regex pattern="TapeEntryRefused\(reason: EntryRefusal\.tailNeedsLength\),\s*final unit\?,\s*final key\?,\s*\) =&gt;\s*CalculatorNeedsLengthToast\(key: key, unit: unit\)," dotAll="true" id="calculator_state.toast.tail_order_silent">
@@ -287,8 +296,8 @@
 
         <!-- RULE 36 (R1, B1): a unit key on a result builds a key-named
              message for no key -->
-        <regex pattern="final key = tape\.beingTyped\?\.key;\s*return switch \(\(refusal, refusedUnit, key\)\) \{" dotAll="true" id="calculator_state.toast.empty_key_named">
-            <mutation text="final key = tape.beingTyped?.key ?? ''; return switch ((refusal, refusedUnit, key)) {"/>
+        <regex pattern="final key = typed\?\.key;\s*return switch \(\(refusal, refusedUnit, key\)\) \{" dotAll="true" id="calculator_state.toast.empty_key_named">
+            <mutation text="final key = typed?.key ?? ''; return switch ((refusal, refusedUnit, key)) {"/>
         </regex>
     </rules>
 

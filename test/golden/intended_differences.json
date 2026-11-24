@@ -324,7 +324,7 @@
   {
    "scenario": "S69",
    "checkpoint": "blocked: Width takes lengths, chip flagged red",
-   "reason": "The prototype's toast reads 'Width takes lengths…pounds' for a weight unit on a bare number. The design titles it '<Key> needs a length, not a weight.' and its body tells which unit to remove, 'Press ⌫ to remove Lbs, then press Feet or Inch.', the key's own face (UX doc Section 5.2, '<Key> needs a length'); the 'takes lengths and not pounds' wording is the design's for a number typed after a finished length. The red outline of the edited chip is a DOM check with no face in CoreUI yet (CA-1405).",
+   "reason": "The prototype's toast reads 'Width takes lengths…pounds' for a weight unit on a bare number. The design titles it '<Key> takes a length, not weight' and its body tells which unit to remove, 'Press ⌫ to remove Lbs, then press Feet or Inch.', the key's own face; the same title and body show in both key orders (UX doc Section 5.2). The red outline of the edited chip is a DOM check with no face in CoreUI yet (CA-1405).",
    "dart": {"kind": "all", "checks": [{"kind": "toastShown", "equals": true}, {"kind": "toastIncludes", "text": "remove Lbs"}, {"kind": "toastIncludes", "text": "Feet or Inch"}]}
   }
  ]

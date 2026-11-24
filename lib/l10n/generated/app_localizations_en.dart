@@ -2575,15 +2575,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String calculatorToastNeedsLengthTitle(String key, String kind) {
-    return '$key takes a length, not $kind.';
+    return '$key takes a length, not $kind';
   }
 
   @override
   String calculatorUnitKind(String kind) {
     String _temp0 = intl.Intl.selectLogic(kind, {
       'weight': 'weight',
-      'area': 'area',
-      'volume': 'volume',
+      'area': 'an area',
+      'volume': 'a volume',
       'boardFeet': 'board feet',
       'other': '$kind',
     });
@@ -2593,6 +2593,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String calculatorToastNeedsLengthBody(String unit) {
     return 'Press ⌫ to remove $unit, then press Feet or Inch.';
+  }
+
+  @override
+  String calculatorToastPitchUnitTitle(String key, String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'boardFeet': '$key cannot use board feet',
+      'other': '$key cannot use a weight',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calculatorToastPitchUnitBody(String value) {
+    return 'Press Inch for ${value}in/12in. Press = for $value degrees.';
   }
 
   @override

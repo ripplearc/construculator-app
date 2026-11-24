@@ -4487,13 +4487,13 @@ abstract class AppLocalizations {
   /// Title of the red Alert when a unit that is not a length is pressed under a dimension key, in either key order (UX Design Doc Section 5.2; product decision of 13 November 2026: the title names the kind of the unit pressed — weight, area, volume or board feet)
   ///
   /// In en, this message translates to:
-  /// **'{key} takes a length, not {kind}.'**
+  /// **'{key} takes a length, not {kind}'**
   String calculatorToastNeedsLengthTitle(String key, String kind);
 
-  /// The kind of a calculator unit named in the '<Key> takes a length, not <kind>' Alert: weight, area, volume or board feet
+  /// The kind of a calculator unit named in the '<Key> takes a length, not <kind>' Alert: weight, an area, a volume or board feet
   ///
   /// In en, this message translates to:
-  /// **'{kind, select, weight{weight} area{area} volume{volume} boardFeet{board feet} other{{kind}}}'**
+  /// **'{kind, select, weight{weight} area{an area} volume{a volume} boardFeet{board feet} other{{kind}}}'**
   String calculatorUnitKind(String kind);
 
   /// Body of the '<Key> takes a length' Alert, one text for both key orders (UX Design Doc Section 5.2; product decision of 13 November 2026); unit is the face of the key that was pressed
@@ -4501,6 +4501,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Press ⌫ to remove {unit}, then press Feet or Inch.'**
   String calculatorToastNeedsLengthBody(String unit);
+
+  /// Title of the red Alert when a weight or the lumber unit is pressed under the Pitch key (UX Design Doc rule 4.10: 'Pitch cannot use a weight', 'Pitch cannot use board feet'); kind is boardFeet for the lumber unit and weight otherwise
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, boardFeet{{key} cannot use board feet} other{{key} cannot use a weight}}'**
+  String calculatorToastPitchUnitTitle(String key, String kind);
+
+  /// Body of the 'Pitch cannot use a weight' Alert (UX Design Doc rule 4.10); value is the number typed under Pitch, which Inch reads as a rise per 12in of run and = as degrees
+  ///
+  /// In en, this message translates to:
+  /// **'Press Inch for {value}in/12in. Press = for {value} degrees.'**
+  String calculatorToastPitchUnitBody(String value);
 
   /// Title of the toast when a unit is pressed again under a dimension key that holds lengths only (UX Design Doc Section 5.2, '<Key> keeps <value>')
   ///

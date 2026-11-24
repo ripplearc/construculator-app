@@ -76,6 +76,24 @@ final class CalculatorNeedsLengthToast extends CalculatorToast {
   List<Object?> get props => [key, unit];
 }
 
+/// "Pitch cannot use `<kind>`": a weight or the lumber [unit] pressed under
+/// the Pitch key, which is a rise per 12in of run or an angle and never a
+/// length (rule 4.10). The body names the two keys that finish the [value]
+/// typed: Inch for a rise, = for degrees.
+final class CalculatorPitchUnitToast extends CalculatorToast {
+  /// The unit that was refused.
+  final Unit unit;
+
+  /// The number under Pitch as it was typed, without the degree sign the
+  /// value row reads it with.
+  final String value;
+
+  const CalculatorPitchUnitToast({required this.unit, required this.value});
+
+  @override
+  List<Object?> get props => [unit, value];
+}
+
 /// "`<Key>` keeps `<value>`": [unit] pressed again under the dimension
 /// [key], which cannot hold an area or a volume (Section 5.2), on fresh
 /// entry as on a reopened chip.

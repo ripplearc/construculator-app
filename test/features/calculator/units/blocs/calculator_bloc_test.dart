@@ -1291,20 +1291,71 @@ void main() {
         ],
       );
 
-      test(
-        'the first refusal reads as "Width needs a length" with no tail',
-        () {
-          final state = CalculatorState(
-            tape: widthReopened('✕ 5'),
-            refusal: const TapeEntryRefused(EntryRefusal.needsLength),
-            refusedUnit: Unit.pound,
-          );
-          expect(
-            state.toast,
-            const CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound),
-          );
-        },
+      for (final (unitKey, unit) in const [
+        ('lbs', Unit.pound),
+        ('bf', Unit.boardFoot),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a weight or board feet under Pitch is refused in the Pitch words, '
+          'never the length words: Pitch 6 then $unitKey (B3; rule 4.10)',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorKeySelected('Pitch'))
+            ..add(const CalculatorDigitPressed('6'))
+            ..add(CalculatorKeySelected(unitKey)),
+          skip: 2,
+          expect: () => [
+            isA<CalculatorState>()
+                .having((s) => s.valueText, 'valueText', '6°')
+                .having(
+                  (s) => s.refusal,
+                  'refusal',
+                  const TapeEntryRefused(EntryRefusal.needsLength),
+                )
+                .having(
+                  (s) => s.toast,
+                  'toast',
+                  CalculatorPitchUnitToast(unit: unit, value: '6'),
+                ),
+          ],
+        );
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a weight after a rise already typed under Pitch is refused with no '
+        'words, since the doc has none for it and the length words would '
+        'send the user to Feet (B3)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.inch))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorKeySelected('lbs')),
+        skip: 4,
+        expect: () => [
+          isA<CalculatorState>()
+              .having(
+                (s) => s.refusal,
+                'refusal',
+                const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+              )
+              .having((s) => s.toast, 'toast', isNull),
+        ],
       );
+
+      test('the first refusal reads as "Width takes a length", the words the '
+          'tail order gets', () {
+        final state = CalculatorState(
+          tape: widthReopened('✕ 5'),
+          refusal: const TapeEntryRefused(EntryRefusal.needsLength),
+          refusedUnit: Unit.pound,
+        );
+        expect(
+          state.toast,
+          const CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound),
+        );
+      });
 
       blocTest<CalculatorBloc, CalculatorState>(
         'a unit pressed again under a dimension key is kept with the refusal, '
