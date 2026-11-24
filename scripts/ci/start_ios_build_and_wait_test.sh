@@ -117,7 +117,7 @@ run_target() {
       FAKE_START_MODE="${FAKE_START_MODE:-ok}" \
       CODEMAGIC_API_TOKEN="${CODEMAGIC_API_TOKEN-test-token}" \
       CODEMAGIC_APP_ID="${CODEMAGIC_APP_ID-test-app}" \
-      POLL_INTERVAL_SECONDS=0 MAX_POLLS="${MAX_POLLS:-5}" \
+      POLL_INTERVAL_SECONDS="${POLL_INTERVAL_SECONDS:-0}" MAX_POLLS="${MAX_POLLS:-5}" \
       "$TARGET" "$@" 2>&1
   )"
   EXIT_CODE=$?
@@ -203,6 +203,10 @@ assert_true "tries to cancel the build it gave up on" cancelled_build mac1
 assert_true "waits between polls but not after the last one" [ "$(wc -l <"${WORK_DIR}/fake/sleeps")" -eq 2 ]
 assert_true "waits the configured interval between polls" [ "$(sort -u "${WORK_DIR}/fake/sleeps")" = 0 ]
 
+statuses_are building
+POLL_INTERVAL_SECONDS=7 MAX_POLLS=3 run_target feature/x
+assert_true "sleeps for the interval it was given, not a fixed time" [ "$(sort -u "${WORK_DIR}/fake/sleeps")" = 7 ]
+
 statuses_are finished
 FAKE_START_MODE=reject run_target feature/x
 assert_true "fails when Codemagic rejects the start" exit_code_is 1
@@ -239,7 +243,7 @@ assert_true "sends the token on the start request" output_contains "Codemagic re
 assert_true "does not trap TERM or INT, which would hold the cancel until the poll sleep ends" \
   bash -c "! grep -Eq '^trap .*(TERM|INT)' '$TARGET'"
 assert_true "gives every request a time limit" \
-  bash -c "[ \"\$(grep -c -- '--max-time 30' '$TARGET')\" = 2 ]"
+  bash -c "[ \"\$(grep -c -- '--max-time 30 ' '$TARGET')\" = 2 ]"
 assert_true "waits at most 90 polls, 30 seconds apart, when nothing overrides it" \
   bash -c "grep -Fq 'MAX_POLLS:-90}' '$TARGET' && grep -Fq 'POLL_INTERVAL_SECONDS:-30}' '$TARGET'"
 

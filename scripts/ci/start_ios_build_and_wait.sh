@@ -8,8 +8,8 @@ set -uo pipefail
 # calling build: a failed, canceled or timed out Mac build, an unknown status, a
 # Codemagic API error (on start or while waiting), or no end after MAX_POLLS
 # polls. Whenever the script stops while the Mac build may still be running (a
-# polling error, the last poll, an unknown status word, SIGTERM or SIGINT) it
-# tries to cancel that build.
+# polling error, the last poll, an unknown status word or SIGTERM; SIGINT takes
+# the same path but is not tested) it tries to cancel that build.
 #
 # Environment:
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID  required
