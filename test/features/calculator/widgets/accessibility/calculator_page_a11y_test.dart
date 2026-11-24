@@ -514,6 +514,12 @@ void main() {
             tester,
             find.byKey(const Key('toast_action_button')),
             checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.byKey(const Key('toast_action_button')),
           );
         }
       },
