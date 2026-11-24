@@ -161,16 +161,17 @@ class AddToEstimateFooter extends StatelessWidget {
                   onPressed: onAdd,
                 ),
               ),
-          if (keypad == null && onDelete != null)
-            Padding(
-              padding: sideInset,
-              child: _DeleteLine(
-                key: deleteButtonKey,
-                isDisabled: isBusy,
-                takesFocus: deleteFailed,
-                onTap: onDelete!,
+          if (keypad == null)
+            if (onDelete case final onDelete?)
+              Padding(
+                padding: sideInset,
+                child: _DeleteLine(
+                  key: deleteButtonKey,
+                  isDisabled: isBusy,
+                  takesFocus: deleteFailed,
+                  onTap: onDelete,
+                ),
               ),
-            ),
         ],
       ),
     );
