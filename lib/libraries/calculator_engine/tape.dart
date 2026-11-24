@@ -1854,11 +1854,10 @@ class Tape extends Equatable {
       // the close recomputed the answers after the bracket; a step still
       // pending at the end is landed as well, an answer there stands
       return switch (closeBracket()) {
-        TapeChanged(:final tape, notice: null)
-            when !tape.endsWithResult && !tape.endsWithError =>
+        TapeChanged(:final tape, notice: null) when tape._hasAStepToLand =>
           _landedAfterClose(tape),
         TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled)
-            when !tape.endsWithResult && !tape.endsWithError =>
+            when tape._hasAStepToLand =>
           _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
         // the close took an old answer with it, so the step left pending
         // at the end is landed as well: ( 2 + 3 ) = × 4, the bracket
@@ -1869,7 +1868,7 @@ class Tape extends Equatable {
           notice: TapeNotice.resultRemoved,
           :final removed,
         )
-            when !tape.endsWithResult && !tape.endsWithError =>
+            when tape._hasAStepToLand =>
           _landedAfterClose(
             tape,
             notice: TapeNotice.resultRemoved,
@@ -1989,6 +1988,16 @@ class Tape extends Equatable {
       return null;
     }
     return _with([...chips.sublist(0, chips.length - 2), chips.last]);
+  }
+
+  bool get _hasAStepToLand {
+    if (endsWithResult) return false;
+    for (final (index, chip) in chips.indexed) {
+      if (chip is ErrorChip && !_isDivisionByZeroBeforeItsDivisor(index)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   TapeOutcome _landedAfterClose(
@@ -2439,8 +2448,11 @@ class Tape extends Equatable {
       chips[index] is ErrorChip &&
       (chips[index] as ErrorChip).isAnOpenDivisionByZero &&
       index + 1 < chips.length &&
-      chips[index + 1] is ValueChip &&
-      (chips[index + 1] as ValueChip).operator == Operator.divide;
+      switch (chips[index + 1]) {
+        ValueChip(operator: Operator.divide) ||
+        BracketChip(operator: Operator.divide) => true,
+        TapeChip() => false,
+      };
 
   TapeChip? _rebuiltError(ErrorChip error) => switch (_lastChainTotal) {
     ChainFailed(error: final failure) => ErrorChip(

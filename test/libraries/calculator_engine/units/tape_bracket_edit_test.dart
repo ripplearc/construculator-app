@@ -14,6 +14,7 @@ void main() {
     'lbs' => tape.pressUnit(Unit.pound),
     '+' => tape.pressOperator(Operator.add),
     '×' => tape.pressOperator(Operator.multiply),
+    '÷' => tape.pressOperator(Operator.divide),
     '=' => tape.pressEquals(),
     '⌫' => tape.backspace(),
     '✕' => tape.clearActive(),
@@ -391,6 +392,54 @@ void main() {
         const TapeRefused(TapeRefusal.chipCannotBeEdited),
       );
       expect(texts(press(first, '⌫ 7 (')), ['(7)', '+(3)', 'Calc10']);
+    });
+
+    test('a reopened bracket that is the new divisor after ÷ 0 keeps the '
+        'value before the error chip when it closes, changed or not (Section '
+        '7, "Closing it with nothing changed puts the tape back as it was"; '
+        'rule 4.12)', () {
+      final answered = press(const Tape(), '5 ÷ 0 = ( 2 + 3 ( × 2 =');
+      expect(texts(answered), ['5', 'divisionByZero', '÷(2+3)', '×2', 'Calc2']);
+      expect(texts(press(answered, 'tap:2 (')), texts(answered));
+      expect(texts(press(answered, 'tap:2 ⌫ 5 (')), [
+        '5',
+        'divisionByZero',
+        '÷(2+5)',
+        '×2',
+        'Calc1.43',
+      ]);
+      expect(texts(press(const Tape(), '8 ÷ 0 = ( 2 + 2 ( = tap:2 =')), [
+        '8',
+        'divisionByZero',
+        '÷(2+2)',
+        'Calc2',
+      ]);
+      expect(
+        texts(press(const Tape(), '8 ÷ 0 = ( 2 + 2 ( + 1 = tap:2 ⌫ 6 =')),
+        ['8', 'divisionByZero', '÷(2+6)', '+1', 'Calc2'],
+      );
+      expect(
+        texts(press(const Tape(), '5 ÷ 0 = ( 2 + 3 ( × 2 tap:2 =')),
+        ['5', 'divisionByZero', '÷(2+3)', '×2', 'Calc2'],
+        reason: 'the step still pending lands past the ÷ 0 its divisor repairs',
+      );
+    });
+
+    test('= that closes a reopened bracket and leaves an error chip in the '
+        'middle of the tape lands nothing and says nothing more: the error '
+        'chip already says what is wrong', () {
+      final open = press(const Tape(), '( 2 ft ( + 3 ft = × 2 tap:0 ⌫ ⌫ 2 lbs');
+      final outcome = open.pressEquals();
+      expect(
+        outcome,
+        isA<TapeChanged>().having((c) => c.notice, 'notice', isNull),
+      );
+      expect(texts((outcome as TapeChanged).tape), [
+        '(2lbs)',
+        '+3ft',
+        'dimensionError',
+        '×2',
+      ]);
     });
 
     test('an error chip after a reopened bracket is rebuilt when the bracket '

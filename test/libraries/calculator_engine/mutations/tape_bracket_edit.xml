@@ -33,16 +33,28 @@
 
         <!-- RULE 4a: = on a reopened bracket closes it and lands nothing,
              the pending step after an older answer included (R1, B2) -->
-        <regex pattern="TapeChanged\(:final tape, notice: null\)\s*when !tape\.endsWithResult &amp;&amp; !tape\.endsWithError =&gt;\s*_landedAfterClose\(tape\)," dotAll="true" id="tape_bracket_edit.equals.unanswered_chain_silent">
+        <regex pattern="TapeChanged\(:final tape, notice: null\) when tape\._hasAStepToLand =&gt;\s*_landedAfterClose\(tape\)," dotAll="true" id="tape_bracket_edit.equals.unanswered_chain_silent">
             <mutation text="TapeChanged(:final tape, notice: null) when false =&gt; _landedAfterClose(tape),"/>
         </regex>
 
         <!-- RULE 4b: = on a reopened bracket lands a second answer over the
              one already there, or says "nothing to compute" over an answer
              the close recomputed or an error it left (R1, N2) -->
-        <regex pattern="TapeChanged\(:final tape, notice: null\)\s*when !tape\.endsWithResult &amp;&amp; !tape\.endsWithError =&gt;" dotAll="true" id="tape_bracket_edit.equals.answered_chain_landed_again">
+        <regex pattern="TapeChanged\(:final tape, notice: null\) when tape\._hasAStepToLand =&gt;" dotAll="true" id="tape_bracket_edit.equals.answered_chain_landed_again">
             <mutation text="TapeChanged(:final tape, notice: null) =&gt;"/>
-            <mutation text="TapeChanged(:final tape, notice: null) when !tape.endsWithResult =&gt;"/>
+        </regex>
+        <regex pattern="if \(endsWithResult\) return false;\s*for \(final \(index, chip\) in chips\.indexed\) \{\s*if \(chip is ErrorChip &amp;&amp; !_isDivisionByZeroBeforeItsDivisor\(index\)\) \{" dotAll="true" id="tape_bracket_edit.equals.step_to_land">
+            <mutation text="for (final (index, chip) in chips.indexed) { if (chip is ErrorChip &amp;&amp; !_isDivisionByZeroBeforeItsDivisor(index)) {"/>
+            <mutation text="if (endsWithResult) return false; for (final (index, chip) in chips.indexed) { if (index == chips.length - 1 &amp;&amp; chip is ErrorChip) {"/>
+            <mutation text="if (endsWithResult) return false; for (final (index, chip) in chips.indexed) { if (chip is ErrorChip &amp;&amp; index &lt; 0) {"/>
+            <mutation text="if (endsWithResult) return false; for (final (index, chip) in chips.indexed) { if (chip is ErrorChip &amp;&amp; index &gt;= 0) {"/>
+        </regex>
+
+        <!-- RULE R3 (blocker of 18 November): a bracket is not seen as the
+             divisor after ÷ 0, so closing it reopened starts a chain of its
+             own and the value before the error is lost -->
+        <regex pattern="ValueChip\(operator: Operator\.divide\) \|\|\s*BracketChip\(operator: Operator\.divide\) =&gt; true," dotAll="true" id="tape_bracket_edit.zero_divisor.bracket_not_a_divisor">
+            <mutation text="ValueChip(operator: Operator.divide) =&gt; true,"/>
         </regex>
 
         <!-- RULE 5: a tap reopens the bracket without the notice -->
@@ -79,13 +91,13 @@
 
         <!-- RULE: = on an emptied reopened bracket cancels the edit but lands
              nothing after it, so the step still pending is lost -->
-        <regex pattern="TapeChanged\(:final tape, notice: TapeNotice\.bracketEditCancelled\) =&gt;\s*_landedAfterClose\(tape, notice: TapeNotice\.bracketEditCancelled\)," dotAll="true" id="tape_bracket_edit.equals.cancelled_lands_nothing">
-            <mutation text="TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =&gt; TapeChanged(tape, notice: TapeNotice.bracketEditCancelled),"/>
+        <regex pattern="TapeChanged\(:final tape, notice: TapeNotice\.bracketEditCancelled\)\s*when tape\._hasAStepToLand =&gt;\s*_landedAfterClose\(tape, notice: TapeNotice\.bracketEditCancelled\)," dotAll="true" id="tape_bracket_edit.equals.cancelled_lands_nothing">
+            <mutation text="TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) when tape._hasAStepToLand =&gt; TapeChanged(tape, notice: TapeNotice.bracketEditCancelled),"/>
         </regex>
 
         <!-- RULE (R2 nit): = on a reopened bracket in the middle lands no Calc
              when the close removed an old answer -->
-        <regex pattern="TapeChanged\(\s*:final tape,\s*notice: TapeNotice\.resultRemoved,\s*:final removed,\s*\)\s*when !tape\.endsWithResult &amp;&amp; !tape\.endsWithError =&gt;" dotAll="true" id="tape_bracket_edit.equals.removed_answer_lands_nothing">
+        <regex pattern="TapeChanged\(\s*:final tape,\s*notice: TapeNotice\.resultRemoved,\s*:final removed,\s*\)\s*when tape\._hasAStepToLand =&gt;" dotAll="true" id="tape_bracket_edit.equals.removed_answer_lands_nothing">
             <mutation text="TapeChanged(:final tape, notice: TapeNotice.resultRemoved, :final removed) when false =&gt;"/>
         </regex>
     </rules>
