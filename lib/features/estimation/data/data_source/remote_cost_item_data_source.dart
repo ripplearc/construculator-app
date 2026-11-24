@@ -110,7 +110,11 @@ class RemoteCostItemDataSource implements CostItemDataSource {
     _logger.debug('Updating cost item: ${item.id}');
     final response = await _supabaseWrapper.update(
       table: DatabaseConstants.costItemsTable,
-      data: item.toJson(),
+      data: Map.of(item.toJson())
+        ..remove(DatabaseConstants.idColumn)
+        ..remove(DatabaseConstants.estimateIdColumn)
+        ..remove(DatabaseConstants.itemTypeColumn)
+        ..remove(DatabaseConstants.createdAtColumn),
       filterColumn: DatabaseConstants.idColumn,
       filterValue: item.id,
     );

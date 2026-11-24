@@ -55,9 +55,11 @@ abstract class CostItemDataSource {
 
   /// Replaces the stored fields of the cost item with [item]'s id.
   ///
-  /// Writes every field of [item], so a caller must not change the item type
-  /// or the estimate: only the priced fields are meant to differ from what is
-  /// stored.
+  /// Writes every field of [item] except `id`, `estimate_id`, `item_type` and
+  /// `created_at`, which an update never changes.
+  ///
+  /// The database does not set `updated_at` on an update, so a caller sets it
+  /// on [item] to the time of the change.
   ///
   /// Returns the updated [CostItemDto] as the server now holds it.
   ///
