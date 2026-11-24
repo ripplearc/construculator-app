@@ -8,7 +8,8 @@ set -uo pipefail
 # calling build: a failed, canceled or timed out Mac build, an unknown status, a
 # Codemagic API error (on start or while waiting), or no end after MAX_POLLS
 # polls. Whenever the script stops while the Mac build may still be running (a
-# polling error, the last poll, SIGTERM or SIGINT) it tries to cancel that build.
+# polling error, the last poll, an unknown status word, SIGTERM or SIGINT) it
+# tries to cancel that build.
 #
 # Environment:
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID  required
@@ -85,11 +86,14 @@ for ((POLL = 1; POLL <= MAX_POLLS; POLL++)); do
       ;;
     queued | preparing | fetching | testing | building | publishing | finishing)
       echo "$WORKFLOW_ID build $BUILD_ID is $STATUS (poll $POLL of $MAX_POLLS)"
-      sleep "$POLL_INTERVAL_SECONDS"
+      [ "$POLL" -lt "$MAX_POLLS" ] && sleep "$POLL_INTERVAL_SECONDS"
       ;;
-    *)
+    failed | canceled | timeout | skipped)
       BUILD_MAY_BE_RUNNING=false
       fail "$WORKFLOW_ID build $BUILD_ID ended with status $STATUS"
+      ;;
+    *)
+      fail "$WORKFLOW_ID build $BUILD_ID ended with status $STATUS, a word this script does not know"
       ;;
   esac
 done

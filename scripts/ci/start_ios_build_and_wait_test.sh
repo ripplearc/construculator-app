@@ -97,9 +97,16 @@ esac
 EOF2
 chmod +x "${WORK_DIR}/bin/curl"
 
+# The fake sleep records each wait instead of waiting, so a test can count them.
+cat >"${WORK_DIR}/bin/sleep" <<'EOF2'
+#!/bin/bash
+echo "$1" >>"$FAKE_DIR/sleeps"
+EOF2
+chmod +x "${WORK_DIR}/bin/sleep"
+
 # statuses_are <status>...   one status per poll
 statuses_are() {
-  rm -f "${WORK_DIR}/fake/polls" "${WORK_DIR}/fake/cancelled" "${WORK_DIR}/fake/start_body"
+  rm -f "${WORK_DIR}/fake/polls" "${WORK_DIR}/fake/cancelled" "${WORK_DIR}/fake/start_body" "${WORK_DIR}/fake/sleeps"
   printf '%s\n' "$@" >"${WORK_DIR}/fake/statuses"
 }
 
@@ -149,13 +156,22 @@ assert_true "waits through every running status until the build finishes" exit_c
 assert_true "polls once per status" polls_made 8
 assert_true "does not cancel a build that finished" cancelled_nothing
 
-for ended in failed canceled timeout skipped warning something_new; do
+for ended in failed canceled timeout skipped; do
   statuses_are building "$ended"
   run_target feature/x
   assert_true "fails when the Mac build ends as $ended" exit_code_is 1
   assert_true "names the status $ended" output_contains "ended with status $ended"
   assert_true "stops polling at $ended" polls_made 2
   assert_true "does not cancel a build that already ended as $ended" cancelled_nothing
+done
+
+for unknown in warning something_new; do
+  statuses_are building "$unknown"
+  run_target feature/x
+  assert_true "fails on the status word $unknown that the script does not know" exit_code_is 1
+  assert_true "says the word $unknown is not known" output_contains "ended with status $unknown, a word this script does not know"
+  assert_true "stops polling at $unknown" polls_made 2
+  assert_true "cancels the Mac build when the word $unknown may mean it still runs" cancelled_build mac1
 done
 
 statuses_are building api_error
@@ -184,6 +200,8 @@ assert_true "fails when the build does not end in time" exit_code_is 1
 assert_true "stops after the last poll" polls_made 3
 assert_true "says it ran out of polls" output_contains "did not end within 3 polls"
 assert_true "tries to cancel the build it gave up on" cancelled_build mac1
+assert_true "waits between polls but not after the last one" [ "$(wc -l <"${WORK_DIR}/fake/sleeps")" -eq 2 ]
+assert_true "waits the configured interval between polls" [ "$(sort -u "${WORK_DIR}/fake/sleeps")" = 0 ]
 
 statuses_are finished
 FAKE_START_MODE=reject run_target feature/x
@@ -218,6 +236,10 @@ CODEMAGIC_API_TOKEN="wrong-token" run_target feature/x
 assert_true "fails when Codemagic does not accept the token" exit_code_is 1
 assert_true "sends the token on the start request" output_contains "Codemagic rejected ios-debug-build"
 
+assert_true "does not trap TERM or INT, which would hold the cancel until the poll sleep ends" \
+  bash -c "! grep -Eq '^trap .*(TERM|INT)' '$TARGET'"
+assert_true "gives every request a time limit" \
+  bash -c "[ \"\$(grep -c -- '--max-time 30' '$TARGET')\" = 2 ]"
 assert_true "waits at most 90 polls, 30 seconds apart, when nothing overrides it" \
   bash -c "grep -Fq 'MAX_POLLS:-90}' '$TARGET' && grep -Fq 'POLL_INTERVAL_SECONDS:-30}' '$TARGET'"
 

@@ -80,6 +80,9 @@ assert_true "builds when the decision is neither run nor skip" started_with "fea
 run_target "SKIP: shouting" feature/x
 assert_true "reads only a lower-case skip: as a skip" started_with "feature/x app="
 
+run_target "skipped: x" feature/x
+assert_true "reads only skip: as a skip, not a word that starts with skip" started_with "feature/x app="
+
 run_target "run: skip: tricky reason" feature/x
 assert_true "reads a skip word inside a run reason as a run" started_with "feature/x app="
 
