@@ -443,5 +443,82 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
       expect(find.byKey(useButton), findsNothing);
     });
+
+    testWidgets('keeps the YOUR RATES heading above the error row', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      final heading = find.text(l10n.yourRatesName.toUpperCase());
+      expect(heading, findsOneWidget);
+      expect(
+        tester.getTopLeft(heading).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const Key('your_rates_load_error'))).dy,
+        ),
+      );
+    });
+
+    testWidgets('a retry that fails again brings back Try again, active', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      final row = tester.widget<CoreInlineErrorRow>(
+        find.byKey(const Key('your_rates_load_error')),
+      );
+      expect(row.isActionDisabled, isFalse);
+    });
+
+    testWidgets('Try again keeps the error row with its action disabled '
+        'while the read runs, and reads only once', (tester) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+      final readsBefore = database.getAllCalls.length;
+      final gate = Completer<void>();
+      database.getAllGate = gate;
+      addTearDown(() {
+        if (!gate.isCompleted) gate.complete();
+      });
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('your_rates_try_again_button')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      final row = tester.widget<CoreInlineErrorRow>(
+        find.byKey(const Key('your_rates_load_error')),
+      );
+      expect(row.isActionDisabled, isTrue);
+      expect(find.text(l10n.yourRatesName.toUpperCase()), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_proclassic')), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(database.getAllCalls.length, readsBefore + 1);
+    });
+  });
+
+  group('MaterialRateLookupSheet – nothing saved', () {
+    testWidgets('an empty box with no saved rates shows no no-match line', (
+      tester,
+    ) async {
+      database.reset();
+      await openSheet(tester, initialQuery: 'primer');
+      expect(find.text(l10n.yourRatesNoMatchState('primer')), findsOneWidget);
+
+      await typeQuery(tester, '');
+
+      expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
+      expect(find.textContaining('No matches'), findsNothing);
+    });
   });
 }
