@@ -127,6 +127,7 @@ class EquipmentCostFormData extends Equatable {
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
     this.isRateSaveRunning = false,
+    this.editedItem,
   });
 
   /// Pricing strategy currently selected: by the day or by the job.
@@ -196,6 +197,30 @@ class EquipmentCostFormData extends Equatable {
   /// Whether a save of this line's rate to Your rates is running. Add to
   /// estimate stays off, and closing the sheet waits for the save to end.
   final bool isRateSaveRunning;
+
+  /// The line already on the estimate that this form edits, or `null` when
+  /// the form adds a new line.
+  final EquipmentCostItem? editedItem;
+
+  /// Whether Save changes a line already on the estimate.
+  bool get isEditingExistingLine => editedItem != null;
+
+  /// The name that titles the form and its questions: the stored name of the
+  /// line being edited, which stays put while the name field is changed, or
+  /// else the name typed so far.
+  String get lineName => editedItem?.itemName ?? equipmentType;
+
+  /// How much the estimate total moves if the form is saved now, in dollars.
+  ///
+  /// `null` when the form adds a new line, so there is nothing to compare.
+  double? get changeInEstimateTotal {
+    final edited = editedItem;
+    if (edited == null) return null;
+    return (_baseCents +
+            _toCents(deliveryFee ?? 0) -
+            _toCents(edited.itemTotalCost)) /
+        100;
+  }
 
   /// Validation error key for the item type field, or null when valid.
   EquipmentFieldError? get itemTypeError =>
@@ -294,6 +319,7 @@ class EquipmentCostFormData extends Equatable {
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
     bool? isRateSaveRunning,
+    Object? editedItem = _unset,
   }) {
     return EquipmentCostFormData(
       method: method ?? this.method,
@@ -327,6 +353,9 @@ class EquipmentCostFormData extends Equatable {
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
       isRateSaveRunning: isRateSaveRunning ?? this.isRateSaveRunning,
+      editedItem: editedItem == _unset
+          ? this.editedItem
+          : editedItem as EquipmentCostItem?,
     );
   }
 
@@ -350,6 +379,7 @@ class EquipmentCostFormData extends Equatable {
     fieldErrors,
     hasUnsavedChanges,
     isRateSaveRunning,
+    editedItem,
   ];
 }
 
@@ -394,7 +424,8 @@ class EquipmentCostFormSuccess extends EquipmentCostFormState {
   /// The form data as it was at submission time.
   final EquipmentCostFormData data;
 
-  /// The cost item as persisted by [CostItemRepository.createCostItem].
+  /// The cost item as persisted by [CostItemRepository.createCostItem], or
+  /// by [CostItemRepository.updateCostItem] when the form edited a line.
   final CostItem createdItem;
 }
 

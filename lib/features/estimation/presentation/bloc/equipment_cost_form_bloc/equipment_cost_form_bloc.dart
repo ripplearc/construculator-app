@@ -153,6 +153,7 @@ class EquipmentCostFormBloc
       final description = e.value.trim().isEmpty ? null : e.value;
       _emit(emit, (d) => d.copyWith(description: description));
     });
+    on<EquipmentCostEditOpened>(_onEditOpened);
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
     on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
@@ -384,6 +385,28 @@ class EquipmentCostFormBloc
       data.deliveryFee != _formValuesAtOpening.deliveryFee ||
       data.description != _formValuesAtOpening.description;
 
+  void _onEditOpened(
+    EquipmentCostEditOpened event,
+    Emitter<EquipmentCostFormState> emit,
+  ) {
+    final item = event.item;
+    final opened = _validated(
+      EquipmentCostFormData(
+        method: item.pricingMethod,
+        equipmentType: item.itemName,
+        duration: item.duration,
+        dailyRate: item.dailyRate?.amount,
+        jobAmount: item.jobAmount?.amount,
+        deliveryFee: item.deliveryFee?.amount,
+        rateStatus: item.rateStatus,
+        description: item.description,
+        editedItem: item,
+      ),
+    );
+    _formValuesAtOpening = opened;
+    emit(EquipmentCostFormEditing(opened));
+  }
+
   Future<void> _onSubmitted(
     EquipmentCostSubmittedEvent event,
     Emitter<EquipmentCostFormState> emit,
@@ -442,10 +465,12 @@ class EquipmentCostFormBloc
     Emitter<EquipmentCostFormState> emit,
   ) async {
     emit(EquipmentCostFormSubmitting(draft));
-    final result = await _repository.createCostItem(
-      _buildCostItem(draft, estimateId),
-    );
-    final created = result.fold<CostItem?>((failure) {
+    final edited = draft.editedItem;
+    final line = _buildCostItem(draft, estimateId, existing: edited);
+    final result = edited == null
+        ? await _repository.createCostItem(line)
+        : await _repository.updateCostItem(line);
+    final saved = result.fold<CostItem?>((failure) {
       emit(
         EquipmentCostFormFailure(
           draft.copyWith(isRateSaveRunning: _isRateSaveRunning),
@@ -454,12 +479,24 @@ class EquipmentCostFormBloc
       );
       return null;
     }, (item) => item);
-    if (created == null) return;
-    emit(EquipmentCostFormSuccess(draft, created));
+    if (saved == null) return;
+    emit(EquipmentCostFormSuccess(draft, saved));
     final recalledRateId = draft.recalledRateId;
-    if (recalledRateId != null && draft.method == draft.recalledRateMethod) {
+    if (recalledRateId != null &&
+        draft.method == draft.recalledRateMethod &&
+        _isNewRatePick(draft, edited)) {
       await _yourRatesRepository.recordRateUse(recalledRateId);
     }
+  }
+
+  bool _isNewRatePick(EquipmentCostFormData draft, EquipmentCostItem? edited) {
+    if (edited == null) return true;
+    final isDay = draft.method == EquipmentPricingMethod.day;
+    final storedRate = isDay
+        ? edited.dailyRate?.amount
+        : edited.jobAmount?.amount;
+    final pickedRate = isDay ? draft.dailyRate : draft.jobAmount;
+    return storedRate != pickedRate;
   }
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
@@ -536,8 +573,9 @@ class EquipmentCostFormBloc
 
   EquipmentCostItem _buildCostItem(
     EquipmentCostFormData draft,
-    String estimateId,
-  ) {
+    String estimateId, {
+    EquipmentCostItem? existing,
+  }) {
     final now = _clock.now();
     final isDay = draft.method == EquipmentPricingMethod.day;
     final duration = draft.duration;
@@ -545,7 +583,7 @@ class EquipmentCostFormBloc
     final jobAmount = draft.jobAmount;
     final deliveryFee = draft.deliveryFee;
     return EquipmentCostItem(
-      id: '',
+      id: existing?.id ?? '',
       estimateId: estimateId,
       itemName: draft.equipmentType,
       calculation: {
@@ -555,7 +593,7 @@ class EquipmentCostFormBloc
         'delivery_fee': ?deliveryFee,
       },
       itemTotalCost: draft.lineTotal,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
       currency: 'USD',
@@ -565,6 +603,7 @@ class EquipmentCostFormBloc
       dailyRate: isDay && dailyRate != null ? Money(amount: dailyRate) : null,
       jobAmount: !isDay && jobAmount != null ? Money(amount: jobAmount) : null,
       deliveryFee: deliveryFee != null ? Money(amount: deliveryFee) : null,
+      productLink: existing?.productLink,
       description: draft.description,
     );
   }
