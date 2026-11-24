@@ -327,6 +327,26 @@ void main() {
       expect(find.text('New material cost'), findsNothing);
     });
 
+    testWidgets('closes at once when opened on a typed name and left '
+        'untouched', (tester) async {
+      await openSheet(tester, initialName: 'primer');
+
+      await tapBack(tester);
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.text('New material cost'), findsNothing);
+    });
+
+    testWidgets('asks to discard once the typed name it opened on is '
+        'changed', (tester) async {
+      await openSheet(tester, initialName: 'primer');
+      await typeName(tester, 'primer coat');
+
+      await tapBack(tester);
+
+      expect(dialogTitle(), findsOneWidget);
+    });
+
     testWidgets('a swipe down closes at once when nothing was typed', (
       tester,
     ) async {
