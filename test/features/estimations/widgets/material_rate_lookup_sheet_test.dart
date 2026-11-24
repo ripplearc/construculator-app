@@ -280,6 +280,19 @@ void main() {
       expect(useButtonWidget(tester).isDisabled, isTrue);
     });
 
+    testWidgets('a pick hidden by a search does not come back when the row '
+        'shows again', (tester) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await typeQuery(tester, 'signature');
+      await typeQuery(tester, 'interior paint');
+
+      expect(useButtonWidget(tester).isDisabled, isTrue);
+      expect(useButtonWidget(tester).label, l10n.materialLookupUseRateButton);
+    });
+
     testWidgets('closing the sheet without the button returns nothing', (
       tester,
     ) async {
@@ -292,6 +305,44 @@ void main() {
 
       expect(closed, isTrue);
       expect(result, isNull);
+    });
+  });
+
+  group('MaterialRateLookupSheet – height', () {
+    const screen = Size(390, 844);
+    const homeBar = 34.0;
+
+    void useScreenWithHomeBar(WidgetTester tester) {
+      tester.view.physicalSize = screen * 3;
+      tester.view.devicePixelRatio = 3;
+      tester.view.padding = const FakeViewPadding(bottom: homeBar * 3);
+      addTearDown(tester.view.reset);
+    }
+
+    double sheetTop(WidgetTester tester) =>
+        tester.getTopLeft(find.text(l10n.yourRatesLookupTitle)).dy;
+
+    testWidgets('keeps one tall height while the rows change', (tester) async {
+      useScreenWithHomeBar(tester);
+      await openSheet(tester);
+      final topWithTwoRows = sheetTop(tester);
+
+      await typeQuery(tester, 'proclassic');
+
+      expect(sheetTop(tester), topWithTwoRows);
+      expect(topWithTwoRows, lessThan(screen.height * (1 - 0.887) + 48));
+    });
+
+    testWidgets('pins the button at the foot, above the home bar', (
+      tester,
+    ) async {
+      useScreenWithHomeBar(tester);
+      await openSheet(tester, initialQuery: 'proclassic');
+
+      expect(
+        tester.getBottomLeft(find.byKey(useButton)).dy,
+        screen.height - homeBar - CoreSpacing.space4,
+      );
     });
   });
 
