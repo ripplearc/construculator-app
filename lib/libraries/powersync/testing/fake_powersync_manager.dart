@@ -18,6 +18,9 @@ class FakePowerSyncManager implements PowerSyncManager {
   /// When set, [connect] waits for it before it returns.
   Completer<void>? connectGate;
 
+  /// Called when [connect] starts, before it waits or fails.
+  void Function()? onConnect;
+
   @override
   PowerSyncDatabase get database =>
       throw UnsupportedError('FakePowerSyncManager has no database');
@@ -25,6 +28,7 @@ class FakePowerSyncManager implements PowerSyncManager {
   @override
   Future<void> connect() async {
     connectCallCount++;
+    onConnect?.call();
     await connectGate?.future;
     if (shouldThrowOnConnect) throw StateError('connect failed');
   }

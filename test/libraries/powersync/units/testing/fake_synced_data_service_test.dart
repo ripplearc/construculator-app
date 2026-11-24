@@ -14,6 +14,25 @@ void main() {
       expect(fake.deleteCallCount, 2);
     });
 
+    test('calls afterDelete after each successful delete', () async {
+      var calls = 0;
+      fake.afterDelete = () => calls++;
+
+      await fake.deleteSyncedDataAndUnsentEdits();
+
+      expect(calls, 1);
+    });
+
+    test('does not call afterDelete when the delete throws', () async {
+      var calls = 0;
+      fake.afterDelete = () => calls++;
+      fake.shouldThrowOnDelete = true;
+
+      await expectLater(fake.deleteSyncedDataAndUnsentEdits(), throwsException);
+
+      expect(calls, 0);
+    });
+
     test('throws while shouldThrowOnDelete is set and still counts', () async {
       fake.shouldThrowOnDelete = true;
 

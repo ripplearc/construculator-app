@@ -10,9 +10,14 @@ class FakeSyncedDataService implements SyncedDataService {
   /// When true, [deleteSyncedDataAndUnsentEdits] throws.
   bool shouldThrowOnDelete = false;
 
+  /// Called at the end of every successful delete, so a test can change the
+  /// world between two steps of the code under test.
+  void Function()? afterDelete;
+
   @override
   Future<void> deleteSyncedDataAndUnsentEdits() async {
     deleteCallCount++;
     if (shouldThrowOnDelete) throw Exception('delete failed');
+    afterDelete?.call();
   }
 }

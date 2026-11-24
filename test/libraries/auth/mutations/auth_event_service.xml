@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- AUTH EVENT SERVICE MUTATION TESTING (every auth event, in order: critical path) -->
+
+    <files>
+        <file>lib/libraries/auth/check/auth_event_service.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*//.*$" dotAll="false"/>
+        <regex pattern="_logger\.warning\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- subscription -->
+        <regex pattern="_wrapper\.onAuthStateChange\.listen\(\s*_onEvent," id="listen.events_ignored">
+            <mutation text="_wrapper.onAuthStateChange.listen((_) {},"/>
+        </regex>
+        <regex pattern="onError: \(Object error\) =&gt;\s*_logger\.warning\('Error in auth state stream', error\.runtimeType\)," id="listen.error_handler_removed">
+            <mutation text=""/>
+        </regex>
+
+        <!-- duplicate filter -->
+        <regex pattern="if \(key == _lastEvent\) return;" id="dedupe.negated">
+            <mutation text="if (key != _lastEvent) return;"/>
+        </regex>
+        <regex pattern="if \(key == _lastEvent\) return;" id="dedupe.removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_lastEvent = key;" id="dedupe.not_remembered">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="final key = \(event\.event, userId, session\?\.accessToken\);" id="dedupe.key_without_event">
+            <mutation text="final key = (supabase.AuthChangeEvent.signedIn, userId, session?.accessToken);"/>
+        </regex>
+        <regex pattern="final key = \(event\.event, userId, session\?\.accessToken\);" id="dedupe.key_without_user">
+            <mutation text="final key = (event.event, null, session?.accessToken);"/>
+        </regex>
+        <regex pattern="final key = \(event\.event, userId, session\?\.accessToken\);" id="dedupe.key_without_token">
+            <mutation text="final key = (event.event, userId, null);"/>
+        </regex>
+
+        <!-- event intake -->
+        <regex pattern="_stopSyncingForOtherUser\(userId\);" id="intake.stop_syncing_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_state\.sessionEventArrived\(" id="intake.state_not_told">
+            <mutation text="if (false) _state.sessionEventArrived(" />
+        </regex>
+        <regex pattern="userId: userId,\s*sessionModuleAdded: _signInCheck\.activeModuleUserId == userId," id="intake.module_added_negated">
+            <mutation text="userId: userId, sessionModuleAdded: _signInCheck.activeModuleUserId != userId,"/>
+        </regex>
+        <regex pattern="sessionModuleAdded: _signInCheck\.activeModuleUserId == userId," id="intake.module_added_always">
+            <mutation text="sessionModuleAdded: true,"/>
+        </regex>
+        <regex pattern="sessionModuleAdded: _signInCheck\.activeModuleUserId == userId," id="intake.module_added_never">
+            <mutation text="sessionModuleAdded: false,"/>
+        </regex>
+        <regex pattern="_state\.value is Blocked \|\| _state\.value is RestartRequired" id="intake.blocked_ignored">
+            <mutation text="_state.value is RestartRequired"/>
+        </regex>
+        <regex pattern="_state\.value is Blocked \|\| _state\.value is RestartRequired" id="intake.restart_ignored">
+            <mutation text="_state.value is Blocked"/>
+        </regex>
+        <regex pattern="_state\.value is Blocked \|\| _state\.value is RestartRequired" id="intake.and_instead_of_or">
+            <mutation text="_state.value is Blocked &amp;&amp; _state.value is RestartRequired"/>
+        </regex>
+        <regex pattern="_state\.value is Blocked \|\| _state\.value is RestartRequired" id="intake.never_stops">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="_state\.value is Blocked \|\| _state\.value is RestartRequired\) return;" id="intake.always_stops">
+            <mutation text="true) return;"/>
+        </regex>
+        <regex pattern="unawaited\(\s*_queue\.enqueue\(" id="intake.enqueue_skipped">
+            <mutation text="if (false) unawaited(_queue.enqueue(" />
+        </regex>
+        <regex pattern="item: \(run\) =&gt; _handle\(run, event\)," id="intake.item_noop">
+            <mutation text="item: (run) async {},"/>
+        </regex>
+        <regex pattern="settle: \(outcome\) =&gt; _settle\(number, outcome\)," id="intake.settle_noop">
+            <mutation text="settle: (outcome) async {},"/>
+        </regex>
+        <regex pattern="_settle\(number, outcome\)" id="intake.settle_wrong_number">
+            <mutation text="_settle(number + 1, outcome)"/>
+        </regex>
+
+        <!-- stop syncing for other user -->
+        <regex pattern="if \(userId == null \|\| connectedUserId == null\) return;" id="stop.guard_and">
+            <mutation text="if (userId == null &amp;&amp; connectedUserId == null) return;"/>
+        </regex>
+        <regex pattern="userId == null \|\| connectedUserId == null" id="stop.user_null_dropped">
+            <mutation text="connectedUserId == null"/>
+        </regex>
+        <regex pattern="userId == null \|\| connectedUserId == null" id="stop.connected_null_dropped">
+            <mutation text="userId == null"/>
+        </regex>
+        <regex pattern="userId == null \|\| connectedUserId == null\) return;" id="stop.guard_removed">
+            <mutation text="false) return;"/>
+        </regex>
+        <regex pattern="if \(userId == connectedUserId\) return;" id="stop.same_user_negated">
+            <mutation text="if (userId != connectedUserId) return;"/>
+        </regex>
+        <regex pattern="if \(userId == connectedUserId\) return;" id="stop.same_user_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_signInCheck\.stopSyncing\(\)\.onError" id="stop.disconnect_skipped">
+            <mutation text="Future&lt;void&gt;.value().onError"/>
+        </regex>
+
+        <!-- handle -->
+        <regex pattern="if \(userId == null\) \{" id="handle.null_negated">
+            <mutation text="if (userId != null) {"/>
+        </regex>
+        <regex pattern="await _signInCheck\.clearAfterSignOut\(run\);" id="handle.clear_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _signInCheck\.clearAfterSignOut\(run\);\s*return;" id="handle.no_return_after_clear">
+            <mutation text="await _signInCheck.clearAfterSignOut(run);"/>
+        </regex>
+        <regex pattern="await _signInCheck\.run\(" id="handle.check_skipped">
+            <mutation text="if (false) await _signInCheck.run(" />
+        </regex>
+        <regex pattern="isFreshSignIn: _isFreshSignInEvent\(event\.event\)," id="handle.fresh_always">
+            <mutation text="isFreshSignIn: true,"/>
+        </regex>
+        <regex pattern="isFreshSignIn: _isFreshSignInEvent\(event\.event\)," id="handle.fresh_never">
+            <mutation text="isFreshSignIn: false,"/>
+        </regex>
+
+        <!-- fresh sign-in events -->
+        <regex pattern="event == supabase\.AuthChangeEvent\.signedIn\s*\|\|" id="fresh.signed_in_dropped">
+            <mutation text="false ||"/>
+        </regex>
+        <regex pattern="\|\|\s*event == supabase\.AuthChangeEvent\.passwordRecovery;" id="fresh.recovery_dropped">
+            <mutation text="|| false;"/>
+        </regex>
+        <regex pattern="event == supabase\.AuthChangeEvent\.signedIn\s*\|\|" id="fresh.and_instead_of_or">
+            <mutation text="event == supabase.AuthChangeEvent.signedIn &amp;&amp;"/>
+        </regex>
+        <regex pattern="supabase\.AuthChangeEvent\.passwordRecovery;" id="fresh.recovery_to_token_refresh">
+            <mutation text="supabase.AuthChangeEvent.tokenRefreshed;"/>
+        </regex>
+        <regex pattern="supabase\.AuthChangeEvent\.signedIn\s*\|\|" id="fresh.signed_in_to_initial_session">
+            <mutation text="supabase.AuthChangeEvent.initialSession ||"/>
+        </regex>
+
+        <!-- settle -->
+        <regex pattern="if \(signedInUserId == null\) \{" id="settle.null_negated">
+            <mutation text="if (signedInUserId != null) {"/>
+        </regex>
+        <regex pattern="result = const FinishedNobodySignedIn\(\);" id="settle.nobody_to_blocked">
+            <mutation text="result = Blocked('x');"/>
+        </regex>
+        <regex pattern="outcome == QueueOutcome\.completed\s*&amp;&amp;" id="settle.completed_negated">
+            <mutation text="outcome != QueueOutcome.completed &amp;&amp;"/>
+        </regex>
+        <regex pattern="outcome == QueueOutcome\.completed\s*&amp;&amp;" id="settle.completed_dropped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="outcome == QueueOutcome\.completed\s*&amp;&amp;" id="settle.completed_or">
+            <mutation text="outcome == QueueOutcome.completed ||"/>
+        </regex>
+        <regex pattern="_signInCheck\.activeModuleUserId == signedInUserId\)" id="settle.module_negated">
+            <mutation text="_signInCheck.activeModuleUserId != signedInUserId)"/>
+        </regex>
+        <regex pattern="&amp;&amp;\s*_signInCheck\.activeModuleUserId == signedInUserId\)" id="settle.module_dropped">
+            <mutation text=")"/>
+        </regex>
+        <regex pattern="result = FinishedFor\(signedInUserId\);" id="settle.finished_to_blocked">
+            <mutation text="result = Blocked(signedInUserId);"/>
+        </regex>
+        <regex pattern="result = Blocked\(signedInUserId\);" id="settle.blocked_to_finished">
+            <mutation text="result = FinishedFor(signedInUserId);"/>
+        </regex>
+        <regex pattern="isNewestEvent: _queue\.isNewest\(eventNumber\)" id="settle.newest_negated">
+            <mutation text="isNewestEvent: !_queue.isNewest(eventNumber)"/>
+        </regex>
+        <regex pattern="isNewestEvent: _queue\.isNewest\(eventNumber\)" id="settle.newest_always">
+            <mutation text="isNewestEvent: true"/>
+        </regex>
+        <regex pattern="isNewestEvent: _queue\.isNewest\(eventNumber\)" id="settle.newest_never">
+            <mutation text="isNewestEvent: false"/>
+        </regex>
+        <regex pattern="_state\.settle\(" id="settle.state_not_set">
+            <mutation text="if (false) _state.settle(" />
+        </regex>
+
+        <!-- dispose -->
+        <regex pattern="_subscription = null;" id="dispose.subscription_kept">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(subscription != null\) unawaited\(subscription\.cancel\(\)\);" id="dispose.cancel_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(subscription != null\)" id="dispose.null_negated">
+            <mutation text="if (subscription == null)"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="auth_event_service" expected-return="0">flutter test test/libraries/auth/units/check/auth_event_service_test.dart</command>
+    </commands>
+</mutations>

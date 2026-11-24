@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SIGN IN CHECK MUTATION TESTING (whose data is on the phone: critical path) -->
+
+    <files>
+        <file>lib/libraries/auth/check/sign_in_check.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*///.*$" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- skip statement: each _ensureCurrent call removed, one at a time -->
+        <regex pattern="_ensureCurrent\(run, userId\);" id="ensure_current.removed">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_isConnected = false;" id="connected.clear_after_sign_out_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_isConnected = true;" id="connected.set_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="bool _isConnected = false;" id="connected.initial_true">
+            <mutation text="bool _isConnected = true;"/>
+        </regex>
+
+        <regex pattern="_sessionService\.isActive &amp;&amp; _isConnected" id="active.or_instead_of_and">
+            <mutation text="_sessionService.isActive || _isConnected"/>
+        </regex>
+        <regex pattern="_sessionService\.isActive &amp;&amp; _isConnected" id="active.session_check_dropped">
+            <mutation text="_isConnected"/>
+        </regex>
+        <regex pattern="_sessionService\.isActive &amp;&amp; _isConnected" id="active.connected_check_dropped">
+            <mutation text="_sessionService.isActive"/>
+        </regex>
+        <regex pattern="\? _moduleUserId : null;" id="active.always_null">
+            <mutation text="? null : null;"/>
+        </regex>
+        <regex pattern="\? _moduleUserId : null;" id="active.inverted">
+            <mutation text="? null : _moduleUserId;"/>
+        </regex>
+
+        <regex pattern="await run\.step\(_powerSync\.disconnectAndClear\);" id="sign_out.clear_skipped">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="on _SessionSuperseded \{\s*return;\s*\}" id="run.superseded_rethrown">
+            <mutation text="on _SessionSuperseded { rethrow; }"/>
+        </regex>
+
+        <!-- fast exit -->
+        <regex pattern="activeModuleUserId == userId\s*&amp;&amp;" id="fast_exit.module_check_negated">
+            <mutation text="activeModuleUserId != userId &amp;&amp;"/>
+        </regex>
+        <regex pattern="activeModuleUserId == userId\s*&amp;&amp;\s*read is OwnerRecordFound\s*&amp;&amp;" id="fast_exit.module_check_dropped">
+            <mutation text="read is OwnerRecordFound &amp;&amp;"/>
+        </regex>
+        <regex pattern="read is OwnerRecordFound\s*&amp;&amp;\s*read\.record\.userId == userId\) \{" id="fast_exit.found_check_dropped">
+            <mutation text="read.record.userId == userId) {"/>
+        </regex>
+        <regex pattern="read\.record\.userId == userId\) \{\s*return;" id="fast_exit.owner_negated">
+            <mutation text="read.record.userId != userId) { return;"/>
+        </regex>
+        <regex pattern="read\.record\.userId == userId\) \{\s*return;" id="fast_exit.owner_check_dropped">
+            <mutation text="true) { return;"/>
+        </regex>
+        <regex pattern="activeModuleUserId == userId\s*&amp;&amp;\s*read is OwnerRecordFound\s*&amp;&amp;\s*read\.record\.userId == userId" id="fast_exit.never">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="\) \{\s*return;\s*\}\s*final leftoverFlag" id="fast_exit.return_skipped">
+            <mutation text=") {} final leftoverFlag"/>
+        </regex>
+
+        <!-- leftover flag -->
+        <regex pattern="\? read\.record\.pendingDelete\s*: null;" id="leftover.ignored">
+            <mutation text="? null : null;"/>
+        </regex>
+        <regex pattern="if \(leftoverFlag != null\)" id="leftover.guard_negated">
+            <mutation text="if (leftoverFlag == null)"/>
+        </regex>
+        <regex pattern="read = await run\.step\(_ownerRecords\.read\);\s*\}" id="leftover.reread_skipped">
+            <mutation text="}"/>
+        </regex>
+        <regex pattern="flag\.kind == PendingDeleteKind\.arrivalOfNewUser" id="leftover.kind_negated">
+            <mutation text="flag.kind != PendingDeleteKind.arrivalOfNewUser"/>
+        </regex>
+        <regex pattern="flag\.kind == PendingDeleteKind\.arrivalOfNewUser\s*&amp;&amp;" id="leftover.kind_dropped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="&amp;&amp;\s*flag\.arrivingUserId == userId;" id="leftover.arriving_dropped">
+            <mutation text=";"/>
+        </regex>
+        <regex pattern="flag\.arrivingUserId == userId;" id="leftover.arriving_negated">
+            <mutation text="flag.arrivingUserId != userId;"/>
+        </regex>
+        <regex pattern="arrivingUserId: arrivalOfThisUser \? userId : null," id="leftover.always_null">
+            <mutation text="arrivingUserId: null,"/>
+        </regex>
+        <regex pattern="arrivingUserId: arrivalOfThisUser \? userId : null," id="leftover.always_user">
+            <mutation text="arrivingUserId: userId,"/>
+        </regex>
+
+        <!-- switch -->
+        <regex pattern="throw const OwnerRecordUnreadableException\(\);" id="switch.unknown_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="when record\.userId == userId:" id="switch.same_user_negated">
+            <mutation text="when record.userId != userId:"/>
+        </regex>
+        <regex pattern="when record\.userId == userId:" id="switch.same_user_always">
+            <mutation text="when true:"/>
+        </regex>
+        <regex pattern="await _continueSameUser\(run, userId, record\);" id="switch.same_user_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="OwnerRecordAbsent\(\) when !isFreshSignIn" id="switch.absent_fresh_flipped">
+            <mutation text="OwnerRecordAbsent() when isFreshSignIn"/>
+        </regex>
+        <regex pattern="OwnerRecordAbsent\(\) when !isFreshSignIn" id="switch.absent_always">
+            <mutation text="OwnerRecordAbsent() when true"/>
+        </regex>
+        <regex pattern="await _signOutRestoredSession\(run, userId\);" id="switch.sign_out_restored_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _takeOver\(run, userId\);" id="switch.take_over_skipped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- other user -->
+        <regex pattern="_moduleUserId != null &amp;&amp; _moduleUserId != id" id="other_user.or">
+            <mutation text="_moduleUserId != null || _moduleUserId != id"/>
+        </regex>
+        <regex pattern="_moduleUserId != null &amp;&amp; _moduleUserId != id" id="other_user.null_check_dropped">
+            <mutation text="_moduleUserId != id"/>
+        </regex>
+        <regex pattern="_moduleUserId != null &amp;&amp; _moduleUserId != id" id="other_user.id_check_dropped">
+            <mutation text="_moduleUserId != null"/>
+        </regex>
+        <regex pattern="_moduleUserId != null &amp;&amp; _moduleUserId != id" id="other_user.id_check_flipped">
+            <mutation text="_moduleUserId != null &amp;&amp; _moduleUserId == id"/>
+        </regex>
+        <regex pattern="_moduleUserId != null &amp;&amp; _moduleUserId != id" id="other_user.never">
+            <mutation text="false"/>
+        </regex>
+
+        <!-- ensure current -->
+        <regex pattern="_wrapper\.currentSession\?\.user\.id == userId" id="ensure.same_session_negated">
+            <mutation text="_wrapper.currentSession?.user.id != userId"/>
+        </regex>
+        <regex pattern="!run\.isCurrent \|\| !isSameSession" id="ensure.and_instead_of_or">
+            <mutation text="!run.isCurrent &amp;&amp; !isSameSession"/>
+        </regex>
+        <regex pattern="!run\.isCurrent \|\| !isSameSession" id="ensure.current_check_dropped">
+            <mutation text="!isSameSession"/>
+        </regex>
+        <regex pattern="!run\.isCurrent \|\| !isSameSession" id="ensure.session_check_dropped">
+            <mutation text="!run.isCurrent"/>
+        </regex>
+        <regex pattern="!run\.isCurrent \|\| !isSameSession" id="ensure.run_current_negated">
+            <mutation text="run.isCurrent || !isSameSession"/>
+        </regex>
+        <regex pattern="!run\.isCurrent \|\| !isSameSession" id="ensure.session_negated">
+            <mutation text="!run.isCurrent || isSameSession"/>
+        </regex>
+        <regex pattern="throw const _SessionSuperseded\(\);" id="ensure.throw_skipped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- continue same user -->
+        <regex pattern="if \(record\.signOutDate != null\)" id="same_user.sign_out_date_negated">
+            <mutation text="if (record.signOutDate == null)"/>
+        </regex>
+        <regex pattern="if \(record\.signOutDate != null\)" id="same_user.sign_out_date_always">
+            <mutation text="if (true)"/>
+        </regex>
+        <regex pattern="await run\.step\(\(\) =&gt; _ownerRecords\.write\(OwnerRecord\(userId: userId\)\)\);" id="same_user.write_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_ownerRecords\.write\(OwnerRecord\(userId: userId\)\)" id="same_user.write_wrong_user">
+            <mutation text="_ownerRecords.write(OwnerRecord(userId: 'other'))"/>
+        </regex>
+
+        <!-- take over -->
+        <regex pattern="arrivingUserId: userId\s*\)," id="take_over.arriving_user_dropped">
+            <mutation text="arrivingUserId: null),"/>
+        </regex>
+        <regex pattern="await run\.step\(\s*\(\) =&gt; _deleteService\.deleteLocalData\(arrivingUserId: userId\),\s*\);" id="take_over.delete_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) await run\.step\(_resetIdentity\);" id="take_over.reset_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) await run\.step\(_resetIdentity\);" id="take_over.reset_negated">
+            <mutation text="if (!_isOtherUserActive(userId)) await run.step(_resetIdentity);"/>
+        </regex>
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) await run\.step\(_resetIdentity\);" id="take_over.reset_always">
+            <mutation text="await run.step(_resetIdentity);"/>
+        </regex>
+
+        <!-- sign out restored session -->
+        <regex pattern="OwnerRecord\(pendingDelete: const PendingDelete\.logoutOrNoOwnerRecord\(\)\)," id="restored.flag_dropped">
+            <mutation text="OwnerRecord(),"/>
+        </regex>
+        <regex pattern="await run\.step\(_wrapper\.signOut\);" id="restored.sign_out_skipped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- add module and connect -->
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) _sessionService\.endSession\(\);" id="add.end_old_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) _sessionService\.endSession\(\);" id="add.end_old_negated">
+            <mutation text="if (!_isOtherUserActive(userId)) _sessionService.endSession();"/>
+        </regex>
+        <regex pattern="if \(_isOtherUserActive\(userId\)\) _sessionService\.endSession\(\);" id="add.end_old_always">
+            <mutation text="_sessionService.endSession();"/>
+        </regex>
+        <regex pattern="_sessionService\.startSession\(\);" id="add.start_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_moduleUserId = userId;" id="add.module_user_not_set">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await run\.step\(_powerSync\.connect\);" id="add.connect_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_sessionService\.endSession\(\);\s*_moduleUserId = null;" id="add.failure_end_skipped">
+            <mutation text="_moduleUserId = null;"/>
+        </regex>
+        <regex pattern="_moduleUserId = null;" id="add.failure_module_kept">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="rethrow;" id="add.failure_swallowed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(!isFreshSignIn &amp;&amp; activeModuleUserId == userId\) return;" id="check.skip_negated">
+            <mutation text="if (isFreshSignIn &amp;&amp; activeModuleUserId == userId) return;"/>
+        </regex>
+        <regex pattern="if \(!isFreshSignIn &amp;&amp; activeModuleUserId == userId\) return;" id="check.skip_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(!isFreshSignIn &amp;&amp; activeModuleUserId == userId\) return;" id="check.skip_ignores_fresh">
+            <mutation text="if (activeModuleUserId == userId) return;"/>
+        </regex>
+        <regex pattern="    _isConnected = false;\n    await run\.step\(_powerSync\.disconnectAndClear\);" id="clear.keeps_connected_flag">
+            <mutation text="    await run.step(_powerSync.disconnectAndClear);"/>
+        </regex>
+        <regex pattern="    _isConnected = false;\n    return _powerSync\.disconnectKeepingData\(\);" id="stop.keeps_connected_flag">
+            <mutation text="    return _powerSync.disconnectKeepingData();"/>
+        </regex>
+        <regex pattern="return _powerSync\.disconnectKeepingData\(\);" id="stop.skips_disconnect">
+            <mutation text="return Future&lt;void&gt;.value();"/>
+        </regex>
+        <regex pattern="    _isConnected = false;\n    try \{" id="connect.keeps_old_flag">
+            <mutation text="    try {"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="sign_in_check" expected-return="0">flutter test test/libraries/auth/units/check/sign_in_check_test.dart</command>
+    </commands>
+</mutations>
