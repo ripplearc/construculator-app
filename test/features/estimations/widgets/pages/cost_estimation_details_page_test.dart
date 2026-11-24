@@ -1482,7 +1482,7 @@ void main() {
         await tester.pump(kToastDismissDuration);
         expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
 
-        await tester.tap(find.text(l10n.closeLabel));
+        await tester.tap(find.byKey(const Key('toast_close_button')));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.addToEstimateFailedError), findsNothing);
