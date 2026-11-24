@@ -725,7 +725,7 @@ void main() {
             find.byKey(
               CoreGeometryArea.deleteRowKey(
                 'sheet-quantities',
-                '48in x 96in#0',
+                'sheet_48x96in',
               ),
             ),
           );

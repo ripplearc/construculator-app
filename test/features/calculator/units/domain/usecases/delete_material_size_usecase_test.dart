@@ -111,6 +111,51 @@ void main() {
       ]);
     });
 
+    test('a size named by its stored row removes that row, of two the store '
+        'holds with one size: the added one goes and the default stays, then '
+        'the default by its own name (B1)', () async {
+      await repository.addSize(
+        StoredSize(
+          store: SizeStore.sheet,
+          width: inches(48, 96).width,
+          height: inches(48, 96).height,
+          position: 0,
+        ),
+      );
+      final stored = await repository
+          .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+          .first;
+      final added = stored.last;
+      expect(added.id, isNotNull);
+      await useCase(
+        trade: Trade.drywall,
+        size: PieceSize(width: added.width, height: added.height, id: added.id),
+        system: MeasurementSystem.imperial,
+      );
+      expect(
+        [
+          for (final size
+              in await repository
+                  .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                  .first)
+            size.seed,
+        ],
+        ['sheet_48x96in', 'sheet_48x108in', 'sheet_48x120in'],
+        reason: 'the added row went, the default of the same size stayed',
+      );
+
+      await useCase(
+        trade: Trade.drywall,
+        size: PieceSize(
+          width: stored.first.width,
+          height: stored.first.height,
+          id: stored.first.seed,
+        ),
+        system: MeasurementSystem.imperial,
+      );
+      expect(await shown(SizeStore.sheet), ['48in x 108in', '48in x 120in']);
+    });
+
     test('masonry removes from the piece sizes, not the sheets', () async {
       await useCase(
         trade: Trade.masonry,

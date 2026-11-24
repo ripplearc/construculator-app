@@ -20,9 +20,11 @@ class CalculatorSizeTable extends Equatable {
 /// One row of the sheet table: a stored size and how many of it cover the
 /// area.
 class CalculatorSizeRow extends Equatable {
-  /// Names the row while the table is on screen: the size as written, with
-  /// how many rows before it show the same size, so that no two rows share
-  /// it and deleting one row leaves the ids of the others as they were.
+  /// Names the row while the table is on screen: what the store calls the
+  /// stored size ([PieceSize.id]), which no other row shares and which
+  /// stays the row's own when another row is deleted, a row of the same
+  /// size included. A count with no stored size behind it is named by the
+  /// size as written and how many rows before it show the same size.
   final String id;
 
   /// The size, width first (48in x 96in).

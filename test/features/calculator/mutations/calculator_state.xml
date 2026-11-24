@@ -198,6 +198,11 @@
         <regex pattern="if \(count\.area == area\) _sizeRow\(count, seenSizes\)," dotAll="true" id="calculator_state.size_table.counts_of_another_area">
             <mutation text="_sizeRow(count, seenSizes),"/>
         </regex>
+        <!-- R1 (B1): a row is named by its size and its place again, so the
+             row after a deleted twin takes the name of the row just swiped -->
+        <regex pattern="id: count\.size\.id \?\? '\$sizeText#\$before'," dotAll="true" id="calculator_state.size_table.row_named_by_place">
+            <mutation text="id: '$sizeText#$before',"/>
+        </regex>
         <regex pattern="final before = seenSizes\[sizeText\] \?\? 0;" dotAll="true" id="calculator_state.size_table.twins_share_an_id">
             <mutation text="const before = 0;"/>
         </regex>

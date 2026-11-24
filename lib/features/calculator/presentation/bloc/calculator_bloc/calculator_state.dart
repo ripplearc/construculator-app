@@ -484,7 +484,7 @@ class CalculatorState extends Equatable {
     final before = seenSizes[sizeText] ?? 0;
     seenSizes[sizeText] = before + 1;
     return CalculatorSizeRow(
-      id: '$sizeText#$before',
+      id: count.size.id ?? '$sizeText#$before',
       sizeText: sizeText,
       countText: tape.formatter.format(count.value),
       count: count,

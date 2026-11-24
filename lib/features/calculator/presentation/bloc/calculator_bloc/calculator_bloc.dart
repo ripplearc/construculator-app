@@ -149,8 +149,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     emit(state.copyWith(materialCounts: event.counts));
   }
 
-  // A swiped row must be gone by the next frame, so it leaves before the
-  // store answers.
   Future<void> _onSizeRowDeleted(
     CalculatorSizeRowDeleted event,
     Emitter<CalculatorState> emit,
@@ -161,6 +159,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     if (row == null) return;
     final counts = state.materialCounts;
     final remaining = [...counts]..remove(row.count);
+    // A swiped row must be gone by the next frame, so it leaves before the
+    // store answers.
     emit(state.copyWith(materialCounts: remaining));
     final deleted = await _deleteMaterialSize(
       trade: row.count.trade,

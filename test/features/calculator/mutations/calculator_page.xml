@@ -90,8 +90,8 @@
         </regex>
 
         <!-- RULE 8: a tape with nothing to work out draws an empty panel -->
-        <regex pattern="child: state\.dimensions\.isEmpty\s*\? const SizedBox\.shrink\(\)" dotAll="true" id="calculator_page.detail_panel.drawn_empty">
-            <mutation text="child: state.dimensions.length &lt; 0 ? const SizedBox.shrink()"/>
+        <regex pattern="child: state\.hasDetails\s*\? _detailPanel\(labels, state\)\s*: const SizedBox\.shrink\(\)," dotAll="true" id="calculator_page.detail_panel.drawn_empty">
+            <mutation text="child: _detailPanel(labels, state),"/>
         </regex>
 
         <!-- RULE 9: under the fold the display keeps all the room, the panel

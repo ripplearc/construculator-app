@@ -31,7 +31,12 @@ final class PieceSize extends Equatable {
   /// The piece's height.
   final Length height;
 
-  const PieceSize({required this.width, required this.height});
+  /// What the store calls this piece, so that two stored pieces of one
+  /// size are told apart; `null` for a size that is no stored row. It is
+  /// no part of the piece's measure.
+  final String? id;
+
+  const PieceSize({required this.width, required this.height, this.id});
 
   /// The piece's face in square ticks, from the exact sides
   /// ([Length.preciseTicks]): a metric or a decimal-inch side is no whole
@@ -47,7 +52,7 @@ final class PieceSize extends Equatable {
   bool get hasFace => width.preciseTicks > 0 && height.preciseTicks > 0;
 
   @override
-  List<Object?> get props => [width, height];
+  List<Object?> get props => [width, height, id];
 }
 
 /// How many pieces of one size an area needs: the answer the strip offers

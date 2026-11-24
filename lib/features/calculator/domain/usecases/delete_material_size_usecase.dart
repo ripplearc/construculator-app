@@ -10,10 +10,13 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// delete"). A result already on the tape keeps its count; the next count
 /// uses the sizes that remain.
 ///
-/// The table shows a size, not a stored row, so the size removed is the
-/// first one of the store, under the unit system in force, with the same
-/// width and height. A size no longer in the store, removed on another
-/// phone while the table was on screen, leaves nothing to remove.
+/// The size removed is the stored row the count was made from
+/// ([PieceSize.id], as [WatchMaterialCountsUseCase] names it), so that of
+/// two rows with one size the swiped one goes and the other stays. A size
+/// with no name is matched by its width and height, the first one of the
+/// store under the unit system in force. A size no longer in the store,
+/// removed on another phone while the table was on screen, leaves nothing
+/// to remove.
 class DeleteMaterialSizeUseCase {
   final TradeStoresRepository _repository;
 
@@ -30,10 +33,14 @@ class DeleteMaterialSizeUseCase {
   }) async {
     final sizes = await _repository.watchSizes(trade.sizeStore, system).first;
     for (final stored in sizes) {
-      if (PieceSize(width: stored.width, height: stored.height) == size) {
+      if (_isTheStoredRowOf(size, stored)) {
         return _repository.deleteSize(stored);
       }
     }
     return const Right(null);
   }
+
+  bool _isTheStoredRowOf(PieceSize size, StoredSize stored) => size.id == null
+      ? stored.width == size.width && stored.height == size.height
+      : (stored.id ?? stored.seed) == size.id;
 }

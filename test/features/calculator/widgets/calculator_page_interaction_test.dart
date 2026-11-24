@@ -1,6 +1,8 @@
+import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
+import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -22,6 +24,7 @@ void main() {
     Size size = const Size(390, 844),
     FakeAppRouter? router,
     ThemeData? theme,
+    FakeTradeStoresRepository? stores,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -33,7 +36,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: CalculatorPage(
           router: router ?? FakeAppRouter(),
-          calculatorBlocFactory: calculatorBlocForTests,
+          calculatorBlocFactory: () => calculatorBlocForTests(stores: stores),
         ),
       ),
     );
@@ -1723,7 +1726,7 @@ void main() {
 
       await tester.tap(
         find.byKey(
-          CoreGeometryArea.deleteRowKey(sheetTableId, '48in x 108in#0'),
+          CoreGeometryArea.deleteRowKey(sheetTableId, 'sheet_48x108in'),
         ),
       );
       await settle(tester);
@@ -1746,6 +1749,39 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(inPanel('48in x 120in'), findsNothing);
       expect(inPanel('48in x 96in'), findsOneWidget);
+    });
+
+    testWidgets('swiping the first of two rows with one size removes that row '
+        'alone: the other stays on the table and no error is thrown (B1)', (
+      tester,
+    ) async {
+      final stores = FakeTradeStoresRepository();
+      addTearDown(stores.dispose);
+      await tester.runAsync(() async {
+        final sheets = await stores
+            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+            .first;
+        await stores.addSize(sheets.first);
+      });
+      await pumpPage(tester, stores: stores);
+      await typeAndFold(tester, area180Typed);
+      expect(inPanel('48in x 96in'), findsNWidgets(2));
+
+      await tester.drag(
+        find.ancestor(
+          of: find.byKey(
+            CoreGeometryArea.deleteRowKey(sheetTableId, 'sheet_48x96in'),
+          ),
+          matching: find.byType(Dismissible),
+        ),
+        const Offset(-600, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(inPanel('48in x 96in'), findsOneWidget);
+      expect(inPanel('48in x 108in'), findsOneWidget);
+      expect(inPanel('48in x 120in'), findsOneWidget);
     });
   });
 }

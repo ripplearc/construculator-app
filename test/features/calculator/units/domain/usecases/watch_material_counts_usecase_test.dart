@@ -135,6 +135,29 @@ void main() {
       await expectation;
     });
 
+    test('each count carries what the store calls its size: the default it '
+        'stands in for, or the id of a size the user added, so two rows of '
+        'one size are two counts', () async {
+      await repository.addSize(inches(SizeStore.sheet, 48, 96));
+      final counts = await useCase(
+        trade: Trade.drywall,
+        area: area180,
+        system: MeasurementSystem.imperial,
+      ).first;
+      final stored = await repository
+          .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+          .first;
+      expect(counts.map((count) => count.size.id), [
+        'sheet_48x96in',
+        'sheet_48x108in',
+        'sheet_48x120in',
+        stored.last.id,
+      ]);
+      expect(stored.last.id, isNotNull);
+      expect(counts.first, isNot(counts.last));
+      expect(counts.first.value, counts.last.value);
+    });
+
     test('a store whose defaults were all deleted counts nothing', () async {
       for (final seed in TradeStoreSeeds.sizes(
         SizeStore.masonry,
