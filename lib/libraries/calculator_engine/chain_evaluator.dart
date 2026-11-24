@@ -287,14 +287,23 @@ class ChainEvaluator extends Equatable {
             reading = _readingOf(chip);
           }
           if (reading == null) return const ChainEmpty();
-          running = _joined(
-            running,
-            operator,
-            isPercent
-                ? _percentOf(running, operator, reading.value)
-                : reading.value,
-            stepsInside: reading.steps,
-          );
+          final worth = isPercent
+              ? _percentOf(running, operator, reading.value)
+              : ArithmeticValue(reading.value);
+          running = switch (worth) {
+            ArithmeticValue(:final value) => _joined(
+              running,
+              operator,
+              value,
+              stepsInside: reading.steps,
+            ),
+            ArithmeticFailed(:final error) => _failedAt(
+              running,
+              operator,
+              reading.value,
+              error,
+            ),
+          };
       }
       index = next;
     }
@@ -307,32 +316,49 @@ class ChainEvaluator extends Equatable {
 
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
 
-  // What a percent is worth where it stands (UX Design Doc Section 7,
-  // "Percent"): after + or − that percent of the running total, so the
-  // total keeps its unit (5ft + 10 % adds 6in); after × or ÷, or with
-  // nothing before it, the number ÷ 100.
-  Quantity _percentOf(
+  ArithmeticOutcome _percentOf(
     _RunningChain running,
     Operator? operator,
     Quantity percent,
   ) {
-    final fraction = switch (percent) {
-      Scalar(:final value) => Scalar(value / QuantityFormatter.percent),
-      _ => percent,
-    };
+    if (percent is! Scalar) {
+      return const ArithmeticFailed(CalculationError.dimensionError);
+    }
+    final fraction = Scalar(percent.value / QuantityFormatter.percent);
     final total = running.total;
-    if (total == null || running.failure != null) return fraction;
+    if (total == null || running.failure != null) {
+      return ArithmeticValue(fraction);
+    }
     return switch (operator) {
-      Operator.add || Operator.subtract => switch (arithmetic.combine(
+      Operator.add || Operator.subtract => arithmetic.combine(
         total,
         Operator.multiply,
         fraction,
-      )) {
-        ArithmeticValue(:final value) => value,
-        ArithmeticFailed() => fraction,
-      },
-      Operator.multiply || Operator.divide || null => fraction,
+      ),
+      Operator.multiply || Operator.divide || null => ArithmeticValue(fraction),
     };
+  }
+
+  _RunningChain _failedAt(
+    _RunningChain running,
+    Operator? operator,
+    Quantity value,
+    CalculationError error,
+  ) {
+    final total = running.total;
+    if (total == null || operator == null || running.failure != null) {
+      return running;
+    }
+    return (
+      total: total,
+      steps: running.steps,
+      failure: ChainFailed(
+        error,
+        left: total,
+        operator: operator,
+        right: value,
+      ),
+    );
   }
 
   static bool _lostItsLeftValue(TapeChip chip) => switch (chip) {

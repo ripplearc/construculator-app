@@ -1560,6 +1560,7 @@ class Tape extends Equatable {
         entry: const EntryBuffer(),
         exact: () => null,
         poundsPerTon: () => null,
+        isPercent: false,
       ),
     );
   }
@@ -1807,10 +1808,14 @@ class Tape extends Equatable {
   /// ([TapeRefusal.percentHasNoUnit]), on a number no operator leads or a
   /// named one, as ( 12 then % ([TapeRefusal.percentNeedsAnOperator]), and
   /// on a bracket worth 0 after ÷ ([TapeRefusal.percentDividesByZero]).
+  ///
+  /// On a chip a tap reopened the key is judged against that chip, so the
+  /// reason fits it: 50 + 10 + 2 with +10 reopened takes the %, and a
+  /// reopened +10% answers "Already a percent". A percent stays finished
+  /// while it is reopened: a digit, a point, D:M:S or a unit on it is
+  /// refused as on a fresh one, ⌫ takes the % off first, and a chip that
+  /// ✕ or ÷ 0 empties loses the mark with its number.
   TapeOutcome pressPercent() {
-    if (editing != null) {
-      return _leavingEdit((tape) => tape.pressPercent());
-    }
     if (openBracketIndex case final index?) {
       return _inside(index, (inner) => inner.pressPercent());
     }
@@ -1857,11 +1862,7 @@ class Tape extends Equatable {
     };
   }
 
-  // A key that would type into a percent is refused, since the percent is
-  // finished: a unit with "That number is a percent", anything else with
-  // "Already a percent" (rule 4.12). `null` while no percent is typed.
   TapeOutcome? _refusedOnAPercent({bool isUnit = false}) {
-    if (editing != null) return null;
     if (active case ValueChip(isPercent: true)) {
       return TapeRefused(
         isUnit ? TapeRefusal.percentTakesNoUnit : TapeRefusal.alreadyAPercent,
@@ -2101,6 +2102,7 @@ class Tape extends Equatable {
         exact: () => null,
         poundsPerTon: () => null,
         isActive: true,
+        isPercent: false,
       ),
     ]);
   }
@@ -2186,10 +2188,10 @@ class Tape extends Equatable {
       }
       return _inside(index, (inner) => inner.backspace());
     }
+    if (active case final chip? when chip.isPercent) {
+      return _replaceLast(chip.copyWith(isPercent: false));
+    }
     if (editing == null) {
-      if (active case final chip? when chip.isPercent) {
-        return _replaceLast(chip.copyWith(isPercent: false));
-      }
       if (chips.lastOrNull case final BracketChip bracket
           when bracket.isPercent) {
         return _replaceLastChip(bracket.copyWith(isPercent: false));
@@ -2560,6 +2562,7 @@ class Tape extends Equatable {
     poundsPerTon: () => null,
     isActive: true,
     isEditing: true,
+    isPercent: false,
   );
 
   ChainOutcome get _lastChainTotal {

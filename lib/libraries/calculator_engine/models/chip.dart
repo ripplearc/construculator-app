@@ -435,7 +435,7 @@ final class BracketChip extends TapeChip {
           '${operator?.symbol ?? ''}$text',
     ].join();
     return '${operator?.symbol ?? ''}($inside${isOpen ? '' : ')'}'
-        '${isPercent ? '%' : ''}';
+        '${isPercent && !isOpen ? '%' : ''}';
   }
 
   /// Returns a copy with the given fields replaced. [operator] and

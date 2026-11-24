@@ -13,6 +13,7 @@ void main() {
     '=' => tape.pressEquals(),
     '(' || ')' => tape.pressBracket(),
     '⌫' => tape.backspace(),
+    '✕' => tape.clearActive(),
     'ft' => tape.pressUnit(Unit.foot),
     'in' => tape.pressUnit(Unit.inch),
     'DMS' => tape.pressDmsKey(),
@@ -53,6 +54,12 @@ void main() {
   }
 
   String lastChipText(Tape tape) => switch (tape.chips.last) {
+    ValueChip(:final operator, :final text) => '${operator?.symbol ?? ''}$text',
+    BracketChip(:final expression) => expression,
+    final TapeChip chip => '$chip',
+  };
+
+  String chipText(Tape tape, int index) => switch (tape.chips[index]) {
     ValueChip(:final operator, :final text) => '${operator?.symbol ?? ''}$text',
     BracketChip(:final expression) => expression,
     final TapeChip chip => '$chip',
@@ -231,10 +238,115 @@ void main() {
       );
     });
 
-    test('a percent reopened by a tap takes its digits as any edited chip '
-        'does, and stays a percent', () {
-      final edited = press(const Tape(), '5 0 + 1 0 % + 5 tap1 0');
-      expect((edited.chips[1] as ValueChip).text, '100%');
+    group('a percent reopened by a tap', () {
+      test('is still finished: a digit, a point, D:M:S and a fraction are '
+          'refused with "Already a percent" and a unit with "That number is '
+          'a percent", and the answer stands (B1; rule 4.12)', () {
+        for (final keys in ['1 0 0 0 + 1 0 % = tap1', '5 0 + 1 0 % + 2 tap1']) {
+          final reopened = press(const Tape(), keys);
+          for (final key in ['3', '.', 'DMS', '/']) {
+            expect(
+              pressKey(reopened, key),
+              const TapeRefused(TapeRefusal.alreadyAPercent),
+              reason: '$keys then $key',
+            );
+          }
+          expect(
+            pressKey(reopened, 'ft'),
+            const TapeRefused(TapeRefusal.percentTakesNoUnit),
+            reason: keys,
+          );
+          expect(chipText(reopened, 1), '+10%', reason: keys);
+        }
+        expect(calc('1 0 0 0 + 1 0 % = tap1'), '1,100');
+        expect(calc('5 0 + 1 0 % + 2 tap1'), '57');
+      });
+
+      test('⌫ takes only the % off, and then the number is edited as any '
+          'chip is and takes the % again (N8; Section 7, "One ⌫ removes only '
+          'the %")', () {
+        final plain = press(const Tape(), '5 0 + 1 0 % + 5 tap1 ⌫');
+        expect(chipText(plain, 1), '+10');
+        expect(plain.editing, isNotNull);
+        expect(calc('5 0 + 1 0 % + 5 tap1 ⌫'), '65');
+
+        final again = press(plain, '0 %');
+        expect(chipText(again, 1), '+100%');
+        expect(calc('5 0 + 1 0 % + 5 tap1 ⌫ 0 %'), '105');
+      });
+
+      test('% is judged against the chip that was reopened, so the reason '
+          'fits it (N1)', () {
+        final marked = press(const Tape(), '5 0 + 1 0 + 2 tap1 %');
+        expect(chipText(marked, 1), '+10%');
+        expect(calc('5 0 + 1 0 + 2 tap1 %'), '57');
+        expect(
+          refusalOf('5 0 + 1 0 % + 2 tap1', '%'),
+          const TapeRefused(TapeRefusal.alreadyAPercent),
+        );
+        expect(
+          refusalOf('5 0 + 1 0 + 2 tap0', '%'),
+          const TapeRefused(TapeRefusal.percentNeedsAnOperator),
+        );
+      });
+    });
+
+    test('a percent that is not a plain number is never folded in silence: '
+        'the step fails with a dimension error (B1)', () {
+      final angle = press(const Tape(), '1 0 0 0 + 1 0 DMS');
+      final chips = [
+        angle.chips.first,
+        (angle.chips.last as ValueChip).copyWith(isPercent: true),
+      ];
+      expect(
+        const ChainEvaluator().fold(chips),
+        isA<ChainFailed>().having(
+          (failed) => failed.error,
+          'error',
+          CalculationError.dimensionError,
+        ),
+      );
+    });
+
+    test('a percent step that fails shows its own error, never a dimension '
+        'error from the bare number (N3)', () {
+      for (final keys in [
+        '5 ft + 9 9 9 9 9 9 9 9 9 9 9 % + 9 9 9 9 9 9 9 9 9 9 9 %',
+        '5 ft × 9 9 9 9 9 9 9 9 9 9 9 + 9 9 9 9 9 9 9 9 9 9 9 %',
+        '1 9 9 9 9 9 9 9 ft × 1 0 0 0 + 1 9 9 9 9 9 9 9 %',
+      ]) {
+        expect(
+          press(const Tape(), '$keys =').chips.last,
+          isA<ErrorChip>().having(
+            (chip) => chip.error,
+            'error',
+            CalculationError.outOfRange,
+          ),
+          reason: keys,
+        );
+      }
+    });
+
+    test(
+      'a reopened percent bracket hides its % while it is open, so it '
+      'never reads as a percent inside it, and shows it again closed (N5)',
+      () {
+        final closed = press(const Tape(), '2 0 0 + ( 5 + 5 ) %');
+        expect(lastChipText(closed), '+(5+5)%');
+        final reopened = press(closed, 'tap1');
+        expect(lastChipText(reopened), '+(5+5');
+        expect(lastChipText(press(reopened, ')')), '+(5+5)%');
+      },
+    );
+
+    test('a chip that ÷ 0 or ✕ empties loses its percent mark, so the next '
+        'digit types a new number (N7; rule 4.12)', () {
+      expect(calc('2 0 0 ÷ 0 % = 5'), '40');
+      expect(calc('5 ft ÷ 0 % = 2'), '2ft 6in');
+      final cleared = press(const Tape(), '5 0 + 1 0 % ✕ 5');
+      expect(lastChipText(cleared), '+5');
+      expect(calc('5 0 + 1 0 % ✕ 5'), '55');
+      expect(calc('2 0 0 ÷ 5 = tap1 ⌫ 0 % = 5'), '40');
     });
 
     test('row 391: one ⌫ removes only the %, on a number and on a bracket', () {
