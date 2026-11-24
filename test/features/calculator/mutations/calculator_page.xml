@@ -23,18 +23,18 @@
         </regex>
 
         <!-- RULE 3 (S1c 4/5, CA-1089): the red Alert is never drawn -->
-        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.never_shown">
+        <regex pattern="if \(state\.toast case final toast\?\s*when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.never_shown">
             <mutation text="if (state.toast case final toast? when false)"/>
         </regex>
 
         <!-- RULE 4: the Alert stays drawn after its ✕ closed it -->
-        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.shown_after_close">
+        <regex pattern="if \(state\.toast case final toast\?\s*when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.shown_after_close">
             <mutation text="if (state.toast case final toast?)"/>
         </regex>
 
         <!-- RULE 4a: the Alert's ✕ tells the bloc nothing -->
-        <regex pattern="onClose: \(\) => bloc\.add\(const CalculatorToastClosed\(\)\)," dotAll="true" id="calculator_page.toast.close_unheard">
-            <mutation text="onClose: () {},"/>
+        <regex pattern="title: labels\.toastTitle\(toast\),\s*onClose: \(\) =&gt;\s*bloc\.add\(const CalculatorToastClosed\(\)\)," dotAll="true" id="calculator_page.toast.close_unheard">
+            <mutation text="title: labels.toastTitle(toast), onClose: () {},"/>
         </regex>
 
         <!-- RULE 4b: a screen reader never hears the message, or hears it
@@ -42,6 +42,16 @@
         <regex pattern="current\.toastsRaised != previous\.toastsRaised," dotAll="true" id="calculator_page.toast.never_announced">
             <mutation text="false,"/>
             <mutation text="current.toast != null,"/>
+        </regex>
+
+        <!-- RULE 4c (R3, B2): on a short phone the display never scrolls, so
+             the Alert covers the value it talks about; or the display stays
+             scrolled after the Alert closes -->
+        <regex pattern="if \(hiddenHeight &lt;= 0\) return;" dotAll="true" id="calculator_page.alert.value_stays_under_it">
+            <mutation text="return;"/>
+        </regex>
+        <regex pattern="_displayScroll\.jumpTo\(offset\);" dotAll="true" id="calculator_page.alert.display_not_scrolled_back">
+            <mutation text=""/>
         </regex>
 
         <!-- RULE 3 (T1b F1): a new group map keeps the old ordered list -->

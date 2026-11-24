@@ -10,22 +10,40 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../utils/screenshot/font_loader.dart';
+
 void main() {
+  setUpAll(loadAppFontsAll);
+
   Future<void> pumpPage(
     WidgetTester tester, {
     Size size = const Size(390, 844),
     FakeAppRouter? router,
+    ThemeData? theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        theme: CoreTheme.light(),
+        theme: theme ?? CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CalculatorPage(router: router ?? FakeAppRouter()),
       ),
+    );
+  }
+
+  Finder bigValueOf(String text, ThemeData theme) {
+    final fontSize = theme
+        .extension<AppTypographyExtension>()
+        ?.headlineLargeSemiBold
+        .fontSize;
+    return find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          widget.data == text &&
+          widget.style?.fontSize == fontSize,
     );
   }
 
@@ -789,6 +807,7 @@ void main() {
       'for still works and closes it, and no timer closes it (term 2.21; '
       'Section 5)', (tester) async {
     await pumpPage(tester);
+    final displayBefore = tester.getRect(find.byType(CoreDisplayArea));
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(CoreKeyboard)),
@@ -814,6 +833,13 @@ void main() {
       CoreSpacing.space1,
       reason: 'the box ends 4 px above the top edge of the key sheet',
     );
+    expect(
+      tester.getRect(find.byType(CoreDisplayArea)),
+      displayBefore,
+      reason:
+          'on a tall phone the value is clear of the Alert, so the '
+          'display does not scroll',
+    );
 
     await tester.pump(const Duration(seconds: 10));
     expect(
@@ -833,15 +859,23 @@ void main() {
     testWidgets(
       'on a ${size.width.toInt()} × ${size.height.toInt()} phone the red '
       'Alert is drawn over the display area: the key sheet keeps its place, '
-      'nothing overflows, and the value the Alert talks about stays on '
-      'screen (B2; product decision of 13 November 2026)',
+      'nothing overflows, and the display scrolls so the value the Alert '
+      'talks about sits above it, then scrolls back when the Alert closes '
+      '(B2; term 2.21; rule 4.12)',
       (tester) async {
-        await pumpPage(tester, size: size);
+        final theme = createTestTheme();
+        await pumpPage(tester, size: size, theme: theme);
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CoreKeyboard)),
         )!;
+        final bigValue = bigValueOf('18', theme);
+        final displayViewport = find.ancestor(
+          of: find.byType(CoreDisplayArea),
+          matching: find.byType(SingleChildScrollView),
+        );
         final keyboardBefore = tester.getRect(find.byType(CoreKeyboard));
         final displayBefore = tester.getRect(find.byType(CoreDisplayArea));
+        final viewportBefore = tester.getRect(displayViewport);
         for (final key in const [
           'calc_key_Length',
           'calc_key_one',
@@ -853,7 +887,6 @@ void main() {
         await settle(tester);
         expect(tester.takeException(), isNull, reason: 'no overflow');
         expect(find.text(l10n.calculatorToastFinishValueTitle), findsOneWidget);
-        expect(find.text('18'), findsWidgets, reason: 'the value stays');
         final keyboard = tester.getRect(find.byType(CoreKeyboard));
         expect(keyboard.top, keyboardBefore.top, reason: 'the keys stay put');
         expect(
@@ -864,9 +897,30 @@ void main() {
         final box = tester.getRect(find.byType(Toast));
         expect(keyboard.top - box.bottom, CoreSpacing.space1);
         expect(
+          tester.getRect(displayViewport),
+          viewportBefore,
+          reason: 'the display keeps its place and height under the Alert',
+        );
+        final value = tester.getRect(bigValue);
+        expect(
+          value.overlaps(box),
+          isFalse,
+          reason: 'the Alert does not cover the value: $value under $box',
+        );
+        expect(value.bottom, lessThanOrEqualTo(box.top));
+        expect(
+          value.center.dy,
+          greaterThan(viewportBefore.top),
+          reason: 'the value is still on the screen',
+        );
+
+        await press(tester, 'calc_key_feet');
+        await settle(tester);
+        expect(find.byType(Toast), findsNothing);
+        expect(
           tester.getRect(find.byType(CoreDisplayArea)),
           displayBefore,
-          reason: 'the display keeps its place and height under the Alert',
+          reason: 'the display is back where it was once the Alert closes',
         );
       },
     );

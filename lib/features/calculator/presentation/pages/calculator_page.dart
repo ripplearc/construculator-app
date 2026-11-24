@@ -26,6 +26,57 @@ class CalculatorPage extends StatefulWidget {
 class _CalculatorPageState extends State<CalculatorPage> {
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
 
+  final ScrollController _displayScroll = ScrollController();
+  final GlobalKey _displayKey = GlobalKey();
+  final GlobalKey _alertKey = GlobalKey();
+  double? _displayOffsetBeforeAlert;
+
+  @override
+  void dispose() {
+    _displayScroll.dispose();
+    super.dispose();
+  }
+
+  void _keepValueAboveAlert(String value) {
+    if (!mounted || !_displayScroll.hasClients) return;
+    final alert = _alertKey.currentContext?.findRenderObject();
+    if (alert is! RenderBox) {
+      if (_displayOffsetBeforeAlert case final offset?) {
+        _displayScroll.jumpTo(offset);
+        _displayOffsetBeforeAlert = null;
+      }
+      return;
+    }
+    final shown = _valueBoxOf(value);
+    if (shown == null) return;
+    final hiddenHeight =
+        shown.localToGlobal(shown.size.bottomLeft(Offset.zero)).dy -
+        alert.localToGlobal(Offset.zero).dy;
+    if (hiddenHeight <= 0) return;
+    _displayOffsetBeforeAlert ??= _displayScroll.offset;
+    _displayScroll.jumpTo(
+      (_displayScroll.offset + hiddenHeight).clamp(
+        0.0,
+        _displayScroll.position.maxScrollExtent,
+      ),
+    );
+  }
+
+  RenderBox? _valueBoxOf(String value) {
+    RenderBox? valueBox;
+    void visit(Element element) {
+      if (element.widget case Text(:final data) when data == value) {
+        if (element.findRenderObject() case final RenderBox box) {
+          valueBox = box;
+        }
+      }
+      element.visitChildren(visit);
+    }
+
+    _displayKey.currentContext?.visitChildElements(visit);
+    return valueBox;
+  }
+
   Locale? _groupsLocale;
   Map<String, FunctionGroup>? _groupsById;
   List<String>? _orderedFor;
@@ -235,6 +286,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
               final bloc = context.read<CalculatorBloc>();
               final dependentKeys = state.dependentKeys;
               final groups = _groupsInOrder(groupsById, state.groupOrder);
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _keepValueAboveAlert(labels.valueText(state)),
+              );
 
               return Column(
                 children: [
@@ -245,11 +299,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           children: [
                             Expanded(
                               child: SingleChildScrollView(
+                                controller: _displayScroll,
                                 physics:
                                     _currentStage != DisplayAreaStage.collapsed
                                     ? const NeverScrollableScrollPhysics()
                                     : const AlwaysScrollableScrollPhysics(),
                                 child: CoreDisplayArea(
+                                  key: _displayKey,
                                   label: switch (state.displayLabel) {
                                     final label? => labels.labelText(label),
                                     null => null,
@@ -325,6 +381,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         if (state.toast case final toast?
                             when !state.toastClosed)
                           Positioned(
+                            key: _alertKey,
                             left: 0,
                             right: 0,
                             bottom: 0,
@@ -333,9 +390,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
                               // Drawn over the bottom of the display area, so
                               // the key sheet never moves and nothing
                               // overflows on a short phone; the box ends 4 px
-                              // above the top edge of the key sheet (product
-                              // decision of 13 November 2026; term 2.21 said
-                              // 8 px above the first row of keys).
+                              // above the top edge of the key sheet, and the
+                              // display scrolls the value out from under it,
+                              // since it may cover neither a key nor the
+                              // result value (term 2.21).
                               padding: const EdgeInsets.fromLTRB(
                                 CoreSpacing.space4,
                                 0,
