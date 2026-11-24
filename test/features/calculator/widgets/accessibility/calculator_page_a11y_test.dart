@@ -3,9 +3,38 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+
+// TODO: [CA-1474] The Width, Rise and Slope function keys draw their text
+// below 4.5:1 in the light theme (coreui 0.99.0 and later), and the page-wide
+// text contrast guideline reads every key on the strip. Until CoreUI fixes the
+// key colours, the light theme checks the text of the element under test
+// alone (an icon's glyph is no text, as for the page-wide guideline); the
+// dark theme still runs the
+// page-wide guideline. https://ripplearc.youtrack.cloud/issue/CA-1474
+Future<void> _expectLightThemeContrastOf(
+  WidgetTester tester,
+  ThemeData theme,
+  Finder finder,
+) async {
+  if (theme.brightness == Brightness.dark) return;
+  final text = find.descendant(
+    of: finder,
+    matching: find.byElementPredicate(
+      (element) =>
+          element.widget is RichText &&
+          element.findAncestorWidgetOfExactType<Icon>() == null,
+    ),
+    matchRoot: true,
+  );
+  await expectLater(
+    tester,
+    meetsGuideline(CustomMinimumContrastGuideline(finder: text)),
+  );
+}
 
 void main() {
   setUpAll(() async {
@@ -53,6 +82,66 @@ void main() {
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
         );
+      },
+    );
+
+    testWidgets(
+      'a suggestion chip and a conversion chip meet the label and contrast '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        Future<void> type(List<String> keys) async {
+          for (final key in keys) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.pump();
+          await tester.pump(CoreSuggestionArea.animationDuration);
+          await tester.pump();
+        }
+
+        // The themes are pumped by hand: the shared helper waits for the
+        // page to settle, and a strip chip animates while it is on screen.
+        // Tap target size is disabled as in the close-button test: the
+        // guideline reads the whole page, where CoreUI's close button and
+        // drag handle sit below 48dp by design (tracked in CoreUI).
+        for (final theme in kA11yTestThemes) {
+          // A Slope answer fills row 1 and leaves row 2 empty, so the
+          // contrast guideline, which also reads the whole page, judges the
+          // suggestion chips alone.
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await type(const ['calc_key_Slope', 'calc_key_seven']);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CoreSuggestionArea.chipTestKey(0)),
+            checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.byKey(CoreSuggestionArea.chipTestKey(0)),
+          );
+
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await type(const [
+            'calc_key_Length',
+            'calc_key_two',
+            'calc_key_two',
+            'calc_key_feet',
+          ]);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CoreSuggestionArea.conversionChipTestKey(0)),
+            checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.byKey(CoreSuggestionArea.conversionChipTestKey(0)),
+          );
+        }
       },
     );
 

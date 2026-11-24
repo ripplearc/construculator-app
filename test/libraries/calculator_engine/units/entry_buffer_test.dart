@@ -169,11 +169,29 @@ void main() {
         );
       });
 
-      test('a zero whole part is left out: 0in 1/2 reads 1/2in', () {
+      test('a ton accepted from the strip keeps the space the chip wrote, '
+          'and a typed ton has none (Section 1.2)', () {
+        const accepted = EntryBuffer([
+          Token(digits: '2.5', unit: Unit.ton, unitAfterSpace: true),
+        ]);
+        expect(accepted.text, '2.5 ton');
+        expect(changed(type('2.5').closeWith(Unit.ton)).text, '2.5ton');
+        final reopened = changed(accepted.backspace());
+        expect(reopened.text, '2.5');
+        expect(
+          changed(reopened.closeWith(Unit.ton)).text,
+          '2.5ton',
+          reason: 'the Tons key pressed on the number writes it the typed way',
+        );
+      });
+
+      test('a zero whole part is written as the strip writes it: 0in 1/2 '
+          'reads 0-1/2in, as 0ft 0-7/16in accepted from the strip does '
+          '(walkthrough 21.2, step 18)', () {
         final zeroInches = changed(type('0').closeWith(Unit.inch));
         expect(
           changed(type('1/2', zeroInches).closeWith(Unit.inch)).text,
-          '1/2in',
+          '0-1/2in',
         );
         final feetAndZero = changed(
           type(
@@ -183,7 +201,7 @@ void main() {
         );
         expect(
           changed(type('1/2', feetAndZero).closeWith(Unit.inch)).text,
-          '5ft 1/2in',
+          '5ft 0-1/2in',
         );
         expect(zeroInches.text, '0in');
       });

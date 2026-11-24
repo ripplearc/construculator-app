@@ -183,8 +183,8 @@
         <regex pattern="_withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
             <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null),"/>
         </regex>
-        <regex pattern="seconds,\s*typedAs,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
-            <mutation text="seconds, ];"/>
+        <regex pattern="seconds,\s*typedAs,\s*unitAfterSpace,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
+            <mutation text="seconds, unitAfterSpace, ];"/>
         </regex>
 
         <!-- RULE 15 (R1): a pill whose reading has no answer under the key
