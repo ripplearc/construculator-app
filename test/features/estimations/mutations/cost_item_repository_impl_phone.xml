@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/data/repositories/cost_item_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="\{\.\.\.onServer, \.\.\.onThisPhone\}" id="repo.total.phone_loses">
+            <mutation text="{...onThisPhone, ...onServer}"/>
+        </regex>
+        <regex pattern="\{\.\.\.onServer, \.\.\.onThisPhone\}" id="repo.total.ignores_phone">
+            <mutation text="{...onServer}"/>
+        </regex>
+        <regex pattern="line\.id: line\.itemTotalCost" id="repo.total.keyed_by_name">
+            <mutation text="line.itemName: line.itemTotalCost"/>
+        </regex>
+        <regex pattern="onServer\.length >= _maxRowsPerRequest" id="repo.total.limit_boundary">
+            <mutation text="onServer.length > _maxRowsPerRequest"/>
+        </regex>
+        <regex pattern="\(t \* 100\)\.round\(\)" id="repo.total.floor">
+            <mutation text="(t * 100).floor()"/>
+        </regex>
+        <regex pattern="await localDataSource\.saveCostItemOnPhone\(CostItemDto\.fromEntity\(item\)\);" id="repo.add.skip_save">
+            <mutation text="await Future&lt;void&gt;.value();"/>
+        </regex>
+        <regex pattern="return Right\(item\);" id="repo.add.always_fails">
+            <mutation text="return const Left(_phoneStorageFailure);"/>
+        </regex>
+        <regex pattern="sink\.add\(const Left\(_phoneStorageFailure\)\);" id="repo.status.error_dropped">
+            <mutation text="sink.add(const Right({}));"/>
+        </regex>
+        <regex pattern="sink\.add\(Right\(notSynced\)\)" id="repo.status.always_empty">
+            <mutation text="sink.add(const Right(&lt;String&gt;{}))"/>
+        </regex>
+        <regex pattern="catch \(_\) \{\s*return const Left\(_phoneStorageFailure\);\s*\}\s*try \{\s*final onServer" id="repo.total.phone_read_failure_ignored">
+            <mutation text="catch (_) { return const Right(0.0); } try { final onServer"/>
+        </regex>
+        <regex pattern="if \(item\.id\.isEmpty\) return const Left\(_unexpectedFailure\);" id="repo.add.accepts_empty_id">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="return _handleError\(e, 'summing cost items'\);" dotAll="false" id="repo.total.falls_back_to_phone">
+            <mutation text="return Right(_sumToCent(onThisPhone));"/>
+        </regex>
+        <regex pattern="\.\.\.refused," dotAll="false" id="repo.total.ignores_refused_lines">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\.\.\.refused,\s*for \(final line in lines\) line\.id: line\.itemTotalCost," dotAll="false" id="repo.total.refused_beats_phone_row">
+            <mutation text="for (final line in lines) line.id: line.itemTotalCost, ...refused,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_item_repository_phone" expected-return="0">flutter test test/features/estimations/units/data/repositories/cost_item_repository_impl_on_phone_test.dart test/features/estimations/units/data/repositories/cost_item_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="50" name="D"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

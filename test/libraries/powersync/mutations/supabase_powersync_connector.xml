@@ -78,17 +78,6 @@
             <mutation text="&amp;&amp; true ||"/>
         </regex>
 
-        <!-- RULE: every table's values text is decoded, not only the trade
-             stores' -->
-        <regex pattern="if \(table != DatabaseConstants\.userCalculatorStoresTable\) return row;" dotAll="true" id="connector.server_row.decode_every_table">
-            <mutation text="if (false) return row;"/>
-        </regex>
-
-        <!-- RULE: a patch without values is decoded anyway -->
-        <regex pattern="if \(values is! String\) return row;" dotAll="true" id="connector.server_row.decode_missing_values">
-            <mutation text="if (false) return row;"/>
-        </regex>
-
         <!-- RULE: a duplicate on any table is handled as a trade store default's -->
         <regex pattern="operation\.table == DatabaseConstants\.userCalculatorStoresTable &amp;&amp;" dotAll="true" id="connector.duplicate_default.any_table">
             <mutation text="true &amp;&amp;"/>
@@ -110,6 +99,26 @@
         </regex>
         <regex pattern="_seedOf\(candidate\) == seed," dotAll="true" id="connector.duplicate_default.overwrite_other_seed">
             <mutation text="true,"/>
+        </regex>
+
+        <!-- RULE: a cost line's calculation column is decoded from JSON text -->
+        <regex pattern="DatabaseConstants\.costItemsTable: DatabaseConstants\.calculationColumn," dotAll="false" id="connector.cost_items.calculation_not_decoded">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: a value that is not text is decoded anyway -->
+        <regex pattern="if \(text is! String\) return row;" dotAll="false" id="connector.decode.skips_string_guard">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the missing columns of a cost line are nulled on every table -->
+        <regex pattern="if \(table != DatabaseConstants\.costItemsTable\) return row;" dotAll="false" id="connector.nulls.every_table">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE: the missing columns of a cost line are not added as nulls -->
+        <regex pattern="\{for \(final column in columns\) column\.name: null, \.\.\.row\}" dotAll="false" id="connector.nulls.not_added">
+            <mutation text="{...row}"/>
         </regex>
     </rules>
 

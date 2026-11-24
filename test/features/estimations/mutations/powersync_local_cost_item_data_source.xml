@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/data/data_source/powersync_local_cost_item_data_source.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="INSERT OR REPLACE INTO" id="local_cost_item.save.plain_insert">
+            <mutation text="INSERT INTO"/>
+        </regex>
+        <regex pattern="(\[for \(final column in columns\) row\[column\]\])" id="local_cost_item.save.drop_values">
+            <mutation text="[for (final column in columns) null]"/>
+        </regex>
+        <regex pattern="(\.\.\.dto\.toJson\(\),)" id="local_cost_item.save.drop_fields">
+            <mutation text="'id': dto.id,"/>
+        </regex>
+        <regex pattern="jsonEncode\(dto\.calculation\)" id="local_cost_item.save.calculation_not_text">
+            <mutation text="dto.calculation.toString()"/>
+        </regex>
+        <regex pattern="ORDER BY \$\{DatabaseConstants\.createdAtColumn\} ASC" id="local_cost_item.load.descending">
+            <mutation text="ORDER BY ${DatabaseConstants.createdAtColumn} DESC"/>
+        </regex>
+        <regex pattern="json_extract\(data, '\\\$\.type'\)" id="local_cost_item.pending.wrong_json_key">
+            <mutation text="json_extract(data, '\$.op')"/>
+        </regex>
+        <regex pattern="json_extract\(data, '\\\$\.id'\)" id="local_cost_item.pending.wrong_id_key">
+            <mutation text="json_extract(data, '\$.type')"/>
+        </regex>
+        <regex pattern="AND \$\{DatabaseConstants\.idColumn\} IN \(" id="local_cost_item.pending.not_in">
+            <mutation text="AND ${DatabaseConstants.idColumn} NOT IN ("/>
+        </regex>
+        <regex pattern="\.distinct\(setEquals\)" id="local_cost_item.pending.no_dedupe">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="for \(final row in rows\) row\[DatabaseConstants\.idColumn\] as String," id="local_cost_item.pending.wrong_ids">
+            <mutation text="for (final row in rows) 'x',"/>
+        </regex>
+        <regex pattern="FROM \$\{DatabaseConstants\.costItemRefusalsTable\}" dotAll="false" id="local_cost_item.refused.wrong_table">
+            <mutation text="FROM ${DatabaseConstants.costItemsTable}"/>
+        </regex>
+        <regex pattern="row\[DatabaseConstants\.idColumn\] as String: _itemTotalCostOf\(" dotAll="false" id="local_cost_item.refused.wrong_ids">
+            <mutation text="'x': _itemTotalCostOf("/>
+        </regex>
+        <regex pattern="line\[DatabaseConstants\.itemTotalCostColumn\]" dotAll="false" id="local_cost_item.refused.wrong_total_key">
+            <mutation text="line['x']"/>
+        </regex>
+        <regex pattern="\?\.toDouble\(\) \?\?\s*0" dotAll="false" id="local_cost_item.refused.missing_total_not_zero">
+            <mutation text="?.toDouble() ?? 1"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="local_cost_item_data_source" expected-return="0">flutter test test/features/estimations/units/data/data_source/powersync_local_cost_item_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="50" name="D"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
