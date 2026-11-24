@@ -156,7 +156,7 @@ void main() {
             testItem.copyWith(itemName: 'Cement mix'),
           );
 
-          expect(result.getRightOrNull()?.itemName, 'Cement mix');
+          expect(result.getRightOrNull()!.itemName, 'Cement mix');
         },
       );
 
@@ -168,7 +168,7 @@ void main() {
         );
 
         final items = await repository.getCostItemsForEstimate('estimate-1');
-        expect(items.getRightOrNull()?.single.itemName, 'Cement mix');
+        expect(items.getRightOrNull()!.single.itemName, 'Cement mix');
       });
 
       test(
