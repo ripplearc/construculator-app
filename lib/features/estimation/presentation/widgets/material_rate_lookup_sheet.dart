@@ -91,7 +91,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                           hintText: l10n.yourRatesMaterialSearchHint,
                           onChanged: _search,
                         ),
-                        const SizedBox(height: CoreSpacing.space4),
+                        const SizedBox(height: CoreSpacing.space6),
                         if (entries.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(
