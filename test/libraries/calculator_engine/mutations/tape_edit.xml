@@ -150,7 +150,7 @@
 
         <!-- RULE 22 (R3, B5): ⌫ after a tap sealed the last value drops the
              whole value, as it did before a tap could seal it -->
-        <regex pattern="if \(chips\.last case final ValueChip sealed when !sealed\.isActive\) \{" dotAll="true" id="tape_edit.backspace.sealed_value_dropped">
+        <regex pattern="if \(chips\.last case final ValueChip sealed\s*when !sealed\.isActive &amp;&amp; !sealed\.followsARemovedResult\) \{" dotAll="true" id="tape_edit.backspace.sealed_value_dropped">
             <mutation text="if (chips.last case final ValueChip sealed when !sealed.isActive &amp;&amp; false) {"/>
         </regex>
 

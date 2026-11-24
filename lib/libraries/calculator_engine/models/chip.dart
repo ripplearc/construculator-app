@@ -112,8 +112,8 @@ final class ValueChip extends TapeChip {
   /// Whether the result this step's operator led on from was removed by an
   /// edit (Section 5.5), so the step has no left value: it stays on the
   /// tape, computes nothing, and = is refused with
-  /// [TapeRefusal.stepLostItsValue] until ⌫ removes the step or a value is
-  /// edited back (product decision of 13 November 2026).
+  /// [TapeRefusal.stepLostItsValue] until ⌫ removes the step (product
+  /// decision of 13 November 2026).
   final bool followsARemovedResult;
 
   /// Whether a second decimal point, or the D:M:S key, may read the chip's

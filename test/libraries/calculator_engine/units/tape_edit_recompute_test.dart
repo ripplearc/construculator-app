@@ -696,10 +696,16 @@ void main() {
         'divisor is repaired, unlike the ÷ 0 error that lands before its '
         'reopened divisor (B2; rule 4.12)', () {
       final broken = press(const Tape(), '1 0 ÷ 2 = + 3 = tap:1 ⌫ 0 =');
-      expect(texts(broken), ['10', 'divisionByZero', '÷', '+3']);
+      expect(texts(broken), ['10', 'divisionByZero', '÷', '+3', 'Calc8']);
       expect(broken.editing!.index, 2);
 
-      expect(texts(press(broken, '2 tap:2')), ['10', '÷2', 'Calc5', '+3']);
+      expect(texts(press(broken, '2 tap:2')), [
+        '10',
+        '÷2',
+        'Calc5',
+        '+3',
+        'Calc8',
+      ]);
       expect(texts(press(broken, '2 =')), ['10', '÷2', 'Calc5', '+3', 'Calc8']);
       expect(texts(press(const Tape(), '5 ÷ 0 = 2 tap:0 ⌫ 6 tap:0')), [
         '6',
@@ -836,19 +842,74 @@ void main() {
       final sealed = edited.tapChip(1);
       expect(
         sealed,
-        isA<TapeChanged>().having((c) => c.removed, 'removed', ['Arcsine']),
+        isA<TapeChanged>()
+            .having((c) => c.removed, 'removed', isEmpty)
+            .having((c) => c.notice, 'notice', isNull),
       );
-      expect(texts((sealed as TapeChanged).tape), ['1', 'divisionByZero', '÷']);
+      final waiting = (sealed as TapeChanged).tape;
+      expect(texts(waiting), ['1', 'divisionByZero', '÷', 'Arcsine30°']);
+      expect(texts(press(waiting, '4 tap:2')), [
+        '1',
+        '÷4',
+        'Calc0.25',
+        'Arcsine14.48°',
+      ]);
+    });
+
+    test('an edit that makes a divisor zero removes no chip and names none, '
+        'however many results follow: each waits as it was while the divisor '
+        'is open and tracks the new divisor as it is typed (Section 5.5, '
+        '"Edit makes a divisor zero")', () {
+      final edited = press(const Tape(), '5 ÷ 2 = + 1 = × 3 = tap:1 ⌫ 0');
+      for (final sealing in ['tap:1', '=']) {
+        final outcome = pressOnce(edited, sealing);
+        expect(
+          outcome,
+          isA<TapeChanged>()
+              .having((c) => c.removed, 'removed', isEmpty)
+              .having((c) => c.notice, 'notice', isNull),
+          reason: sealing,
+        );
+        final waiting = (outcome as TapeChanged).tape;
+        expect(texts(waiting), [
+          '5',
+          'divisionByZero',
+          '÷',
+          '+1',
+          'Calc3.5',
+          '×3',
+          'Calc10.5',
+        ], reason: sealing);
+        expect(waiting.editing!.index, 2, reason: sealing);
+        expect(texts(press(waiting, '4')), [
+          '5',
+          'divisionByZero',
+          '÷4',
+          '+1',
+          'Calc2.25',
+          '×3',
+          'Calc6.75',
+        ], reason: sealing);
+        expect(texts(press(waiting, '4 =')), [
+          '5',
+          '÷4',
+          'Calc1.25',
+          '+1',
+          'Calc2.25',
+          '×3',
+          'Calc6.75',
+        ], reason: sealing);
+      }
     });
 
     test('a divisor edited to 0 in the middle of the tape is reopened empty '
         'behind its error chip, the ÷ after it stays the user\'s step, and '
         'the result comes back once the divisor is repaired', () {
       final broken = press(const Tape(), '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 tap:1');
-      expect(texts(broken), ['10', 'divisionByZero', '÷', '÷5']);
+      expect(texts(broken), ['10', 'divisionByZero', '÷', '÷5', 'Calc1']);
       expect(broken.editing!.index, 2);
       final repaired = press(broken, '5 tap:2');
-      expect(texts(repaired), ['10', '÷5', 'Calc2', '÷5']);
+      expect(texts(repaired), ['10', '÷5', 'Calc2', '÷5', 'Calc0.4']);
       final byEquals = press(const Tape(), '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 = 5 =');
       expect(texts(byEquals), ['10', '÷5', 'Calc2', '÷5', 'Calc0.4']);
     });

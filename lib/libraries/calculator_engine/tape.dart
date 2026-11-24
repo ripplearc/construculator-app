@@ -108,8 +108,9 @@ enum TapeRefusal {
   /// = while a step whose left value an edit removed stays on the tape
   /// (5 ÷ 8 = [ACOS] × 2 =, 5 edited to 9: the Arccosine and its Calc go,
   /// the ×2 stays with nothing to its left): nothing lands and the red Alert
-  /// names the fix, a value edited back or ⌫ on the step (Section 5.5;
-  /// product decision of 13 November 2026). A named answer or a trig answer
+  /// names the fix, ⌫ on the step. Editing the value back does not clear
+  /// it, because the removed chip does not come back on its own (Section
+  /// 5.5; product decision of 13 November 2026). A named answer or a trig answer
   /// that goes leaves such a step; a Calc that goes leaves its chain's
   /// value in place, so the step after it goes on from that value, as
   /// ( 2 + 3 ) = × 4 retyped as (5) reads (5) | ×4 | Calc 20 (Section 7).
@@ -1967,7 +1968,9 @@ class Tape extends Equatable {
   /// typing into its last value again (Section 7, "Editing a bracket").
   /// A last value a tap sealed is made active again the same way and loses
   /// one step, never the whole value: 12ft + 5ft, a tap on +5ft, then ⌫
-  /// reads 12ft | +5 ("⌫ removes the last token").
+  /// reads 12ft | +5 ("⌫ removes the last token"). A step whose left value
+  /// an edit removed is the exception: ⌫ removes the step whole, which is
+  /// the fix its Alert names ([TapeRefusal.stepLostItsValue]).
   /// Inside a bracket a chip has no name, so once ⌫ or ✕ has emptied every
   /// chip in it there is nothing left to show and the next ⌫ removes the
   /// bracket itself ("on an empty bracket it removes the bracket"), one
@@ -2000,7 +2003,8 @@ class Tape extends Equatable {
       if (chips.last case final BracketChip closed) {
         return _replaceLastChip(_reopened(closed));
       }
-      if (chips.last case final ValueChip sealed when !sealed.isActive) {
+      if (chips.last case final ValueChip sealed
+          when !sealed.isActive && !sealed.followsARemovedResult) {
         return _with([
           ...chips.sublist(0, chips.length - 1),
           _reactivated(sealed),
@@ -2247,8 +2251,13 @@ class Tape extends Equatable {
     final removed = <String>[];
     final broken = <int>{};
     var leftWentMissing = false;
+    var divisorWaits = false;
     for (final (offset, chip) in chips.sublist(first).indexed) {
       final index = first + offset;
+      if (divisorWaits) {
+        kept.add(chip);
+        continue;
+      }
       final TapeChip? rebuilt;
       switch (chip) {
         case ResultChip(key: calcKey)
@@ -2281,6 +2290,7 @@ class Tape extends Equatable {
           kept.add(ErrorChip(CalculationError.divisionByZero, readIn: readIn));
           kept.add(_reopenedEmpty(divisor));
           leftWentMissing = false;
+          divisorWaits = true;
           continue;
         }
       }
@@ -2319,7 +2329,7 @@ class Tape extends Equatable {
         ValueChip(:final operator) => operator != null,
         BracketChip(:final operator) => operator != null,
         ResultChip(:final operator) => operator != null,
-        ErrorChip() => false,
+        ErrorChip() => _isDivisionByZeroBeforeItsDivisor(at),
       };
       if (!leadsOn) return;
     }

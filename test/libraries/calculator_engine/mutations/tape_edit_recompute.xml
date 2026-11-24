@@ -159,6 +159,24 @@
             <mutation text="if (false) { if (closed._withTheDivisionBeforeRepaired(sealed) case final repaired?) {"/>
         </regex>
 
+        <!-- RULE R3-1: ⌫ on a step whose left value was removed takes one
+             digit off it, so the fix its Alert names needs two presses -->
+        <regex pattern="when !sealed\.isActive &amp;&amp; !sealed\.followsARemovedResult\) \{" dotAll="true" id="tape_edit_recompute.backspace.lost_step_reopened">
+            <mutation text="when !sealed.isActive) {"/>
+        </regex>
+
+        <!-- RULE R3-2: an edit that makes a divisor zero removes the results
+             after it, where the doc row removes no chip -->
+        <regex pattern="divisorWaits = true;" dotAll="true" id="tape_edit_recompute.zero_divisor.later_results_removed">
+            <mutation text="divisorWaits = false;"/>
+        </regex>
+
+        <!-- RULE R3-3: a result after a reopened divisor is rebuilt from the
+             divisor alone, without the value before the error chip -->
+        <regex pattern="ErrorChip\(\) =&gt; _isDivisionByZeroBeforeItsDivisor\(at\)," dotAll="true" id="tape_edit_recompute.zero_divisor.chain_stops_at_error">
+            <mutation text="ErrorChip() =&gt; false,"/>
+        </regex>
+
         <!-- RULE R2-9: a tap loses the chip a mark copied -->
         <regex pattern="identical\(chip, tapped\) \|\| _isMarkedCopyOf\(chip, tapped\)" dotAll="true" id="tape_edit_recompute.tap.marked_copy_lost">
             <mutation text="identical(chip, tapped)"/>
