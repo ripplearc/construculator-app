@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,10 +61,10 @@ part 'calculator_toast.dart';
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
 
+  static final _logger = AppLogger().tag('CalculatorBloc');
+
   StreamSubscription<List<TradeCount>>? _countsSubscription;
 
-  // The area and the unit system the open watch was asked for, so a state
-  // change that keeps both leaves the watch alone.
   Area? _watchedArea;
   MeasurementSystem? _watchedSystem;
 
@@ -102,9 +103,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     return super.close();
   }
 
-  // Watches the store for the area on the display under the unit system in
-  // force, and only when one of them changes: the store's own changes come
-  // through the open watch (R9), not through a new one.
   void _followTheAreaOnScreen(CalculatorState next) {
     final area = next.areaForCounts;
     final system = next.tape.preferences.system;
@@ -113,17 +111,29 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     _countsSubscription = null;
     _watchedArea = area;
     _watchedSystem = system;
-    if (area == null) return;
-    _countsSubscription = _materialCounts(
-      trade: Trade.drywall,
-      area: area,
-      system: system,
-    ).listen((counts) => add(CalculatorMaterialCountsArrived(counts)));
+    if (area == null) {
+      if (next.materialCounts.isNotEmpty) {
+        add(const CalculatorMaterialCountsArrived([]));
+      }
+      return;
+    }
+    _countsSubscription =
+        _materialCounts(
+          trade: Trade.drywall,
+          area: area,
+          system: system,
+        ).listen(
+          (counts) => add(CalculatorMaterialCountsArrived(counts)),
+          // The strip keeps what it showed. Warning level: the error-level
+          // log belongs to the store's own boundary, not to a bloc.
+          onError: (Object error, StackTrace stackTrace) => _logger.warning(
+            'The sheet counts watch failed',
+            error,
+            stackTrace,
+          ),
+        );
   }
 
-  // An answer for an area the bloc has stopped watching — queued by the old
-  // watch before the key that changed the area was handled — is dropped,
-  // so the state never carries counts the strip could not use.
   void _onMaterialCountsArrived(
     CalculatorMaterialCountsArrived event,
     Emitter<CalculatorState> emit,

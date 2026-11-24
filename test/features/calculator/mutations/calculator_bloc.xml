@@ -329,11 +329,22 @@
         <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
             <mutation text=""/>
         </regex>
-        <!-- RULES (S2a 1/2, CA-1090): the watch on the sheet-size store -->
-        <!-- RULE: the watch ignores a change of unit system, or of area -->
+        <!-- RULES (S2a 2/2, CA-1090): the watch on the sheet-size store -->
+        <!-- RULE: the watch ignores a change of area. Not a rule: ignoring a
+             change of unit system is an equivalent mutant here, since the
+             bloc takes a new unit system on an empty tape only (Section 1.1)
+             and an empty tape has no area to watch. -->
         <regex pattern="if \(area == _watchedArea &amp;&amp; system == _watchedSystem\) return;" dotAll="true" id="calculator_bloc.watch.ignores_system_or_area">
-            <mutation text="if (area == _watchedArea) return;"/>
             <mutation text="if (system == _watchedSystem) return;"/>
+        </regex>
+        <!-- RULE (R1, F2): a store error on the watch is left uncaught -->
+        <regex pattern="onError: \(Object error, StackTrace stackTrace\) =&gt; _logger\.warning\(\s*'The sheet counts watch failed',\s*error,\s*stackTrace,\s*\)," dotAll="true" id="calculator_bloc.watch.error_uncaught">
+            <mutation text=""/>
+        </regex>
+        <!-- RULE (R1, F3): the counts of an area that left the display stay
+             in the state -->
+        <regex pattern="add\(const CalculatorMaterialCountsArrived\(\[\]\)\);" dotAll="true" id="calculator_bloc.watch.left_area_keeps_counts">
+            <mutation text=""/>
         </regex>
         <!-- RULE: the store's answer is not kept -->
         <regex pattern="emit\(state\.copyWith\(materialCounts: event\.counts\)\);" dotAll="true" id="calculator_bloc.counts.not_kept">

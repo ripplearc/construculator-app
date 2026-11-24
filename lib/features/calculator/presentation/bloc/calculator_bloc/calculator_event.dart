@@ -166,7 +166,8 @@ class CalculatorToastClosed extends CalculatorEvent {
 
 /// The trade store answered, or changed, for the area the bloc is watching
 /// (requirement R9): the counts of that area at every stored size, in the
-/// user's order. Not a key: what the last key said stays.
+/// user's order; none once the area they were counted for has left the
+/// display. Not a key: what the last key said stays.
 class CalculatorMaterialCountsArrived extends CalculatorEvent {
   /// The counts, one per stored size.
   final List<TradeCount> counts;
