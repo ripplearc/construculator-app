@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,6 +36,12 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// Whether a save started from the form is still running in [state].
   final bool Function(S state) isSaveRunning;
 
+  /// The total the line [state] edits has on the estimate, or null for a line
+  /// that was never added. A total makes the question read "Discard changes?"
+  /// and say the line stays at that total. Left out, the question is the one
+  /// for a line that was never added.
+  final double? Function(S state)? savedLineTotalOf;
+
   final Widget child;
 
   const DiscardLineGuard({
@@ -42,6 +49,7 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
     required this.hasUnsavedChanges,
     required this.itemNameOf,
     this.isSaveRunning = _neverRunning,
+    this.savedLineTotalOf,
     required this.child,
   });
 
@@ -145,12 +153,22 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       return;
     }
     final l10n = context.l10n;
-    final name = widget.itemNameOf(context.read<B>().state).trim();
+    final state = context.read<B>().state;
+    final name = widget.itemNameOf(state).trim();
+    final savedTotal = widget.savedLineTotalOf?.call(state);
+    final isEditing = savedTotal != null;
     final keepEditing = await ConfirmationDialog.show(
       context,
-      title: l10n.discardLineDialogTitle,
+      title: isEditing
+          ? l10n.discardChangesDialogTitle
+          : l10n.discardLineDialogTitle,
       body: TextSpan(
-        text: name.isEmpty
+        text: isEditing
+            ? l10n.discardChangesDialogBody(
+                name,
+                DisplayFormatter.formatCurrency(savedTotal),
+              )
+            : name.isEmpty
             ? l10n.discardLineDialogBodyUnnamed
             : l10n.discardLineDialogBody(name),
       ),
