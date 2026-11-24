@@ -458,6 +458,26 @@ void main() {
         expect(call['filterValue'], 'item-1');
       });
 
+      test('leaves the id, estimate, type and creation time out of the '
+          'update', () async {
+        final row = CostItemTestDataMapFactory.createLaborItemData(
+          id: 'item-1',
+          estimateId: testEstimateId,
+        );
+        seedItemTable([row]);
+
+        await dataSource.updateCostItem(CostItemDto.fromJson(row));
+
+        final data =
+            fakeSupabaseWrapper.getMethodCallsFor('update').single['data']
+                as Map<String, dynamic>;
+        expect(data.keys, isNot(contains(DatabaseConstants.idColumn)));
+        expect(data.keys, isNot(contains(DatabaseConstants.estimateIdColumn)));
+        expect(data.keys, isNot(contains(DatabaseConstants.itemTypeColumn)));
+        expect(data.keys, isNot(contains(DatabaseConstants.createdAtColumn)));
+        expect(data.keys, contains(DatabaseConstants.updatedAtColumn));
+      });
+
       test('throws when no item has that id', () async {
         final unknown = CostItemDto.fromJson(
           CostItemTestDataMapFactory.createMaterialItemData(id: 'missing'),
