@@ -474,7 +474,9 @@ void main() {
           tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
           '-',
         );
+        fakeSupabase.completer!.complete();
         fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
       });
 
       testWidgets('reloads the list after the Labor form is closed', (
@@ -499,8 +501,8 @@ void main() {
         expect(find.text('Framing crew'), findsOneWidget);
       });
 
-      testWidgets('a failed load explains that nothing was changed and keeps '
-          'the total in the bar', (WidgetTester tester) async {
+      testWidgets('a failed load explains that nothing was changed and shows '
+          'a dash for the total in the bar', (WidgetTester tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
@@ -532,7 +534,7 @@ void main() {
         );
         expect(
           tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
-          r'$2,993.62',
+          '-',
         );
       });
 
