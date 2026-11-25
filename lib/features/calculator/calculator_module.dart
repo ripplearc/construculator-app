@@ -1,12 +1,16 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/calculator/data/data_source/interfaces/local_group_order_data_source.dart';
 import 'package:construculator/features/calculator/data/data_source/interfaces/local_recents_data_source.dart';
 import 'package:construculator/features/calculator/data/data_source/interfaces/local_trade_stores_data_source.dart';
+import 'package:construculator/features/calculator/data/data_source/powersync_local_group_order_data_source.dart';
 import 'package:construculator/features/calculator/data/data_source/powersync_local_recents_data_source.dart';
 import 'package:construculator/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart';
 import 'package:construculator/features/calculator/data/repositories/calculator_preferences_repository_impl.dart';
+import 'package:construculator/features/calculator/data/repositories/group_order_repository_impl.dart';
 import 'package:construculator/features/calculator/data/repositories/recents_repository_impl.dart';
 import 'package:construculator/features/calculator/data/repositories/trade_stores_repository_impl.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/features/calculator/domain/repositories/group_order_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
@@ -78,6 +82,20 @@ class CalculatorModule extends Module {
     );
     i.addLazySingleton<RecentsRepository>(
       () => RecentsRepositoryImpl(dataSource: i()),
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+    i.addLazySingleton<LocalGroupOrderDataSource>(
+      () => PowerSyncLocalGroupOrderDataSource(
+        database: Modular.get<PowerSyncDatabase>(),
+      ),
+      config: BindConfig(onDispose: (source) => source.dispose()),
+    );
+    i.addLazySingleton<GroupOrderRepository>(
+      () => GroupOrderRepositoryImpl(
+        dataSource: i(),
+        clock: i(),
+        defaultOrder: CalculatorGroupId.defaultOrder,
+      ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
     i.add<DeleteMaterialSizeUseCase>(
