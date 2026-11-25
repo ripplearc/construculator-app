@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Interface that wraps Supabase client functionality
@@ -73,6 +74,14 @@ abstract class SupabaseWrapper {
 
   /// Sign out the current user
   Future<void> signOut();
+
+  /// Reads the saved login session through the storage object Supabase uses,
+  /// so it follows the same rules, such as ignoring a stored session after a
+  /// failed secure storage delete.
+  ///
+  /// A failed read returns [SavedSessionUnknown]; it is never read as no
+  /// session. Call it after [initialize].
+  Future<SavedSessionRead> readSavedSession();
 
   /// Select a set of rows from a table
   ///

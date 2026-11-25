@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
@@ -362,6 +363,57 @@ void main() {
             );
           },
         );
+      });
+
+      group('readSavedSession', () {
+        test('says nothing is saved until a session is seeded', () async {
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionAbsent>(),
+          );
+        });
+
+        test('returns the seeded session text', () async {
+          fakeWrapper.seedSavedSession('{"access_token":"a"}');
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            const SavedSessionFound('{"access_token":"a"}'),
+          );
+        });
+
+        test('says it cannot tell when the read is set to fail', () async {
+          fakeWrapper.seedSavedSession('{"access_token":"a"}');
+          fakeWrapper.shouldFailReadSavedSession = true;
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionUnknown>(),
+          );
+        });
+
+        test('signing out removes the saved session', () async {
+          fakeWrapper.seedSavedSession('{"access_token":"a"}');
+
+          await fakeWrapper.signOut();
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionAbsent>(),
+          );
+        });
+
+        test('reset removes the saved session and the failure', () async {
+          fakeWrapper.seedSavedSession('{"access_token":"a"}');
+          fakeWrapper.shouldFailReadSavedSession = true;
+
+          fakeWrapper.reset();
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionAbsent>(),
+          );
+        });
       });
 
       group('signOut', () {

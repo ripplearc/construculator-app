@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/secure_storage/testing/fake_secure_storage_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -256,5 +257,48 @@ void main() {
         expect(wrapper.currentSession, isNull);
       },
     );
+
+    group('reading the saved session', () {
+      test('returns the session saved by a sign-in', () async {
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+        await wrapper.signInWithPassword(
+          email: 'user@example.com',
+          password: 'pw',
+        );
+        await secure.untilWritten(_sessionKey);
+
+        final read = await wrapper.readSavedSession();
+
+        expect(read, isA<SavedSessionFound>());
+        expect((read as SavedSessionFound).value, contains(_accessToken));
+      });
+
+      test('says nothing is saved after a sign-out', () async {
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+        await wrapper.signInWithPassword(
+          email: 'user@example.com',
+          password: 'pw',
+        );
+        await secure.untilWritten(_sessionKey);
+        await wrapper.signOut();
+        await secure.untilRemoved(_sessionKey);
+
+        expect(await wrapper.readSavedSession(), isA<SavedSessionAbsent>());
+      });
+
+      test(
+        'says it cannot tell when the secure store cannot be read',
+        () async {
+          final wrapper = buildWrapper(secure, _authServer());
+          await wrapper.initialize();
+          secure.seed(_sessionKey, '{"access_token":"x"}');
+          secure.shouldThrowOnRead = true;
+
+          expect(await wrapper.readSavedSession(), isA<SavedSessionUnknown>());
+        },
+      );
+    });
   });
 }

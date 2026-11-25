@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
@@ -60,6 +61,12 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [signOut] throws an exception
   bool shouldThrowOnSignOut = false;
+
+  /// Makes [readSavedSession] answer [SavedSessionUnknown], as when the
+  /// iPhone keychain is locked
+  bool shouldFailReadSavedSession = false;
+
+  SavedSessionRead _savedSession = const SavedSessionAbsent();
 
   /// Controls whether [select] throws an exception
   bool shouldThrowOnSelectMultiple = false;
@@ -443,9 +450,23 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
 
     _currentUser = null;
+    _savedSession = const SavedSessionAbsent();
     _authStateController.add(
       _createAuthState(supabase.AuthChangeEvent.signedOut, null),
     );
+  }
+
+  /// Saves [value] as the login session text that [readSavedSession] returns
+  /// until [signOut] removes it.
+  void seedSavedSession(String value) {
+    _savedSession = SavedSessionFound(value);
+  }
+
+  @override
+  Future<SavedSessionRead> readSavedSession() async {
+    _methodCalls.add({'method': 'readSavedSession'});
+    if (shouldFailReadSavedSession) return const SavedSessionUnknown();
+    return _savedSession;
   }
 
   @override
@@ -1233,6 +1254,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnVerifyOtp = false;
     shouldThrowOnResetPassword = false;
     shouldThrowOnSignOut = false;
+    shouldFailReadSavedSession = false;
+    _savedSession = const SavedSessionAbsent();
     shouldThrowOnSelect = false;
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
