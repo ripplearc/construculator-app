@@ -48,6 +48,69 @@ void main() {
       },
     );
   });
+  group('calculator_sessions table', () {
+    final table = schema.tables.singleWhere(
+      (table) => table.name == 'calculator_sessions',
+    );
+
+    test('stays on the phone and is never uploaded', () {
+      expect(table.localOnly, isTrue);
+    });
+
+    test('has the columns a history card reads, with their types, and is '
+        'indexed by when the tape was last banked', () {
+      expect(
+        {for (final column in table.columns) column.name: column.type},
+        {
+          'creator_user_id': ColumnType.text,
+          'title': ColumnType.text,
+          'result_text': ColumnType.text,
+          'result_value': ColumnType.real,
+          'result_dimension': ColumnType.text,
+          'result_unit': ColumnType.text,
+          'created_at': ColumnType.text,
+          'updated_at': ColumnType.text,
+          'last_calculation_at': ColumnType.text,
+        },
+      );
+      expect(
+        [
+          for (final index in table.indexes)
+            '${index.name}: ${index.columns.map((c) => c.column).join(',')}',
+        ],
+        ['by_recent: last_calculation_at'],
+      );
+    });
+  });
+  group('calculator_tapes table', () {
+    final table = schema.tables.singleWhere(
+      (table) => table.name == 'calculator_tapes',
+    );
+
+    test('stays on the phone and is never uploaded', () {
+      expect(table.localOnly, isTrue);
+    });
+
+    test('has the columns that keep a tape as JSON with its version, and is '
+        'indexed by session', () {
+      expect(
+        {for (final column in table.columns) column.name: column.type},
+        {
+          'session_id': ColumnType.text,
+          'computation': ColumnType.text,
+          'schema_version': ColumnType.integer,
+          'created_at': ColumnType.text,
+        },
+      );
+      expect(
+        [
+          for (final index in table.indexes)
+            '${index.name}: ${index.columns.map((c) => c.column).join(',')}',
+        ],
+        ['by_session: session_id'],
+      );
+    });
+  });
   group('cost_item_refusals table', () {
     final table = schema.tables.singleWhere(
       (table) => table.name == 'cost_item_refusals',
