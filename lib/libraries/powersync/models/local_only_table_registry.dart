@@ -59,5 +59,9 @@ abstract final class LocalOnlyTableRegistry {
       tableName: DatabaseConstants.calculatorRecentsTable,
       policy: LocalOnlyTablePolicy.clearWhenUserChanges,
     ),
+    LocalOnlyTableRegistration(
+      tableName: DatabaseConstants.calculatorGroupOrderTable,
+      policy: LocalOnlyTablePolicy.clearWhenUserChanges,
+    ),
   ];
 }

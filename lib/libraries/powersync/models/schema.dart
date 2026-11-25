@@ -285,4 +285,14 @@ const Schema schema = Schema([
     Column.real('magnitude'),
     Column.text('unit'),
   ]),
+
+  // The order of the function-key groups set in View all (UX Design Doc
+  // Section 1.3, Appendix E "Stays on this phone"): one row per phone, the
+  // five group ids in order as a JSON list, local-only and never synced;
+  // each phone keeps its own keyboard order, and a different user signing
+  // in starts from the default again.
+  Table.localOnly('calculator_group_order', [
+    Column.text('group_order'),
+    Column.text('updated_at'),
+  ]),
 ]);
