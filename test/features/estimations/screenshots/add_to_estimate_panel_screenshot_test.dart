@@ -88,7 +88,7 @@ void main() {
     });
 
     testWidgets('ready, estimate total not known', (tester) async {
-      await pumpPanel(tester, theme, estimateTotal: null);
+      await pumpPanel(tester, theme, estimateName: '', estimateTotal: null);
       await expectGolden(tester, 'ready_total_not_known', suffix);
     });
 
@@ -100,6 +100,7 @@ void main() {
         theme,
         lineTotal: 605,
         deliveryFee: 85,
+        estimateName: '',
         estimateTotal: null,
       );
       await expectGolden(tester, 'ready_with_delivery_total_not_known', suffix);
