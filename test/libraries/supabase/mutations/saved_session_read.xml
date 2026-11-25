@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SAVED SESSION READ MUTATION TESTING (is a saved value a session) -->
+
+    <files>
+        <file>lib/libraries/supabase/data/saved_session_read.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*///.*$" dotAll="false"/>
+        <regex pattern="^\s*//.*$" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="bool get isReadableSession =&gt; _session != null;" dotAll="true" id="readable.inverted">
+            <mutation text="bool get isReadableSession =&gt; _session == null;"/>
+        </regex>
+        <regex pattern="String\? get userId =&gt; _session\?\.user\.id;" dotAll="true" id="user_id.always_null">
+            <mutation text="String? get userId =&gt; null;"/>
+        </regex>
+        <regex pattern="String\? get accessToken =&gt; _session\?\.accessToken;" dotAll="true" id="access_token.always_null">
+            <mutation text="String? get accessToken =&gt; null;"/>
+        </regex>
+        <regex pattern="\} on Object \{" dotAll="true" id="parse.catch_only_format_errors">
+            <mutation text="} on FormatException {"/>
+        </regex>
+        <regex pattern="bool\? get stringify =&gt; false;" dotAll="true" id="stringify.on">
+            <mutation text="bool? get stringify =&gt; true;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="saved_session_read" expected-return="0">flutter test test/libraries/supabase/units/saved_session_read_test.dart test/libraries/supabase/units/secure_session_local_storage_test.dart</command>
+    </commands>
+</mutations>

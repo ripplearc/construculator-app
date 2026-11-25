@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- START-UP RECOVERY MUTATION TESTING (what a crash left on the phone: critical path) -->
+
+    <files>
+        <file>lib/libraries/auth/check/start_up_recovery.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*///.*$" dotAll="false"/>
+        <regex pattern="^\s*//.*$" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(record == null\) return;" dotAll="true" id="record.none.guard_inverted">
+            <mutation text="if (record != null) return;"/>
+        </regex>
+        <regex pattern="if \(pendingDelete == null\) \{" dotAll="true" id="flag.none.inverted">
+            <mutation text="if (pendingDelete != null) {"/>
+        </regex>
+        <regex pattern="await _saveMissingSignOutDate\(run, record, saved\);" dotAll="true" id="date.save_skipped_for_no_flag">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isLogoutWithSavedSession\(pendingDelete, saved\)\) \{" dotAll="true" id="logout.saved_inverted">
+            <mutation text="if (!_isLogoutWithSavedSession(pendingDelete, saved)) {"/>
+        </regex>
+        <regex pattern="isFirstAttempt: isFirstAttempt," dotAll="true" id="logout.first_attempt_always">
+            <mutation text="isFirstAttempt: true,"/>
+        </regex>
+        <regex pattern="arrivingUserId: _arrivingUserWithSavedSession\(pendingDelete, saved\)," dotAll="true" id="arrival.user_never_passed">
+            <mutation text="arrivingUserId: null,"/>
+        </regex>
+        <regex pattern="case SavedSessionFound\(isReadableSession: true\):" dotAll="true" id="first_event.readable_inverted">
+            <mutation text="case SavedSessionFound(isReadableSession: false):"/>
+        </regex>
+        <regex pattern="if \(_wrapper\.currentSession != null\) return false;" dotAll="true" id="first_event.session_guard_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_wrapper\.currentSession != null\) return false;" dotAll="true" id="first_event.session_guard_inverted">
+            <mutation text="if (_wrapper.currentSession == null) return false;"/>
+        </regex>
+        <regex pattern="await run\.step\(_wrapper\.removeSavedSession\);" dotAll="true" id="first_event.removal_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(record != null\) \{\s*await _saveMissingSignOutDate\(" dotAll="true" id="first_event.record_guard_inverted">
+            <mutation text="if (record == null) {
+          await _saveMissingSignOutDate("/>
+        </regex>
+        <regex pattern="return true;" dotAll="true" id="first_event.removed_flag_false">
+            <mutation text="return false;"/>
+        </regex>
+        <regex pattern="case _:\s*return false;" dotAll="true" id="first_event.nothing_removed_true">
+            <mutation text="case _:
+        return true;"/>
+        </regex>
+        <regex pattern="OwnerRecordUnknown\(\) =&gt; throw const OwnerRecordUnreadableException\(\)," dotAll="true" id="read.owner_unknown_ignored">
+            <mutation text="OwnerRecordUnknown() =&gt; null,"/>
+        </regex>
+        <regex pattern="if \(saved is SavedSessionUnknown\) \{\s*throw const SavedSessionUnreadableException\(\);\s*\}\s*return saved;" dotAll="true" id="read.session_unknown_ignored">
+            <mutation text="return saved;"/>
+        </regex>
+        <regex pattern="saved is! SavedSessionAbsent \|\|" dotAll="true" id="date.absent_check_inverted">
+            <mutation text="saved is SavedSessionAbsent ||"/>
+        </regex>
+        <regex pattern="record\.pendingDelete != null \|\|" dotAll="true" id="date.flag_guard_inverted">
+            <mutation text="record.pendingDelete == null ||"/>
+        </regex>
+        <regex pattern="record\.signOutDate != null\) \{" dotAll="true" id="date.earlier_date_overwritten">
+            <mutation text="record.signOutDate == null) {"/>
+        </regex>
+        <regex pattern="signOutDate: _clock\.now\(\)" dotAll="true" id="date.not_today">
+            <mutation text="signOutDate: null"/>
+        </regex>
+        <regex pattern="userId: record\.userId," dotAll="true" id="date.wrong_user">
+            <mutation text="userId: 'mutant',"/>
+        </regex>
+        <regex pattern="_didSignOut &amp;&amp; currentToken == null" dotAll="true" id="sign_out.leftover_or">
+            <mutation text="_didSignOut || currentToken == null"/>
+        </regex>
+        <regex pattern="_didSignOut &amp;&amp; currentToken == null" dotAll="true" id="sign_out.leftover_ignores_own_sign_out">
+            <mutation text="currentToken == null"/>
+        </regex>
+        <regex pattern="if \(isFirstAttempt &amp;&amp; currentToken != null\) \{" dotAll="true" id="sign_out.retry_may_sign_out">
+            <mutation text="if (currentToken != null) {"/>
+        </regex>
+        <regex pattern="if \(isFirstAttempt &amp;&amp; currentToken != null\) \{" dotAll="true" id="sign_out.first_attempt_without_session">
+            <mutation text="if (isFirstAttempt &amp;&amp; currentToken == null) {"/>
+        </regex>
+        <regex pattern="if \(currentToken != saved\.accessToken\) return;" dotAll="true" id="sign_out.other_session_check_removed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(currentToken != saved\.accessToken\) return;" dotAll="true" id="sign_out.other_session_check_inverted">
+            <mutation text="if (currentToken == saved.accessToken) return;"/>
+        </regex>
+        <regex pattern="await _signOut\(run\);" dotAll="true" id="sign_out.skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\} else if \(!isLeftoverOfOwnSignOut\) \{" dotAll="true" id="sign_out.leftover_branch_inverted">
+            <mutation text="} else if (isLeftoverOfOwnSignOut) {"/>
+        </regex>
+        <regex pattern="await run\.step\(\(\) =&gt; _untilSavedSessionRemoved\(run\)\);" dotAll="true" id="sign_out.wait_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await run\.step\(_deleteService\.deleteLocalData\);" dotAll="true" id="sign_out.delete_skipped">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_didSignOut = true;" dotAll="true" id="sign_out.did_sign_out_not_set">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="on QueueTimeoutException \{\s*rethrow;\s*\}" dotAll="true" id="sign_out.timeout_swallowed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_wrapper\.currentSession != null\) rethrow;" dotAll="true" id="sign_out.server_error_always_swallowed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="while \(run\.isCurrent\) \{" dotAll="true" id="wait.loop_ignores_run">
+            <mutation text="while (true) {"/>
+        </regex>
+        <regex pattern="if \(saved is SavedSessionUnknown\) \{\s*throw const SavedSessionUnreadableException\(\);\s*\}\s*if \(saved is SavedSessionAbsent\) return;" dotAll="true" id="wait.unknown_read_polls_on">
+            <mutation text="if (saved is SavedSessionAbsent) return;"/>
+        </regex>
+        <regex pattern="if \(saved is SavedSessionAbsent\) return;" dotAll="true" id="wait.never_ends">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="flag\.kind == PendingDeleteKind\.logoutOrNoOwnerRecord &amp;&amp;" dotAll="true" id="flag.logout_kind_inverted">
+            <mutation text="flag.kind != PendingDeleteKind.logoutOrNoOwnerRecord &amp;&amp;"/>
+        </regex>
+        <regex pattern="saved is SavedSessionFound &amp;&amp;\s*saved\.isReadableSession;" dotAll="true" id="flag.readable_check_removed">
+            <mutation text="saved is SavedSessionFound;"/>
+        </regex>
+        <regex pattern="saved is SavedSessionFound &amp;&amp;\s*saved\.isReadableSession;" dotAll="true" id="flag.saved_check_inverted">
+            <mutation text="saved is! SavedSessionFound &amp;&amp; saved.isReadableSession;"/>
+        </regex>
+        <regex pattern="arrivingUserId == null \|\| saved is! SavedSessionFound" dotAll="true" id="arrival.no_flag_user_allowed">
+            <mutation text="arrivingUserId != null || saved is! SavedSessionFound"/>
+        </regex>
+        <regex pattern="saved is! SavedSessionFound\) return null;" dotAll="true" id="arrival.saved_check_inverted">
+            <mutation text="saved is SavedSessionFound) return null;"/>
+        </regex>
+        <regex pattern="return saved\.userId == arrivingUserId \? arrivingUserId : null;" dotAll="true" id="arrival.other_user_accepted">
+            <mutation text="return arrivingUserId;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="start_up_recovery" expected-return="0">flutter test test/libraries/auth/units/check/start_up_recovery_test.dart test/libraries/auth/units/check/start_up_recovery_crash_test.dart test/libraries/auth/units/check/auth_event_service_test.dart</command>
+    </commands>
+</mutations>
