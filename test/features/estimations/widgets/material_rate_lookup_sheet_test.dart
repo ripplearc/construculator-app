@@ -455,10 +455,9 @@ void main() {
       final heading = find.text(l10n.yourRatesName.toUpperCase());
       expect(heading, findsOneWidget);
       expect(
-        tester.getTopLeft(heading).dy,
-        lessThan(
-          tester.getTopLeft(find.byKey(const Key('your_rates_load_error'))).dy,
-        ),
+        tester.getTopLeft(find.byKey(const Key('your_rates_load_error'))).dy -
+            tester.getBottomLeft(heading).dy,
+        CoreSpacing.space2 + CoreSpacing.space1,
       );
     });
 

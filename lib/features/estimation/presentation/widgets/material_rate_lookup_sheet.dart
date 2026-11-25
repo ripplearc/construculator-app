@@ -173,7 +173,9 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                           ),
                         if (hasReadError)
                           Padding(
-                            padding: _textInset,
+                            padding: _textInset.copyWith(
+                              top: CoreSpacing.space1,
+                            ),
                             child: CoreInlineErrorRow(
                               key: const Key('your_rates_load_error'),
                               message: l10n.yourRatesLoadError,
