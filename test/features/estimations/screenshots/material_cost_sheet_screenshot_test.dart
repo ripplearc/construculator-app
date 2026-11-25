@@ -238,7 +238,7 @@ void main() {
       await openSheet(tester, theme, size: size);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '25');
-      await pickUnit(tester, Unit.liters);
+      await pickUnit(tester, Unit.gallons);
       await enter(tester, 'material_rate_field', '14.75');
       await tester.tap(find.text('New material cost'));
       await tester.pumpAndSettle();

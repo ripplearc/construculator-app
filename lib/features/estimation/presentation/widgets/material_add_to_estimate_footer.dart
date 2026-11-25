@@ -122,7 +122,9 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
                   }),
                   onConfirmPressed: submit,
                   clearLabel: session.putBackLabel,
-                  confirmLabel: l10n.addToEstimateButton,
+                  confirmLabel: data.isEditingExistingLine
+                      ? l10n.saveThisLineButton
+                      : l10n.addToEstimateButton,
                   isConfirmEnabled: blocker == null && !isSubmitting,
                 ),
         );

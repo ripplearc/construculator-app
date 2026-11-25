@@ -135,6 +135,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The first back with the number pad up only closes the pad, as the
+  /// storyboard's CUJ 4 closing rules ask.
+  Future<void> closeNumberPad(WidgetTester tester) => tapBack(tester);
+
   Future<MaterialCostItem> storedLine() async {
     final items = await Modular.get<CostItemRepository>()
         .getCostItemsForEstimate('estimate-1');
@@ -243,6 +247,7 @@ void main() {
       await openEditSheet(tester);
       await enter(tester, 'material_quantity_field', '7');
 
+      await closeNumberPad(tester);
       await tapBack(tester);
 
       expect(find.text(l10n.discardChangesDialogTitle), findsOneWidget);
@@ -258,6 +263,7 @@ void main() {
     ) async {
       await openEditSheet(tester);
       await enter(tester, 'material_quantity_field', '7');
+      await closeNumberPad(tester);
       await tapBack(tester);
 
       await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
@@ -283,7 +289,7 @@ void main() {
       await openEditSheet(tester);
       await enter(tester, 'material_quantity_field', '7');
 
-      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
       await tester.pumpAndSettle();
 
       final line = await storedLine();
@@ -292,6 +298,20 @@ void main() {
       expect(line.rateStatus, RateStatus.ownRateConfirmed);
       expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
       expect(find.byType(SheetHeader), findsNothing);
+    });
+
+    testWidgets('names the pad\'s confirm key Save this line', (tester) async {
+      await openEditSheet(tester);
+
+      await tester.tap(find.byKey(const Key('material_quantity_field')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<CoreNumberKeypad>(find.byType(CoreNumberKeypad))
+            .confirmLabel,
+        l10n.saveThisLineButton,
+      );
     });
 
     group('deleting the line', () {
@@ -402,7 +422,7 @@ void main() {
         await enter(tester, 'material_quantity_field', '7');
         fakeSupabase.shouldThrowOnUpdate = true;
 
-        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.saveLineFailedError), findsOneWidget);

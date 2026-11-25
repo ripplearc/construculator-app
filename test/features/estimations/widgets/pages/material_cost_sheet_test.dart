@@ -715,7 +715,7 @@ void main() {
       expect(numberPad, findsNothing);
       expect(quantityText(tester), '25');
       expect(find.byKey(AddToEstimateFooter.buttonKey), findsOneWidget);
-      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+      expect(database.executeCalls, isEmpty);
     });
 
     testWidgets('a tap on the pinned card closes the pad and keeps the '
@@ -762,7 +762,7 @@ void main() {
       await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
       await tester.pumpAndSettle();
 
-      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(database.rows, hasLength(1));
       expect(find.byType(CostItemFormScreen), findsNothing);
     });
 

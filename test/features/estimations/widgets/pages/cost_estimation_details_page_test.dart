@@ -2279,7 +2279,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
@@ -2330,7 +2330,7 @@ void main() {
         fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
         fakeSupabase.updateErrorMessage = 'Connection failed';
 
-        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
         await tester.pump();
         await tester.tapAt(const Offset(200, 20));
         await tester.pumpAndSettle();
