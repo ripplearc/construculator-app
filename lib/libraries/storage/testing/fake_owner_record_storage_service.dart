@@ -16,6 +16,13 @@ class FakeOwnerRecordStorageService implements OwnerRecordStorageService {
   /// When true, [remove] throws.
   bool shouldThrowOnRemove = false;
 
+  /// Called at the end of every [read], so a test can change the world between
+  /// two steps of the code under test.
+  void Function()? afterRead;
+
+  /// Called with the record at the end of every successful [write].
+  void Function(OwnerRecord record)? afterWrite;
+
   /// Every record passed to a successful [write], in order.
   final List<OwnerRecord> writes = [];
 
@@ -35,17 +42,23 @@ class FakeOwnerRecordStorageService implements OwnerRecordStorageService {
     shouldThrowOnWrite = false;
     shouldThrowOnRemove = false;
     writes.clear();
+    afterRead = null;
+    afterWrite = null;
   }
 
   @override
-  Future<OwnerRecordRead> read() async =>
-      shouldReadUnknown ? const OwnerRecordUnknown() : _current;
+  Future<OwnerRecordRead> read() async {
+    final result = shouldReadUnknown ? const OwnerRecordUnknown() : _current;
+    afterRead?.call();
+    return result;
+  }
 
   @override
   Future<void> write(OwnerRecord record) async {
     if (shouldThrowOnWrite) throw Exception('write failed');
     _current = OwnerRecordFound(record);
     writes.add(record);
+    afterWrite?.call(record);
   }
 
   @override

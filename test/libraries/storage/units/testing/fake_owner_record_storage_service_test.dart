@@ -33,6 +33,47 @@ void main() {
       expect(fake.writes, [userOne, userTwo]);
     });
 
+    test('afterRead runs once the read has its answer', () async {
+      fake.seed(userOne);
+      final seen = <OwnerRecord?>[];
+      fake.afterRead = () => seen.add(fake.record);
+
+      await fake.read();
+
+      expect(seen, [userOne]);
+    });
+
+    test('afterWrite gets the written record after it is stored', () async {
+      final seen = <OwnerRecord?>[];
+      fake.afterWrite = (record) => seen.add(fake.record);
+
+      await fake.write(userOne);
+
+      expect(seen, [userOne]);
+    });
+
+    test('afterWrite is not called when the write throws', () async {
+      var calls = 0;
+      fake.afterWrite = (_) => calls++;
+      fake.shouldThrowOnWrite = true;
+
+      await expectLater(fake.write(userOne), throwsException);
+
+      expect(calls, 0);
+    });
+
+    test('reset clears afterRead and afterWrite', () async {
+      var calls = 0;
+      fake.afterRead = () => calls++;
+      fake.afterWrite = (_) => calls++;
+
+      fake.reset();
+      await fake.read();
+      await fake.write(userOne);
+
+      expect(calls, 0);
+    });
+
     test('seed puts a record in place without recording a write', () async {
       fake.seed(userOne);
 

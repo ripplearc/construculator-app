@@ -387,6 +387,172 @@ void main() {
       expect(check.activeModuleUserId, 'user-a');
     });
 
+    test(
+      'a failed check for the user already connected blocks the state',
+      () async {
+        final firstFinished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-a')),
+        );
+        signIn('user-a');
+        await firstFinished;
+        ownerRecords.shouldReadUnknown = true;
+        final blocked = expectLater(
+          state.changes,
+          emitsThrough(const Blocked('user-a')),
+        );
+
+        signIn('user-a', event: supabase.AuthChangeEvent.passwordRecovery);
+        await blocked;
+      },
+    );
+
+    test('an event for a user that arrives while another user is being '
+        'checked leaves the settling to the newest event', () async {
+      ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+      powerSync.connectGate = Completer<void>();
+      final seen = <CheckState>[];
+      final subscription = state.changes.listen(seen.add);
+      final finished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-b')),
+      );
+
+      signIn('user-a', event: supabase.AuthChangeEvent.initialSession);
+      signIn('user-b');
+      powerSync.connectGate?.complete();
+      await finished;
+      await subscription.cancel();
+
+      expect(seen, [const Checking(), const FinishedFor('user-b')]);
+    });
+
+    test('an event for the same user whose module was removed goes back to '
+        'checking and adds the module again', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      sessionService.endSession();
+      final again = expectLater(
+        state.changes,
+        emitsInOrder([
+          const FinishedFor('user-a'),
+          const Checking(),
+          const FinishedFor('user-a'),
+        ]),
+      );
+
+      signIn('user-a', event: supabase.AuthChangeEvent.tokenRefreshed);
+      await again;
+
+      expect(sessionService.isActive, isTrue);
+    });
+
+    test('a sign-out does not disconnect PowerSync the way a different '
+        'user does', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      final signedOut = expectLater(
+        state.changes,
+        emitsThrough(const FinishedNobodySignedIn()),
+      );
+
+      wrapper.setCurrentUser(null);
+      await signedOut;
+
+      expect(powerSync.disconnectKeepingDataCallCount, 0);
+    });
+
+    test('an unreadable owner record does not block a token renewal for the '
+        'connected user', () async {
+      final firstFinished = expectLater(
+        state.changes,
+        emitsThrough(const FinishedFor('user-a')),
+      );
+      signIn('user-a');
+      await firstFinished;
+      ownerRecords.shouldReadUnknown = true;
+
+      signIn('user-a', event: supabase.AuthChangeEvent.tokenRefreshed);
+      await queue.enqueue(
+        eventNumber: queue.numberNextEvent(),
+        item: (run) async {},
+        settle: (outcome) async {},
+      );
+
+      expect(state.value, const FinishedFor('user-a'));
+    });
+
+    test(
+      'an event for another user that is dropped because the session flipped '
+      'back leaves the first user connected again',
+      () async {
+        final firstFinished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-a')),
+        );
+        signIn('user-a');
+        await firstFinished;
+        ownerRecords.afterRead = () {
+          ownerRecords.afterRead = null;
+          wrapper.setCurrentUser(user('user-a'));
+        };
+        final settledAgain = expectLater(
+          state.changes,
+          emitsInOrder([
+            const FinishedFor('user-a'),
+            const Checking(),
+            const FinishedFor('user-a'),
+          ]),
+        );
+
+        signIn('user-b');
+        await settledAgain;
+
+        expect(powerSync.disconnectKeepingDataCallCount, 1);
+        expect(powerSync.connectCallCount, 2);
+      },
+    );
+
+    test(
+      'an event with the same user and token but another kind is handled',
+      () async {
+        final firstFinished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-a')),
+        );
+        signIn('user-a');
+        await firstFinished;
+
+        signIn('user-a', event: supabase.AuthChangeEvent.userUpdated);
+        await queue.enqueue(
+          eventNumber: queue.numberNextEvent(),
+          item: (run) async {},
+          settle: (outcome) async {},
+        );
+
+        expect(queue.newestEventNumber, 3);
+      },
+    );
+
+    test('once disposed it handles no more events', () async {
+      service.dispose();
+      final delivered = wrapper.onAuthStateChange.first;
+
+      signIn('user-a');
+      await delivered;
+
+      expect(queue.newestEventNumber, 0);
+      expect(state.value, const Checking());
+    });
+
     test('a failed check blocks the state for the signed-in user', () async {
       ownerRecords.shouldReadUnknown = true;
       final blocked = expectLater(

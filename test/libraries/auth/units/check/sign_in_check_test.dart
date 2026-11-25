@@ -44,6 +44,26 @@ void main() {
     if (error != null) throw error!;
   }
 
+  Future<void> runClearAfterSignOut() => queue.enqueue(
+    eventNumber: queue.numberNextEvent(),
+    item: check.clearAfterSignOut,
+    settle: (outcome) async {},
+  );
+
+  void afterNextOwnerRecordRead(void Function() action) {
+    ownerRecords.afterRead = () {
+      ownerRecords.afterRead = null;
+      action();
+    };
+  }
+
+  void afterNextOwnerRecordWrite(void Function() action) {
+    ownerRecords.afterWrite = (_) {
+      ownerRecords.afterWrite = null;
+      action();
+    };
+  }
+
   setUp(() {
     ownerRecords = FakeOwnerRecordStorageService();
     syncedData = FakeSyncedDataService();
@@ -88,6 +108,7 @@ void main() {
           expect(powerSync.connectCallCount, 1);
           expect(check.activeModuleUserId, 'user-a');
           expect(syncedData.deleteCallCount, 0);
+          expect(sessionService.endCount, 0);
         },
       );
 
@@ -134,9 +155,69 @@ void main() {
 
       await runCheck('user-a');
 
+      expect(sessionService.endCount, 1);
       expect(sessionService.isActive, isTrue);
       expect(check.activeModuleUserId, 'user-a');
       expect(powerSync.connectCallCount, 2);
+    });
+
+    group('connection state', () {
+      test('nothing is connected before any check ran', () {
+        sessionService.startSession();
+
+        expect(check.activeModuleUserId, isNull);
+      });
+
+      test(
+        'stopping sync keeps the rows and says nothing is connected',
+        () async {
+          ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+          await runCheck('user-a');
+
+          await check.stopSyncing();
+
+          expect(powerSync.disconnectKeepingDataCallCount, 1);
+          expect(check.activeModuleUserId, isNull);
+        },
+      );
+
+      test('clearing after a sign-out clears PowerSync and says nothing is '
+          'connected', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        await runCheck('user-a');
+
+        await queue.enqueue(
+          eventNumber: queue.numberNextEvent(),
+          item: check.clearAfterSignOut,
+          settle: (outcome) async {},
+        );
+
+        expect(powerSync.clearCallCount, 1);
+        expect(check.activeModuleUserId, isNull);
+      });
+
+      test('while a new user connects nobody counts as connected', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        await runCheck('user-a');
+        ownerRecords.seed(OwnerRecord(userId: 'user-old'));
+        wrapper.setCurrentUser(user('user-b'));
+        final connecting = Completer<void>();
+        powerSync.connectGate = connecting;
+        final connectStarted = Completer<void>();
+        String? connectedWhileConnecting = 'unset';
+        powerSync.onConnect = () {
+          connectedWhileConnecting = check.activeModuleUserId;
+          connectStarted.complete();
+        };
+
+        final run = runCheck('user-b', isFreshSignIn: true);
+        await connectStarted.future;
+        connecting.complete();
+        await run;
+
+        expect(connectedWhileConnecting, isNull);
+        expect(check.activeModuleUserId, 'user-b');
+      });
     });
 
     group('different user from the owner record', () {
@@ -262,6 +343,7 @@ void main() {
 
         await runCheck('user-a', isFreshSignIn: true);
 
+        expect(syncedData.deleteCallCount, 2);
         expect(ownerRecords.record, OwnerRecord(userId: 'user-a'));
         expect(sessionService.isActive, isTrue);
       });
@@ -332,6 +414,69 @@ void main() {
       });
     });
 
+    group('the module and PowerSync state', () {
+      test('no module is active while PowerSync is still connecting', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        String? activeWhileConnecting = 'unset';
+        powerSync.onConnect = () =>
+            activeWhileConnecting = check.activeModuleUserId;
+
+        await runCheck('user-a');
+
+        expect(activeWhileConnecting, isNull);
+        expect(check.activeModuleUserId, 'user-a');
+      });
+
+      test('after a sign-out clear no module is active, the session module '
+          'stays and the same user gets PowerSync back without a new '
+          'session', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        await runCheck('user-a');
+
+        await runClearAfterSignOut();
+
+        expect(powerSync.clearCallCount, 1);
+        expect(check.activeModuleUserId, isNull);
+        expect(sessionService.isActive, isTrue);
+
+        await runCheck('user-a');
+
+        expect(check.activeModuleUserId, 'user-a');
+        expect(powerSync.connectCallCount, 2);
+        expect(sessionService.startCount, 1);
+        expect(sessionService.endCount, 0);
+      });
+
+      test('an owner record for another user while the module is added '
+          'deletes and takes over without resetting the identity', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        await runCheck('user-a');
+        ownerRecords.seed(OwnerRecord(userId: 'user-old'));
+
+        await runCheck('user-a', isFreshSignIn: true);
+
+        expect(syncedData.deleteCallCount, 1);
+        expect(ownerRecords.record, OwnerRecord(userId: 'user-a'));
+        expect(identityResets, 0);
+        expect(sessionService.endCount, 0);
+      });
+
+      test('a connect that failed for one user leaves no trace of that user '
+          'for the next one', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        powerSync.shouldThrowOnConnect = true;
+        await expectLater(runCheck('user-a'), throwsA(isA<StateError>()));
+        powerSync.shouldThrowOnConnect = false;
+        ownerRecords.seed(OwnerRecord(userId: 'user-old'));
+        wrapper.setCurrentUser(user('user-b'));
+
+        await runCheck('user-b');
+
+        expect(identityResets, 0);
+        expect(check.activeModuleUserId, 'user-b');
+      });
+    });
+
     group('the session changed while the check ran', () {
       test('does nothing when the user signed out before the delete', () async {
         ownerRecords.seed(OwnerRecord(userId: 'user-old'));
@@ -350,6 +495,110 @@ void main() {
         await runCheck('user-a');
 
         expect(syncedData.deleteCallCount, 0);
+        expect(powerSync.connectCallCount, 0);
+      });
+
+      test('does nothing when the user signs out after the owner record is '
+          'read, before a leftover delete', () async {
+        ownerRecords.seed(
+          OwnerRecord(
+            userId: 'user-old',
+            pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),
+          ),
+        );
+        afterNextOwnerRecordRead(() => wrapper.setCurrentUser(null));
+
+        await runCheck('user-a', isFreshSignIn: true);
+
+        expect(syncedData.deleteCallCount, 0);
+        expect(sessionService.isActive, isFalse);
+      });
+
+      test('does nothing when the user signs out after the owner record is '
+          'read, for the same user', () async {
+        ownerRecords.seed(
+          OwnerRecord(userId: 'user-a', signOutDate: DateTime.utc(2026, 11, 1)),
+        );
+        afterNextOwnerRecordRead(() => wrapper.setCurrentUser(null));
+
+        await runCheck('user-a');
+
+        expect(ownerRecords.writes, isEmpty);
+        expect(powerSync.connectCallCount, 0);
+        expect(sessionService.isActive, isFalse);
+      });
+
+      test('does nothing when the user signs out between the sign-out date '
+          'removal and the module', () async {
+        ownerRecords.seed(
+          OwnerRecord(userId: 'user-a', signOutDate: DateTime.utc(2026, 11, 1)),
+        );
+        afterNextOwnerRecordWrite(() => wrapper.setCurrentUser(null));
+
+        await runCheck('user-a');
+
+        expect(ownerRecords.writes, [OwnerRecord(userId: 'user-a')]);
+        expect(powerSync.connectCallCount, 0);
+        expect(sessionService.isActive, isFalse);
+        expect(check.activeModuleUserId, isNull);
+      });
+
+      test('does nothing when the user signs out after the delete, before the '
+          'identity reset and the module', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        await runCheck('user-a');
+        ownerRecords.seed(OwnerRecord(userId: 'user-old'));
+        wrapper.setCurrentUser(user('user-b'));
+        syncedData.afterDelete = () {
+          syncedData.afterDelete = null;
+          wrapper.setCurrentUser(null);
+        };
+
+        await runCheck('user-b');
+
+        expect(syncedData.deleteCallCount, 1);
+        expect(identityResets, 0);
+        expect(powerSync.connectCallCount, 1);
+        expect(check.activeModuleUserId, 'user-a');
+      });
+
+      test('a restored session with no owner record is left alone when the '
+          'user signs out after the record is read', () async {
+        afterNextOwnerRecordRead(() => wrapper.setCurrentUser(null));
+
+        await runCheck('user-a');
+
+        expect(ownerRecords.writes, isEmpty);
+      });
+
+      test('a restored session with no owner record is not signed out when '
+          'another user signs in after the flag is written', () async {
+        afterNextOwnerRecordWrite(() => wrapper.setCurrentUser(user('user-b')));
+
+        await runCheck('user-a');
+
+        expect(ownerRecords.writes, hasLength(1));
+        expect(wrapper.currentSession?.user.id, 'user-b');
+      });
+
+      test('does nothing when the run timed out before it started the '
+          'check', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-old'));
+
+        await queue.enqueue(
+          eventNumber: queue.numberNextEvent(),
+          item: (run) async {
+            await expectLater(
+              run.step(() => Completer<void>().future),
+              throwsA(isA<QueueTimeoutException>()),
+            );
+            await check.run(run, userId: 'user-a', isFreshSignIn: false);
+          },
+          settle: (outcome) async {},
+        );
+
+        expect(syncedData.deleteCallCount, 0);
+        expect(sessionService.isActive, isFalse);
         expect(powerSync.connectCallCount, 0);
       });
     });
