@@ -1,10 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
-import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/powersync_synced_data_service.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -32,33 +30,16 @@ void main() {
   });
 
   setUp(() {
-    (Modular.get<PowerSyncManager>() as Disposable).dispose();
     Modular.dispose<PowerSyncManager>();
     fakeSupabase.reset();
     fakeDatabase.reset();
   });
-
-  Future<void> settle() async {
-    await (Modular.get<PowerSyncManager>() as PowerSyncManagerImpl)
-        .pendingOperations;
-  }
-
-  void signIn() {
-    fakeSupabase.setCurrentUser(
-      FakeUser(
-        id: 'user-1',
-        email: 'user@example.com',
-        createdAt: '2000-01-01T00:00:00.000Z',
-      ),
-    );
-  }
 
   group('PowerSyncSyncedDataService', () {
     test(
       'clears without touching local-only tables, even when not connected',
       () async {
         final service = buildService(Modular.get<PowerSyncManager>());
-        await settle();
 
         await service.deleteSyncedDataAndUnsentEdits();
 
@@ -68,9 +49,8 @@ void main() {
     );
 
     test('lets the manager connect again afterwards', () async {
-      signIn();
       final manager = Modular.get<PowerSyncManager>();
-      await settle();
+      await manager.connect();
       expect(fakeDatabase.connectCallCount, 1);
 
       await buildService(manager).deleteSyncedDataAndUnsentEdits();
@@ -82,9 +62,8 @@ void main() {
     test(
       'rethrows when the clear fails, and the next connect retries it',
       () async {
-        signIn();
         final manager = Modular.get<PowerSyncManager>();
-        await settle();
+        await manager.connect();
         fakeDatabase.disconnectAndClearError = Exception('disk error');
 
         await expectLater(

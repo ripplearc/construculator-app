@@ -86,6 +86,7 @@ void main() {
     supabase = bootstrap.supabaseWrapper as FakeSupabaseWrapper;
     Modular.init(_TestModule(bootstrap));
     final ownerRecords = FakeOwnerRecordStorageService();
+    final powerSync = FakePowerSyncManager();
     // ignore: no_direct_instantiation, reason: the check under test runs on fakes and the real session
     signInCheck = SignInCheck(
       ownerRecords: ownerRecords,
@@ -98,7 +99,7 @@ void main() {
         registrations: const [],
       ),
       sessionService: sessionService,
-      powerSync: FakePowerSyncManager(),
+      powerSync: powerSync,
       wrapper: supabase,
       resetIdentity: () async {},
     );

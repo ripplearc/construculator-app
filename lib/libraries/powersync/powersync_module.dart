@@ -35,16 +35,8 @@ class PowerSyncModule extends Module {
       () => PowerSyncDatabaseWrapperImpl(database: i()),
     );
 
-    // Eager singleton: instantiated when the module is committed at app
-    // startup (see auto_injector's startSingletons), so the manager immediately
-    // subscribes to auth changes and drives connect/disconnect over the app's
-    // lifetime — without any caller needing to resolve it explicitly.
     i.addSingleton<PowerSyncManager>(
-      () => PowerSyncManagerImpl(
-        database: i(),
-        connector: i(),
-        supabaseWrapper: appBootstrap.supabaseWrapper,
-      ),
+      () => PowerSyncManagerImpl(database: i(), connector: i()),
     );
   }
 }

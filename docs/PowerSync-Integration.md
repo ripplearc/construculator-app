@@ -64,7 +64,7 @@ Supabase Postgres  →  PowerSync Service  →  Flutter SDK (PowerSyncDatabase) 
 | [#364](https://github.com/ripplearc/construculator-app/pull/364) | CA-648 | `lib/libraries/powersync/data/open_powersync_database.dart`, `interfaces/powersync_manager.dart` + `powersync_manager_impl.dart` (auth-driven connect/disconnect), `powersync_module.dart` (adds the `PowerSyncDatabase` + `PowerSyncManager` binds), `powerSyncDatabase` threaded through `AppBootstrap` |
 
 On `main` today, `PowerSyncModule` binds `PowerSyncBackendConnector`, the opened
-`PowerSyncDatabase`, and `PowerSyncManager` (an eager singleton, via #364).
+`PowerSyncDatabase`, and `PowerSyncManager` (a singleton that connects and clears only when its caller asks).
 `PowerSyncDatabaseWrapper` is the one seam not yet on `main` — it arrives via #367 in the
 open stack below.
 
@@ -167,7 +167,7 @@ via #367, and the per-feature data sources land later still (#405 onward).
 
 | Layer | File | Owns |
 |---|---|---|
-| **Manager** | `powersync_manager.dart` / `powersync_manager_impl.dart` | Global connect/disconnect lifecycle, driven by auth events |
+| **Manager** | `powersync_manager.dart` / `powersync_manager_impl.dart` | Global connect/disconnect lifecycle, driven by the sign-in check |
 | **Wrapper** | `powersync_database_wrapper.dart` / `_impl.dart` | Per-call seam (`getAll`/`watch`/`execute`/`writeTransaction`/`syncStream`) returning plain `Map` rows — no PowerSync/sqlite types leak above this layer |
 | **Data source** | e.g. `powersync_cost_estimation_data_source_impl.dart` | Per-feature on-demand sync-stream activation, tied to `watch()` subscription lifetime |
 
@@ -200,10 +200,9 @@ returns at once for a stream that synced in an earlier session. For a stream tha
 never synced it waits, and with no signal that never ends, so callers bound the wait
 (`LocalYourRatesDataSource` waits up to 3 seconds, then reads what the phone holds).
 
-`PowerSyncManagerImpl` is registered with `addSingleton` (not lazy) specifically so it's
-instantiated eagerly at app start and begins listening to auth events without any caller
-needing to resolve it — nothing calls `.connect()`/`.disconnectAndClear()` on it directly
-from feature code; it drives itself. Everything else — `PowerSyncDatabase`,
+`PowerSyncManagerImpl` does not listen to auth events. `SignInCheck` calls `.connect()` once it
+has decided whose data is on the phone, and `AuthEventService` calls `.disconnect()` when an
+event arrives for a different user and `.disconnectAndClear()` after a sign-out. Everything else — `PowerSyncDatabase`,
 `PowerSyncDatabaseWrapper`, feature data sources — is a normal `addLazySingleton` consumer.
 
 **These two lifecycles are independent, layered on the same already-open database:** the
@@ -315,26 +314,21 @@ it clears whatever the connection state is, and throws when the clear fails, whe
 manager's state, so a later `connect()` works, and a failed clear is retried before that
 connect. Only `PowerSyncSyncedDataService` calls it.
 
-**No code calls `powerSyncManager.connect()` or `.disconnectAndClear()` directly from a
-sign-in/sign-out code path.** The integration is event-driven, via the Supabase auth
-stream:
+**Feature code never calls `powerSyncManager.connect()` or `.disconnectAndClear()`.** The
+sign-in check and the auth event service do, in this order for every Supabase auth event:
 
 1. `AuthManagerImpl.logout()` calls `SupabaseWrapper.signOut()` → the Supabase SDK's own
    `auth.signOut()`. `AuthManagerImpl` has no PowerSync awareness at all.
 2. That triggers `SupabaseWrapper.onAuthStateChange` to emit `AuthChangeEvent.signedOut`.
-3. **Two independent listeners** react to the same stream, each set up in its own
-   constructor, unaware of each other:
-   - `AuthManagerImpl._initAuthListener()` (merged, `main`) — updates the app's own
-     `AuthNotifierController` state.
-   - `PowerSyncManagerImpl._initAuthListener()` (PR #364) — on `signedIn`/`initialSession`
-     with a session → `connect()`. On `signedOut` → `disconnectAndClear()`. Token refreshes
-     and other events are ignored (the connector refreshes credentials on demand). If the
-     app launches with an already-restored session, `connect()` fires immediately at
-     construction rather than waiting for a fresh `signedIn` event.
+3. `AuthEventService` puts the event on the queue. An event with a session runs
+   `SignInCheck`, which compares the session's user with the owner record, then adds the
+   session module and calls `connect()`. An event with no session calls
+   `disconnectAndClear()`. An event for a different user than the connected one calls
+   `disconnect()` at once, before it joins the queue. The manager itself ignores the stream.
 
 **Sign-out with a different user on the same device:** `disconnectAndClear()` is called
-with `clearLocal: false`, which wipes the locally synced SQLite data on `signedOut`
-and keeps the `Table.localOnly` tables. The next `signedIn` for a different user triggers
+with `clearLocal: false`, which wipes the locally synced SQLite data after a sign-out
+and keeps the `Table.localOnly` tables. The next sign-in check for a different user triggers
 a fresh `connect()` and resync, so synced rows do not leak between users. Local-only rows
 do stay, which is why they are registered below. This wasn't independently tested
 end-to-end in this spike. It's a read of the implementation's intent, not a verified
