@@ -62,6 +62,41 @@ void main() {
 
   group('CalculatorPage – accessibility', () {
     testWidgets(
+      'the "Saved to history" card\'s Undo and View meet tap target and label '
+      'guidelines in both themes (S2b, CA-1091)',
+      (tester) async {
+        await setupA11yTest(tester);
+        for (final theme in [createTestTheme(), createTestThemeDark()]) {
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await tester.pumpAndSettle();
+          final bloc = BlocProvider.of<CalculatorBloc>(
+            tester.element(find.byType(CoreKeyboard)),
+          );
+          bloc.add(
+            CalculatorSessionBanked(
+              (const Tape().typeDigit('2') as TapeChanged).tape,
+            ),
+          );
+          await tester.pumpAndSettle();
+          for (final label in [
+            AppLocalizationsEn().calculatorUndoButton,
+            AppLocalizationsEn().calculatorViewHistoryButton,
+          ]) {
+            // the display area's own close button is 40 dp (CoreUI), as the
+            // close-button test above notes; the card's buttons are checked
+            // for their labels and their contrast
+            await expectMeetsTapTargetAndLabelGuidelines(
+              tester,
+              find.bySemanticsLabel(label),
+              checkTapTargetSize: false,
+              checkTextContrast: theme.brightness == Brightness.dark,
+            );
+          }
+        }
+      },
+    );
+
+    testWidgets(
       'close button meets label guidelines in both themes, and text contrast in dark',
       (tester) async {
         await setupA11yTest(tester);

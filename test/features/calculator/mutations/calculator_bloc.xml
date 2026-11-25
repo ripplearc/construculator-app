@@ -207,6 +207,23 @@
             <mutation text="toastsRaised: state.toastsRaised,"/>
         </regex>
 
+        <!-- S2b 2/2 (CA-1091): Undo leaves the tape as it is, View leaves
+             the display where it is, or the next key keeps the card -->
+        <regex pattern="emit\(state\.copyWith\(tape: banked, bankedTape: \(\) =&gt; null\)\);" dotAll="true" id="calculator_bloc.undo.tape_left">
+            <mutation text="emit(state.copyWith(bankedTape: () =&gt; null));"/>
+            <mutation text="emit(state.copyWith(tape: banked));"/>
+        </regex>
+        <regex pattern="historyStage: DisplayAreaStage\.fullScreen,\s*bankedTape: \(\) =&gt; null," dotAll="true" id="calculator_bloc.view.display_left">
+            <mutation text="bankedTape: () =&gt; null,"/>
+            <mutation text="historyStage: DisplayAreaStage.fullScreen,"/>
+        </regex>
+        <regex pattern="toastClosed: false,\s*sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null,\s*groupEditsNoticed:" dotAll="true" id="calculator_bloc.key.card_kept">
+            <mutation text="toastClosed: false, sizeNotAdded: false, groupEditsNoticed:"/>
+        </regex>
+        <regex pattern="refusedUnit: \(\) =&gt; unit,\s*toastClosed: false,\s*sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null," dotAll="true" id="calculator_bloc.refused_key.card_kept">
+            <mutation text="refusedUnit: () =&gt; unit, toastClosed: false, sizeNotAdded: false,"/>
+        </regex>
+
         <!-- RULE 20: C and a reset forget the order -->
         <regex pattern="currentGroupIndex: state\.currentGroupIndex,\s*groupOrder: state\.groupOrder," dotAll="true" id="calculator_bloc.cleared.order_forgotten">
             <mutation text="currentGroupIndex: state.currentGroupIndex, groupOrder: CalculatorGroupId.defaultOrder,"/>

@@ -540,7 +540,9 @@ class CalculatorLabelFormatter {
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
     CalculatorTypeNewFirstValueToast() => null,
-    CalculatorResultRemovedToast() || CalculatorEditingGroupToast() => null,
+    CalculatorResultRemovedToast() ||
+    CalculatorEditingGroupToast() ||
+    CalculatorSavedToHistoryToast() => null,
     CalculatorCannotAppendUnitToast(:final unit) =>
       l10n.calculatorToastCannotAppendTitle(unitName(unit)),
     CalculatorNeedsLengthToast(:final key, :final unit) =>
@@ -584,6 +586,23 @@ class CalculatorLabelFormatter {
   };
 
   /// The body of [toast], in the words of UX Design Doc Section 5.
+  /// The result named beside a card's message — "Calc 60ft²", or "Calc
+  /// 60ft² carried forward" (rule 4.9) — or `null` when the toast names
+  /// none.
+  String? toastHighlight(CalculatorToast toast) => switch (toast) {
+    CalculatorSavedToHistoryToast(
+      resultKey: final key?,
+      resultText: final text?,
+      :final carriedForward,
+    ) =>
+      carriedForward
+          ? l10n.calculatorToastSavedToHistoryCarriedForward(
+              '${displayLabel(key)} $text',
+            )
+          : '${displayLabel(key)} $text',
+    CalculatorToast() => null,
+  };
+
   String toastBody(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast(value: '') => l10n.calculatorToastValueEmptyBody,
     CalculatorFinishValueToast(:final value) =>
@@ -600,6 +619,7 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastResultsRemovedMore(displayLabel(first), more.length),
     CalculatorResultRemovedToast(keys: []) => '',
     CalculatorEditingGroupToast() => l10n.calculatorToastEditingGroup,
+    CalculatorSavedToHistoryToast() => l10n.calculatorToastSavedToHistory,
     CalculatorCannotAppendUnitToast(:final value, :final unit) =>
       l10n.calculatorToastCannotAppendBody(value, unitName(unit)),
     CalculatorNeedsLengthToast(:final unit) =>

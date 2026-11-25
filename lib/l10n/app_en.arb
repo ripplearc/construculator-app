@@ -4227,6 +4227,28 @@
       }
     }
   },
+  "calculatorToastSavedToHistory": "Saved to history",
+  "@calculatorToastSavedToHistory": {
+    "description": "The receipt card after a tape is banked to history, beside the result it took (UX Design Doc Section 1.7, term 2.19)"
+  },
+  "calculatorToastSavedToHistoryCarriedForward": "{result} carried forward",
+  "@calculatorToastSavedToHistoryCarriedForward": {
+    "description": "The result named on the receipt card when an operator after a result took it into the new tape (UX Design Doc rule 4.9)",
+    "placeholders": {
+      "result": {
+        "type": "String",
+        "example": "Calc 60ft²"
+      }
+    }
+  },
+  "calculatorUndoButton": "Undo",
+  "@calculatorUndoButton": {
+    "description": "The Undo action on the receipt card: brings the banked tape back (UX Design Doc Section 1.7)"
+  },
+  "calculatorViewHistoryButton": "View",
+  "@calculatorViewHistoryButton": {
+    "description": "The View action on the receipt card: opens history (UX Design Doc Section 1.7)"
+  },
   "calculatorToastEditingGroup": "Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.",
   "@calculatorToastEditingGroup": {
     "description": "Toast when a closed bracket is reopened on the calculator tape, shown the first three times only (UX Design Doc Section 5.6, 'Editing this group')"

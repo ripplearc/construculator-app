@@ -1020,6 +1020,78 @@ void main() {
     expect(faceOf(2), CoreCalculatorChipType.result);
   });
 
+  testWidgets('a banked tape shows the "Saved to history" card with its '
+      'result, Undo and View, with no timer; Undo brings the tape back and '
+      'View opens history full screen (Section 1.7, term 2.19; CA-1091)', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_three',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    final finished = bloc.state.tape;
+
+    bloc.add(CalculatorSessionBanked(finished));
+    await settle(tester);
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Calc 5', findRichText: true), findsOneWidget);
+    expect(
+      find.text(l10n.calculatorUndoButton, findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.calculatorViewHistoryButton, findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Toast>(find.byType(Toast)).duration,
+      isNull,
+      reason:
+          'the card has no timer: it stays until it is answered or the '
+          'next key (Section 1.7)',
+    );
+
+    await tester.tap(find.text(l10n.calculatorUndoButton, findRichText: true));
+    await settle(tester);
+    expect(bloc.state.tape, finished);
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsNothing,
+    );
+
+    bloc.add(CalculatorSessionBanked(finished));
+    await settle(tester);
+    await tester.tap(
+      find.text(l10n.calculatorViewHistoryButton, findRichText: true),
+    );
+    await settle(tester);
+    expect(bloc.state.historyStage, DisplayAreaStage.fullScreen);
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('a key that would leave the chip being typed or edited '
       'incomplete shows the "Finish this value first" Alert with the number '
       '(Section 5.5)', (tester) async {

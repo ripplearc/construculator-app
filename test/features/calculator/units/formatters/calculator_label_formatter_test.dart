@@ -507,6 +507,43 @@ void main() {
       );
     });
 
+    test('S2b (CA-1091): the "Saved to history" card has no title, names '
+        'the result beside its message, and says carried forward (Section '
+        '1.7, term 2.19, rule 4.9)', () {
+      const banked = CalculatorSavedToHistoryToast(
+        resultKey: 'Calc',
+        resultText: '60ft²',
+        carriedForward: false,
+      );
+      expect(labels.toastTitle(banked), isNull);
+      expect(labels.toastBody(banked), 'Saved to history');
+      expect(labels.toastHighlight(banked), 'Calc 60ft²');
+      expect(
+        labels.toastHighlight(
+          const CalculatorSavedToHistoryToast(
+            resultKey: 'Calc',
+            resultText: '60ft²',
+            carriedForward: true,
+          ),
+        ),
+        'Calc 60ft² carried forward',
+      );
+      expect(
+        labels.toastHighlight(
+          const CalculatorSavedToHistoryToast(
+            resultKey: null,
+            resultText: null,
+            carriedForward: false,
+          ),
+        ),
+        isNull,
+      );
+      expect(
+        labels.toastHighlight(const CalculatorEditingGroupToast()),
+        isNull,
+      );
+    });
+
     test('CA-1376: each percent Alert reads in the words of rule 4.12', () {
       final words = {
         const CalculatorPercentNeedsANumberToast(operator: '−'): (

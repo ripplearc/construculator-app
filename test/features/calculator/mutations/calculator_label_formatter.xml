@@ -212,6 +212,12 @@
         <regex pattern="CalculatorSizeNotAddedToast\(\) =&gt; l10n\.calculatorToastSizeNotAddedBody," dotAll="true" id="calculator_label_formatter.size_not_added.title_as_body">
             <mutation text="CalculatorSizeNotAddedToast() =&gt; l10n.calculatorToastSizeNotAddedTitle,"/>
         </regex>
+        <!-- S2b 2/2 (CA-1091): the card's result loses its key, or always
+             says carried forward -->
+        <regex pattern="carriedForward\s*\? l10n\.calculatorToastSavedToHistoryCarriedForward\(\s*'\$\{displayLabel\(key\)\} \$text',\s*\)\s*: '\$\{displayLabel\(key\)\} \$text'," dotAll="true" id="calculator_label_formatter.card.highlight">
+            <mutation text="l10n.calculatorToastSavedToHistoryCarriedForward('${displayLabel(key)} $text'),"/>
+            <mutation text="carriedForward ? l10n.calculatorToastSavedToHistoryCarriedForward(text) : text,"/>
+        </regex>
     </rules>
 
     <commands>

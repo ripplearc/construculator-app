@@ -197,6 +197,14 @@
             <mutation text="bool get showsDetailPanel =&gt; historyStage == DisplayAreaStage.collapsed;"/>
             <mutation text="bool get showsDetailPanel =&gt; isKeypadFolded;"/>
         </regex>
+        <!-- S2b 2/2 (CA-1091): the card forgets its result, or says carried
+             forward for every bank -->
+        <regex pattern="ResultChip\(:final key, :final value\) =&gt; \(\s*key: key,\s*text: banked\.formatter\.format\(value\),\s*\)," dotAll="true" id="calculator_state.card.result_forgotten">
+            <mutation text="ResultChip(:final key, :final value) =&gt; null,"/>
+        </regex>
+        <regex pattern="carriedForward: bankedCarriedForward," dotAll="true" id="calculator_state.card.always_carried">
+            <mutation text="carriedForward: true,"/>
+        </regex>
         <!-- T2a 2/3 (CA-1095): the sheet table of the detail panel -->
         <regex pattern="if \(area == null\) return null;\s*final seenSizes" dotAll="true" id="calculator_state.size_table.without_an_area">
             <mutation text="if (area == null) return const CalculatorSizeTable(areaText: '', rows: []); final seenSizes"/>

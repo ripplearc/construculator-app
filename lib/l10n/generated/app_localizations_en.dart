@@ -2853,6 +2853,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get calculatorToastSavedToHistory => 'Saved to history';
+
+  @override
+  String calculatorToastSavedToHistoryCarriedForward(String result) {
+    return '$result carried forward';
+  }
+
+  @override
+  String get calculatorUndoButton => 'Undo';
+
+  @override
+  String get calculatorViewHistoryButton => 'View';
+
+  @override
   String get calculatorToastEditingGroup =>
       'Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.';
 

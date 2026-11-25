@@ -180,6 +180,43 @@ void main() {
       );
     });
 
+    testWidgets('renders the "Saved to history" card with the result it '
+        'took, Undo and View, under a clean tape (Section 1.7, term 2.19)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      final bloc = blocOf(tester)
+        ..add(const CalculatorKeySelected('Length'))
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorOperatorPressed(Operator.multiply))
+        ..add(const CalculatorDigitPressed('5'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorEqualsPressed());
+      await tester.pump();
+      // The bank itself clears the display in U1 (CA-1097); here the
+      // computed tape is banked over a display C has cleared.
+      final banked = bloc.state.tape;
+      bloc.add(const CalculatorControlActioned(ControlAction.clearAll));
+      await tester.pump();
+      bloc.add(CalculatorSessionBanked(banked));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(bloc.state.toast, isA<CalculatorSavedToHistoryToast>());
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_saved_to_history$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders a chip reopened by a tap with the result after it '
         'dashed (rule 4.8)', (tester) async {
       tester.view.physicalSize = size;
