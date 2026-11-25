@@ -45,5 +45,18 @@ void main() {
         find.byKey(const Key('unit_pill')),
       );
     });
+
+    testWidgets('a11y: the pill at 2.0 text size meets tap target and label '
+        'guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeWidget(theme, unit: Unit.sheets),
+        find.byKey(const Key('unit_pill')),
+      );
+    });
   });
 }

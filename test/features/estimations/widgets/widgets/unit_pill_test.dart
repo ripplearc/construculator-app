@@ -2,7 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -20,6 +20,7 @@ void main() {
     WidgetTester tester, {
     Unit? unit,
     bool isEnabled = true,
+    double textScale = 1.0,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -27,6 +28,12 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: Scaffold(
           body: Center(
             child: UnitPill(
@@ -121,6 +128,38 @@ void main() {
     expect(tester.getSemantics(pillSemantics()).rect.height, 48);
     handle.dispose();
   });
+
+  for (final textScale in [0.85, 1.0, 1.5, 2.0, 3.0]) {
+    testWidgets('at text size $textScale shows the whole unit symbol inside '
+        'a pill at least 32 tall, with a tap area at least as tall as the '
+        'pill and 48', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpPill(tester, unit: Unit.sheets, textScale: textScale);
+
+      final symbol = find.text(
+        lookupAppLocalizations(const Locale('en')).unitSymbolSheets,
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(symbol);
+      final oneLine = TextPainter(
+        text: paragraph.text,
+        textDirection: TextDirection.ltr,
+        textScaler: paragraph.textScaler,
+        maxLines: 1,
+      )..layout();
+      addTearDown(oneLine.dispose);
+      final pill = tester.getRect(find.byKey(const Key('unit_pill')));
+      final tapArea = tester.getSemantics(pillSemantics()).rect;
+
+      expect(paragraph.size.height, oneLine.height);
+      expect(tester.getRect(symbol).top, greaterThan(pill.top));
+      expect(tester.getRect(symbol).bottom, lessThan(pill.bottom));
+      expect(tapArea.height, greaterThanOrEqualTo(48));
+      expect(tapArea.height, greaterThanOrEqualTo(pill.height));
+      expect(pill.height, greaterThanOrEqualTo(32));
+      if (textScale == 1.0) expect(pill.height, 32);
+      handle.dispose();
+    });
+  }
 
   testWidgets('ticks only the unit that is picked', (tester) async {
     await pumpPill(tester, unit: Unit.gallons);

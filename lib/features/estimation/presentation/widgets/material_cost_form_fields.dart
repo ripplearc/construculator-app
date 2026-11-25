@@ -27,6 +27,11 @@ const double _nameBottomPadding = 6;
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
+/// A name too wide for its row ends in "…" while its field is not focused
+/// (storyboard CUJ 4, "Display truncation"). The field keeps the whole name
+/// under the cut text, so a tap puts the caret where the user tapped and a
+/// screen reader reads the whole name.
+///
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
@@ -129,6 +134,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 readOnly: _isSaving(state),
                 controller: _nameController,
                 focusNode: _nameFocus,
+                cutsLongTextWhenIdle: true,
                 label: l10n.materialNameLabel,
                 hintText: l10n.materialNamePlaceholder,
                 inputFormatters: [
@@ -290,8 +296,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
 
 // TODO: [CA-1158] replace with CoreUI's underline-style text field once it exists. https://ripplearc.youtrack.cloud/issue/CA-1158
 class _SheetTextField extends StatelessWidget {
-  static const double _drawnHeight = CoreSpacing.space6;
-  static const double _tapHeight = CoreSpacing.space12;
+  static const double _minDrawnHeight = CoreSpacing.space6;
+  static const double _minTapHeight = CoreSpacing.space12;
   static const double _tapWidth = CoreSpacing.space12;
   static const double _cursorAllowance = 3;
   static const double _selectionAlpha = 0.30;
@@ -308,6 +314,8 @@ class _SheetTextField extends StatelessWidget {
 
   final bool fitsText;
 
+  final bool cutsLongTextWhenIdle;
+
   const _SheetTextField({
     super.key,
     required this.controller,
@@ -317,6 +325,7 @@ class _SheetTextField extends StatelessWidget {
     required this.onChanged,
     required this.readOnly,
     this.fitsText = false,
+    this.cutsLongTextWhenIdle = false,
     this.keyboardType,
     this.inputFormatters,
     this.onTap,
@@ -335,20 +344,28 @@ class _SheetTextField extends StatelessWidget {
       color: colorTheme.textHeadline,
     );
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge([controller, focusNode]),
       builder: (context, _) {
+        final textSize = _measureText(context, textStyle);
+        final showsCutText =
+            cutsLongTextWhenIdle &&
+            !focusNode.hasFocus &&
+            controller.text.isNotEmpty &&
+            textSize.width > maxWidth;
         // Never wider than the row leaves, so large text scrolls in the field
         // instead of pushing the row off the screen.
-        final width = fitsText
-            ? math.min(_textWidth(context, textStyle), maxWidth)
-            : null;
+        final width = fitsText ? math.min(textSize.width, maxWidth) : null;
+        // As tall as one line at the user's text size, so large text sits
+        // below the label instead of being clipped over it.
+        final drawnHeight = math.max(_minDrawnHeight, textSize.height);
+        final tapHeight = math.max(_minTapHeight, drawnHeight);
         return SizedBox(
-          height: _drawnHeight,
+          height: drawnHeight,
           width: width,
           child: OverflowBox(
             alignment: Alignment.centerLeft,
-            minHeight: _tapHeight,
-            maxHeight: _tapHeight,
+            minHeight: tapHeight,
+            maxHeight: tapHeight,
             minWidth: width == null ? null : math.max(width, _tapWidth),
             maxWidth: width == null ? null : math.max(width, _tapWidth),
             child: Semantics(
@@ -361,28 +378,53 @@ class _SheetTextField extends StatelessWidget {
                     alpha: _selectionAlpha,
                   ),
                 ),
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  readOnly: readOnly,
-                  keyboardType: keyboardType,
-                  inputFormatters: inputFormatters,
-                  onChanged: onChanged,
-                  onTap: onTap,
-                  maxLines: 1,
-                  cursorColor: colorTheme.textHeadline,
-                  style: textStyle,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: (_tapHeight - _drawnHeight) / 2,
+                child: Stack(
+                  children: [
+                    TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      readOnly: readOnly,
+                      keyboardType: keyboardType,
+                      inputFormatters: inputFormatters,
+                      onChanged: onChanged,
+                      onTap: onTap,
+                      maxLines: 1,
+                      cursorColor: colorTheme.textHeadline,
+                      style: showsCutText
+                          ? textStyle.copyWith(
+                              color: textStyle.color?.withValues(alpha: 0),
+                            )
+                          : textStyle,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: (tapHeight - drawnHeight) / 2,
+                        ),
+                        hintText: hintText,
+                        hintStyle: textTheme.bodyLargeRegular.copyWith(
+                          color: colorTheme.textDisable,
+                        ),
+                      ),
                     ),
-                    hintText: hintText,
-                    hintStyle: textTheme.bodyLargeRegular.copyWith(
-                      color: colorTheme.textDisable,
-                    ),
-                  ),
+                    if (showsCutText)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ExcludeSemantics(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                controller.text,
+                                key: const Key('sheet_field_cut_text'),
+                                style: _fieldStyle(context, textStyle),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -392,17 +434,22 @@ class _SheetTextField extends StatelessWidget {
     );
   }
 
-  double _textWidth(BuildContext context, TextStyle style) {
+  TextStyle _fieldStyle(BuildContext context, TextStyle style) =>
+      Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style;
+
+  Size _measureText(BuildContext context, TextStyle style) {
     final painter = TextPainter(
       text: TextSpan(
         text: controller.text.isEmpty ? hintText : controller.text,
-        style: Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style,
+        style: _fieldStyle(context, style),
       ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
-    return painter.width + _cursorAllowance;
+    final size = Size(painter.width + _cursorAllowance, painter.height);
+    painter.dispose();
+    return size;
   }
 }
 

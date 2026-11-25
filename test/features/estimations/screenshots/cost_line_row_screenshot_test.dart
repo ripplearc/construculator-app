@@ -82,5 +82,53 @@ void main() {
         );
       },
     );
+
+    testWidgets('a 120 character name stays on one line ending in "…" at '
+        'text size 2.0', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final longName = ('Type-X fire-rated gypsum board ' * 4).substring(
+        0,
+        120,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery.withClampedTextScaling(
+            minScaleFactor: 2,
+            maxScaleFactor: 2,
+            child: Builder(
+              builder: (context) => Scaffold(
+                backgroundColor: sheetSurface(context),
+                body: Padding(
+                  padding: const EdgeInsets.all(CoreSpacing.space4),
+                  child: Column(
+                    spacing: CoreSpacing.space3,
+                    children: [
+                      CostLineRow(item: materialLine(), isHighlighted: false),
+                      CostLineRow(
+                        item: materialLine(name: longName, total: 104318.6),
+                        isHighlighted: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/cost_line_row/long_name_2x$suffix.png'),
+      );
+    });
   });
 }

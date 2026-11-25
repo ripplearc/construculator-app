@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/material_unit_list.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
@@ -11,8 +13,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The rounded unit button next to the quantity, showing the unit's symbol.
 /// Tapping it opens the Select unit sheet; the unit is never typed.
 class UnitPill extends StatelessWidget {
-  static const double _pillHeight = CoreSpacing.space8;
-  static const double _tapHeight = CoreSpacing.space12;
+  static const double _minPillHeight = CoreSpacing.space8;
+  static const double _minTapHeight = CoreSpacing.space12;
+  static const double _roomAroundLabel = CoreSpacing.space2;
 
   /// The picked unit, or null while none is picked.
   final Unit? unit;
@@ -36,13 +39,22 @@ class UnitPill extends StatelessWidget {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     final unit = this.unit;
+    final label = unit == null ? l10n.unitPillEmptyLabel : unit.symbol(l10n);
+    final labelStyle = textTheme.bodyLargeRegular.copyWith(
+      color: unit == null ? colorTheme.textDisable : colorTheme.textHeadline,
+    );
+    final pillHeight = math.max(
+      _minPillHeight,
+      _lineHeight(context, label, labelStyle) + _roomAroundLabel,
+    );
+    final tapHeight = math.max(_minTapHeight, pillHeight);
     return SizedBox(
-      height: _pillHeight,
+      height: pillHeight,
       child: OverflowBox(
         alignment: Alignment.centerLeft,
         fit: OverflowBoxFit.deferToChild,
-        minHeight: _tapHeight,
-        maxHeight: _tapHeight,
+        minHeight: tapHeight,
+        maxHeight: tapHeight,
         child: Semantics(
           button: true,
           label: unit == null
@@ -58,7 +70,7 @@ class UnitPill extends StatelessWidget {
               alignment: Alignment.centerLeft,
               widthFactor: 1,
               child: Container(
-                height: _pillHeight,
+                height: pillHeight,
                 padding: const EdgeInsets.symmetric(
                   horizontal: CoreSpacing.space3,
                 ),
@@ -70,16 +82,7 @@ class UnitPill extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   spacing: CoreSpacing.space1,
                   children: [
-                    Text(
-                      unit == null
-                          ? l10n.unitPillEmptyLabel
-                          : unit.symbol(l10n),
-                      style: textTheme.bodyLargeRegular.copyWith(
-                        color: unit == null
-                            ? colorTheme.textDisable
-                            : colorTheme.textHeadline,
-                      ),
-                    ),
+                    Text(label, style: labelStyle),
                     CoreIconWidget(
                       icon: CoreIcons.arrowDown,
                       size: CoreIconSize.size20,
@@ -93,6 +96,21 @@ class UnitPill extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _lineHeight(BuildContext context, String label, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final height = painter.height;
+    painter.dispose();
+    return height;
   }
 
   Future<void> _openList(BuildContext context) async {

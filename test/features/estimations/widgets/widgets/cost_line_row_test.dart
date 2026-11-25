@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_line_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -66,12 +67,9 @@ void main() {
     expect(find.text(r'$480.00'), findsOneWidget);
   });
 
-  testWidgets('keeps the amount on the first line of a wrapped name', (
-    tester,
-  ) async {
-    const longName =
-        'Type-X fire-rated gypsum board, 5/8" × 4′ × 12′, '
-        'moisture & mould resistant';
+  testWidgets('shows a 120 character name on one line ending in "…", with '
+      'the amount beside it', (tester) async {
+    final longName = ('Type-X fire-rated gypsum board ' * 4).substring(0, 120);
     await pumpRow(
       tester,
       CostLineRow(
@@ -80,10 +78,31 @@ void main() {
       ),
     );
 
-    final nameTop = tester.getTopLeft(find.text(longName)).dy;
-    final amountTop = tester.getTopLeft(find.text(r'$104,318.60')).dy;
-    expect(tester.getSize(find.text(longName)).height, greaterThan(40));
-    expect(amountTop, nameTop);
+    final name = tester.renderObject<RenderParagraph>(find.text(longName));
+    final amount = tester.renderObject<RenderParagraph>(
+      find.text(r'$104,318.60'),
+    );
+    expect(longName.length, 120);
+    expect(name.overflow, TextOverflow.ellipsis);
+    expect(name.didExceedMaxLines, isTrue);
+    expect(name.size.height, amount.size.height);
+    expect(name.text.style!.fontSize, amount.text.style!.fontSize);
+    expect(
+      tester.getTopLeft(find.text(r'$104,318.60')).dy,
+      tester.getTopLeft(find.text(longName)).dy,
+    );
+  });
+
+  testWidgets('shows a name that fits whole, with no "…"', (tester) async {
+    await pumpRow(
+      tester,
+      CostLineRow(item: materialLine(), isHighlighted: false),
+    );
+
+    final name = tester.renderObject<RenderParagraph>(
+      find.text('Drywall sheets'),
+    );
+    expect(name.didExceedMaxLines, isFalse);
   });
 
   testWidgets('reports a tap anywhere on the card', (tester) async {

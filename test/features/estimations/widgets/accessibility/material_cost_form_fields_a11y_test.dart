@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../helpers/cost_line_test_items.dart';
 
 void main() {
   setUpAll(() {
@@ -32,6 +34,7 @@ void main() {
   Widget makeWidget(
     ThemeData theme, {
     ValueNotifier<NumberPadSession?>? numberPad,
+    MaterialCostItem? editedItem,
   }) => MaterialApp(
     theme: theme,
     locale: const Locale('en'),
@@ -42,7 +45,12 @@ void main() {
         create: (_) => Modular.get<MaterialCostFormBloc>(),
         child: Column(
           children: [
-            Flexible(child: MaterialCostFormFields(numberPad: numberPad)),
+            Flexible(
+              child: MaterialCostFormFields(
+                numberPad: numberPad,
+                editedItem: editedItem,
+              ),
+            ),
             const MaterialAddToEstimateFooter(
               estimateId: 'estimate-1',
               estimateName: 'Bedroom 2',
@@ -80,6 +88,47 @@ void main() {
         handle.dispose();
       });
     }
+
+    group('a long name ending in "…"', () {
+      final longName = ('Type-X fire-rated gypsum board ' * 4).substring(
+        0,
+        120,
+      );
+      Widget makeLongNameWidget(ThemeData theme) =>
+          makeWidget(theme, editedItem: materialLine(name: longName));
+
+      testWidgets('a11y: the name field meets tap target, label and contrast '
+          'guidelines in both themes', (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeLongNameWidget,
+          find.byKey(const Key('material_name_field')),
+        );
+      });
+
+      testWidgets('a11y: a screen reader reads the whole name once, as the '
+          'field value', (tester) async {
+        await setupA11yTest(tester);
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(makeLongNameWidget(createTestTheme()));
+        await tester.pumpAndSettle();
+
+        final semantics = tester.getSemantics(
+          find.descendant(
+            of: find.byKey(const Key('material_name_field')),
+            matching: find.byType(EditableText),
+          ),
+        );
+        expect(semantics.value, longName);
+        expect(
+          find.bySemanticsLabel(RegExp(RegExp.escape(longName))),
+          findsNothing,
+        );
+        handle.dispose();
+      });
+    });
 
     testWidgets('a11y: the unit button meets tap target and label guidelines '
         'in both themes', (tester) async {
