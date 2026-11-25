@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -30,10 +31,12 @@ class AuthManagerImpl implements AuthManager, Disposable {
   final CurrentCompanyResolver? Function() _currentCompanyResolver;
   final Future<void> Function() _clearKeptCompanyId;
   final SessionService _sessionService;
+  final ActiveUserProvider _activeUserProvider;
   final _logger = AppLogger().tag('AuthManagerImpl');
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
-  String? _sessionUserId;
+  bool _isDisposed = false;
+  int _authenticationAttempt = 0;
 
   AuthManagerImpl({
     required this._wrapper,
@@ -44,6 +47,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
     required this._currentCompanyResolver,
     required this._clearKeptCompanyId,
     required this._sessionService,
+    required this._activeUserProvider,
   }) {
     _initAuthListener();
   }
@@ -71,6 +75,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
 
   @override
   void dispose() {
+    _isDisposed = true;
     unawaited(_authSubscription?.cancel());
   }
 
@@ -84,19 +89,12 @@ class AuthManagerImpl implements AuthManager, Disposable {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
-            // TODO: [CA-1471] Move session start and end into the sign-in check
-            // and the sign-out handler.
-            // https://ripplearc.youtrack.cloud/issue/CA-1471
-            _startSessionFor(user.id);
-            unawaited(_resolveCompanyAfterSignIn());
-            _emitAuthStateChanged(
-              AuthStatus.authenticated,
-              _mapSupabaseUserToCredential(user),
-            );
+            unawaited(_emitAuthenticatedOnceChecked(user));
           } else {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
+          _authenticationAttempt++;
           unawaited(_clearCompanyData(_currentCompanyResolver()));
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           // The session stays: Supabase also sends signedOut when a token
@@ -120,24 +118,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
-        // TODO: [CA-1471] Move session start for a resumed login into the
-        // sign-in check.
-        // https://ripplearc.youtrack.cloud/issue/CA-1471
-        _startSessionFor(user.id);
-        unawaited(_sentryWrapper.setUser(user.id));
-        // TODO: [CA-961] Gate identify() on recorded analytics consent once
-        // the server-driven consent flow lands; currently relies on the
-        // signup terms & privacy acceptance covering analytics consent.
-        unawaited(
-          _analyticsRepository.identify(
-            userId: user.id,
-            properties: const AnalyticsUserProperties(),
-          ),
-        );
-        _emitAuthStateChanged(
-          AuthStatus.authenticated,
-          _mapSupabaseUserToCredential(user),
-        );
+        unawaited(_emitAuthenticatedOnceChecked(user, identifiesUser: true));
       } else {
         _emitAuthStateChanged(AuthStatus.unauthenticated, null);
       }
@@ -146,10 +127,30 @@ class AuthManagerImpl implements AuthManager, Disposable {
     }
   }
 
-  void _startSessionFor(String userId) {
-    if (_sessionUserId != userId) _sessionService.endSession();
-    _sessionService.startSession();
-    _sessionUserId = userId;
+  Future<void> _emitAuthenticatedOnceChecked(
+    supabase.User user, {
+    bool identifiesUser = false,
+  }) async {
+    final attempt = ++_authenticationAttempt;
+    final isChecked = await _activeUserProvider.whenFinishedFor(user.id);
+    if (_isDisposed || !isChecked || attempt != _authenticationAttempt) return;
+    unawaited(_resolveCompanyAfterSignIn());
+    if (identifiesUser) {
+      unawaited(_sentryWrapper.setUser(user.id));
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
+      unawaited(
+        _analyticsRepository.identify(
+          userId: user.id,
+          properties: const AnalyticsUserProperties(),
+        ),
+      );
+    }
+    _emitAuthStateChanged(
+      AuthStatus.authenticated,
+      _mapSupabaseUserToCredential(user),
+    );
   }
 
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {

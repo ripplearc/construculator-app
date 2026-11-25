@@ -3,6 +3,8 @@ import 'package:construculator/libraries/analytics/domain/entities/analytics_use
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -118,7 +120,7 @@ void main() {
       );
 
       test('should call setUser and identify when constructed with an '
-          'already-authenticated (resumed) session', () {
+          'already-authenticated (resumed) session', () async {
         // setUp() already constructed `authManager` with no session, so
         // no identify()/setUser() calls should be recorded yet.
         sentryWrapper.reset();
@@ -138,7 +140,14 @@ void main() {
           ),
         );
 
+        final authenticated = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
         final resumedManager = Modular.get<AuthManager>();
+        await authenticated;
 
         expect(resumedManager.isAuthenticated(), true);
         expect(sentryWrapper.userId, 'resumed-user-id');
@@ -360,7 +369,8 @@ void main() {
         expect(sessionService.startCount, 0);
       });
 
-      test('starts the session when a user signs in', () async {
+      test('does not start a session when a user signs in, because the '
+          'sign-in check does', () async {
         final signedIn = expectLater(
           authNotifier.onAuthStateChanged,
           emits(
@@ -371,68 +381,48 @@ void main() {
         supabaseWrapper.setCurrentUser(signedInUser());
         await signedIn;
 
-        expect(sessionService.isActive, true);
-        expect(sessionService.startCount, 1);
-      });
-
-      test('stops reacting to sign-in events once it is disposed', () {
-        (authManager as Disposable).dispose();
-
-        supabaseWrapper.setCurrentUser(signedInUser());
-
         expect(sessionService.startCount, 0);
       });
 
-      test(
-        'clears the company id kept on the device on sign-out when no '
-        'session resolver exists',
-        () async {
-          (authManager as Disposable).dispose();
-          final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
-          await localDataSource.saveCompanyId(
-            userId: 'test-id',
-            companyId: 'company-1',
-          );
-          // ignore: no_direct_instantiation, reason: needs a manager that has no session resolver, as at start-up with an expired token
-          final managerWithoutSession = AuthManagerImpl(
-            wrapper: supabaseWrapper,
-            authRepository: authRepository,
-            authNotifier: authNotifier,
-            sentryWrapper: sentryWrapper,
-            analyticsRepository: analyticsRepository,
-            currentCompanyResolver: () => null,
-            clearKeptCompanyId: localDataSource.clearCompanyId,
-            sessionService: sessionService,
-          );
-          addTearDown(managerWithoutSession.dispose);
-          supabaseWrapper.setCurrentUser(signedInUser());
-          final signedOut = expectLater(
-            authNotifier.onAuthStateChanged,
-            emitsThrough(
-              predicate<AuthState>((s) => s.status == AuthStatus.unauthenticated),
-            ),
-          );
+      test('stops reacting to sign-in events once it is disposed', () async {
+        (authManager as Disposable).dispose();
+        final emitted = <AuthState>[];
+        final subscription = authNotifier.onAuthStateChanged.listen(
+          emitted.add,
+        );
 
-          supabaseWrapper.setCurrentUser(null);
-          await signedOut;
-
-          expect(await localDataSource.loadCompanyId('test-id'), isNull);
-        },
-      );
-
-      test('starts the session for a resumed login at app start', () {
         supabaseWrapper.setCurrentUser(signedInUser());
+        await Modular.get<ActiveUserProvider>().whenFinished();
+        await subscription.cancel();
 
-        Modular.get<AuthManager>();
-
-        expect(sessionService.isActive, true);
+        expect(emitted, isEmpty);
       });
-      test('keeps the session when the user is signed out in the background, '
-          'because screens that are open still hold its objects', () async {
+
+      test('clears the company id kept on the device on sign-out when no '
+          'session resolver exists', () async {
+        (authManager as Disposable).dispose();
+        final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
+        await localDataSource.saveCompanyId(
+          userId: 'test-id',
+          companyId: 'company-1',
+        );
+        // ignore: no_direct_instantiation, reason: needs a manager that has no session resolver, as at start-up with an expired token
+        final managerWithoutSession = AuthManagerImpl(
+          wrapper: supabaseWrapper,
+          authRepository: authRepository,
+          authNotifier: authNotifier,
+          sentryWrapper: sentryWrapper,
+          analyticsRepository: analyticsRepository,
+          currentCompanyResolver: () => null,
+          clearKeptCompanyId: localDataSource.clearCompanyId,
+          sessionService: sessionService,
+          activeUserProvider: Modular.get<ActiveUserProvider>(),
+        );
+        addTearDown(managerWithoutSession.dispose);
         supabaseWrapper.setCurrentUser(signedInUser());
         final signedOut = expectLater(
           authNotifier.onAuthStateChanged,
-          emits(
+          emitsThrough(
             predicate<AuthState>((s) => s.status == AuthStatus.unauthenticated),
           ),
         );
@@ -440,58 +430,12 @@ void main() {
         supabaseWrapper.setCurrentUser(null);
         await signedOut;
 
-        expect(sessionService.isActive, true);
-        expect(sessionService.endCount, 0);
-      });
-
-      test('keeps the same session when the same user signs in again after a '
-          'background sign-out', () async {
-        supabaseWrapper.setCurrentUser(signedInUser());
-        supabaseWrapper.setCurrentUser(null);
-        final signedIn = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
-          ),
-        );
-
-        supabaseWrapper.setCurrentUser(signedInUser());
-        await signedIn;
-
-        expect(sessionService.startCount, 1);
-        expect(sessionService.endCount, 0);
-        expect(sessionService.isActive, true);
-      });
-
-      test('replaces the session when a different user signs in after a '
-          'background sign-out', () async {
-        supabaseWrapper.setCurrentUser(signedInUser());
-        supabaseWrapper.setCurrentUser(null);
-        final signedIn = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
-          ),
-        );
-
-        supabaseWrapper.setCurrentUser(
-          FakeUser(
-            email: 'other@example.com',
-            id: 'other-id',
-            createdAt: clock.now().toIso8601String(),
-            appMetadata: {},
-          ),
-        );
-        await signedIn;
-
-        expect(sessionService.endCount, 1);
-        expect(sessionService.startCount, 2);
-        expect(sessionService.isActive, true);
+        expect(await localDataSource.loadCompanyId('test-id'), isNull);
       });
 
       test('ends the session on logout', () async {
         supabaseWrapper.setCurrentUser(signedInUser());
-        expect(sessionService.isActive, true);
+        sessionService.startSession();
 
         await authManager.logout();
 
@@ -500,6 +444,7 @@ void main() {
 
       test('keeps the session when the logout fails', () async {
         supabaseWrapper.setCurrentUser(signedInUser());
+        sessionService.startSession();
         supabaseWrapper.shouldThrowOnSignOut = true;
 
         final result = await authManager.logout();
@@ -1803,7 +1748,14 @@ void main() {
       });
 
       test('logout clears the company id kept on the device', () async {
+        final authenticated = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
         await authManager.loginWithEmail(testEmail, testPassword);
+        await authenticated;
         final userId = supabaseWrapper.currentUser!.id;
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.getMyCompanyIdRpcFunction,
@@ -1820,7 +1772,14 @@ void main() {
 
       test('a signed-out event that does not come from logout() clears the '
           'company id kept on the device', () async {
+        final authenticated = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
         await authManager.loginWithEmail(testEmail, testPassword);
+        await authenticated;
         final userId = supabaseWrapper.currentUser!.id;
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.getMyCompanyIdRpcFunction,
@@ -1840,7 +1799,14 @@ void main() {
 
       test('a signed-out event that does not come from logout() clears the '
           'current-company cache too', () async {
+        final authenticated = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(
+            predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+          ),
+        );
         await authManager.loginWithEmail(testEmail, testPassword);
+        await authenticated;
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.getMyCompanyIdRpcFunction,
           'company-a',
@@ -1865,7 +1831,14 @@ void main() {
       test(
         'logout does not clear the current-company cache on failure',
         () async {
+          final authenticated = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>((s) => s.status == AuthStatus.authenticated),
+            ),
+          );
           await authManager.loginWithEmail(testEmail, testPassword);
+          await authenticated;
           supabaseWrapper.setRpcResponse(
             DatabaseConstants.getMyCompanyIdRpcFunction,
             'company-a',
@@ -1927,6 +1900,12 @@ class _TestAppModule extends Module {
         currentCompanyResolver: () => i<CurrentCompanyResolver>(),
         clearKeptCompanyId: () async {},
         sessionService: i<SessionService>(),
+        activeUserProvider: i<ActiveUserProvider>(),
+      ),
+    );
+    i.addSingleton<ActiveUserProvider>(
+      () => FakeActiveUserProvider(
+        userIdOf: () => i<SupabaseWrapper>().currentUser?.id,
       ),
     );
     i.addSingleton<SessionService>(() => FakeSessionService());

@@ -23,7 +23,7 @@ class FakePowerSyncManager implements PowerSyncManager {
   Future<void> connect() async {
     connectCallCount++;
     await connectGate?.future;
-    if (shouldThrowOnConnect) throw Exception('connect failed');
+    if (shouldThrowOnConnect) throw StateError('connect failed');
   }
 
   @override

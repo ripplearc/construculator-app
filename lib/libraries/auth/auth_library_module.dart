@@ -47,6 +47,7 @@ class AuthLibraryModule extends Module {
         clearKeptCompanyId: () =>
             Modular.get<LocalCurrentCompanyDataSource>().clearCompanyId(),
         sessionService: appBootstrap.sessionService,
+        activeUserProvider: i(),
       ),
     );
   }

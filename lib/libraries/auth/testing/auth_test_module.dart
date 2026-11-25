@@ -2,6 +2,7 @@
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -14,6 +15,7 @@ import 'package:construculator/libraries/company/domain/current_company_resolver
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/session/testing/fake_session_service.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -51,6 +53,9 @@ class AuthTestModule extends Module {
         currentCompanyResolver: () => i<CurrentCompanyResolver>(),
         clearKeptCompanyId: () async {},
         sessionService: FakeSessionService(),
+        activeUserProvider: FakeActiveUserProvider(
+          userIdOf: () => i<SupabaseWrapper>().currentUser?.id,
+        ),
       ),
       key: 'authManagerWithFakeDep',
     );

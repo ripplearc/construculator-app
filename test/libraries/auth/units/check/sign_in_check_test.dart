@@ -312,7 +312,7 @@ void main() {
         ownerRecords.seed(OwnerRecord(userId: 'user-a'));
         powerSync.shouldThrowOnConnect = true;
 
-        await expectLater(runCheck('user-a'), throwsException);
+        await expectLater(runCheck('user-a'), throwsA(isA<StateError>()));
 
         expect(sessionService.isActive, isFalse);
         expect(check.activeModuleUserId, isNull);
