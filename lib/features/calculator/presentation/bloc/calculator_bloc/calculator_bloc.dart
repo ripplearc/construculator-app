@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/features/calculator/domain/repositories/group_order_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
@@ -73,6 +74,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   StreamSubscription<List<TradeCount>>? _countsSubscription;
 
+  /// The order of the function-key groups this phone keeps (L3): the bloc
+  /// starts from it and writes every drag in View all back to it.
+  final GroupOrderRepository _groupOrder;
+  late final StreamSubscription<List<String>> _groupOrderSubscription;
+
   Area? _watchedArea;
   MeasurementSystem? _watchedSystem;
 
@@ -82,8 +88,10 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     required this._materialCounts,
     required this._deleteMaterialSize,
     required this._addMaterialSize,
+    required this._groupOrder,
   }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
+    on<CalculatorGroupOrderArrived>(_onGroupOrderArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
     on<CalculatorSizeEditorClosed>(_onSizeEditorClosed);
     on<CalculatorKeySelected>(_onKeySelected);
@@ -103,6 +111,13 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
     on<CalculatorToastClosed>(_onToastClosed);
+    _groupOrderSubscription = _groupOrder.watchGroupOrder().listen(
+      (order) => add(CalculatorGroupOrderArrived(order)),
+      // The keyboard keeps the order it shows. Warning level: the
+      // error-level log belongs to the store's own boundary, not to a bloc.
+      onError: (Object error, StackTrace stackTrace) =>
+          _logger.warning('The group order watch failed', error, stackTrace),
+    );
   }
 
   @override
@@ -114,6 +129,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   @override
   Future<void> close() async {
     await _countsSubscription?.cancel();
+    await _groupOrderSubscription.cancel();
     return super.close();
   }
 
@@ -146,6 +162,21 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             stackTrace,
           ),
         );
+  }
+
+  void _onGroupOrderArrived(
+    CalculatorGroupOrderArrived event,
+    Emitter<CalculatorState> emit,
+  ) {
+    if (listEquals(event.order, state.groupOrder)) return;
+    final shown = state.groupOrder.elementAtOrNull(state.currentGroupIndex);
+    final index = shown == null ? -1 : event.order.indexOf(shown);
+    emit(
+      state.copyWith(
+        groupOrder: List.unmodifiable(event.order),
+        currentGroupIndex: index < 0 ? 0 : index,
+      ),
+    );
   }
 
   void _onMaterialCountsArrived(
@@ -421,6 +452,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         currentGroupIndex: order.indexOf(shown),
       ),
     );
+    // The repository reports a refused save; the keyboard keeps the order
+    // it shows either way.
+    unawaited(_groupOrder.saveGroupOrder(order));
   }
 
   void _onUnitSystemChanged(

@@ -18,6 +18,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../features/calculator/helpers/fake_trade_stores_database.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/feature_availability_scope.dart';
 
@@ -32,8 +33,11 @@ void main() {
 
   final fakeClock = FakeClockImpl();
   final fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
+  // The calculator page's bloc watches the group-order table as it is
+  // built (CA-1307), which the bare fake database does not answer.
   final appBootstrap = FakeAppBootstrapFactory.create(
     supabaseWrapper: fakeSupabaseWrapper,
+    powerSyncDatabase: FakeTradeStoresDatabase(),
   );
 
   setUp(() {
@@ -107,7 +111,9 @@ void main() {
     'deep link to /calculator resolves to FeatureUnavailablePage when the '
     'calculator feature is excluded',
     (tester) async {
-      FeatureAvailability.overrideWith((feature) => feature != Feature.calculator);
+      FeatureAvailability.overrideWith(
+        (feature) => feature != Feature.calculator,
+      );
       initShell();
 
       await pumpShellAndPush(tester, calculatorBaseRoute);

@@ -20,6 +20,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../features/calculator/helpers/fake_trade_stores_database.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
 
 /// Regression tests for CA-900: pushes to the estimation, project-settings,
@@ -39,8 +40,11 @@ void main() {
   // would silently run signed-in.
   final fakeClock = FakeClockImpl();
   final fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
+  // The calculator page's bloc watches the group-order table as it is
+  // built (CA-1307), which the bare fake database does not answer.
   final appBootstrap = FakeAppBootstrapFactory.create(
     supabaseWrapper: fakeSupabaseWrapper,
+    powerSyncDatabase: FakeTradeStoresDatabase(),
   );
 
   setUp(() {
@@ -110,15 +114,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  testWidgets(
-    'pushNamed to the estimation details route renders '
-    'CostEstimationDetailsPage',
-    (tester) async {
-      await pumpShellAndPush(tester, '$fullEstimationDetailsRoute/est-123');
+  testWidgets('pushNamed to the estimation details route renders '
+      'CostEstimationDetailsPage', (tester) async {
+    await pumpShellAndPush(tester, '$fullEstimationDetailsRoute/est-123');
 
-      expect(find.byType(CostEstimationDetailsPage), findsOneWidget);
-    },
-  );
+    expect(find.byType(CostEstimationDetailsPage), findsOneWidget);
+  });
 
   testWidgets(
     'pushNamed to the create-project route renders ProjectCreationScreen',
@@ -129,40 +130,33 @@ void main() {
     },
   );
 
-  testWidgets(
-    'pushNamed to the calculator route renders CalculatorPage',
-    (tester) async {
-      await pumpShellAndPush(tester, calculatorBaseRoute);
+  testWidgets('pushNamed to the calculator route renders CalculatorPage', (
+    tester,
+  ) async {
+    await pumpShellAndPush(tester, calculatorBaseRoute);
 
-      expect(find.byType(CalculatorPage), findsOneWidget);
-    },
-  );
+    expect(find.byType(CalculatorPage), findsOneWidget);
+  });
 
   // Signed-out variants: pin the guard coverage claim, not just rendering —
   // removing an AuthGuard from these routes must fail the suite.
-  testWidgets(
-    'pushNamed to the estimation details route does not render '
-    'CostEstimationDetailsPage when signed out',
-    (tester) async {
-      fakeSupabaseWrapper.setCurrentUser(null);
+  testWidgets('pushNamed to the estimation details route does not render '
+      'CostEstimationDetailsPage when signed out', (tester) async {
+    fakeSupabaseWrapper.setCurrentUser(null);
 
-      await pumpShellAndPush(tester, '$fullEstimationDetailsRoute/est-123');
+    await pumpShellAndPush(tester, '$fullEstimationDetailsRoute/est-123');
 
-      expect(find.byType(CostEstimationDetailsPage), findsNothing);
-    },
-  );
+    expect(find.byType(CostEstimationDetailsPage), findsNothing);
+  });
 
-  testWidgets(
-    'pushNamed to the create-project route does not render '
-    'ProjectCreationScreen when signed out',
-    (tester) async {
-      fakeSupabaseWrapper.setCurrentUser(null);
+  testWidgets('pushNamed to the create-project route does not render '
+      'ProjectCreationScreen when signed out', (tester) async {
+    fakeSupabaseWrapper.setCurrentUser(null);
 
-      await pumpShellAndPush(tester, createProjectRoute);
+    await pumpShellAndPush(tester, createProjectRoute);
 
-      expect(find.byType(ProjectCreationScreen), findsNothing);
-    },
-  );
+    expect(find.byType(ProjectCreationScreen), findsNothing);
+  });
 
   testWidgets(
     'pushNamed to the calculator route does not render CalculatorPage '

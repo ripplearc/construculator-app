@@ -109,6 +109,7 @@ class CalculatorModule extends Module {
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        groupOrder: i(),
       ),
     );
   }

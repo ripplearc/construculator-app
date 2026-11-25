@@ -9,11 +9,13 @@ import 'package:construculator/features/calculator/domain/usecases/watch_materia
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
+import 'package:construculator/features/calculator/testing/fake_group_order_repository.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/errors/calculator_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -28,8 +30,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// each test resolves a fresh instance via `Modular.get`.
 class _CalculatorBlocTestModule extends Module {
   final FakeTradeStoresRepository stores;
+  final FakeGroupOrderRepository groupOrder;
 
-  _CalculatorBlocTestModule(this.stores);
+  _CalculatorBlocTestModule(this.stores, this.groupOrder);
 
   @override
   void binds(Injector i) {
@@ -47,6 +50,7 @@ class _CalculatorBlocTestModule extends Module {
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        groupOrder: groupOrder,
       ),
     );
   }
@@ -54,17 +58,22 @@ class _CalculatorBlocTestModule extends Module {
 
 void main() {
   late FakeTradeStoresRepository stores;
+  late FakeGroupOrderRepository groupOrder;
   late CalculatorBloc bloc;
 
   setUp(() {
     stores = FakeTradeStoresRepository();
-    Modular.init(_CalculatorBlocTestModule(stores));
+    groupOrder = FakeGroupOrderRepository(
+      defaultOrder: CalculatorGroupId.defaultOrder,
+    );
+    Modular.init(_CalculatorBlocTestModule(stores, groupOrder));
     bloc = Modular.get<CalculatorBloc>();
   });
 
   tearDown(() {
     bloc.close();
     stores.dispose();
+    groupOrder.dispose();
     Modular.destroy();
   });
 
@@ -2311,6 +2320,136 @@ void main() {
         CalculatorGroupId.materials,
         CalculatorGroupId.trigonometry,
       ];
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a drag in View all is written to the phone, and a drag that changes '
+        'nothing writes nothing (L3, CA-1307)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorGroupsReordered(oldIndex: 3, newIndex: 0))
+          ..add(const CalculatorGroupsReordered(oldIndex: 2, newIndex: 2))
+          ..add(const CalculatorGroupsReordered(oldIndex: 9, newIndex: 0)),
+        verify: (bloc) {
+          expect(groupOrder.saved, reorderedUnitFirst);
+          expect(groupOrder.saveCallCount, 1);
+          expect(bloc.state.groupOrder, reorderedUnitFirst);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the order the phone keeps is the order shown after a restart, and '
+        'the group on the keyboard keeps its place in it (L3, CA-1307)',
+        build: () {
+          groupOrder.saved = reorderedUnitFirst;
+          return Modular.get<CalculatorBloc>();
+        },
+        act: (bloc) async {
+          if (!listEquals(bloc.state.groupOrder, reorderedUnitFirst)) {
+            await bloc.stream.firstWhere(
+              (s) => listEquals(s.groupOrder, reorderedUnitFirst),
+            );
+          }
+          bloc.add(const CalculatorGroupSelected(1));
+        },
+        verify: (bloc) {
+          expect(bloc.state.groupOrder, reorderedUnitFirst);
+          expect(bloc.state.currentGroupIndex, 1);
+          expect(
+            bloc.state.groupOrder[bloc.state.currentGroupIndex],
+            CalculatorGroupId.basicGeometry,
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an order arriving from the store while a group is on the keyboard '
+        'keeps that group on the keyboard at its new place, and the same '
+        'order arriving again changes nothing (L3, CA-1307)',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(const CalculatorGroupSelected(2));
+          final arrived = bloc.stream.firstWhere(
+            (s) => listEquals(s.groupOrder, reorderedUnitFirst),
+          );
+          await groupOrder.saveGroupOrder(reorderedUnitFirst);
+          await arrived;
+          bloc.add(const CalculatorGroupOrderArrived(reorderedUnitFirst));
+        },
+        expect: () => [
+          const CalculatorState(currentGroupIndex: 2),
+          const CalculatorState(
+            currentGroupIndex: 3,
+            groupOrder: reorderedUnitFirst,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an order arriving without the group on the keyboard puts the first '
+        'group of the new order on the keyboard (L3, CA-1307)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorGroupSelected(2))
+          ..add(
+            const CalculatorGroupOrderArrived([
+              CalculatorGroupId.unit,
+              CalculatorGroupId.basicGeometry,
+              CalculatorGroupId.shapes,
+              CalculatorGroupId.trigonometry,
+              'More',
+            ]),
+          ),
+        expect: () => [
+          const CalculatorState(currentGroupIndex: 2),
+          const CalculatorState(
+            currentGroupIndex: 0,
+            groupOrder: [
+              CalculatorGroupId.unit,
+              CalculatorGroupId.basicGeometry,
+              CalculatorGroupId.shapes,
+              CalculatorGroupId.trigonometry,
+              'More',
+            ],
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a save the phone refuses keeps the dragged order on the keyboard '
+        'and raises no error (L3, CA-1307)',
+        build: () {
+          groupOrder.saveFailure = const CalculatorFailure(
+            errorType: CalculatorErrorType.storageError,
+          );
+          return bloc;
+        },
+        act: (bloc) =>
+            bloc.add(const CalculatorGroupsReordered(oldIndex: 3, newIndex: 0)),
+        expect: () => [
+          const CalculatorState(
+            currentGroupIndex: 1,
+            groupOrder: reorderedUnitFirst,
+          ),
+        ],
+        errors: () => const <Object>[],
+        verify: (bloc) {
+          expect(groupOrder.saveCallCount, 1);
+          expect(groupOrder.saved, isNull);
+          expect(bloc.state.groupOrder, reorderedUnitFirst);
+          expect(bloc.state.toast, isNull);
+        },
+      );
+
+      test('an order arriving from the phone after the bloc is closed does '
+          'not throw and changes nothing (L3, CA-1307)', () async {
+        await bloc.close();
+        await expectLater(
+          groupOrder.saveGroupOrder(reorderedUnitFirst),
+          completes,
+        );
+        expect(bloc.isClosed, isTrue);
+        expect(bloc.state.groupOrder, CalculatorGroupId.defaultOrder);
+      });
 
       blocTest<CalculatorBloc, CalculatorState>(
         'a group dragged to the front in View all leads the order, and the '
