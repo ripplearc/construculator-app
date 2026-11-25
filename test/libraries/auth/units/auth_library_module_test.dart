@@ -18,16 +18,23 @@ class _TestModule extends Module {
 }
 
 void main() {
+  late FakeSessionService sessionService;
+  late FakeSupabaseWrapper supabase;
+
+  setUp(() {
+    sessionService = FakeSessionService();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      sessionService: sessionService,
+    );
+    supabase = bootstrap.supabaseWrapper as FakeSupabaseWrapper;
+    Modular.init(_TestModule(bootstrap));
+  });
+
+  tearDown(Modular.destroy);
+
   test(
     'disposing the AuthManager binding stops it reacting to auth events',
     () {
-      final sessionService = FakeSessionService();
-      final bootstrap = FakeAppBootstrapFactory.create(
-        sessionService: sessionService,
-      );
-      final supabase = bootstrap.supabaseWrapper as FakeSupabaseWrapper;
-      Modular.init(_TestModule(bootstrap));
-      addTearDown(Modular.destroy);
       Modular.get<AuthManager>();
       FakeUser user(String id) =>
           FakeUser(id: id, email: '$id@example.com', createdAt: '2026-11-01');

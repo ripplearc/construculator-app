@@ -115,6 +115,7 @@ abstract class AuthManager {
   /// Stops listening to Supabase auth state changes. After this call they no
   /// longer reach the auth notifier. Call it when the manager is torn down.
   ///
-  /// Safe to call more than once. The other methods keep working afterwards.
+  /// Safe to call more than once. After this call, sign-in and sign-out
+  /// from Supabase no longer reach the app, so do not use this manager again.
   Future<void> dispose();
 }
