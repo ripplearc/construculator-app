@@ -79,6 +79,15 @@ void main() {
       },
     );
 
+    test('dispose marks the manager as disposed and reset clears it', () async {
+      await authManager.dispose();
+      expect(authManager.isDisposed, true);
+
+      authManager.reset();
+
+      expect(authManager.isDisposed, false);
+    });
+
     group('Input Validation', () {
       group('loginWithEmail validation', () {
         test(

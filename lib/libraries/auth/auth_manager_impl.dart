@@ -29,6 +29,8 @@ class AuthManagerImpl implements AuthManager {
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
+  late final StreamSubscription<supabase.AuthState> _authSubscription;
+
   String? _sessionUserId;
 
   AuthManagerImpl({
@@ -48,7 +50,7 @@ class AuthManagerImpl implements AuthManager {
   }
 
   void _initAuthListener() {
-    _wrapper.onAuthStateChange.listen(
+    _authSubscription = _wrapper.onAuthStateChange.listen(
       (state) {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
@@ -406,6 +408,9 @@ class AuthManagerImpl implements AuthManager {
       return _handleException(e, 'Logout');
     }
   }
+
+  @override
+  Future<void> dispose() => _authSubscription.cancel();
 
   @override
   bool isAuthenticated() {
