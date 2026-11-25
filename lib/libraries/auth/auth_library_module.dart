@@ -1,6 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
+import 'package:construculator/libraries/auth/check/check_finished_state_impl.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
@@ -31,6 +33,8 @@ class AuthLibraryModule extends Module {
 
   @override
   void exportedBinds(Injector i) {
+    i.addLazySingleton<CheckFinishedState>(CheckFinishedStateImpl.new);
+    i.addLazySingleton<ActiveUserProvider>(() => i.get<CheckFinishedState>());
     i.addLazySingleton<AuthNotifier>(() => authNotifierImpl);
     i.addLazySingleton<AuthManager>(
       () => AuthManagerImpl(
