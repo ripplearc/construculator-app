@@ -22,7 +22,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 enum _RateSaveStatus { idle, saving, saved, failed }
 
-enum _RecalledFooter { none, editedWithButton, savedSecondPrice, savedDefault }
+enum _RecalledFooter { none, editedWithButton, savedDefault }
 
 TextSpan _withBold(
   String text,
@@ -174,12 +174,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   late final YourRatesBloc _yourRatesBloc;
   _RateSaveStatus _rateSaveStatus = _RateSaveStatus.idle;
-  bool _savedUnderLabel = false;
   bool _rateEditedWhileSaving = false;
   double? _amountBeingSaved;
   ({String id, double price, EquipmentPricingMethod method})?
   _recalledRateBeingSaved;
   String? _goneRecalledRateId;
+  String? _rateIdBeingReplaced;
 
   @override
   void initState() {
@@ -544,8 +544,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _saveAsMyRate(EquipmentCostFormData data) {
     _onRateEdited();
-    _savedUnderLabel = false;
     _rateEditedWhileSaving = false;
+    _rateIdBeingReplaced = null;
     final recalledRate = data.recalledRowToReplace;
     _recalledRateBeingSaved = recalledRate?.id == _goneRecalledRateId
         ? null
@@ -592,11 +592,19 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           unawaited(_askToReplaceSavedRate(context, entry, recalledRate));
           return;
         }
-        _savedUnderLabel = true;
         unawaited(_promptEntryLabel(context, entry));
-      case YourRatesSaveLabelTaken():
+      case YourRatesSaveLabelTaken(:final entry, :final takenBy):
         _rateEditedWhileSaving = false;
         setState(() => _rateSaveStatus = _RateSaveStatus.idle);
+        final takenMethod = takenBy?.equipmentMethod;
+        if (takenBy == null || takenMethod == null) return;
+        unawaited(
+          _askToReplaceSavedRate(context, entry, (
+            id: takenBy.id,
+            price: takenBy.rate.amount,
+            method: takenMethod,
+          )),
+        );
       case YourRatesSaveFailed(:final failure):
         _forgetRecalledRateWhenGone(failure);
         _showRateSaveFailed();
@@ -608,11 +616,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               ? _RateSaveStatus.idle
               : _RateSaveStatus.saved,
         );
-        if (!_savedUnderLabel) {
-          context.read<EquipmentCostFormBloc>().add(
-            EquipmentRecalledAmountSavedEvent(amount: _amountBeingSaved),
-          );
-        }
+        context.read<EquipmentCostFormBloc>().add(
+          EquipmentRecalledAmountSavedEvent(amount: _amountBeingSaved),
+        );
       case YourRatesLoading():
       case YourRatesRetrying():
       case YourRatesLoaded():
@@ -629,11 +635,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   );
 
   void _forgetRecalledRateWhenGone(Failure failure) {
-    final recalledRate = _recalledRateBeingSaved;
-    if (recalledRate != null &&
+    final replacedId = _rateIdBeingReplaced;
+    if (replacedId != null &&
         failure is EstimationFailure &&
         failure.errorType == EstimationErrorType.notFoundError) {
-      _goneRecalledRateId = recalledRate.id;
+      _goneRecalledRateId = replacedId;
     }
   }
 
@@ -670,6 +676,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
     if (replace != true || !mounted) return;
     _rateEditedWhileSaving = false;
+    _rateIdBeingReplaced = savedRate.id;
     _yourRatesBloc.add(
       YourRatesSaveRequested(entry, replacesRateId: savedRate.id),
     );
@@ -1171,11 +1178,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   _RecalledFooter _recalledFooterFor(EquipmentCostFormData data) {
     if (_jobAmountFocusNode.hasFocus) return _RecalledFooter.none;
     final saved = _rateSaveStatus == _RateSaveStatus.saved;
-    if (data.isRecalledAmountEdited) {
-      return saved && _savedUnderLabel
-          ? _RecalledFooter.savedSecondPrice
-          : _RecalledFooter.editedWithButton;
-    }
+    if (data.isRecalledAmountEdited) return _RecalledFooter.editedWithButton;
     return saved ? _RecalledFooter.savedDefault : _RecalledFooter.none;
   }
 
@@ -1183,7 +1186,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       switch (_recalledFooterFor(data)) {
         _RecalledFooter.none => CoreSpacing.space5,
         _RecalledFooter.editedWithButton => CoreSpacing.space3,
-        _RecalledFooter.savedSecondPrice ||
         _RecalledFooter.savedDefault => CoreSpacing.space4,
       };
 
@@ -1212,13 +1214,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         child: hint(
           'recalled_amount_saved_hint',
           l10n.equipmentRecalledAmountSavedHint(savedPrice),
-        ),
-      ),
-      _RecalledFooter.savedSecondPrice => Padding(
-        padding: const EdgeInsets.only(top: CoreSpacing.space2),
-        child: hint(
-          'recalled_amount_saved_second_price_hint',
-          l10n.equipmentRecalledAmountSavedSecondPriceHint(savedPrice),
         ),
       ),
       _RecalledFooter.editedWithButton => _editedAmountFooter(
