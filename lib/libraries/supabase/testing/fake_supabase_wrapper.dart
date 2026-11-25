@@ -62,11 +62,29 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [signOut] throws an exception
   bool shouldThrowOnSignOut = false;
 
+  /// Makes [signOut] throw after it ended the session, as Supabase does when
+  /// the server call fails offline
+  bool shouldThrowAfterSignOutEndedSession = false;
+
+  /// When set, [signOut] ends the session and then waits for this to complete,
+  /// as Supabase does while the server call is slow
+  Completer<void>? signOutGate;
+
   /// Makes [readSavedSession] answer [SavedSessionUnknown], as when the
   /// iPhone keychain is locked
   bool shouldFailReadSavedSession = false;
 
+  /// How many [readSavedSession] calls after [signOut] still return the old
+  /// session, as when Supabase removes it in a listener nobody waits for
+  int savedSessionReadsAfterSignOutBeforeRemoval = 0;
+
+  /// Called when [readSavedSession] returns the saved session or its absence,
+  /// so a test can change the world between two steps of the code under test
+  void Function()? afterReadSavedSession;
+
   SavedSessionRead _savedSession = const SavedSessionAbsent();
+  SavedSessionRead? _savedSessionBeingRemoved;
+  int _readsUntilRemoved = 0;
 
   /// Controls whether [select] throws an exception
   bool shouldThrowOnSelectMultiple = false;
@@ -450,10 +468,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
 
     _currentUser = null;
+    _savedSessionBeingRemoved = _savedSession;
+    _readsUntilRemoved = savedSessionReadsAfterSignOutBeforeRemoval;
     _savedSession = const SavedSessionAbsent();
     _authStateController.add(
       _createAuthState(supabase.AuthChangeEvent.signedOut, null),
     );
+    await signOutGate?.future;
+    if (shouldThrowAfterSignOutEndedSession) {
+      throw ServerException(Trace.current(), Exception('Sign out failed'));
+    }
   }
 
   /// Saves [value] as the login session text that [readSavedSession] returns
@@ -466,7 +490,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   Future<SavedSessionRead> readSavedSession() async {
     _methodCalls.add({'method': 'readSavedSession'});
     if (shouldFailReadSavedSession) return const SavedSessionUnknown();
-    return _savedSession;
+    final beingRemoved = _savedSessionBeingRemoved;
+    if (beingRemoved != null && _readsUntilRemoved-- > 0) {
+      afterReadSavedSession?.call();
+      return beingRemoved;
+    }
+    _savedSessionBeingRemoved = null;
+    final result = _savedSession;
+    afterReadSavedSession?.call();
+    return result;
   }
 
   @override
@@ -1254,8 +1286,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnVerifyOtp = false;
     shouldThrowOnResetPassword = false;
     shouldThrowOnSignOut = false;
+    shouldThrowAfterSignOutEndedSession = false;
+    signOutGate = null;
     shouldFailReadSavedSession = false;
+    savedSessionReadsAfterSignOutBeforeRemoval = 0;
+    afterReadSavedSession = null;
     _savedSession = const SavedSessionAbsent();
+    _savedSessionBeingRemoved = null;
     shouldThrowOnSelect = false;
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
