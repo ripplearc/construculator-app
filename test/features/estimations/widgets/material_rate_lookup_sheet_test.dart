@@ -123,6 +123,20 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_screws')), findsNothing);
     });
 
+    testWidgets('starts the search box and the YOUR RATES heading 20 dp from '
+        'the sheet edge, as the frame does', (tester) async {
+      await openSheet(tester);
+
+      expect(
+        tester.getRect(find.byKey(const Key('your_rates_search_field'))).left,
+        CoreSpacing.space5,
+      );
+      expect(
+        tester.getRect(find.text(l10n.yourRatesName.toUpperCase())).left,
+        CoreSpacing.space5,
+      );
+    });
+
     testWidgets('lists only material rates, never equipment ones', (
       tester,
     ) async {

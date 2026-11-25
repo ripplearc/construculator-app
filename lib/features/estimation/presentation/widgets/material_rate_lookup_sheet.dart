@@ -34,6 +34,8 @@ class MaterialRateLookupSheet extends StatefulWidget {
       _MaterialRateLookupSheetState();
 }
 
+const _textInset = EdgeInsets.symmetric(horizontal: CoreSpacing.space2);
+
 class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
   late final _searchController = TextEditingController(
     text: widget.initialQuery,
@@ -77,24 +79,27 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                 child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      CoreSpacing.space4,
+                      CoreSpacing.space3,
                       0,
-                      CoreSpacing.space4,
+                      CoreSpacing.space3,
                       CoreSpacing.space4,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SheetSearchField(
-                          controller: _searchController,
-                          hintText: l10n.yourRatesMaterialSearchHint,
-                          onChanged: _search,
+                        Padding(
+                          padding: _textInset,
+                          child: SheetSearchField(
+                            controller: _searchController,
+                            hintText: l10n.yourRatesMaterialSearchHint,
+                            onChanged: _search,
+                          ),
                         ),
                         const SizedBox(height: CoreSpacing.space6),
                         if (entries.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(
+                            padding: _textInset.copyWith(
                               bottom: CoreSpacing.space2,
                             ),
                             child: Text(
