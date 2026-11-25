@@ -306,7 +306,7 @@ class _SampleGroup extends StatelessWidget {
       spacing: CoreSpacing.space2,
       children: [
         Padding(
-          padding: EdgeInsets.only(
+          padding: _textInset.copyWith(
             top: hasContentAbove ? CoreSpacing.space4 : 0,
           ),
           child: Text(
@@ -317,21 +317,24 @@ class _SampleGroup extends StatelessWidget {
           ),
         ),
         // TODO: [CA-1510] use CoreUI's inline notice once it exists. https://ripplearc.youtrack.cloud/issue/CA-1510
-        Container(
-          key: const Key('material_lookup_sample_notice'),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space3,
-          ),
-          decoration: BoxDecoration(
-            color: colorTheme.backgroundOrangeLight,
-            border: Border.all(color: colorTheme.lineOrange),
-            borderRadius: BorderRadius.circular(CoreSpacing.space3),
-          ),
-          child: Text(
-            l10n.materialLookupSampleNotice,
-            style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textHeadline,
+        Padding(
+          padding: _textInset,
+          child: Container(
+            key: const Key('material_lookup_sample_notice'),
+            padding: const EdgeInsets.symmetric(
+              horizontal: CoreSpacing.space4,
+              vertical: CoreSpacing.space3,
+            ),
+            decoration: BoxDecoration(
+              color: colorTheme.backgroundOrangeLight,
+              border: Border.all(color: colorTheme.lineOrange),
+              borderRadius: BorderRadius.circular(CoreSpacing.space3),
+            ),
+            child: Text(
+              l10n.materialLookupSampleNotice,
+              style: textTheme.bodySmallRegular.copyWith(
+                color: colorTheme.textHeadline,
+              ),
             ),
           ),
         ),
