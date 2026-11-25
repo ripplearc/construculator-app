@@ -788,6 +788,18 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is not offered once the price is cleared',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(const MaterialRateUpdated('')),
+        verify: (b) {
+          expect(offers(b), isFalse);
+          expect(_dataOf(b.state).rateStatus, RateStatus.missing);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'is not offered while the rate is out of range',
         build: () => bloc,
         act: (b) => b

@@ -168,4 +168,33 @@ void main() {
 
     expect(taps, 0);
   });
+
+  testWidgets('a long label next to a tag wraps instead of overflowing', (
+    tester,
+  ) async {
+    const label = 'A label long enough to need a second line here';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        home: const Scaffold(
+          body: SizedBox(
+            width: 220,
+            child: SheetFieldRow(
+              label: label,
+              labelTrailing: SizedBox(key: Key('tag'), width: 80, height: 20),
+              child: SizedBox(height: 24),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    final labelRect = tester.getRect(find.text(label));
+    expect(labelRect.height, greaterThan(24));
+    expect(
+      labelRect.right,
+      lessThanOrEqualTo(tester.getRect(find.byKey(const Key('tag'))).left),
+    );
+  });
 }

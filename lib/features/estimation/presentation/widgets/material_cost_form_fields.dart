@@ -377,7 +377,7 @@ class _FieldHint extends StatelessWidget {
                         TextSpan(
                           text: emphasis,
                           style: context.textTheme.bodySmallSemiBold.copyWith(
-                            color: colorTheme.textBody,
+                            color: colorTheme.textHeadline,
                           ),
                         ),
                         TextSpan(text: text.substring(at + emphasis.length)),

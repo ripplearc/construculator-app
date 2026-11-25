@@ -727,6 +727,10 @@ void main() {
         boldSpan.style!.fontWeight,
         tester.element(hint).textTheme.bodySmallSemiBold.fontWeight,
       );
+      expect(
+        boldSpan.style?.color,
+        tester.element(hint).colorTheme.textHeadline,
+      );
     });
 
     testWidgets('a typed rate removes the search button and the hint', (
@@ -1018,6 +1022,26 @@ void main() {
           of: find.byKey(const Key('save_as_default_helper_text')),
           matching: find.textContaining(r'$60.00', findRichText: true),
         ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('clearing the sample price removes the tag and the save line '
+        'and brings back the look-up hint', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await pickSample(tester);
+      expect(find.byKey(const Key('rate_status_badge')), findsOneWidget);
+
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      expect(
+        find.byKey(const Key('save_as_default_helper_text')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('material_rate_lookup_hint')),
         findsOneWidget,
       );
     });

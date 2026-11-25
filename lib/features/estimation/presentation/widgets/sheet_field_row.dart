@@ -75,11 +75,13 @@ class SheetFieldRow extends StatelessWidget {
                 Row(
                   spacing: CoreSpacing.space2,
                   children: [
-                    ExcludeSemantics(
-                      child: Text(
-                        label,
-                        style: textTheme.bodyMediumRegular.copyWith(
-                          color: colorTheme.textBody,
+                    Flexible(
+                      child: ExcludeSemantics(
+                        child: Text(
+                          label,
+                          style: textTheme.bodyMediumRegular.copyWith(
+                            color: colorTheme.textBody,
+                          ),
                         ),
                       ),
                     ),
