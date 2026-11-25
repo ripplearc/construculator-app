@@ -132,7 +132,7 @@ void main() {
       return;
     }
     for (var frame = 0; frame < 5; frame++) {
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 40));
     }
   }
 
