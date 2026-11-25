@@ -1340,6 +1340,86 @@ void main() {
       expect(labels, containsAll(['liters', 'Supplier A']));
     });
 
+    void seedSavedProClassic() => database.seedRow({
+      'id': 'old-paint',
+      'company_id': 'company-1',
+      'category': 'material',
+      'item_name': 'Interior paint · ProClassic',
+      'rate_amount': 48.0,
+      'rate_currency': 'USD',
+      'unit': 'liters',
+      'entry_label': 'liters',
+      'saved_at': '2026-01-01T00:00:00.000Z',
+    });
+
+    testWidgets('the Name this rate dialog speaks of a material, never of '
+        'equipment', (tester) async {
+      seedSavedProClassic();
+      await openVerify(tester);
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.text(l10n.yourRatesMaterialEntryLabelDialogBody),
+        findsOneWidget,
+      );
+      expect(find.textContaining('equipment'), findsNothing);
+    });
+
+    testWidgets('a label already in use shows one dialog with the taken-name '
+        'error', (tester) async {
+      seedSavedProClassic();
+      await openVerify(tester);
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('entry_label_field')),
+        'liters',
+      );
+      await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsOneWidget);
+      expect(find.text(l10n.yourRatesEntryLabelTakenError), findsOneWidget);
+    });
+
+    testWidgets('Cancel closes the dialog, keeps the tag and the link, shows '
+        'no error and saves nothing new', (tester) async {
+      seedSavedProClassic();
+      await openVerify(tester);
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('entry_label_dialog_cancel_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+      expect(badge, findsOneWidget);
+      expect(link, findsOneWidget);
+      expect(find.byKey(const Key('save_as_default_error')), findsNothing);
+      expect(await savedMaterials(), hasLength(1));
+    });
+
+    testWidgets('a new rate typed after a failed save clears the failure '
+        'line', (tester) async {
+      await openVerify(tester);
+      database.executeError = StateError('disk full');
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('save_as_default_error')), findsOneWidget);
+
+      await tester.enterText(rateField, '60');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('save_as_default_error')), findsNothing);
+    });
+
     testWidgets('the link is not offered for a rate picked from Your rates', (
       tester,
     ) async {

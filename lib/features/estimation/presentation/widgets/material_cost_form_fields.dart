@@ -328,8 +328,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                             inputFormatters: [
                               _decimalLimitFormatter(decimals: 2),
                             ],
-                            onChanged: (value) =>
-                                bloc.add(MaterialRateUpdated(value)),
+                            onChanged: (value) {
+                              if (_defaultSave == _DefaultSave.failed) {
+                                setState(
+                                  () => _defaultSave = _DefaultSave.idle,
+                                );
+                              }
+                              bloc.add(MaterialRateUpdated(value));
+                            },
                           ),
                           if (state.data.unit case final unit?)
                             Flexible(

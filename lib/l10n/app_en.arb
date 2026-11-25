@@ -2699,7 +2699,12 @@
   },
   "yourRatesEntryLabelDialogBody": "You already have a saved rate for this equipment. Give this one a name so you can tell them apart.",
   "@yourRatesEntryLabelDialogBody": {
-    "description": "Body copy of the entry-label collision dialog"
+    "description": "Body copy of the entry-label collision dialog on the equipment form"
+  },
+  "yourRatesMaterialEntryLabelDialogBody": "You already have a saved rate for this material. Give this one a name so you can tell them apart.",
+  "@yourRatesMaterialEntryLabelDialogBody": {
+    "description": "Body copy of the entry-label collision dialog on the material form",
+    "context": "Storyboard CUJ 4, sub-flow E, Save as my default; the equipment wording with the cost type changed"
   },
   "yourRatesEntryLabelHint": "e.g. Supplier A",
   "@yourRatesEntryLabelHint": {

@@ -90,7 +90,15 @@ class _EntryLabelDialogState extends State<EntryLabelDialog> {
                 ),
                 const SizedBox(height: CoreSpacing.space3),
                 Text(
-                  l10n.yourRatesEntryLabelDialogBody,
+                  switch (widget.entry.category) {
+                    CostItemType.material =>
+                      l10n.yourRatesMaterialEntryLabelDialogBody,
+                    CostItemType.equipment =>
+                      l10n.yourRatesEntryLabelDialogBody,
+                    CostItemType.labor => throw UnsupportedError(
+                      'No labor saved rates yet',
+                    ),
+                  },
                   style: textTheme.bodyMediumRegular.copyWith(
                     color: colorTheme.textBody,
                   ),

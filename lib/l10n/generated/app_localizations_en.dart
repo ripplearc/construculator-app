@@ -1778,6 +1778,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You already have a saved rate for this equipment. Give this one a name so you can tell them apart.';
 
   @override
+  String get yourRatesMaterialEntryLabelDialogBody =>
+      'You already have a saved rate for this material. Give this one a name so you can tell them apart.';
+
+  @override
   String get yourRatesEntryLabelHint => 'e.g. Supplier A';
 
   @override

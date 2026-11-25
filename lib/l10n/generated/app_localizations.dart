@@ -3184,11 +3184,17 @@ abstract class AppLocalizations {
   /// **'Name this rate'**
   String get yourRatesEntryLabelDialogTitle;
 
-  /// Body copy of the entry-label collision dialog
+  /// Body copy of the entry-label collision dialog on the equipment form
   ///
   /// In en, this message translates to:
   /// **'You already have a saved rate for this equipment. Give this one a name so you can tell them apart.'**
   String get yourRatesEntryLabelDialogBody;
+
+  /// Body copy of the entry-label collision dialog on the material form
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a saved rate for this material. Give this one a name so you can tell them apart.'**
+  String get yourRatesMaterialEntryLabelDialogBody;
 
   /// Placeholder text for the entry-label text field in the collision dialog
   ///
