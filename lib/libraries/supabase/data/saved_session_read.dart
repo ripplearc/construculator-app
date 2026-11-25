@@ -24,15 +24,19 @@ final class SavedSessionFound extends SavedSessionRead with Equatable {
   /// This is Supabase's own test: the text is JSON and holds an access token.
   /// A value that fails it gives a first auth event with no session, and
   /// Supabase leaves the value saved.
-  bool get isReadableSession {
+  bool get isReadableSession => userId != null;
+
+  /// The user the saved session belongs to, or null when [isReadableSession]
+  /// is false.
+  String? get userId {
     try {
       final decoded = json.decode(value);
-      if (decoded is! Map<String, dynamic>) return false;
-      return supabase.Session.fromJson(decoded) != null;
+      if (decoded is! Map<String, dynamic>) return null;
+      return supabase.Session.fromJson(decoded)?.user.id;
     } on FormatException {
-      return false;
+      return null;
     } on TypeError {
-      return false;
+      return null;
     }
   }
 }
