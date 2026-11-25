@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATION SESSION REPOSITORY MUTATION TESTING (K2, CA-1082) -->
+    <!-- Targets: CalculationSessionRepositoryImpl. A weakened guard here
+         banks a session for nobody, lists another user's history, keeps a
+         result a tape does not end on, restores a tape this build cannot
+         read half way, or reports a failure of the wrong kind. -->
+
+    <files>
+        <file>lib/libraries/calculation/data/repositories/calculation_session_repository_impl.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the watch lists sessions while nobody is signed in -->
+        <regex pattern="if \(userId == null\) return Stream\.value\(const \[\]\);" dotAll="true" id="session_repository.watch.nobody_signed_in">
+            <mutation text="if (userId == null) return _dataSource.watchSessions('').map((rows) =&gt; [for (final row in rows) row.toEntity()]);"/>
+        </regex>
+
+        <!-- RULE 2: a tape that does not end on a result keeps one anyway,
+             or a result is never kept -->
+        <regex pattern="final result = switch \(tape\.chips\.lastOrNull\) \{\s*ResultChip\(:final value\) =&gt; value,\s*_ =&gt; null,\s*\};" dotAll="true" id="session_repository.bank.result">
+            <mutation text="final result = switch (tape.chips.lastOrNull) { _ =&gt; null, };"/>
+            <mutation text="final result = tape.chips.whereType&lt;ResultChip&gt;().lastOrNull?.value;"/>
+        </regex>
+
+        <!-- RULE 3: the result text is dropped, or the chips are written
+             without their text -->
+        <regex pattern="resultText: result == null \? null : formatter\.format\(result\)," dotAll="true" id="session_repository.bank.result_text">
+            <mutation text="resultText: null,"/>
+        </regex>
+        <regex pattern="text: \(chip\) =&gt; _textOf\(chip, formatter\)," dotAll="true" id="session_repository.bank.chip_text">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 4: a chip's text loses its operator, or a result its
+             rendering -->
+        <regex pattern="ValueChip\(:final operator, :final entry\) =&gt;\s*'\$\{operator\?\.symbol \?\? ''\}\$\{entry\.text\}'," dotAll="true" id="session_repository.text.value_operator">
+            <mutation text="ValueChip(:final entry) =&gt; entry.text,"/>
+        </regex>
+
+        <!-- RULE 5: a session that is gone is a storage error, not
+             notFound; a tape that is gone is read anyway -->
+        <regex pattern="final session = await _dataSource\.fetchSessionById\(id\);\s*if \(session == null\) throw const _NotFound\(\);" dotAll="true" id="session_repository.get.not_found">
+            <mutation text="final session = await _dataSource.fetchSessionById(id); if (session == null) throw StateError('gone');"/>
+        </regex>
+        <regex pattern="if \(tape == null\) throw const _NotFound\(\);" dotAll="true" id="session_repository.restore.not_found">
+            <mutation text="if (tape == null) throw StateError('gone');"/>
+        </regex>
+
+        <!-- RULE 6: a tape this build cannot read is a storage error -->
+        <regex pattern="\} on FormatException catch \(error\) \{" dotAll="true" id="session_repository.restore.unreadable_is_storage_error">
+            <mutation text="} on StateError catch (error) {"/>
+        </regex>
+
+        <!-- RULE 7: the restored tape ignores the settings in force -->
+        <regex pattern="chips: TapeChipCodec\.decode\(tape\.computation\),\s*preferences: preferences," dotAll="true" id="session_repository.restore.preferences_dropped">
+            <mutation text="chips: TapeChipCodec.decode(tape.computation),"/>
+        </regex>
+
+        <!-- RULE 8: a rename or a delete of a session nobody has is a
+             success -->
+        <regex pattern="if \(!await _dataSource\.renameSession\(id, title, _clock\.now\(\)\)\) \{\s*throw const _NotFound\(\);\s*\}" dotAll="true" id="session_repository.rename.not_found">
+            <mutation text="await _dataSource.renameSession(id, title, _clock.now());"/>
+        </regex>
+        <regex pattern="if \(!await _dataSource\.deleteSession\(id\)\) throw const _NotFound\(\);" dotAll="true" id="session_repository.delete.not_found">
+            <mutation text="await _dataSource.deleteSession(id);"/>
+        </regex>
+
+        <!-- RULE 9: a search reads every user's sessions -->
+        <regex pattern="final rows = await _dataSource\.searchSessions\(\s*_signedInUserId\(\),\s*query,?\s*\);" dotAll="true" id="session_repository.search.every_user">
+            <mutation text="final rows = await _dataSource.searchSessions(_supabaseWrapper.getInternalUserId() ?? '', query);"/>
+        </regex>
+
+        <!-- RULE 10: a failure of one kind is reported as another -->
+        <regex pattern="\} on _NotSignedIn \{\s*_logger\.warning\('Refused \$what: nobody is signed in'\);\s*return const Left\(\s*CalculatorFailure\(errorType: CalculatorErrorType\.notSignedIn\),\s*\);" dotAll="true" id="session_repository.guard.not_signed_in">
+            <mutation text="} on _NotSignedIn { return const Left( CalculatorFailure(errorType: CalculatorErrorType.storageError), );"/>
+        </regex>
+        <regex pattern="\} on _NotFound \{\s*return const Left\(\s*CalculatorFailure\(errorType: CalculatorErrorType\.notFound\),\s*\);" dotAll="true" id="session_repository.guard.not_found">
+            <mutation text="} on _NotFound { return const Left( CalculatorFailure(errorType: CalculatorErrorType.storageError), );"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="session_repository" expected-return="0">flutter test test/libraries/calculation/units/data/repositories/calculation_session_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
