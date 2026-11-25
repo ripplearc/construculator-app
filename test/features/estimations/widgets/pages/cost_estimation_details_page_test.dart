@@ -1743,7 +1743,7 @@ void main() {
           find.byKey(const Key('material_quantity_field')),
           '3',
         );
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         // On this 600 dp screen the number pad leaves one row of the form in
         // view, so the unit button is scrolled to first.
         await tester.ensureVisible(find.byKey(const Key('material_unit_pill')));
