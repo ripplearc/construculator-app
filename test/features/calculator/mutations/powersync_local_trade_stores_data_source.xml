@@ -12,10 +12,11 @@
         <file>lib/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart</file>
         <file>lib/features/calculator/data/models/calculator_store_row_dto.dart</file>
         <file>lib/features/calculator/data/models/trade_store_row_mapper.dart</file>
+        <file>lib/features/calculator/data/models/trade_store_seeds.dart</file>
     </files>
 
     <commands>
-        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_trade_stores_data_source_test.dart test/features/calculator/units/data/models/calculator_store_row_dto_test.dart test/features/calculator/units/data/models/trade_store_row_mapper_test.dart</command>
+        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_trade_stores_data_source_test.dart test/features/calculator/units/data/models/calculator_store_row_dto_test.dart test/features/calculator/units/data/models/trade_store_row_mapper_test.dart test/features/calculator/units/data/models/trade_store_seeds_test.dart</command>
     </commands>
 
     <rules>
@@ -122,6 +123,48 @@
              second time, surfacing the refusal again -->
         <regex pattern="controller\.onCancel = \(\) =&gt;\s*_watchSubscriptionsByController\.remove\(controller\)\?\.cancel\(\);" dotAll="true" id="trade_stores_data_source.watch.cancel_twice">
             <mutation text="controller.onCancel = () {&#10;      _watchSubscriptionsByController.remove(controller);&#10;      return subscription.cancel();&#10;    };"/>
+        </regex>
+
+        <!-- CA-1466: a seed is rounded to whole ticks again, so 172.8 m² of
+             1200 × 2400 mm sheets counts 59.99 -->
+        <regex pattern="Length\.exact\(unit\.inchesPer \* Rational\(value\), unit: unit\);" dotAll="true" id="trade_store_seeds.length.rounded_to_ticks">
+            <mutation text="Length((value * unit.ticksPerUnit).round(), unit: unit);"/>
+        </regex>
+
+        <!-- CA-1466: the row carries no fraction, so a metric size reads
+             back rounded; or the fraction is not read and the ticks are -->
+        <regex pattern="widthInchesKey: _fraction\(size\.width\),\s*heightInchesKey: _fraction\(size\.height\)," dotAll="true" id="trade_store_row_mapper.size.no_fraction_written">
+            <mutation text=""/>
+            <mutation text="widthInchesKey: _fraction(size.width), heightInchesKey: _fraction(size.width),"/>
+        </regex>
+        <regex pattern="inchesKey: _fraction\(spacing\.spacing\)," dotAll="true" id="trade_store_row_mapper.spacing.no_fraction_written">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="onCentreInchesKey: _fraction\(fence\.onCentre\)," dotAll="true" id="trade_store_row_mapper.fence.no_fraction_written">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(fraction == null\) return Length\(_integer\(values, ticksKey\), unit: unit\);" dotAll="true" id="trade_store_row_mapper.length.fraction_ignored">
+            <mutation text="return Length(_integer(values, ticksKey), unit: unit);"/>
+            <mutation text="if (fraction == null) throw FormatException('Unreadable trade store values: $inchesKey');"/>
+        </regex>
+        <regex pattern="if \(top != null &amp;&amp; bottom != null &amp;&amp; top &gt; 0 &amp;&amp; bottom &gt; 0\) \{" dotAll="true" id="trade_store_row_mapper.length.bad_fraction_read">
+            <mutation text="if (top != null &amp;&amp; bottom != null &amp;&amp; top &gt; 0) {"/>
+            <mutation text="if (bottom != null &amp;&amp; top &gt; 0 &amp;&amp; bottom &gt; 0) {"/>
+        </regex>
+
+        <!-- CA-1466: a zero or negative size, which no store holds, is read
+             as a good row instead of a format error -->
+        <regex pattern="if \(top != null &amp;&amp; bottom != null &amp;&amp; top &gt; 0 &amp;&amp; bottom &gt; 0\) \{" dotAll="true" id="trade_store_row_mapper.length.non_positive_fraction_read">
+            <mutation text="if (top != null &amp;&amp; bottom != null &amp;&amp; bottom &gt; 0) {"/>
+            <mutation text="if (top != null &amp;&amp; bottom != null &amp;&amp; top &gt;= 0 &amp;&amp; bottom &gt; 0) {"/>
+        </regex>
+        <regex pattern="if \(ticks &gt; 0\) return Length\(ticks, unit: unit\);" dotAll="true" id="trade_store_row_mapper.length.non_positive_ticks_read">
+            <mutation text="return Length(ticks, unit: unit);"/>
+            <mutation text="if (ticks &gt;= 0) return Length(ticks, unit: unit);"/>
+        </regex>
+        <regex pattern="final inches = length\.inches\.reduced;\s*return '\$\{inches\.numerator\}/\$\{inches\.denominator\}';" dotAll="true" id="trade_store_row_mapper.fraction.ticks_written">
+            <mutation text="return '${length.ticks}/1';"/>
+            <mutation text="final inches = length.inches; return '${inches.numerator}/${inches.denominator}';"/>
         </regex>
     </rules>
 </mutations>

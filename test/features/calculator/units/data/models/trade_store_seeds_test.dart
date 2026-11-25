@@ -78,6 +78,73 @@ void main() {
       },
     );
 
+    test('a metric seed is exact, so 172.8 m² of 1200 × 2400 mm sheets counts '
+        '60 and 1 m² of 100 × 100 mm tiles counts 100, never 59.99 or 99.98 '
+        '(CA-1466; Sections 6 and 9)', () {
+      final sheet = TradeStoreSeeds.sizes(
+        SizeStore.sheet,
+        MeasurementSystem.metric,
+      ).first;
+      expect(sheet.width.inches, const Rational(6000, 127));
+      expect(sheet.height.inches, const Rational(12000, 127));
+      final squareTicksPerSquareMetre =
+          Unit.metre.ticksPerUnit * Unit.metre.ticksPerUnit;
+      final sheetFace = PieceSize(
+        width: sheet.width,
+        height: sheet.height,
+      ).squareTicks;
+      expect(172.8 * squareTicksPerSquareMetre / sheetFace, closeTo(60, 1e-9));
+      final tile = PieceSize(
+        width: const Length.exact(Rational(500, 127), unit: Unit.millimetre),
+        height: const Length.exact(Rational(500, 127), unit: Unit.millimetre),
+      );
+      expect(squareTicksPerSquareMetre / tile.squareTicks, closeTo(100, 1e-9));
+      expect(
+        10 *
+            squareTicksPerSquareMetre /
+            PieceSize(
+              width: const Length.exact(
+                Rational(1500, 127),
+                unit: Unit.millimetre,
+              ),
+              height: const Length.exact(
+                Rational(1500, 127),
+                unit: Unit.millimetre,
+              ),
+            ).squareTicks,
+        closeTo(111.11111111, 1e-6),
+      );
+    });
+
+    test('an imperial seed is still its whole ticks, so its count is '
+        'unchanged (CA-1466)', () {
+      final sheet = TradeStoreSeeds.sizes(
+        SizeStore.sheet,
+        MeasurementSystem.imperial,
+      ).first;
+      expect(
+        sheet.width,
+        const Length(48 * Length.ticksPerInch, unit: Unit.inch),
+      );
+      expect(
+        sheet.height,
+        const Length(96 * Length.ticksPerInch, unit: Unit.inch),
+      );
+      expect(sheet.width.preciseTicks, 48 * 64);
+      for (final (store, index) in const [
+        (SizeStore.masonry, 0),
+        (SizeStore.footing, 0),
+      ]) {
+        final size = TradeStoreSeeds.sizes(
+          store,
+          MeasurementSystem.metric,
+        )[index];
+        expect(size.width.preciseTicks, size.width.ticks.toDouble());
+      }
+      expect(TradeStoreSeeds.spacings.first.spacing.preciseTicks, 16 * 64);
+      expect(TradeStoreSeeds.fence.onCentre.preciseTicks, 8 * 768);
+    });
+
     test('no seed has an id and every seed names itself', () {
       final all = [
         for (final store in SizeStore.values)

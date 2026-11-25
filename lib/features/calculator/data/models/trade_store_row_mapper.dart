@@ -2,15 +2,22 @@ import 'package:construculator/features/calculator/data/models/calculator_store_
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 
 /// Reads and writes the `values` object of a `user_calculator_stores` row,
 /// one shape per store kind, and builds the row around it.
 ///
 /// Static functions rather than a DTO per entity: the object is the entity
-/// with a tick count where the entity has a [Length], the unit it was
-/// spelled in beside it, and an enum name where it has an enum, and nothing
-/// else. The keys are this class's, not the database's (the server checks
+/// with, where the entity has a [Length], its exact inches as a fraction
+/// ("6000/127" for 1200 mm) beside the whole tick count older rows carry
+/// alone, the unit it was spelled in, and an enum name where it has an
+/// enum, and nothing else. A row is read from its fraction, so a stored
+/// size counts exactly (172.8 m² of 1200 × 2400 mm sheets is 60, not the
+/// 59.99 the rounded ticks gave; CA-1466), and from its ticks when it was
+/// written before the fraction was. A fraction is a positive whole number
+/// over a positive whole number, since no stored size, spacing or post
+/// spacing is zero or negative. The keys are this class's, not the database's (the server checks
 /// only that `values` is an object). A changed default carries the default's
 /// key under [CalculatorStoreRowDto.seedKey]; an entry the user added has
 /// no such key. A row's unit system is that of the unit the entry was typed
@@ -18,11 +25,19 @@ import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 /// this class writes these objects and a bad one means the row is not what
 /// the mapper says.
 abstract final class TradeStoreRowMapper {
-  /// A size's width in whole ticks of 1/64 inch.
+  /// A size's width in whole ticks of 1/64 inch, the view older rows carry
+  /// alone.
   static const String widthTicksKey = 'width_ticks';
 
-  /// A size's height in whole ticks of 1/64 inch.
+  /// A size's height in whole ticks of 1/64 inch, the view older rows carry
+  /// alone.
   static const String heightTicksKey = 'height_ticks';
+
+  /// A size's exact width in inches, as a fraction: "6000/127".
+  static const String widthInchesKey = 'width_inches';
+
+  /// A size's exact height in inches, as a fraction.
+  static const String heightInchesKey = 'height_inches';
 
   /// The unit a length was spelled in: a `Unit` name.
   static const String unitKey = 'unit';
@@ -30,11 +45,19 @@ abstract final class TradeStoreRowMapper {
   /// The user's order of an entry within its store, from zero.
   static const String positionKey = 'position';
 
-  /// An on-centre spacing in whole ticks of 1/64 inch.
+  /// An on-centre spacing in whole ticks of 1/64 inch, the view older rows
+  /// carry alone.
   static const String ticksKey = 'ticks';
 
-  /// The fence's post spacing in whole ticks of 1/64 inch.
+  /// An on-centre spacing's exact inches, as a fraction.
+  static const String inchesKey = 'inches';
+
+  /// The fence's post spacing in whole ticks of 1/64 inch, the view older
+  /// rows carry alone.
   static const String onCentreTicksKey = 'on_centre_ticks';
+
+  /// The fence's exact post spacing in inches, as a fraction.
+  static const String onCentreInchesKey = 'on_centre_inches';
 
   /// The fence's rails between two posts.
   static const String railsPerSectionKey = 'rails_per_section';
@@ -86,6 +109,8 @@ abstract final class TradeStoreRowMapper {
       ..._seed(size.seed),
       widthTicksKey: size.width.ticks,
       heightTicksKey: size.height.ticks,
+      widthInchesKey: _fraction(size.width),
+      heightInchesKey: _fraction(size.height),
       unitKey: size.width.unit.name,
       positionKey: size.position,
     },
@@ -103,8 +128,8 @@ abstract final class TradeStoreRowMapper {
     return StoredSize(
       id: row.id,
       store: store,
-      width: Length(_integer(row.values, widthTicksKey), unit: unit),
-      height: Length(_integer(row.values, heightTicksKey), unit: unit),
+      width: _length(row.values, widthInchesKey, widthTicksKey, unit),
+      height: _length(row.values, heightInchesKey, heightTicksKey, unit),
       position: _integer(row.values, positionKey),
       seed: row.seed,
     );
@@ -122,6 +147,7 @@ abstract final class TradeStoreRowMapper {
     values: {
       ..._seed(spacing.seed),
       ticksKey: spacing.spacing.ticks,
+      inchesKey: _fraction(spacing.spacing),
       unitKey: spacing.spacing.unit.name,
       positionKey: spacing.position,
     },
@@ -133,10 +159,7 @@ abstract final class TradeStoreRowMapper {
   static StoredSpacing spacingFromRow(CalculatorStoreRowDto row) =>
       StoredSpacing(
         id: row.id,
-        spacing: Length(
-          _integer(row.values, ticksKey),
-          unit: _unit(row.values),
-        ),
+        spacing: _length(row.values, inchesKey, ticksKey, _unit(row.values)),
         position: _integer(row.values, positionKey),
         seed: row.seed,
       );
@@ -153,6 +176,7 @@ abstract final class TradeStoreRowMapper {
     values: {
       CalculatorStoreRowDto.seedKey: fenceSeed,
       onCentreTicksKey: fence.onCentre.ticks,
+      onCentreInchesKey: _fraction(fence.onCentre),
       unitKey: fence.onCentre.unit.name,
       railsPerSectionKey: fence.railsPerSection,
     },
@@ -163,9 +187,11 @@ abstract final class TradeStoreRowMapper {
   /// The fence configuration from its row.
   static FenceConfiguration fenceFromRow(CalculatorStoreRowDto row) =>
       FenceConfiguration(
-        onCentre: Length(
-          _integer(row.values, onCentreTicksKey),
-          unit: _unit(row.values),
+        onCentre: _length(
+          row.values,
+          onCentreInchesKey,
+          onCentreTicksKey,
+          _unit(row.values),
         ),
         railsPerSection: _integer(row.values, railsPerSectionKey),
       );
@@ -270,6 +296,35 @@ abstract final class TradeStoreRowMapper {
   static String _text(Map<String, Object?> values, String key) {
     if (values[key] case final String value) return value;
     throw FormatException('Unreadable trade store values: $key');
+  }
+
+  static String _fraction(Length length) {
+    final inches = length.inches.reduced;
+    return '${inches.numerator}/${inches.denominator}';
+  }
+
+  static Length _length(
+    Map<String, Object?> values,
+    String inchesKey,
+    String ticksKey,
+    Unit unit,
+  ) {
+    final fraction = values[inchesKey];
+    if (fraction == null) {
+      final ticks = _integer(values, ticksKey);
+      if (ticks > 0) return Length(ticks, unit: unit);
+      throw FormatException('Unreadable trade store values: $ticksKey');
+    }
+    if (fraction case final String text) {
+      if (text.split('/') case [final numerator, final denominator]) {
+        final top = int.tryParse(numerator);
+        final bottom = int.tryParse(denominator);
+        if (top != null && bottom != null && top > 0 && bottom > 0) {
+          return Length.exact(Rational(top, bottom), unit: unit);
+        }
+      }
+    }
+    throw FormatException('Unreadable trade store values: $inchesKey');
   }
 
   static int _integer(Map<String, Object?> values, String key) {

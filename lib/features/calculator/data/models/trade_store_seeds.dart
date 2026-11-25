@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 
 /// The values every store starts with (UX Design Doc Appendix B, "Stored
@@ -13,8 +14,11 @@ import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 /// in inches (47.24in × 94.49in); Appendix D records that its walkthrough
 /// screens show the prototype's seeds. Masonry pieces and footing
 /// cross-sections have one set, quoted in inches by the trade in both
-/// systems. Every length is whole ticks, rounded as the parser rounds a
-/// typed value, and spelled in the unit the seed was quoted in. A seed's
+/// systems. Every length is exact, the way the parser keeps a typed value
+/// (Section 6, "Precision and storage"): 1200 mm is 6000/127 in, never
+/// the 3024 whole ticks that counted 172.8 m² of 1200 × 2400 mm sheets as
+/// 59.99 instead of 60 (CA-1466), and each is spelled in the unit the seed
+/// was quoted in. A seed's
 /// key is its store and its value ("sheet_48x96in"), so it stays the same
 /// across builds and phones.
 abstract final class TradeStoreSeeds {
@@ -97,5 +101,5 @@ abstract final class TradeStoreSeeds {
   ];
 
   static Length _length(int value, Unit unit) =>
-      Length((value * unit.ticksPerUnit).round(), unit: unit);
+      Length.exact(unit.inchesPer * Rational(value), unit: unit);
 }
