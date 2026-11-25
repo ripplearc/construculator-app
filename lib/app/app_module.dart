@@ -1,5 +1,6 @@
 // coverage:ignore-file
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/check_gate/check_gate_bloc.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/consent/consent_module.dart';
@@ -7,6 +8,7 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/analytics/analytics_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/check/auth_check_module.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
@@ -29,6 +31,13 @@ class AppModule extends Module {
     PowerSyncModule(appBootstrap),
     AuthCheckModule(appBootstrap),
   ];
+
+  @override
+  void binds(Injector i) {
+    i.add<CheckGateBloc>(
+      () => CheckGateBloc(checkFinishedState: i<CheckFinishedState>()),
+    );
+  }
 
   @override
   void routes(RouteManager r) {
