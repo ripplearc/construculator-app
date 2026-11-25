@@ -172,13 +172,18 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             ),
                           ),
                         if (hasReadError)
-                          CoreInlineErrorRow(
-                            key: const Key('your_rates_load_error'),
-                            message: l10n.yourRatesLoadError,
-                            actionLabel: l10n.yourRatesTryAgain,
-                            actionKey: const Key('your_rates_try_again_button'),
-                            isActionDisabled: _retrying,
-                            onAction: _retry,
+                          Padding(
+                            padding: _textInset,
+                            child: CoreInlineErrorRow(
+                              key: const Key('your_rates_load_error'),
+                              message: l10n.yourRatesLoadError,
+                              actionLabel: l10n.yourRatesTryAgain,
+                              actionKey: const Key(
+                                'your_rates_try_again_button',
+                              ),
+                              isActionDisabled: _retrying,
+                              onAction: _retry,
+                            ),
                           )
                         else if (entries.isEmpty &&
                             state is YourRatesSearchResults &&
@@ -186,6 +191,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                           Padding(
                             key: const Key('material_lookup_no_match'),
                             padding: const EdgeInsets.symmetric(
+                              horizontal: CoreSpacing.space2,
                               vertical: CoreSpacing.space6,
                             ),
                             child: Text(
