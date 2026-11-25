@@ -150,12 +150,17 @@ void main() {
         'the sheet edge, as the frame does', (tester) async {
       await openSheet(tester);
 
+      final sheetLeft = tester
+          .getRect(find.byType(MaterialRateLookupSheet))
+          .left;
       expect(
-        tester.getRect(find.byKey(const Key('your_rates_search_field'))).left,
+        tester.getRect(find.byKey(const Key('your_rates_search_field'))).left -
+            sheetLeft,
         CoreSpacing.space5,
       );
       expect(
-        tester.getRect(find.text(l10n.yourRatesName.toUpperCase())).left,
+        tester.getRect(find.text(l10n.yourRatesName.toUpperCase())).left -
+            sheetLeft,
         CoreSpacing.space5,
       );
     });
@@ -331,6 +336,26 @@ void main() {
 
       expect(sheetTop(tester), topWithTwoRows);
       expect(topWithTwoRows, lessThan(screen.height * (1 - 0.887) + 48));
+    });
+
+    testWidgets('lines the button and the picked row up with the frame: '
+        'button 20 dp in, row 12 dp in', (tester) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      final sheetLeft = tester
+          .getRect(find.byType(MaterialRateLookupSheet))
+          .left;
+      expect(
+        tester.getRect(find.byKey(useButton)).left - sheetLeft,
+        CoreSpacing.space5,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('your_rate_row_proclassic'))).left -
+            sheetLeft,
+        CoreSpacing.space3,
+      );
     });
 
     testWidgets('pins the button at the foot, above the home bar', (
