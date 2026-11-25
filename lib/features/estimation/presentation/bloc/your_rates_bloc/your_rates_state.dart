@@ -51,7 +51,10 @@ class YourRatesSaving extends YourRatesState {
 /// skips an emit that equals the current state, and a second save in one form
 /// would otherwise show nothing.
 class YourRatesSaveSucceeded extends YourRatesState {
-  YourRatesSaveSucceeded();
+  YourRatesSaveSucceeded(this.saved);
+
+  /// The entry as it was saved, with its id.
+  final YourRateEntry saved;
 }
 
 /// State after [YourRatesSaveRequested] is rejected because it collides

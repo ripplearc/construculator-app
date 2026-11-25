@@ -66,10 +66,21 @@ class MaterialSampleRatePicked extends MaterialCostFormEvent {
 /// the form becomes the user's own, confirmed, unless it was edited while
 /// the save ran.
 class MaterialRateSavedAsDefault extends MaterialCostFormEvent {
-  const MaterialRateSavedAsDefault(this.rate);
+  const MaterialRateSavedAsDefault(this.rate, {required this.savedRateId});
 
   /// The price that was saved.
   final double rate;
+
+  /// The id of the saved rate, marked as used once the line is added.
+  final String savedRateId;
+}
+
+/// Fired when a Save as my default starts and when it ends.
+class MaterialRateSaveRunningChanged extends MaterialCostFormEvent {
+  const MaterialRateSaveRunningChanged({required this.isRunning});
+
+  /// Whether the save runs now.
+  final bool isRunning;
 }
 
 /// Fired when the user changes the material name.

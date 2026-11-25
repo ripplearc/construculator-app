@@ -234,6 +234,6 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
         default:
           emit(YourRatesSaveFailed(failure));
       }
-    }, (_) => emit(YourRatesSaveSucceeded()));
+    }, (saved) => emit(YourRatesSaveSucceeded(saved)));
   }
 }

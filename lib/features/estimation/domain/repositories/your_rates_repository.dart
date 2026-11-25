@@ -102,7 +102,13 @@ abstract class YourRatesRepository {
   /// whitespace-only) is treated exactly like `null` throughout this rule — a
   /// UI text field naturally hands back '' for an empty input, and this
   /// repository does not rely on callers to normalize that themselves.
-  Future<Either<Failure, void>> save(YourRateEntry entry, {Duration? within});
+  ///
+  /// Returns the entry as it was saved, with its id, so a caller can mark it
+  /// as used.
+  Future<Either<Failure, YourRateEntry>> save(
+    YourRateEntry entry, {
+    Duration? within,
+  });
 
   /// Records that a cost line was just added with the saved rate [rateId]:
   /// its [YourRateEntry.lastUsedAt] becomes the current time in UTC, so the

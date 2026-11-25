@@ -1136,6 +1136,63 @@ void main() {
       expect(saved.entryLabel, 'liters');
     });
 
+    testWidgets('while the save runs, Add to estimate adds nothing; once it '
+        'ends the line is added with no tag', (tester) async {
+      await openVerify(tester);
+      await tester.enterText(quantityField, '3');
+      final gate = Completer<void>();
+      database.insertGate = gate;
+      addTearDown(() {
+        if (!gate.isCompleted) gate.complete();
+      });
+
+      await tester.tap(link);
+      await tester.pump();
+      expect(dataOf().isRateSaveRunning, isTrue);
+      bloc.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+      await tester.pump();
+      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(dataOf().isRateSaveRunning, isFalse);
+      bloc.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+      await tester.pumpAndSettle();
+      final row =
+          fakeSupabase.getMethodCallsFor('insert').single['data']
+              as Map<String, dynamic>;
+      expect(row['rate_status'], 'own_rate_confirmed');
+    });
+
+    testWidgets('a rate saved as the default is marked used once the line is '
+        'added, so it reads "Used today"', (tester) async {
+      await openVerify(tester);
+      await tester.enterText(quantityField, '3');
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      bloc.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+      await tester.pumpAndSettle();
+
+      final saved = (await savedMaterials()).single;
+      expect(database.updatedRowIds, [saved.id]);
+      expect(saved.lastUsedAt, isNotNull);
+    });
+
+    for (final offset in [-15, 15]) {
+      testWidgets('a tap ${offset.abs()} dp ${offset < 0 ? 'above' : 'below'} '
+          'the link centre saves the rate', (tester) async {
+        await openVerify(tester);
+
+        await tester.tapAt(
+          tester.getCenter(link) + Offset(0, offset.toDouble()),
+        );
+        await tester.pumpAndSettle();
+
+        expect(await savedMaterials(), hasLength(1));
+      });
+    }
+
     testWidgets('once saved, the tag and the link go and the line says it '
         'is saved', (tester) async {
       await openVerify(tester);

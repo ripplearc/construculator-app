@@ -899,11 +899,29 @@ void main() {
         build: () => bloc,
         act: (b) => b
           ..add(picked)
-          ..add(const MaterialRateSavedAsDefault(52)),
+          ..add(
+            const MaterialRateSavedAsDefault(52, savedRateId: 'saved-rate'),
+          ),
         verify: (b) {
           final data = _dataOf(b.state);
           expect(data.rateStatus, RateStatus.ownRateConfirmed);
           expect(data.offersSaveAsDefault, isFalse);
+          expect(data.recalledRateId, 'saved-rate');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'adds nothing while a Save as my default runs',
+        build: () => bloc,
+        act: (b) => b
+          ..add(picked)
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialRateSaveRunningChanged(isRunning: true))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (b) {
+          expect(b.state, isA<MaterialCostFormEditing>());
+          expect(_dataOf(b.state).isRateSaveRunning, isTrue);
+          expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
         },
       );
 
@@ -913,7 +931,9 @@ void main() {
         act: (b) => b
           ..add(picked)
           ..add(const MaterialRateUpdated('60'))
-          ..add(const MaterialRateSavedAsDefault(52)),
+          ..add(
+            const MaterialRateSavedAsDefault(52, savedRateId: 'saved-rate'),
+          ),
         verify: (b) {
           final data = _dataOf(b.state);
           expect(data.rateStatus, RateStatus.ownRateUnconfirmed);

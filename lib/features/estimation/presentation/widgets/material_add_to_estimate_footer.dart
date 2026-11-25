@@ -55,7 +55,8 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isBusy:
               state is MaterialCostFormSubmitting ||
-              state is MaterialCostFormSuccess,
+              state is MaterialCostFormSuccess ||
+              data.isRateSaveRunning,
           errorMessage: state is MaterialCostFormFailure
               ? l10n.addToEstimateFailedError
               : null,

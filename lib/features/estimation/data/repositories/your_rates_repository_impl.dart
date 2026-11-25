@@ -106,7 +106,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   @override
-  Future<Either<Failure, void>> save(
+  Future<Either<Failure, YourRateEntry>> save(
     YourRateEntry entry, {
     Duration? within,
   }) async {
@@ -122,7 +122,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     );
     final saved = result.getRightOrNull();
     if (saved != null) await _forgetRefusalOf(saved);
-    return result.fold(Left.new, (_) => const Right(null));
+    return result;
   }
 
   Future<Either<Failure, YourRateEntry>> _saveAfterPendingUndo(

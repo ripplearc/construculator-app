@@ -149,22 +149,30 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     );
   }
 
+  void _reportSaveRunning(BuildContext context, {required bool isRunning}) =>
+      context.read<MaterialCostFormBloc>().add(
+        MaterialRateSaveRunningChanged(isRunning: isRunning),
+      );
+
   void _onDefaultSaveState(BuildContext context, YourRatesState state) {
     switch (state) {
       case YourRatesSaving():
         setState(() => _defaultSave = _DefaultSave.saving);
-      case YourRatesSaveSucceeded():
+        _reportSaveRunning(context, isRunning: true);
+      case YourRatesSaveSucceeded(:final saved):
         setState(() => _defaultSave = _DefaultSave.saved);
         if (_rateBeingSaved case final rate?) {
           context.read<MaterialCostFormBloc>().add(
-            MaterialRateSavedAsDefault(rate),
+            MaterialRateSavedAsDefault(rate, savedRateId: saved.id),
           );
         }
+        _reportSaveRunning(context, isRunning: false);
       case YourRatesSaveCollision() ||
           YourRatesSaveLabelTaken() ||
           YourRatesSaveFailed() ||
           YourRatesSaveNoCompany():
         setState(() => _defaultSave = _DefaultSave.idle);
+        _reportSaveRunning(context, isRunning: false);
       case YourRatesLoading() ||
           YourRatesRetrying() ||
           YourRatesLoaded() ||
@@ -434,23 +442,15 @@ class _SaveAsDefaultLink extends StatelessWidget {
         key: const Key('save_as_default_link'),
         behavior: HitTestBehavior.opaque,
         onTap: isSaving ? null : onTap,
-        child: IntrinsicWidth(
-          child: SizedBox(
-            height: _SheetTextField._drawnHeight,
-            child: OverflowBox(
-              maxHeight: _lookupButtonTapSize,
-              child: SizedBox(
-                height: _lookupButtonTapSize,
-                child: Center(
-                  child: Text(
-                    label,
-                    style: context.textTheme.bodyLargeSemiBold.copyWith(
-                      color: isSaving
-                          ? context.colorTheme.textDisable
-                          : context.colorTheme.textLink,
-                    ),
-                  ),
-                ),
+        child: SizedBox(
+          height: _lookupButtonTapSize,
+          child: Center(
+            child: Text(
+              label,
+              style: context.textTheme.bodyLargeSemiBold.copyWith(
+                color: isSaving
+                    ? context.colorTheme.textDisable
+                    : context.colorTheme.textLink,
               ),
             ),
           ),

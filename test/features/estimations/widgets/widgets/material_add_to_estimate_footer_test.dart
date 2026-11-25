@@ -211,6 +211,32 @@ void main() {
       expect(find.text('Add to estimate'), findsOneWidget);
     });
 
+    testWidgets('is disabled while a Save as my default runs, and adds '
+        'nothing when tapped', (tester) async {
+      await pumpFooter(tester);
+      await fill(
+        tester,
+        name: 'Interior paint',
+        quantity: '7',
+        unit: Unit.liters,
+        rate: '52',
+      );
+
+      bloc.add(const MaterialRateSaveRunningChanged(isRunning: true));
+      await tester.pumpAndSettle();
+      expect(isButtonDisabled(tester), isTrue);
+      await tester.tap(
+        find.byKey(AddToEstimateFooter.buttonKey),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+
+      bloc.add(const MaterialRateSaveRunningChanged(isRunning: false));
+      await tester.pumpAndSettle();
+      expect(isButtonDisabled(tester), isFalse);
+    });
+
     testWidgets('shows the line total and the estimate before and after', (
       tester,
     ) async {

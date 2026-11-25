@@ -70,9 +70,14 @@ class MaterialCostFormBloc
             ? d.copyWith(
                 rateStatus: RateStatus.ownRateConfirmed,
                 isFromSampleFile: false,
+                recalledRateId: e.savedRateId,
               )
             : d,
       ),
+    );
+    on<MaterialRateSaveRunningChanged>(
+      (e, emit) =>
+          _emit(emit, (d) => d.copyWith(isRateSaveRunning: e.isRunning)),
     );
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
@@ -187,7 +192,8 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) async {
     if (state is MaterialCostFormSubmitting ||
-        state is MaterialCostFormSuccess) {
+        state is MaterialCostFormSuccess ||
+        _current().isRateSaveRunning) {
       return;
     }
     final draft = _validated(_current());
