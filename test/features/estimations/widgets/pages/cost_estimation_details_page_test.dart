@@ -1673,6 +1673,10 @@ void main() {
           find.byKey(const Key('material_quantity_field')),
           '3',
         );
+        await tester.pumpAndSettle();
+        // On this 600 dp screen the number pad leaves one row of the form in
+        // view, so the unit button is scrolled to first.
+        await tester.ensureVisible(find.byKey(const Key('material_unit_pill')));
         await tester.tap(find.byKey(const Key('material_unit_pill')));
         await tester.pumpAndSettle();
         await tester.ensureVisible(
@@ -1684,6 +1688,9 @@ void main() {
           find.byKey(const Key('material_rate_field')),
           '52',
         );
+        await tester.pumpAndSettle();
+        // A tap on the title closes the number pad, which hides Add.
+        await tester.tap(find.text('New material cost'));
         await tester.pumpAndSettle();
       }
 
@@ -2272,7 +2279,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
@@ -2323,7 +2330,7 @@ void main() {
         fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
         fakeSupabase.updateErrorMessage = 'Connection failed';
 
-        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
         await tester.pump();
         await tester.tapAt(const Offset(200, 20));
         await tester.pumpAndSettle();

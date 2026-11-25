@@ -153,11 +153,25 @@ void main() {
       await expectSheetGolden(tester, 'change_down', suffix);
     });
 
+    testWidgets('the number pad is up', (tester) async {
+      await openEditSheet(tester, theme);
+      // Keeps focus, so the pad stays up, with a caret that does not blink.
+      EditableText.debugDeterministicCursor = true;
+      addTearDown(() => EditableText.debugDeterministicCursor = false);
+      await tester.tap(find.byKey(const Key('material_quantity_field')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CoreNumberKeypad), findsOneWidget);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/material_edit_sheet/pad_up$suffix.png'),
+      );
+    });
+
     testWidgets('the save failed', (tester) async {
       await openEditSheet(tester, theme);
       await enter(tester, 'material_quantity_field', '7');
       fakeSupabase.shouldThrowOnUpdate = true;
-      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'save_failed', suffix);
     });
