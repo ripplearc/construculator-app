@@ -356,27 +356,30 @@ class _SampleGroup extends StatelessWidget {
           ),
         ),
         if (columnUnit != null)
-          Row(
-            key: const Key('material_lookup_price_per_unit_footnote'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: CoreSpacing.space2,
-            children: [
-              CoreIconWidget(
-                icon: CoreIcons.info,
-                size: CoreIconSize.size16,
-                color: colorTheme.iconGrayMid,
-              ),
-              Expanded(
-                child: Text(
-                  l10n.materialLookupPricePerUnitFootnote(
-                    columnUnit.displayName(l10n),
-                  ),
-                  style: textTheme.bodySmallRegular.copyWith(
-                    color: colorTheme.textBody,
+          Padding(
+            padding: _textInset,
+            child: Row(
+              key: const Key('material_lookup_price_per_unit_footnote'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: CoreSpacing.space2,
+              children: [
+                CoreIconWidget(
+                  icon: CoreIcons.info,
+                  size: CoreIconSize.size16,
+                  color: colorTheme.iconGrayMid,
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.materialLookupPricePerUnitFootnote(
+                      columnUnit.displayName(l10n),
+                    ),
+                    style: textTheme.bodySmallRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         for (final row in rows)
           CoreListRow.selectable(
