@@ -179,7 +179,10 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
               if (entries.isNotEmpty) ...[
                 const CoreDivider(),
                 Padding(
-                  padding: const EdgeInsets.all(CoreSpacing.space4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: CoreSpacing.space5,
+                    vertical: CoreSpacing.space4,
+                  ),
                   child: CoreButton(
                     key: const Key('material_lookup_use_button'),
                     label: selected == null
