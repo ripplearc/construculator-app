@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATION TAPE CODEC MUTATION TESTING (K1, CA-1081) -->
+    <!-- Targets: TapeValueCodec and TapeChipCodec, which write a banked
+         tape as the computation JSON of a calculator_tapes row and read it
+         back. A weakened guard here restores a tape with a rounded length,
+         the wrong chip kind or flags, reads a tape of a later format half
+         way, or accepts a damaged row as a good one. -->
+
+    <files>
+        <file>lib/libraries/calculation/data/models/tape_value_codec.dart</file>
+        <file>lib/libraries/calculation/data/models/tape_chip_codec.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a length is written as its ticks, not its exact inches -->
+        <regex pattern="inchesKey: _fraction\(value\.inches\)," dotAll="true" id="tape_value_codec.length.ticks_written">
+            <mutation text="inchesKey: '${value.ticks}/64',"/>
+        </regex>
+
+        <!-- RULE 2: a fraction with a zero denominator, or a bare number, is
+             read as a length -->
+        <regex pattern="if \(top != null &amp;&amp; bottom != null &amp;&amp; bottom &gt; 0\) \{" dotAll="true" id="tape_value_codec.inches.bad_fraction_read">
+            <mutation text="if (top != null &amp;&amp; bottom != null) {"/>
+            <mutation text="if (top != null &amp;&amp; bottom != null &amp;&amp; bottom &gt;= 0) {"/>
+        </regex>
+
+        <!-- RULE 3: a dimension is read as another -->
+        <regex pattern="'area' =&gt; Area\(_real\(map, where\), unit: unit\(map, where\)\)," dotAll="true" id="tape_value_codec.quantity.area_as_volume">
+            <mutation text="'area' =&gt; Volume(_real(map, where), unit: unit(map, where)),"/>
+        </regex>
+        <regex pattern="'weight' =&gt; Weight\(_real\(map, where\), unit: unit\(map, where\)\)," dotAll="true" id="tape_value_codec.quantity.weight_as_volume">
+            <mutation text="'weight' =&gt; Volume(_real(map, where), unit: unit(map, where)),"/>
+        </regex>
+
+        <!-- RULE 4: an angle loses its spelling, a bare number its decimals -->
+        <regex pattern="spelling:\s*AngleSpelling\.values\.asNameMap\(\)\[map\[_spellingKey\]\] \?\?" dotAll="true" id="tape_value_codec.angle.spelling_dropped">
+            <mutation text="spelling: AngleSpelling.degrees ??"/>
+        </regex>
+        <regex pattern="decimals: optionalInteger\(map, _decimalsKey, where\)," dotAll="true" id="tape_value_codec.scalar.decimals_dropped">
+            <mutation text="decimals: null,"/>
+        </regex>
+        <regex pattern="padsDecimals: flag\(map, _padsDecimalsKey, where\)," dotAll="true" id="tape_value_codec.scalar.pads_dropped">
+            <mutation text="padsDecimals: false,"/>
+        </regex>
+
+        <!-- RULE 5: a token loses a field on the way back -->
+        <regex pattern="denominator: optionalText\(json, _denominatorKey, where\)," dotAll="true" id="tape_value_codec.token.denominator_dropped">
+            <mutation text="denominator: null,"/>
+        </regex>
+        <regex pattern="power: optionalInteger\(json, _powerKey, where\) \?\? 1," dotAll="true" id="tape_value_codec.token.power_dropped">
+            <mutation text="power: 1,"/>
+        </regex>
+        <regex pattern="seconds: optionalText\(json, _secondsKey, where\)," dotAll="true" id="tape_value_codec.token.seconds_dropped">
+            <mutation text="seconds: null,"/>
+        </regex>
+        <regex pattern="typedAs: optionalText\(json, _typedAsKey, where\)," dotAll="true" id="tape_value_codec.token.typed_as_dropped">
+            <mutation text="typedAs: null,"/>
+        </regex>
+
+        <!-- RULE 6: a value of the wrong type is read anyway -->
+        <regex pattern="final num value =&gt; value\.toDouble\(\),\s*_ =&gt; throw FormatException\('Unreadable tape: \$where\.\$valueKey'\)," dotAll="true" id="tape_value_codec.real.any_type">
+            <mutation text="final num value =&gt; value.toDouble(), _ =&gt; 0.0,"/>
+        </regex>
+        <regex pattern="final bool flag =&gt; flag,\s*_ =&gt; throw FormatException\('Unreadable tape: \$where\.\$key'\)," dotAll="true" id="tape_value_codec.flag.any_type">
+            <mutation text="final bool flag =&gt; flag, _ =&gt; false,"/>
+        </regex>
+        <regex pattern="final int value =&gt; value,\s*_ =&gt; throw FormatException\('Unreadable tape: \$where\.\$key'\)," dotAll="true" id="tape_value_codec.integer.any_type">
+            <mutation text="final int value =&gt; value, _ =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 7: a tape of another version is read anyway, or this one
+             is refused -->
+        <regex pattern="if \(root\[versionKey\] != schemaVersion\) \{" dotAll="true" id="tape_chip_codec.decode.version_unchecked">
+            <mutation text="if (false) {"/>
+            <mutation text="if (root[versionKey] != schemaVersion + 1) {"/>
+        </regex>
+
+        <!-- RULE 8: a bare number is typed as a named value, or the reverse -->
+        <regex pattern="_typeKey: chip\.key == null \? 'common' : 'fn_key'," dotAll="true" id="tape_chip_codec.value.type">
+            <mutation text="_typeKey: 'fn_key',"/>
+        </regex>
+
+        <!-- RULE 9: a value chip loses its exact spelling, its ton or a flag -->
+        <regex pattern="exact: switch \(json\[_exactKey\]\) \{\s*null =&gt; null," dotAll="true" id="tape_chip_codec.value.exact_dropped">
+            <mutation text="exact: switch (null) { null =&gt; null,"/>
+        </regex>
+        <regex pattern="keyWantsUnit: TapeValueCodec\.flag\(json, _keyWantsUnitKey, where\)," dotAll="true" id="tape_chip_codec.value.wants_unit_dropped">
+            <mutation text="keyWantsUnit: true,"/>
+        </regex>
+        <regex pattern="readsDegrees: TapeValueCodec\.flag\(json, _readsDegreesKey, where\)," dotAll="true" id="tape_chip_codec.value.reads_degrees_dropped">
+            <mutation text="readsDegrees: false,"/>
+        </regex>
+        <regex pattern="isActive: TapeValueCodec\.flag\(json, _isActiveKey, where\)," dotAll="true" id="tape_chip_codec.value.active_dropped">
+            <mutation text="isActive: true,"/>
+        </regex>
+
+        <!-- RULE 10: a result loses its operator, a bracket its open state or
+             what it restores to -->
+        <regex pattern="'result' =&gt; ResultChip\(\s*key: TapeValueCodec\.text\(json, _keyKey, where\),\s*operator: _operator\(json, where\)," dotAll="true" id="tape_chip_codec.result.operator_dropped">
+            <mutation text="'result' =&gt; ResultChip( key: TapeValueCodec.text(json, _keyKey, where), operator: null,"/>
+        </regex>
+        <regex pattern="isOpen: TapeValueCodec\.flag\(json, _isOpenKey, where\)," dotAll="true" id="tape_chip_codec.bracket.open_dropped">
+            <mutation text="isOpen: true,"/>
+        </regex>
+        <regex pattern="original: switch \(json\[_originalKey\]\) \{\s*null =&gt; null," dotAll="true" id="tape_chip_codec.bracket.original_dropped">
+            <mutation text="original: switch (null) { null =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 11: an unknown chip type, error or operator is read as a
+             known one -->
+        <regex pattern="_ =&gt; throw FormatException\('Unreadable tape: \$where\.\$_typeKey'\)," dotAll="true" id="tape_chip_codec.chip.unknown_type_read">
+            <mutation text="_ =&gt; const ErrorChip(CalculationError.outOfRange),"/>
+        </regex>
+        <regex pattern="CalculationError\.values\.asNameMap\(\)\[json\[_errorKey\]\] \?\?" dotAll="true" id="tape_chip_codec.error.unknown_read">
+            <mutation text="CalculationError.values.asNameMap()[json[_errorKey]] ?? CalculationError.outOfRange ??"/>
+        </regex>
+        <regex pattern="Operator\.values\.asNameMap\(\)\[name\] \?\?" dotAll="true" id="tape_chip_codec.operator.unknown_read">
+            <mutation text="Operator.values.asNameMap()[name] ?? Operator.add ??"/>
+        </regex>
+
+        <!-- RULE 12: the text beside a chip is read as part of it, or is
+             always written -->
+        <regex pattern="if \(text != null\) _textKey: text\(chip\)," dotAll="true" id="tape_chip_codec.text.always_written">
+            <mutation text="_textKey: text?.call(chip) ?? '',"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_codec" expected-return="0">flutter test test/libraries/calculation/units/data/models/tape_value_codec_test.dart test/libraries/calculation/units/data/models/tape_chip_codec_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
