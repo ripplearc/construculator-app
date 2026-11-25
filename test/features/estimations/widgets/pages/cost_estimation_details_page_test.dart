@@ -152,6 +152,11 @@ void main() {
     await pumpFrames(tester, settle: settle);
   }
 
+  Finder zeroDollarsInAddToEstimatePanel() => find.descendant(
+    of: find.byKey(AddToEstimateFooter.panelKey),
+    matching: find.textContaining(r'$0.00'),
+  );
+
   Future<void> pumpAppAtRoute(
     WidgetTester tester,
     String route, {
@@ -1093,32 +1098,42 @@ void main() {
       Future<void> openEquipmentSheet(
         WidgetTester tester, {
         bool seedsEstimate = true,
-        void Function()? beforePump,
+        Completer<void>? heldEstimateLoad,
       }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
         if (seedsEstimate) seedEstimate();
+        final settle = heldEstimateLoad == null;
         await pumpAppAtRoute(
           tester,
           testEstimationRoute,
-          beforePump: beforePump,
+          beforePump: settle
+              ? null
+              : () {
+                  fakeSupabase.shouldDelayOperations = true;
+                  fakeSupabase.completer = heldEstimateLoad;
+                },
+          settle: settle,
         );
-        await tapAddCost(tester, CostItemType.equipment);
-        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = false;
+        await tapAddCost(tester, CostItemType.equipment, settle: settle);
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
-      Future<void> fillValidDayForm(WidgetTester tester) async {
+      Future<void> fillValidDayForm(
+        WidgetTester tester, {
+        bool settle = true,
+      }) async {
         await tester.enterText(
           find.byKey(const Key('equipment_name_field')),
           'Scissor lift',
         );
         await tester.enterText(find.byKey(const Key('duration_field')), '4');
         await tester.enterText(find.byKey(const Key('rate_field')), '145');
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
       Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
@@ -1179,24 +1194,18 @@ void main() {
 
         expect(find.text(r'$580.00'), findsOneWidget);
         expect(find.text(r' total  — →'), findsOneWidget);
-        expect(find.textContaining(r'$0.00'), findsNothing);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
       });
 
       testWidgets('shows a dash for the estimate total while the estimate is '
           'still loading, then the total once it arrives', (tester) async {
         final estimateLoad = Completer<void>();
-        await openEquipmentSheet(
-          tester,
-          beforePump: () {
-            fakeSupabase.shouldDelayOperations = true;
-            fakeSupabase.completer = estimateLoad;
-          },
-        );
+        await openEquipmentSheet(tester, heldEstimateLoad: estimateLoad);
 
-        await fillValidDayForm(tester);
+        await fillValidDayForm(tester, settle: false);
 
         expect(find.text(r' total  — →'), findsOneWidget);
-        expect(find.textContaining(r'$0.00'), findsNothing);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
 
         estimateLoad.complete();
         await tester.pumpAndSettle();
@@ -1698,23 +1707,34 @@ void main() {
       Future<void> openMaterialSheet(
         WidgetTester tester, {
         bool seedsEstimate = true,
-        void Function()? beforePump,
+        Completer<void>? heldEstimateLoad,
       }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
         if (seedsEstimate) seedEstimate();
+        final settle = heldEstimateLoad == null;
         await pumpAppAtRoute(
           tester,
           testEstimationRoute,
-          beforePump: beforePump,
+          beforePump: settle
+              ? null
+              : () {
+                  fakeSupabase.shouldDelayOperations = true;
+                  fakeSupabase.completer = heldEstimateLoad;
+                },
+          settle: settle,
         );
-        await tapAddCost(tester, CostItemType.material);
-        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = false;
+        await tapAddCost(tester, CostItemType.material, settle: settle);
+        await pumpFrames(tester, settle: settle);
       }
 
-      Future<void> fillValidMaterialForm(WidgetTester tester) async {
+      Future<void> fillValidMaterialForm(
+        WidgetTester tester, {
+        bool settle = true,
+      }) async {
         await tester.enterText(
           find.byKey(const Key('material_name_field')),
           'Interior paint',
@@ -1728,20 +1748,20 @@ void main() {
         // view, so the unit button is scrolled to first.
         await tester.ensureVisible(find.byKey(const Key('material_unit_pill')));
         await tester.tap(find.byKey(const Key('material_unit_pill')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         await tester.ensureVisible(
           find.byKey(const Key('unit_option_gallons')),
         );
         await tester.tap(find.byKey(const Key('unit_option_gallons')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         await tester.enterText(
           find.byKey(const Key('material_rate_field')),
           '52',
         );
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         // A tap on the title closes the number pad, which hides Add.
         await tester.tap(find.text('New material cost'));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
       Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
@@ -1764,24 +1784,18 @@ void main() {
 
         expect(find.text(r'$156.00'), findsOneWidget);
         expect(find.text(r' total  — →'), findsOneWidget);
-        expect(find.textContaining(r'$0.00'), findsNothing);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
       });
 
       testWidgets('shows a dash for the estimate total while the estimate is '
           'still loading, then the total once it arrives', (tester) async {
         final estimateLoad = Completer<void>();
-        await openMaterialSheet(
-          tester,
-          beforePump: () {
-            fakeSupabase.shouldDelayOperations = true;
-            fakeSupabase.completer = estimateLoad;
-          },
-        );
+        await openMaterialSheet(tester, heldEstimateLoad: estimateLoad);
 
-        await fillValidMaterialForm(tester);
+        await fillValidMaterialForm(tester, settle: false);
 
         expect(find.text(r' total  — →'), findsOneWidget);
-        expect(find.textContaining(r'$0.00'), findsNothing);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
 
         estimateLoad.complete();
         await tester.pumpAndSettle();
