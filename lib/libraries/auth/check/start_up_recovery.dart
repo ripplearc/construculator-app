@@ -5,6 +5,7 @@ import 'package:construculator/libraries/storage/local_data_delete_service.dart'
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// Thrown when the saved session cannot be read, so recovery neither deletes
 /// nor saves a sign-out date.
@@ -29,11 +30,13 @@ class StartUpRecovery {
   final OwnerRecordStorageService _ownerRecords;
   final LocalDataDeleteService _deleteService;
   final SupabaseWrapper _wrapper;
+  final Clock _clock;
   final Duration _removalPollInterval;
   final _logger = AppLogger().tag('StartUpRecovery');
   bool _didSignOut = false;
 
   /// Recovery that reads [wrapper] and finishes deletes with [deleteService].
+  /// [clock] gives the sign-out date it saves.
   ///
   /// After its own sign-out it asks [wrapper] at a fixed interval (50 ms by
   /// default) whether Supabase has removed the saved session yet.
@@ -41,6 +44,7 @@ class StartUpRecovery {
     required this._ownerRecords,
     required this._deleteService,
     required this._wrapper,
+    required this._clock,
     this._removalPollInterval = const Duration(milliseconds: 50),
   });
 
@@ -61,9 +65,14 @@ class StartUpRecovery {
   /// Throws when the owner record or the saved session cannot be read, or when
   /// a step fails or times out; the flag then stays set for the next attempt.
   Future<void> run(QueueRun run, {bool isFirstAttempt = true}) async {
-    final pendingDelete = (await _readOwnerRecord(run))?.pendingDelete;
-    if (pendingDelete == null) return;
+    final record = await _readOwnerRecord(run);
+    if (record == null) return;
     final saved = await _readSavedSession(run);
+    final pendingDelete = record.pendingDelete;
+    if (pendingDelete == null) {
+      await _saveMissingSignOutDate(run, record, saved);
+      return;
+    }
     if (_isLogoutWithSavedSession(pendingDelete, saved)) {
       await _signOutThenDelete(
         run,
@@ -92,6 +101,19 @@ class StartUpRecovery {
       throw const SavedSessionUnreadableException();
     }
     return saved;
+  }
+
+  Future<void> _saveMissingSignOutDate(
+    QueueRun run,
+    OwnerRecord record,
+    SavedSessionRead saved,
+  ) async {
+    if (saved is! SavedSessionAbsent || record.signOutDate != null) return;
+    await run.step(
+      () => _ownerRecords.write(
+        OwnerRecord(userId: record.userId, signOutDate: _clock.now()),
+      ),
+    );
   }
 
   Future<void> _signOutThenDelete(
