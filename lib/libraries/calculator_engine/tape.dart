@@ -186,6 +186,13 @@ enum TapeRefusal {
   /// it. The caller names the operator from the tape.
   operatorNeedsANumber,
 
+  /// A strip chip tapped while an operator waits for its number (12ft ×
+  /// 10ft ×, then a tap on Area): "Type a number first" / "Type the number
+  /// after ×, or press ⌫." (Section 5.1, row "Type a number first"; rule
+  /// 4.12). The operator stays, and the chip stays in the strip. The
+  /// caller names the operator from the tape.
+  answerNeedsANumber,
+
   /// % on an operator still waiting for its number (12 + then %): "Type a
   /// number first", "Type the number after +, then press %." (rule 4.12).
   /// The caller names the operator from the tape.
@@ -2047,7 +2054,7 @@ class Tape extends Equatable {
   /// fraction; a trig chip its function cannot answer). Inside a bracket
   /// nothing is offered, so the key is refused as a function key is. While
   /// an operator waits for its number the tap is refused as = is
-  /// ([TapeRefusal.operatorNeedsANumber], walkthrough 21.3; product
+  /// ([TapeRefusal.answerNeedsANumber], walkthrough 21.3; product
   /// decision of 13 November 2026), and the operator stays: Length 12ft
   /// Width 10ft × then a tap on Area keeps the × rather than landing Area
   /// over it. On a pitch answer a tap on another pitch reading rewrites
@@ -2072,7 +2079,7 @@ class Tape extends Equatable {
     final tape = _withFractionClosedAsInches()._withFieldClosed();
     final answer = ResultChip(key: key, value: value);
     if (tape.endsWithOperator) {
-      return const TapeRefused(TapeRefusal.operatorNeedsANumber);
+      return const TapeRefused(TapeRefusal.answerNeedsANumber);
     }
     if (tape.active case final chip? when chip.entry.isEmpty) {
       return TapeChanged(

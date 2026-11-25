@@ -130,8 +130,18 @@
         <regex pattern="\(false, true\) =&gt; l10n\.calculatorNotePercentTakesOffOfTheBracket\(" dotAll="true" id="calculator_label_formatter.tip.takes_off_bracket">
             <mutation text="(false, true) =&gt; l10n.calculatorNotePercentTakesOffOfTheTotal("/>
         </regex>
-        <regex pattern="CalculatorPercentNeedsANumberToast\(\) =&gt;\s*l10n\.calculatorToastTypeANumberFirstTitle," dotAll="true" id="calculator_label_formatter.toast.percent_number_title">
-            <mutation text="CalculatorPercentNeedsANumberToast() =&gt; l10n.calculatorToastPercentNeedsAnOperatorTitle,"/>
+        <regex pattern="CalculatorPercentNeedsANumberToast\(\) \|\|\s*CalculatorTypeANumberFirstToast\(\) =&gt;\s*l10n\.calculatorToastTypeANumberFirstTitle,\s*CalculatorFinishTheEditToast\(\) =&gt; l10n\.calculatorToastFinishTheEditTitle," dotAll="true" id="calculator_label_formatter.toast.percent_number_title">
+            <mutation text="CalculatorPercentNeedsANumberToast() =&gt; l10n.calculatorToastPercentNeedsAnOperatorTitle, CalculatorTypeANumberFirstToast() =&gt; l10n.calculatorToastTypeANumberFirstTitle, CalculatorFinishTheEditToast() =&gt; l10n.calculatorToastFinishTheEditTitle,"/>
+            <mutation text="CalculatorPercentNeedsANumberToast() =&gt; l10n.calculatorToastTypeANumberFirstTitle, CalculatorTypeANumberFirstToast() =&gt; l10n.calculatorToastFinishTheEditTitle, CalculatorFinishTheEditToast() =&gt; l10n.calculatorToastFinishTheEditTitle,"/>
+            <mutation text="CalculatorPercentNeedsANumberToast() || CalculatorTypeANumberFirstToast() =&gt; l10n.calculatorToastTypeANumberFirstTitle, CalculatorFinishTheEditToast() =&gt; l10n.calculatorToastFinishValueTitle,"/>
+        </regex>
+        <!-- CA-1514, CA-1515: the two Alert bodies swapped for another body -->
+        <regex pattern="CalculatorTypeANumberFirstToast\(:final operator\) =&gt;\s*l10n\.calculatorToastTypeANumberOrBackspaceBody\(operator\)," dotAll="true" id="calculator_label_formatter.toast.type_a_number_or_backspace_body">
+            <mutation text="CalculatorTypeANumberFirstToast(:final operator) =&gt; l10n.calculatorToastPercentAfterOperatorBody(operator),"/>
+            <mutation text="CalculatorTypeANumberFirstToast() =&gt; l10n.calculatorToastTypeANumberOrBackspaceBody('×'),"/>
+        </regex>
+        <regex pattern="CalculatorFinishTheEditToast\(\) =&gt; l10n\.calculatorToastFinishTheEditBody," dotAll="true" id="calculator_label_formatter.toast.finish_the_edit_body">
+            <mutation text="CalculatorFinishTheEditToast() =&gt; l10n.calculatorToastValueEmptyBody,"/>
         </regex>
         <regex pattern="CalculatorPercentNeedsAnOperatorToast\(insideABracket: true\) =&gt;\s*l10n\.calculatorToastPercentNeedsAnOperatorInBracketBody," dotAll="true" id="calculator_label_formatter.toast.percent_bracket_body">
             <mutation text="CalculatorPercentNeedsAnOperatorToast(insideABracket: true) =&gt; l10n.calculatorToastPercentNeedsAnOperatorBody,"/>

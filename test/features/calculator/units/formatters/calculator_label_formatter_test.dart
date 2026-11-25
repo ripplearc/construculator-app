@@ -507,6 +507,38 @@ void main() {
       );
     });
 
+    test('CA-1514, CA-1515: the bracket key inside an edit and a strip chip '
+        'on a waiting operator read in the words of Sections 5.5 and 5.1', () {
+      expect(
+        labels.toastTitle(const CalculatorFinishTheEditToast()),
+        'Finish the edit first',
+      );
+      expect(
+        labels.toastBody(const CalculatorFinishTheEditToast()),
+        'Tap the chip again to finish the edit, then press ( ).',
+      );
+      expect(
+        labels.toastTitle(const CalculatorTypeANumberFirstToast(operator: '×')),
+        'Type a number first',
+      );
+      expect(
+        labels.toastBody(const CalculatorTypeANumberFirstToast(operator: '×')),
+        'Type the number after ×, or press ⌫.',
+      );
+      expect(
+        labels.toastBody(const CalculatorTypeANumberFirstToast(operator: '+')),
+        'Type the number after +, or press ⌫.',
+      );
+      expect(
+        labels.toastBody(const CalculatorTypeANumberFirstToast(operator: '÷')),
+        'Type the number after ÷, or press ⌫.',
+      );
+      expect(
+        labels.toastBody(const CalculatorTypeANumberFirstToast(operator: '−')),
+        'Type the number after −, or press ⌫.',
+      );
+    });
+
     test('CA-1376: each percent Alert reads in the words of rule 4.12', () {
       final words = {
         const CalculatorPercentNeedsANumberToast(operator: '−'): (

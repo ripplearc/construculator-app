@@ -569,8 +569,9 @@ class CalculatorLabelFormatter {
       CalculatorRangeWarning.slopeAboveZero =>
         l10n.calculatorToastSlopeAboveZeroTitle,
     },
-    CalculatorPercentNeedsANumberToast() =>
+    CalculatorPercentNeedsANumberToast() || CalculatorTypeANumberFirstToast() =>
       l10n.calculatorToastTypeANumberFirstTitle,
+    CalculatorFinishTheEditToast() => l10n.calculatorToastFinishTheEditTitle,
     CalculatorPercentNeedsAnOperatorToast() =>
       l10n.calculatorToastPercentNeedsAnOperatorTitle,
     CalculatorAlreadyAPercentToast() =>
@@ -626,6 +627,9 @@ class CalculatorLabelFormatter {
     CalculatorRangeWarningToast() => l10n.calculatorToastEditThePitchChipBody,
     CalculatorPercentNeedsANumberToast(:final operator) =>
       l10n.calculatorToastPercentAfterOperatorBody(operator),
+    CalculatorTypeANumberFirstToast(:final operator) =>
+      l10n.calculatorToastTypeANumberOrBackspaceBody(operator),
+    CalculatorFinishTheEditToast() => l10n.calculatorToastFinishTheEditBody,
     CalculatorPercentNeedsAnOperatorToast(insideABracket: true) =>
       l10n.calculatorToastPercentNeedsAnOperatorInBracketBody,
     CalculatorPercentNeedsAnOperatorToast() =>

@@ -1142,6 +1142,116 @@ void main() {
         expect(empty.toast, const CalculatorFinishValueToast(value: ''));
       });
 
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the bracket key inside an edit is refused with "Finish the edit '
+        'first", also on a complete value, and the edit stays open; a second '
+        'tap on the chip closes the edit and the key then opens a bracket '
+        '(Section 5.5, "Edit cannot be abandoned"; CA-1514)',
+        build: () => bloc,
+        seed: () => tapeState(pressed('2 + 3 × 4 =')),
+        act: (bloc) => bloc
+          ..add(const CalculatorChipTapped(1))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorChipTapped(1))
+          ..add(const CalculatorControlActioned(ControlAction.paren)),
+        expect: () => [
+          tapeState(pressed('2 + 3 × 4 = tap:1')),
+          tapeState(pressed('2 + 3 × 4 = tap:1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.noBracketInsideAnEdit),
+            toastsRaised: 1,
+          ),
+          tapeState(
+            pressed('2 + 3 × 4 = tap:1 tap:1'),
+          ).copyWith(toastsRaised: 1),
+          tapeState(
+            pressed('2 + 3 × 4 = tap:1 tap:1 ('),
+          ).copyWith(toastsRaised: 1),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.tape.openBracket, isNotNull);
+          expect(bloc.state.toast, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the bracket key twice inside the same edit raises "Finish the edit '
+        'first" twice over, and the edit and the chips stay as they were '
+        '(rule 4.12; CA-1514)',
+        build: () => bloc,
+        seed: () => tapeState(pressed('2 + 3 × 4 =')),
+        act: (bloc) => bloc
+          ..add(const CalculatorChipTapped(1))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorControlActioned(ControlAction.paren)),
+        expect: () => [
+          tapeState(pressed('2 + 3 × 4 = tap:1')),
+          tapeState(pressed('2 + 3 × 4 = tap:1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.noBracketInsideAnEdit),
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('2 + 3 × 4 = tap:1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.noBracketInsideAnEdit),
+            toastsRaised: 2,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, const CalculatorFinishTheEditToast());
+          expect(bloc.state.tape.editing, isNotNull);
+          expect(bloc.state.tape.openBracket, isNull);
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['2', '+3', '×4', '20'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the bracket key while the chip right after a closed bracket is '
+        'being edited is refused with "Finish the edit first" too, and the '
+        'closed bracket is not reopened (CA-1514)',
+        build: () => bloc,
+        seed: () => tapeState(pressed('( 2 + 3 ( × 4 =')),
+        act: (bloc) => bloc
+          ..add(const CalculatorChipTapped(1))
+          ..add(const CalculatorControlActioned(ControlAction.paren)),
+        expect: () => [
+          tapeState(pressed('( 2 + 3 ( × 4 = tap:1')),
+          tapeState(pressed('( 2 + 3 ( × 4 = tap:1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.noBracketInsideAnEdit),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, const CalculatorFinishTheEditToast());
+          expect(bloc.state.tape.editing, isNotNull);
+          expect(bloc.state.tape.editing!.index, 1);
+          expect(bloc.state.tape.openBracket, isNull);
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['2+3', '×4', '20'],
+          );
+        },
+      );
+
+      test('the bracket refusal inside an edit reads as the "Finish the edit '
+          'first" toast (CA-1514)', () {
+        final editing = pressed('2 + 3 × 4 = tap:1');
+        expect(
+          CalculatorState(
+            tape: editing,
+            refusal: editing.openNewBracket(),
+          ).toast,
+          const CalculatorFinishTheEditToast(),
+        );
+        expect(
+          [
+            for (final chip in CalculatorState(tape: editing).chipsList)
+              chip.value,
+          ],
+          ['2', '+3', '×4', '20'],
+        );
+      });
+
       test('⌫ again on the emptied first chip of a chain reads "Type a new '
           'first value" (rule 4.8)', () {
         final chain = pressed('2 + 3 =');
@@ -3343,7 +3453,9 @@ void main() {
 
       blocTest<CalculatorBloc, CalculatorState>(
         'a strip chip tapped while an operator waits for its number is '
-        'refused as = is, and the operator stays (walkthrough 21.3)',
+        'refused as = is with "Type a number first" / "Type the number after '
+        '×, or press ⌫.", and the operator and the chip stay (walkthrough '
+        '21.3; Section 5.1; CA-1515)',
         build: () => bloc,
         act: (bloc) {
           type(bloc, '[Length] 1 2 ft [Width] 1 0 ft ×');
@@ -3356,7 +3468,8 @@ void main() {
         skip: 9,
         expect: () => [
           tapeState(pressed('[Length] 1 2 ft [Width] 1 0 ft ×')).copyWith(
-            refusal: () => const TapeRefused(TapeRefusal.operatorNeedsANumber),
+            refusal: () => const TapeRefused(TapeRefusal.answerNeedsANumber),
+            toastsRaised: 1,
           ),
         ],
         verify: (bloc) {
@@ -3365,10 +3478,113 @@ void main() {
             ['12ft', '10ft', '×'],
           );
           expect(
+            bloc.state.toast,
+            const CalculatorTypeANumberFirstToast(operator: '×'),
+          );
+          expect(
             bloc.state.suggestions.first.key,
             DeterministicRules.areaKey,
             reason: 'the strip still offers Area for the next tap',
           );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a strip chip tapped twice while × waits is refused twice over, '
+        '"Type a number first" each time, and the chips still end with × '
+        '(rule 4.12; CA-1515)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 1 2 ft [Width] 1 0 ft ×');
+          final area = stateOf(
+            '[Length] 1 2 ft [Width] 1 0 ft',
+          ).suggestions.first;
+          bloc.add(CalculatorSuggestionAccepted(area));
+          bloc.add(CalculatorSuggestionAccepted(area));
+        },
+        skip: 9,
+        expect: () => [
+          tapeState(pressed('[Length] 1 2 ft [Width] 1 0 ft ×')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.answerNeedsANumber),
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('[Length] 1 2 ft [Width] 1 0 ft ×')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.answerNeedsANumber),
+            toastsRaised: 2,
+          ),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state.toast,
+            const CalculatorTypeANumberFirstToast(operator: '×'),
+          );
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['12ft', '10ft', '×'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a strip chip tapped while ÷ waits for its divisor is refused with '
+        '"Type a number first" / "Type the number after ÷, or press ⌫.", '
+        'naming ÷, not with the divisor Alert, and the ÷ stays (CA-1515)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 1 2 ft [Width] 1 0 ft ÷');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('[Length] 1 2 ft [Width] 1 0 ft').suggestions.first,
+            ),
+          );
+        },
+        skip: 9,
+        expect: () => [
+          tapeState(pressed('[Length] 1 2 ft [Width] 1 0 ft ÷')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.answerNeedsANumber),
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state.toast,
+            const CalculatorTypeANumberFirstToast(operator: '÷'),
+          );
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['12ft', '10ft', '÷'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the number typed after the refused tap takes the operator, and the '
+        'leading strip chip, the running total, then lands as it does today '
+        '(CA-1515)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 1 2 ft [Width] 1 0 ft ×');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('[Length] 1 2 ft [Width] 1 0 ft').suggestions.first,
+            ),
+          );
+          bloc.add(const CalculatorDigitPressed('2'));
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('[Length] 1 2 ft [Width] 1 0 ft × 2').suggestions.first,
+            ),
+          );
+        },
+        skip: 11,
+        verify: (bloc) {
+          expect(bloc.state.toast, isNull);
+          expect(bloc.state.refusal, isNull);
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['12ft', '10ft', '×2', '20ft 0in'],
+          );
+          expect(bloc.state.tape.chips.last, isA<ResultChip>());
         },
       );
     });

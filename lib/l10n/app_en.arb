@@ -4289,6 +4289,24 @@
       }
     }
   },
+  "calculatorToastTypeANumberOrBackspaceBody": "Type the number after {operator}, or press ⌫.",
+  "@calculatorToastTypeANumberOrBackspaceBody": {
+    "description": "Red Alert body when a strip chip is tapped while an operator still waits for its number (UX Design Doc Section 5.1, row \"Type a number first\"; rule 4.12)",
+    "placeholders": {
+      "operator": {
+        "type": "String",
+        "example": "×"
+      }
+    }
+  },
+  "calculatorToastFinishTheEditTitle": "Finish the edit first",
+  "@calculatorToastFinishTheEditTitle": {
+    "description": "Red Alert title when the bracket key is pressed while a chip is being edited (UX Design Doc Section 5.5, row \"Edit cannot be abandoned\")"
+  },
+  "calculatorToastFinishTheEditBody": "Tap the chip again to finish the edit, then press ( ).",
+  "@calculatorToastFinishTheEditBody": {
+    "description": "Red Alert body when the bracket key is pressed while a chip is being edited (UX Design Doc Section 5.5, row \"Edit cannot be abandoned\")"
+  },
   "calculatorToastPercentNeedsAnOperatorTitle": "% needs an operator first",
   "@calculatorToastPercentNeedsAnOperatorTitle": {
     "description": "Red Alert title when % is pressed on a number no operator leads (UX Design Doc rule 4.12; Section 7, \"Percent\")"
