@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -16,6 +18,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -964,6 +967,41 @@ void main() {
         },
         expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveSucceeded>()],
       );
+
+      test('ends in SaveSucceeded, not a timeout, when the first sync of Your '
+          'rates is still running at the tap', () async {
+        await (Modular.get<YourRatesDataSource>() as LocalYourRatesDataSource)
+            .dispose();
+        fakeAsync((async) {
+          final gate = database.firstSyncGate = Completer();
+          addTearDown(() {
+            if (!gate.isCompleted) gate.complete();
+          });
+          // ignore: no_direct_instantiation, reason: must be built inside fakeAsync so its event loop runs on the fake clock, which Modular's registration can't do
+          final savingBloc = YourRatesBloc(
+            repository: Modular.get<YourRatesRepository>(),
+            companyResolver: Modular.get<CurrentCompanyResolver>(),
+            clock: Modular.get<Clock>(),
+          );
+          final states = <YourRatesState>[];
+          savingBloc.stream.listen(states.add);
+
+          savingBloc.add(YourRatesSaveRequested(entry()));
+          async.elapse(yourRatesSaveFirstSyncWait);
+          final observed = List<YourRatesState>.of(states);
+          final insertedCount = database.insertedRows.length;
+          gate.complete();
+          async.flushMicrotasks();
+          savingBloc.close();
+          async.flushMicrotasks();
+
+          expect(observed, [
+            isA<YourRatesSaving>(),
+            isA<YourRatesSaveSucceeded>(),
+          ]);
+          expect(insertedCount, 1);
+        });
+      });
 
       blocTest<YourRatesBloc, YourRatesState>(
         'ends in SaveFailed with a timeout, and saves nothing, when the '

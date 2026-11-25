@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
@@ -16,6 +17,7 @@ import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -550,6 +552,129 @@ void main() {
         expect(database.getAllCalls, isEmpty);
         expect(database.insertedRows, isEmpty);
         expect(database.updatedRowIds, isEmpty);
+      });
+    });
+
+    group('a save made while the first sync is still running', () {
+      setUp(() async {
+        await (Modular.get<YourRatesDataSource>() as LocalYourRatesDataSource)
+            .dispose();
+        final gate = database.firstSyncGate = Completer<void>();
+        addTearDown(() {
+          if (!gate.isCompleted) gate.complete();
+        });
+      });
+
+      test('waits for the sync, then saves on what the phone holds, inside '
+          'the time limit', () {
+        fakeAsync((async) {
+          final gate = database.firstSyncGate!;
+          var saved = false;
+          late Either<Failure, void> result;
+          repository.save(buildEntry()).then((r) {
+            result = r;
+            saved = true;
+          });
+
+          async.elapse(const Duration(milliseconds: 999));
+          expect(saved, isFalse);
+          expect(database.insertedRows, isEmpty);
+
+          async.elapse(const Duration(milliseconds: 1));
+
+          expect(result.isRight(), true);
+          expect(database.insertedRows, hasLength(1));
+
+          gate.complete();
+          async.flushMicrotasks();
+        });
+      });
+
+      test(
+        'still checks the rows the phone holds for a name already saved',
+        () {
+          seed([row(id: 'r1')]);
+          fakeAsync((async) {
+            final gate = database.firstSyncGate!;
+            late Either<Failure, void> result;
+            repository.save(buildEntry()).then((r) => result = r);
+
+            async.elapse(yourRatesSaveFirstSyncWait);
+
+            expect(
+              result.getLeftOrNull(),
+              isA<EstimationFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                EstimationErrorType.duplicateEntry,
+              ),
+            );
+            expect(database.insertedRows, isEmpty);
+
+            gate.complete();
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test('waits one second when it has more than two seconds left', () {
+        fakeAsync((async) {
+          final gate = database.firstSyncGate!;
+          var saved = false;
+          late Either<Failure, void> result;
+          repository
+              .save(buildEntry(), within: const Duration(seconds: 10))
+              .then((r) {
+                result = r;
+                saved = true;
+              });
+
+          async.elapse(const Duration(milliseconds: 999));
+          expect(saved, isFalse);
+
+          async.elapse(const Duration(milliseconds: 1));
+
+          expect(result.isRight(), true);
+
+          gate.complete();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('waits no longer than half of the time left to it', () {
+        fakeAsync((async) {
+          final gate = database.firstSyncGate!;
+          var saved = false;
+          late Either<Failure, void> result;
+          repository
+              .save(buildEntry(), within: const Duration(milliseconds: 600))
+              .then((r) {
+                result = r;
+                saved = true;
+              });
+
+          async.elapse(const Duration(milliseconds: 299));
+          expect(saved, isFalse);
+
+          async.elapse(const Duration(milliseconds: 1));
+
+          expect(result.isRight(), true);
+          expect(database.insertedRows, hasLength(1));
+
+          gate.complete();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('is saved at once when the sync finishes first', () async {
+        final saving = repository.save(buildEntry());
+        await database.firstSyncRequested;
+        database.firstSyncGate!.complete();
+
+        final result = await saving;
+
+        expect(result.isRight(), true);
+        expect(database.insertedRows, hasLength(1));
       });
     });
 

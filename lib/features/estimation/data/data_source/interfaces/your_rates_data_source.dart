@@ -7,6 +7,20 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// The `companyId` parameter on [loadRates] is what narrows a read to one
 /// company: the phone holds the rates of every company the user belongs to.
 abstract class YourRatesDataSource {
+  /// Starts the sync of Your rates if it is not running, then waits until the
+  /// phone has had its first sync of it, but for no longer than [atMost], so a
+  /// caller with a time limit of its own is not held by the data source's
+  /// longer default wait.
+  ///
+  /// When the wait runs out, nothing waits for that first sync any more, until
+  /// it has finished or failed: every [loadRates] and write in that time, a
+  /// read for the Your rates list included, reads or writes what the phone
+  /// holds at once.
+  ///
+  /// Throws an exception if the sync cannot be started within [atMost]. A
+  /// start-up that fails later is only logged.
+  Future<void> waitForFirstSync({required Duration atMost});
+
   /// Loads all your_rates rows visible to the caller, optionally filtered
   /// to one [category], ordered by saved_at descending (most recently saved
   /// first).

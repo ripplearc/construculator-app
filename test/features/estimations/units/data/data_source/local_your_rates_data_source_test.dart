@@ -293,6 +293,138 @@ void main() {
         });
       });
 
+      test(
+        'is waited on by waitForFirstSync until its first rows come',
+        () async {
+          database.firstSyncGate = Completer();
+          var finished = false;
+
+          final waiting = dataSource
+              .waitForFirstSync(atMost: const Duration(hours: 1))
+              .then((_) => finished = true);
+          await database.firstSyncRequested;
+          expect(finished, isFalse);
+
+          database.firstSyncGate!.complete();
+          await waiting;
+
+          expect(finished, isTrue);
+        },
+      );
+
+      test('is not waited on by waitForFirstSync for longer than atMost', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          var finished = false;
+          dataSource
+              .waitForFirstSync(atMost: const Duration(seconds: 1))
+              .then((_) => finished = true);
+
+          async.elapse(const Duration(milliseconds: 999));
+          expect(finished, isFalse);
+
+          async.elapse(const Duration(milliseconds: 1));
+          expect(finished, isTrue);
+        });
+      });
+
+      test('is read at once after waitForFirstSync stopped waiting', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          dataSource.waitForFirstSync(atMost: const Duration(seconds: 1));
+          async.elapse(const Duration(seconds: 1));
+
+          dataSource.loadRates();
+          async.flushMicrotasks();
+
+          expect(database.getAllCalls, hasLength(1));
+        });
+      });
+
+      test('is written at once after waitForFirstSync stopped waiting', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          dataSource.waitForFirstSync(atMost: const Duration(seconds: 1));
+          async.elapse(const Duration(seconds: 1));
+
+          dataSource.insertRate(newDto());
+          async.flushMicrotasks();
+
+          expect(database.insertedRows, hasLength(1));
+        });
+      });
+
+      test('keeps a read that began first waiting for the default wait', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          var readFinished = false;
+          var waitFinished = false;
+          dataSource.loadRates().then((_) => readFinished = true);
+          async.flushMicrotasks();
+          dataSource
+              .waitForFirstSync(atMost: const Duration(seconds: 1))
+              .then((_) => waitFinished = true);
+
+          async.elapse(const Duration(seconds: 1));
+          expect(waitFinished, isTrue);
+          expect(readFinished, isFalse);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(readFinished, isTrue);
+        });
+      });
+
+      test('is not activated again by waitForFirstSync once it is', () async {
+        await dataSource.loadRates();
+
+        await dataSource.waitForFirstSync(atMost: const Duration(seconds: 1));
+
+        expect(database.syncStreamCalls, ['user_rates']);
+      });
+
+      test('is reported by waitForFirstSync when it cannot start', () async {
+        database.syncStreamError = StateError('not ready');
+
+        await expectLater(
+          dataSource.waitForFirstSync(atMost: const Duration(seconds: 1)),
+          throwsStateError,
+        );
+      });
+
+      test('is waited on again after the one waitForFirstSync gave up on '
+          'failed', () {
+        fakeAsync((async) {
+          final held = database.firstSyncGate = Completer();
+          dataSource.waitForFirstSync(atMost: const Duration(seconds: 1));
+          async.elapse(const Duration(seconds: 1));
+
+          database.firstSyncGate = null;
+          held.completeError(StateError('sync broke'));
+          async.flushMicrotasks();
+          dataSource.loadRates();
+          async.flushMicrotasks();
+
+          expect(database.syncStreamCalls, ['user_rates', 'user_rates']);
+        });
+      });
+
+      test('is not waited on again by waitForFirstSync once one wait gave '
+          'up', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          dataSource.waitForFirstSync(atMost: const Duration(seconds: 1));
+          async.elapse(const Duration(seconds: 1));
+
+          var secondFinished = false;
+          dataSource
+              .waitForFirstSync(atMost: const Duration(seconds: 1))
+              .then((_) => secondFinished = true);
+          async.flushMicrotasks();
+
+          expect(secondFinished, isTrue);
+        });
+      });
+
       test('is released when the data source is disposed', () async {
         await dataSource.loadRates();
 

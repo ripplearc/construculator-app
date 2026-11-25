@@ -15,6 +15,10 @@ import 'package:powersync/powersync.dart' show uuid;
 /// the first read or write of a session activates it; the rows it has already
 /// delivered stay readable whether or not the phone is connected.
 ///
+/// A read or write waits up to 3 seconds for the first sync. When
+/// [waitForFirstSync] gives up on it sooner, every read and write skips that
+/// wait until the first sync has finished or failed.
+///
 /// Rows are ordered and capped in Dart, not in SQL: a `saved_at` delivered by
 /// sync and one written here need not share a text format, so ordering them
 /// lexicographically would sort by which side wrote the row.
@@ -74,6 +78,7 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
 
   SyncStreamHandle? _streamHandle;
   Future<void>? _ready;
+  bool _stoppedWaitingForFirstSync = false;
 
   /// Creates a data source over [_database], stamping writes from [_clock].
   LocalYourRatesDataSource({required this._database, required this._clock});
@@ -193,10 +198,44 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
     handle?.unsubscribe();
   }
 
-  Future<void> _ensureSyncing() async {
-    if (_streamHandle != null) return;
-    await (_ready ??= _startSyncing().whenComplete(() => _ready = null));
+  @override
+  Future<void> waitForFirstSync({required Duration atMost}) async {
+    try {
+      if (_streamHandle != null || _stoppedWaitingForFirstSync) return;
+      final starting = _startOnce();
+      await starting.timeout(
+        atMost,
+        onTimeout: () {
+          if (!_stoppedWaitingForFirstSync) {
+            starting.catchError(
+              (Object e, StackTrace stack) => _logger.warning(
+                'Syncing your rates failed after a save stopped waiting for it',
+                e,
+                stack,
+              ),
+            );
+          }
+          _stoppedWaitingForFirstSync = true;
+          _logger.info(
+            'Your rates have not synced yet; saving on what the phone holds',
+          );
+        },
+      );
+    } catch (e, stack) {
+      _logger.error('Failed to start syncing your rates', e, stack);
+      rethrow;
+    }
   }
+
+  Future<void> _ensureSyncing() async {
+    if (_streamHandle != null || _stoppedWaitingForFirstSync) return;
+    await _startOnce();
+  }
+
+  Future<void> _startOnce() => _ready ??= _startSyncing().whenComplete(() {
+    _ready = null;
+    _stoppedWaitingForFirstSync = false;
+  });
 
   Future<void> _startSyncing() async {
     final handle = await _database.syncStream(_streamName);
