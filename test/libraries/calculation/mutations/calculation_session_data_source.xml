@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATION SESSION DATA SOURCE MUTATION TESTING (K2, CA-1082) -->
+    <!-- Targets: PowerSyncLocalCalculationSessionDataSource, the row store
+         of the calculator's history. A weakened guard here keeps every
+         session the phone ever banked, prunes another user's history,
+         "renames" a session nobody has, leaves a deleted session's tape
+         behind, or lets a % in a search match everything. -->
+
+    <files>
+        <file>lib/libraries/calculation/data/data_source/powersync_local_calculation_session_data_source.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the oldest sessions are never pruned, or one too many
+             is kept, or the newest is pruned -->
+        <regex pattern="for \(final row in ids\.skip\(keptSessions\)\) \{" dotAll="true" id="session_data_source.insert.never_pruned">
+            <mutation text="for (final row in ids.skip(ids.length)) {"/>
+            <mutation text="for (final row in ids.skip(keptSessions + 1)) {"/>
+            <mutation text="for (final row in ids.take(ids.length - keptSessions)) {"/>
+        </regex>
+
+        <!-- RULE 2: the prune reads every user's sessions -->
+        <regex pattern="final ids = await transaction\.getAll\(_sessionIdsSql, \[\s*session\.creatorUserId,\s*\]\);" dotAll="true" id="session_data_source.insert.prunes_every_user">
+            <mutation text="final ids = await transaction.getAll(_sessionIdsSql, [tape.sessionId]);"/>
+        </regex>
+
+        <!-- RULE 3: a rename or a delete of a session nobody has reports
+             true, or writes anyway -->
+        <regex pattern="if \(!await _exists\(transaction, id\)\) return false;\s*await transaction\.execute\(_renameSql," dotAll="true" id="session_data_source.rename.unstored_row_done">
+            <mutation text="await transaction.execute(_renameSql,"/>
+        </regex>
+        <regex pattern="if \(!await _exists\(transaction, id\)\) return false;\s*await _delete\(transaction, id\);" dotAll="true" id="session_data_source.delete.unstored_row_done">
+            <mutation text="await _delete(transaction, id);"/>
+            <mutation text="if (!await _exists(transaction, id)) return true; await _delete(transaction, id);"/>
+        </regex>
+
+        <!-- RULE 4: a deleted session leaves its tape behind -->
+        <regex pattern="await transaction\.execute\(_deleteTapeSql, \[id\]\);\s*await transaction\.execute\(_deleteSessionSql, \[id\]\);" dotAll="true" id="session_data_source.delete.tape_left">
+            <mutation text="await transaction.execute(_deleteSessionSql, [id]);"/>
+        </regex>
+
+        <!-- RULE 5: a % or _ in the query is not escaped, so it matches
+             everything -->
+        <regex pattern="final pattern = '%\$\{_escaped\(query\)\}%';" dotAll="true" id="session_data_source.search.unescaped">
+            <mutation text="final pattern = '%$query%';"/>
+        </regex>
+
+        <!-- RULE 6: the search ignores its limit, or the title -->
+        <regex pattern="pattern,\s*pattern,\s*limit,\s*\]\)," dotAll="true" id="session_data_source.search.limit_ignored">
+            <mutation text="pattern, pattern, 1000, ]),"/>
+        </regex>
+
+        <!-- RULE 7: a watch handed out after dispose stays open -->
+        <regex pattern="final subscription = \(disposed \? source\.take\(1\) : source\)\.listen\(" dotAll="true" id="session_data_source.tracked.after_dispose_open">
+            <mutation text="final subscription = source.listen("/>
+        </regex>
+
+        <!-- RULE 8: dispose forgets a watch, or does not close it -->
+        <regex pattern="_watchers\[controller\] = subscription;" dotAll="true" id="session_data_source.tracked.untracked">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\} finally \{\s*watcher\.key\.close\(\);\s*\}" dotAll="true" id="session_data_source.dispose.not_closed">
+            <mutation text="} finally {}"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="session_data_source" expected-return="0">flutter test test/libraries/calculation/units/data/data_source/powersync_local_calculation_session_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
