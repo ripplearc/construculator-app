@@ -66,8 +66,10 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// units setting, in either order (Section 6; owner decision of 3 October
 /// 2026): 12ft + 1m reads 15ft 3-3/8in under Imperial and 4.66m under
 /// Metric, and 12ft² + 1m² reads 22.76ft² or 2.11m² the same way. A product
-/// or a quotient that mixes them keeps the prototype's vote and answers in
-/// feet under either setting (12ft × 1m = 39.38ft²), and a volume sum keeps
+/// or a quotient that mixes them follows the setting too, in either order
+/// (Section 6; owner decision of 18 November 2026): 0.55m³ ÷ 22ft reads
+/// 0.88ft² under Imperial and 0.08m² under Metric, and 2m × 3ft reads
+/// 19.69ft² or 1.83m² whichever side the metre is on. A volume sum keeps
 /// its first operand's unit (500bf + 1yd³ = 824bf, 1yd³ + 1m³ = 2.31yd³),
 /// since Section 6 decides sums of lengths and areas only. Acres and board
 /// feet carry no length system and do not vote, so 1 acre × 1m answers in
@@ -187,7 +189,7 @@ class ChainArithmetic extends Equatable {
         sign > 0
             ? left.inches + (right as Length).inches
             : left.inches - (right as Length).inches,
-        _lengthSumUnit(left.unit, right.unit),
+        _lengthUnit([left.unit, right.unit]),
       ),
       Area() => Area(
         magnitude,
@@ -279,21 +281,20 @@ class ChainArithmetic extends Equatable {
       Length.ticksPerFoot *
       Length.ticksPerFoot;
 
-  Unit _lengthUnit(List<Unit> units) => _metricUnitOf(units) ?? Unit.footInch;
+  Unit _lengthUnit(List<Unit> units) => _votedUnit(units, Unit.footInch);
 
-  Unit _systemUnit(List<Unit> units) => _metricUnitOf(units) ?? Unit.foot;
+  Unit _systemUnit(List<Unit> units) => _votedUnit(units, Unit.foot);
 
-  Unit? _metricUnitOf(List<Unit> units) {
+  Unit _votedUnit(List<Unit> units, Unit imperial) {
     final lengths = units.where((unit) => unit.compoundRank > 0);
-    if (lengths.isEmpty || !lengths.every((unit) => unit.isMetric)) {
-      return null;
+    if (lengths.isEmpty || !lengths.any((unit) => unit.isMetric)) {
+      return imperial;
+    }
+    if (!lengths.every((unit) => unit.isMetric)) {
+      return _settingUnit(imperial);
     }
     return lengths.reduce(_smallerUnit);
   }
-
-  Unit _lengthSumUnit(Unit first, Unit second) => _mixesSystems(first, second)
-      ? _settingUnit(Unit.footInch)
-      : _lengthUnit([first, second]);
 
   Unit _areaSumUnit(Unit first, Unit second) =>
       _mixesSystems(first, second) ? _settingUnit(Unit.foot) : first;
