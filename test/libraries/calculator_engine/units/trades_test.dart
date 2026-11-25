@@ -1062,6 +1062,22 @@ void main() {
         expect(weight.weight.hundredthsOfPound, closeTo(4050, 1e-6));
       });
 
+      test('rule 4.15 (CA-1517): 2ft³ of concrete offers 0.15 ton, and the '
+          'same volume shown as 0.07yd³ after [Yards] offers 0.14 ton, the '
+          'weight of the quantity on screen, not of the stored 0.074yd³', () {
+        const twoCubicFeet = Volume(2);
+        expect(formatter.format(twoCubicFeet), '2ft³');
+        expect(texts(imperial(twoCubicFeet)).first, '0.15 ton (concrete)');
+        final inYards = twoCubicFeet.spelledIn(Unit.yard);
+        expect(formatter.format(inYards), '0.07yd³');
+        expect(texts(imperial(inYards)).first, '0.14 ton (concrete)');
+        expect(imperial(inYards).first.shownCubicYards, closeTo(0.07, 1e-12));
+        expect(
+          imperial(inYards).first.weight.hundredthsOfPound,
+          closeTo(28350, 1e-6),
+        );
+      });
+
       test('the shown volume is the number the formatter writes, in every '
           'unit and at the half-way values 0.725yd³ and 1.005yd³', () {
         const volumes = [
