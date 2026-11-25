@@ -10,6 +10,8 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -28,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -70,6 +73,11 @@ void main() {
       supabaseWrapper: FakeSupabaseWrapper(clock: clock),
     );
     Modular.init(_GlobalSearchPageTestModule(bootstrap));
+    Modular.replaceInstance<ActiveUserProvider>(
+      FakeActiveUserProvider(
+        userIdOf: () => Modular.get<SupabaseWrapper>().currentUser?.id,
+      ),
+    );
     final supabase = Modular.get<SupabaseWrapper>();
     expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;

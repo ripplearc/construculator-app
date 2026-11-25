@@ -5,6 +5,8 @@ import 'package:construculator/features/global_search/data/data_source/remote_gl
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
+import 'package:construculator/libraries/auth/check/testing/fake_active_user_provider.dart';
 import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -79,6 +81,11 @@ void main() {
           FakeAppBootstrapFactory.create(
             supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
           ),
+        ),
+      );
+      Modular.replaceInstance<ActiveUserProvider>(
+        FakeActiveUserProvider(
+          userIdOf: () => Modular.get<SupabaseWrapper>().currentUser?.id,
         ),
       );
       fakeSupabaseWrapper =

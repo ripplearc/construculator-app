@@ -22,6 +22,8 @@ class SupabaseRepositoryImpl implements AuthRepository {
     );
   }
 
+  /// Reads the Supabase user directly: sign-in needs it before the sign-in
+  /// check has finished, so it cannot wait on the active-user provider.
   @override
   UserCredential? getCurrentCredentials() {
     final supaUser = supabaseWrapper.currentUser;

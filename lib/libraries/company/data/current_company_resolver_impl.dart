@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
@@ -29,6 +30,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   final SupabaseWrapper _supabaseWrapper;
   final LocalCurrentCompanyDataSource _localDataSource;
+  final ActiveUserProvider _activeUserProvider;
   static final _logger = AppLogger().tag('CurrentCompanyResolverImpl');
 
   bool _hasResolved = false;
@@ -44,6 +46,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   CurrentCompanyResolverImpl({
     required this._supabaseWrapper,
     required this._localDataSource,
+    required this._activeUserProvider,
   });
 
   @override
@@ -72,7 +75,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     int requestGeneration, {
     bool createIfMissing = false,
   }) async {
-    final userId = _supabaseWrapper.currentUser?.id;
+    final userId = _activeUserProvider.activeUserId;
     try {
       _logger.debug('Resolving current company id');
       final companyId = await _lookUpCompanyId(
@@ -149,7 +152,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   }
 
   void _startSessionForCurrentUser() {
-    final userId = _supabaseWrapper.currentUser?.id;
+    final userId = _activeUserProvider.activeUserId;
     if (_sessionUserId != userId) {
       _resetSession();
       _sessionUserId = userId;

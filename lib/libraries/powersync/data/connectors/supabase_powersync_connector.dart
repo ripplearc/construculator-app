@@ -87,6 +87,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   /// Uploads queued local mutations to Supabase.
   @override
   Future<void> uploadData(PowerSyncDatabase database) async {
+    // TODO: [CA-1462] Fix one user id when the batch is read, check it again
+    // before each request, and never complete() for another user.
+    // https://ripplearc.youtrack.cloud/issue/CA-1462
     final transaction = await database.getNextCrudTransaction();
     if (transaction == null) {
       return;
@@ -178,6 +181,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   ) async {
     if (operation.table != DatabaseConstants.yourRatesTable) return;
     if (_refusedRateAmount(operation) == null) return;
+    // TODO: [CA-1462] Read the user through ActiveUserProvider, fixed once per
+    // upload batch.
+    // https://ripplearc.youtrack.cloud/issue/CA-1462
     final userId = _supabaseWrapper.currentUser?.id;
     final item = await _phoneRateOf(database, operation);
     if (userId == null || item == null) return;
@@ -216,6 +222,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   ) async {
     final refusedAmount = _refusedRateAmount(operation);
     if (refusedAmount == null) return;
+    // TODO: [CA-1462] Read the user through ActiveUserProvider, fixed once per
+    // upload batch.
+    // https://ripplearc.youtrack.cloud/issue/CA-1462
     final userId = _supabaseWrapper.currentUser?.id;
     final item = await _phoneRateOf(database, operation);
     if (userId == null || item == null) return;

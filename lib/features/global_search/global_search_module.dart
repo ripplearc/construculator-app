@@ -9,6 +9,7 @@ import 'package:construculator/features/global_search/data/repositories/global_s
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
@@ -32,6 +33,7 @@ class GlobalSearchModule extends Module {
   @override
   List<Module> get imports => [
     SupabaseModule(appBootstrap),
+    AuthLibraryModule(appBootstrap),
     TagLibraryModule(appBootstrap),
     OwnerLibraryModule(appBootstrap),
   ];
@@ -41,6 +43,7 @@ class GlobalSearchModule extends Module {
     i.addLazySingleton<GlobalSearchDataSource>(
       () => RemoteGlobalSearchDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
+        activeUserProvider: i(),
       ),
     );
     i.addLazySingleton<GlobalSearchRepository>(
