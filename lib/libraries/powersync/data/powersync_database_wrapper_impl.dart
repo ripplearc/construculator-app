@@ -78,12 +78,12 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
     return _PowerSyncStreamHandle(subscription);
   }
 
-  /// Counts the write operations still queued for upload, using the SDK's own
-  /// upload-queue statistics.
+  /// Reports whether any write operation is still queued for upload, using the
+  /// SDK's own upload-queue statistics.
   @override
-  Future<int> countUnsentEdits() async {
+  Future<bool> hasUnsentEdits() async {
     final stats = await _database.getUploadQueueStats();
-    return stats.count;
+    return stats.count > 0;
   }
 }
 

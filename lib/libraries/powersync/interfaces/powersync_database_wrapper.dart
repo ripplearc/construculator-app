@@ -91,15 +91,14 @@ abstract class PowerSyncDatabaseWrapper {
   /// keeps PowerSync types out of the data-source layer.
   Future<SyncStreamHandle> syncStream(String name);
 
-  /// Counts the write operations in the upload queue (the `ps_crud` table):
-  /// inserts, updates and deletes made on this phone that have not finished
+  /// Whether the upload queue (the `ps_crud` table) holds any write operation:
+  /// an insert, update or delete made on this phone that has not finished
   /// uploading. An operation stays in the queue until its upload batch is
   /// completed, so one that is being sent right now still counts.
   ///
-  /// One edit by the user can queue several operations, so compare the result
-  /// with 0 and do not show it as a number of edits. Returns 0 when nothing is
-  /// waiting to upload. Throws if the local database cannot be read.
-  Future<int> countUnsentEdits();
+  /// Returns false when nothing is waiting to upload. Throws if the local
+  /// database cannot be read.
+  Future<bool> hasUnsentEdits();
 }
 
 /// A project-owned handle to an activated on-demand sync stream, returned by

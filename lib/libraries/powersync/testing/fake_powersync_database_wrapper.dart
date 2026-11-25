@@ -103,15 +103,14 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// handle is unsubscribed. Same rationale as [syncStreamInvokedSignal].
   Completer<void>? syncStreamUnsubscribeSignal;
 
-  /// What [countUnsentEdits] returns: the number of queued write operations,
-  /// not of user edits. Tests set it by hand: it does not change when
-  /// [execute] or [writeTransaction] run.
-  int unsentEditCount = 0;
+  /// What [hasUnsentEdits] returns. Tests set it by hand: it does not change
+  /// when [execute] or [writeTransaction] run.
+  bool unsentEditsQueued = false;
 
-  /// When set, [countUnsentEdits] throws this error on every call until
-  /// explicitly cleared (`countUnsentEditsError = null`) or [reset] is called.
+  /// When set, [hasUnsentEdits] throws this error on every call until
+  /// explicitly cleared (`hasUnsentEditsError = null`) or [reset] is called.
   /// It does NOT self-clear after one use.
-  Object? countUnsentEditsError;
+  Object? hasUnsentEditsError;
 
   /// Scripts [rows] as the result of [getAll] for [sql].
   void stubGetAll(String sql, List<Map<String, dynamic>> rows) {
@@ -244,12 +243,12 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   }
 
   @override
-  Future<int> countUnsentEdits() async {
-    final error = countUnsentEditsError;
+  Future<bool> hasUnsentEdits() async {
+    final error = hasUnsentEditsError;
     if (error != null) {
       throw error;
     }
-    return unsentEditCount;
+    return unsentEditsQueued;
   }
 
   /// Clears recorded calls, scripted results, errors, and watch seeds, and
@@ -269,8 +268,8 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     executeError = null;
     writeTransactionError = null;
     syncStreamError = null;
-    unsentEditCount = 0;
-    countUnsentEditsError = null;
+    unsentEditsQueued = false;
+    hasUnsentEditsError = null;
     syncStreamActivationGate = null;
     syncStreamInvokedSignal = null;
     watchInvokedSignal = null;

@@ -408,33 +408,33 @@ void main() {
       );
     });
 
-    group('countUnsentEdits', () {
-      test('returns 0 when no write is waiting to upload', () async {
-        expect(await fakeWrapper.countUnsentEdits(), 0);
+    group('hasUnsentEdits', () {
+      test('returns false when no write is waiting to upload', () async {
+        expect(await fakeWrapper.hasUnsentEdits(), isFalse);
       });
 
-      test('returns the queued operation count the test set', () async {
-        fakeWrapper.unsentEditCount = 3;
+      test('returns true when the test queued a write', () async {
+        fakeWrapper.unsentEditsQueued = true;
 
-        expect(await fakeWrapper.countUnsentEdits(), 3);
+        expect(await fakeWrapper.hasUnsentEdits(), isTrue);
       });
 
       test('throws the configured error on every call', () async {
         final error = Exception('local database unreadable');
-        fakeWrapper.countUnsentEditsError = error;
+        fakeWrapper.hasUnsentEditsError = error;
 
-        await expectLater(fakeWrapper.countUnsentEdits(), throwsA(error));
-        await expectLater(fakeWrapper.countUnsentEdits(), throwsA(error));
+        await expectLater(fakeWrapper.hasUnsentEdits(), throwsA(error));
+        await expectLater(fakeWrapper.hasUnsentEdits(), throwsA(error));
       });
 
-      test('reset puts the count back to 0 and clears the error', () async {
-        fakeWrapper.unsentEditCount = 3;
-        fakeWrapper.countUnsentEditsError = Exception('x');
+      test('reset puts the answer back to false and clears the error', () async {
+        fakeWrapper.unsentEditsQueued = true;
+        fakeWrapper.hasUnsentEditsError = Exception('x');
 
         fakeWrapper.reset();
 
-        expect(fakeWrapper.countUnsentEditsError, isNull);
-        expect(await fakeWrapper.countUnsentEdits(), 0);
+        expect(fakeWrapper.hasUnsentEditsError, isNull);
+        expect(await fakeWrapper.hasUnsentEdits(), isFalse);
       });
     });
 
