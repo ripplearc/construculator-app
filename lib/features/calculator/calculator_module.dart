@@ -42,6 +42,7 @@ class CalculatorModule extends Module {
       () => CalculatorPreferencesRepositoryImpl(
         authNotifier: i(),
         authManager: i(),
+        activeUserProvider: i(),
       ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
