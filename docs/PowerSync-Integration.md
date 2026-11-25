@@ -323,7 +323,14 @@ sign-in check and the auth event service do, in this order for every Supabase au
 3. `AuthEventService` puts the event on the queue. An event with a session runs
    `SignInCheck`, which compares the session's user with the owner record, then adds the
    session module and calls `connect()`. An event with no session calls
-   `disconnectAndClear()`. An event for a different user than the connected one calls
+   `disconnectAndClear()`, except a first event (`initialSession`) whose saved value
+   cannot be read as a session: start-up recovery removes that value, saves the
+   sign-out date when an owner record exists, and clears nothing (the stopgap clear
+   is replaced by the sign-out handler in CA-1462). A saved value that reads fine,
+   or a read that fails, removes nothing and ends in the blocked state. Start-up
+   recovery is the first item on the queue; it
+   finishes a delete that a crash stopped before any event item runs. An event for a
+   different user than the connected one calls
    `disconnect()` at once, before it joins the queue. The manager itself ignores the stream.
 
 **Sign-out with a different user on the same device:** `disconnectAndClear()` is called

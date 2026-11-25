@@ -15,6 +15,7 @@ import 'package:construculator/libraries/storage/local_data_delete_service.dart'
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -750,6 +751,135 @@ void main() {
         await finished;
 
         expect(wrapper.getMethodCallsFor('readSavedSession'), hasLength(0));
+      });
+    });
+
+    group('Supabase\'s first event with no session but a saved value', () {
+      test(
+        'a value that cannot be read as a session is removed, the date '
+        'is saved, nothing is cleared and the state finishes with nobody',
+        () async {
+          ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+          wrapper.seedSavedSession('{broken');
+          final finished = expectLater(
+            state.changes,
+            emitsThrough(const FinishedNobodySignedIn()),
+          );
+
+          wrapper.emitInitialSessionWithoutSession();
+          await finished;
+
+          expect(await wrapper.readSavedSession(), isA<SavedSessionAbsent>());
+          expect(ownerRecords.record?.signOutDate, isNotNull);
+          expect(powerSync.clearCallCount, 0);
+          expect(syncedData.deleteCallCount, 0);
+        },
+      );
+
+      test(
+        'a value that reads fine blocks the state and signs nobody out',
+        () async {
+          ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+          wrapper.seedSavedSession(_savedSessionOf('user-a'));
+          final blocked = expectLater(
+            state.changes,
+            emitsThrough(const Blocked(null)),
+          );
+
+          wrapper.emitInitialSessionWithoutSession();
+          await blocked;
+
+          expect(await wrapper.readSavedSession(), isA<SavedSessionFound>());
+          expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+          expect(ownerRecords.writes, isEmpty);
+        },
+      );
+
+      test('a failed read blocks the state', () async {
+        wrapper.seedSavedSession('{broken');
+        wrapper.shouldFailReadSavedSession = true;
+        final blocked = expectLater(
+          state.changes,
+          emitsThrough(const Blocked(null)),
+        );
+
+        wrapper.emitInitialSessionWithoutSession();
+        await blocked;
+
+        expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
+      });
+
+      test('a logout flag and a value that is not a session: the delete runs '
+          'at start-up and the first event only removes the value', () async {
+        service.dispose();
+        ownerRecords.seed(
+          OwnerRecord(
+            userId: 'user-a',
+            pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),
+          ),
+        );
+        wrapper.seedSavedSession('{broken');
+        service = buildService();
+        final finished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedNobodySignedIn()),
+        );
+
+        wrapper.emitInitialSessionWithoutSession();
+        await finished;
+
+        expect(syncedData.deleteCallCount, 1);
+        expect(ownerRecords.record, isNull);
+        expect(await wrapper.readSavedSession(), isA<SavedSessionAbsent>());
+      });
+
+      test(
+        'a failed read blocks the state even when an owner record exists',
+        () async {
+          service.dispose();
+          ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+          wrapper.shouldFailReadSavedSession = true;
+          service = buildService();
+          final blocked = expectLater(
+            state.changes,
+            emitsThrough(const Blocked(null)),
+          );
+
+          wrapper.emitInitialSessionWithoutSession();
+          await blocked;
+
+          expect(syncedData.deleteCallCount, 0);
+          expect(ownerRecords.writes, isEmpty);
+        },
+      );
+
+      test(
+        'no saved value finishes with nobody and clears as before',
+        () async {
+          final finished = expectLater(
+            state.changes,
+            emitsThrough(const FinishedNobodySignedIn()),
+          );
+
+          wrapper.emitInitialSessionWithoutSession();
+          await finished;
+
+          expect(powerSync.clearCallCount, 1);
+        },
+      );
+
+      test('a sign-out event with a leftover value is not treated as a first '
+          'event', () async {
+        wrapper.seedSavedSession('{broken');
+        final finished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedNobodySignedIn()),
+        );
+
+        wrapper.setCurrentUser(null);
+        await finished;
+
+        expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
       });
     });
   });

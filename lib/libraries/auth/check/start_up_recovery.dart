@@ -19,6 +19,17 @@ class SavedSessionUnreadableException implements ExpectedException {
       'SavedSessionUnreadableException: the saved session could not be read';
 }
 
+/// Thrown when the saved session reads fine but Supabase sent a first event
+/// with no session. That is a temporary failure: nobody is signed out.
+class SavedSessionNotLoadedException implements ExpectedException {
+  /// An error for a readable saved session that Supabase did not load.
+  const SavedSessionNotLoadedException();
+
+  @override
+  String toString() =>
+      'SavedSessionNotLoadedException: a readable saved session was not loaded';
+}
+
 /// Finishes what a crash stopped, at every app start, before any feature reads
 /// data.
 ///
@@ -89,6 +100,41 @@ class StartUpRecovery {
     );
   }
 
+  /// Handles Supabase's first event when it carries no session.
+  ///
+  /// A saved value that cannot be read as a session is removed, and the
+  /// sign-out date is saved so the kept-data limit can start. Nothing is
+  /// signed out and no auth event follows, because no session exists in
+  /// memory. Returns whether it removed such a value; it removes nothing when a
+  /// session has been current since the read, because a fresh sign-in may have
+  /// saved over the value. Throws
+  /// [SavedSessionNotLoadedException] when the value reads fine, and
+  /// [SavedSessionUnreadableException] when the read fails: both are temporary
+  /// failures that remove and save nothing.
+  Future<bool> removeUnreadableSavedSession(QueueRun run) async {
+    switch (await _readSavedSession(run)) {
+      case SavedSessionFound(isReadableSession: true):
+        throw const SavedSessionNotLoadedException();
+      case SavedSessionFound():
+        if (_wrapper.currentSession != null) return false;
+        // TODO: [CA-1462] Replace this direct removal with a sign-out tagged
+        // "keep" once the sign-out handler exists.
+        // https://ripplearc.youtrack.cloud/issue/CA-1462
+        await run.step(_wrapper.removeSavedSession);
+        final record = await _readOwnerRecord(run);
+        if (record != null) {
+          await _saveMissingSignOutDate(
+            run,
+            record,
+            const SavedSessionAbsent(),
+          );
+        }
+        return true;
+      case _:
+        return false;
+    }
+  }
+
   Future<OwnerRecord?> _readOwnerRecord(QueueRun run) async =>
       switch (await run.step(_ownerRecords.read)) {
         OwnerRecordFound(:final record) => record,
@@ -109,7 +155,11 @@ class StartUpRecovery {
     OwnerRecord record,
     SavedSessionRead saved,
   ) async {
-    if (saved is! SavedSessionAbsent || record.signOutDate != null) return;
+    if (saved is! SavedSessionAbsent ||
+        record.pendingDelete != null ||
+        record.signOutDate != null) {
+      return;
+    }
     await run.step(
       () => _ownerRecords.write(
         OwnerRecord(userId: record.userId, signOutDate: _clock.now()),

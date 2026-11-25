@@ -83,6 +83,13 @@ abstract class SupabaseWrapper {
   /// session. Call it after [initialize].
   Future<SavedSessionRead> readSavedSession();
 
+  /// Removes the saved login session without signing anyone out and without
+  /// an auth event.
+  ///
+  /// For a saved value that Supabase could not load, so no session exists in
+  /// memory to sign out. Throws when the removal fails.
+  Future<void> removeSavedSession();
+
   /// Select a set of rows from a table
   ///
   /// [table] The table to select from
