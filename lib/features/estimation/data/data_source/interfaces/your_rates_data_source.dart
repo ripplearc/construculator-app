@@ -8,8 +8,9 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// company: the phone holds the rates of every company the user belongs to.
 abstract class YourRatesDataSource {
   /// Starts the sync of Your rates if it is not running, then waits until the
-  /// phone has had its first sync of it, but for no longer than [atMost], so a caller with a time limit of its own is not
-  /// held by the data source's longer default wait.
+  /// phone has had its first sync of it, but for no longer than [atMost], so a
+  /// caller with a time limit of its own is not held by the data source's
+  /// longer default wait.
   ///
   /// When the wait runs out, nothing waits for that first sync any more, until
   /// it has finished or failed: every [loadRates] and write in that time, a

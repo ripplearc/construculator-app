@@ -41,7 +41,8 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   /// How long [save] waits for the phone's first sync of Your rates before it
   /// goes on with the rows the phone holds. A save never waits longer than
-  /// half of the time it has left, so the wait alone does not make it time out.
+  /// half of the time the save was given, so the wait alone does not make it
+  /// time out.
   final Duration saveFirstSyncWait;
 
   Future<void>? _pendingUndo;
