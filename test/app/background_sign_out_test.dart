@@ -9,6 +9,7 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/check/auth_event_service.dart';
 import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/check/sign_in_check.dart';
+import 'package:construculator/libraries/auth/check/start_up_recovery.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -25,6 +26,7 @@ import 'package:construculator/libraries/storage/testing/fake_owner_record_stora
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,17 +89,25 @@ void main() {
     Modular.init(_TestModule(bootstrap));
     final ownerRecords = FakeOwnerRecordStorageService();
     final powerSync = FakePowerSyncManager();
+    // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
+    final deleteService = LocalDataDeleteService(
+      ownerRecords: ownerRecords,
+      database: FakePowerSyncDatabaseWrapper(),
+      syncedData: FakeSyncedDataService(),
+      userSpace: FakeStorageService(),
+      registrations: const [],
+    );
+    // ignore: no_direct_instantiation, reason: recovery runs on fakes with the real delete routine
+    final recovery = StartUpRecovery(
+      ownerRecords: ownerRecords,
+      deleteService: deleteService,
+      wrapper: supabase,
+      clock: FakeClockImpl(),
+    );
     // ignore: no_direct_instantiation, reason: the check under test runs on fakes and the real session
     signInCheck = SignInCheck(
       ownerRecords: ownerRecords,
-      // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
-      deleteService: LocalDataDeleteService(
-        ownerRecords: ownerRecords,
-        database: FakePowerSyncDatabaseWrapper(),
-        syncedData: FakeSyncedDataService(),
-        userSpace: FakeStorageService(),
-        registrations: const [],
-      ),
+      deleteService: deleteService,
       sessionService: sessionService,
       powerSync: powerSync,
       wrapper: supabase,
@@ -113,6 +123,7 @@ void main() {
       ),
       state: Modular.get<CheckFinishedState>(),
       signInCheck: signInCheck,
+      recovery: recovery,
     );
     authNotifier = Modular.get<AuthNotifier>();
     authManager = Modular.get<AuthManager>();

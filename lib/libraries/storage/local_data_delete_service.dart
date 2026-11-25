@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/errors/expected_exception.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/interfaces/synced_data_service.dart';
 import 'package:construculator/libraries/powersync/models/local_only_table_registry.dart';
@@ -6,7 +7,7 @@ import 'package:construculator/libraries/storage/interfaces/storage_service.dart
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 
 /// Thrown when the owner record cannot be read, so nothing is deleted.
-class OwnerRecordUnreadableException implements Exception {
+class OwnerRecordUnreadableException implements ExpectedException {
   /// An error for a read that returned [OwnerRecordUnknown].
   const OwnerRecordUnreadableException();
 

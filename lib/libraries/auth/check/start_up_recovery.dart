@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
+import 'package:construculator/libraries/errors/expected_exception.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/local_data_delete_service.dart';
@@ -9,7 +10,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// Thrown when the saved session cannot be read, so recovery neither deletes
 /// nor saves a sign-out date.
-class SavedSessionUnreadableException implements Exception {
+class SavedSessionUnreadableException implements ExpectedException {
   /// An error for a read that returned [SavedSessionUnknown].
   const SavedSessionUnreadableException();
 

@@ -13,6 +13,8 @@ import 'package:construculator/libraries/powersync/testing/fake_powersync_databa
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/session/testing/fake_session_service.dart';
+import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:powersync/powersync.dart';
@@ -63,6 +65,7 @@ class FakeAppBootstrapFactory {
     FeatureFlagRepository? featureFlagRepository,
     FakeAppLifecycleWrapper? appLifecycleWrapper,
     SessionService? sessionService,
+    OwnerRecordStorageService? ownerRecordStorage,
     String appVersion = '1.0.0',
   }) {
     return AppBootstrap(
@@ -80,6 +83,7 @@ class FakeAppBootstrapFactory {
       appLifecycleWrapper: appLifecycleWrapper ?? FakeAppLifecycleWrapper(),
       appVersion: appVersion,
       sessionService: sessionService ?? FakeSessionService(),
+      ownerRecordStorage: ownerRecordStorage ?? FakeOwnerRecordStorageService(),
     );
   }
 }

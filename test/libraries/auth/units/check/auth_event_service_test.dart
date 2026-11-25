@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:construculator/libraries/auth/check/auth_event_service.dart';
 import 'package:construculator/libraries/auth/check/check_finished_state_impl.dart';
 import 'package:construculator/libraries/auth/check/check_state.dart';
 import 'package:construculator/libraries/auth/check/sign_in_check.dart';
+import 'package:construculator/libraries/auth/check/start_up_recovery.dart';
 import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_manager.dart';
@@ -19,6 +21,13 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+String _savedSessionOf(String userId) => json.encode({
+  'access_token': 'fake-access-token-$userId',
+  'token_type': 'bearer',
+  'refresh_token': 'r-$userId',
+  'user': {'id': userId},
+});
+
 void main() {
   late FakeOwnerRecordStorageService ownerRecords;
   late FakeSyncedDataService syncedData;
@@ -29,6 +38,7 @@ void main() {
   late AuthEventQueue queue;
   late AuthEventService service;
   late SignInCheck check;
+  late AuthEventService Function() buildService;
   late int identityResets;
   late int unstoppedRuns;
 
@@ -54,29 +64,39 @@ void main() {
       actionTimeout: const Duration(milliseconds: 100),
       onUnstoppedRun: () => unstoppedRuns++,
     );
+    // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
+    final deleteService = LocalDataDeleteService(
+      ownerRecords: ownerRecords,
+      database: FakePowerSyncDatabaseWrapper(),
+      syncedData: syncedData,
+      userSpace: FakeStorageService(),
+      registrations: const [],
+    );
+    // ignore: no_direct_instantiation, reason: recovery runs on fakes with the real delete routine
+    final recovery = StartUpRecovery(
+      ownerRecords: ownerRecords,
+      deleteService: deleteService,
+      wrapper: wrapper,
+      clock: FakeClockImpl(),
+    );
     // ignore: no_direct_instantiation, reason: the service under test is built from its collaborators
     check = SignInCheck(
       ownerRecords: ownerRecords,
-      // ignore: no_direct_instantiation, reason: the real delete routine runs on fakes
-      deleteService: LocalDataDeleteService(
-        ownerRecords: ownerRecords,
-        database: FakePowerSyncDatabaseWrapper(),
-        syncedData: syncedData,
-        userSpace: FakeStorageService(),
-        registrations: const [],
-      ),
+      deleteService: deleteService,
       sessionService: sessionService,
       powerSync: powerSync,
       wrapper: wrapper,
       resetIdentity: () async => identityResets++,
     );
     // ignore: no_direct_instantiation, reason: the service under test is built from its collaborators
-    service = AuthEventService(
+    buildService = () => AuthEventService(
       wrapper: wrapper,
       queue: queue,
       state: state,
       signInCheck: check,
+      recovery: recovery,
     );
+    service = buildService();
   });
 
   tearDown(() {
@@ -578,6 +598,159 @@ void main() {
       await finished;
 
       expect(unstoppedRuns, 0);
+    });
+
+    group('start-up recovery', () {
+      const logoutFlag = PendingDelete.logoutOrNoOwnerRecord();
+
+      Future<void> restartWith(void Function() arrange) async {
+        service.dispose();
+        arrange();
+        service = buildService();
+        await queue.enqueueWithoutEvent(
+          item: (run) async {},
+          settle: (outcome) async {},
+        );
+      }
+
+      test(
+        'finishes a delete a crash stopped before the first event',
+        () async {
+          await restartWith(
+            () => ownerRecords.seed(
+              OwnerRecord(userId: 'user-a', pendingDelete: logoutFlag),
+            ),
+          );
+
+          expect(syncedData.deleteCallCount, 1);
+          expect(ownerRecords.record, isNull);
+        },
+      );
+
+      test('sets no finished value when it succeeds', () async {
+        await restartWith(() => ownerRecords.seed(OwnerRecord(userId: 'a')));
+
+        expect(state.value, const Checking());
+      });
+
+      test('blocks the state for the signed-in user when it fails with a '
+          'session present', () async {
+        await restartWith(() {
+          ownerRecords.seed(
+            OwnerRecord(userId: 'user-a', pendingDelete: logoutFlag),
+          );
+          wrapper.setCurrentUser(user('user-a'));
+          wrapper.seedSavedSession(_savedSessionOf('user-a'));
+          wrapper.shouldThrowOnSignOut = true;
+        });
+
+        expect(state.value, const Blocked('user-a'));
+      });
+
+      test('finishes with nobody signed in when it fails and no session is '
+          'present', () async {
+        await restartWith(() {
+          ownerRecords.seed(
+            OwnerRecord(userId: 'user-a', pendingDelete: logoutFlag),
+          );
+          wrapper.shouldFailReadSavedSession = true;
+        });
+
+        expect(state.value, const FinishedNobodySignedIn());
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test('a failed recovery leaves the state at checking when an auth event '
+          'is already waiting, and that event settles it', () async {
+        service.dispose();
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        ownerRecords.shouldReadUnknown = true;
+        ownerRecords.afterRead = () {
+          ownerRecords.afterRead = null;
+          ownerRecords.shouldReadUnknown = false;
+        };
+        final seen = <CheckState>[];
+        final subscription = state.changes.listen(seen.add);
+        service = buildService();
+        final finished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-a')),
+        );
+
+        signIn('user-a');
+        await finished;
+        await subscription.cancel();
+
+        expect(seen, [const Checking(), const FinishedFor('user-a')]);
+      });
+
+      test('blocks the state when the owner record cannot be read, even with '
+          'no session', () async {
+        await restartWith(() => ownerRecords.shouldReadUnknown = true);
+
+        expect(state.value, const Blocked(null));
+      });
+
+      test(
+        'runs again at the start of the next item after it failed',
+        () async {
+          await restartWith(() {
+            ownerRecords.seed(
+              OwnerRecord(userId: 'user-a', pendingDelete: logoutFlag),
+            );
+            wrapper.shouldFailReadSavedSession = true;
+          });
+          wrapper.shouldFailReadSavedSession = false;
+          final finished = expectLater(
+            state.changes,
+            emitsThrough(const FinishedFor('user-b')),
+          );
+
+          signIn('user-b');
+          await finished;
+
+          expect(wrapper.getMethodCallsFor('readSavedSession'), hasLength(2));
+          expect(ownerRecords.record, OwnerRecord(userId: 'user-b'));
+        },
+      );
+
+      test(
+        'a retry never signs out the user who signed in since the failure',
+        () async {
+          await restartWith(() {
+            ownerRecords.seed(
+              OwnerRecord(userId: 'user-a', pendingDelete: logoutFlag),
+            );
+            wrapper.shouldFailReadSavedSession = true;
+          });
+          wrapper.shouldFailReadSavedSession = false;
+          wrapper.seedSavedSession(_savedSessionOf('user-b'));
+          final finished = expectLater(
+            state.changes,
+            emitsThrough(const FinishedFor('user-b')),
+          );
+
+          signIn('user-b');
+          await finished;
+
+          expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+          expect(wrapper.currentSession?.user.id, 'user-b');
+          expect(ownerRecords.record, OwnerRecord(userId: 'user-b'));
+        },
+      );
+
+      test('does not run again once it succeeded', () async {
+        await restartWith(() {});
+        final finished = expectLater(
+          state.changes,
+          emitsThrough(const FinishedFor('user-b')),
+        );
+
+        signIn('user-b');
+        await finished;
+
+        expect(wrapper.getMethodCallsFor('readSavedSession'), hasLength(0));
+      });
     });
   });
 }

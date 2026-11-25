@@ -1,7 +1,12 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
+import 'package:construculator/libraries/errors/expected_exception.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _TemporaryFailure implements ExpectedException {
+  const _TemporaryFailure();
+}
 
 void main() {
   late AuthEventQueue queue;
@@ -21,6 +26,56 @@ void main() {
   Future<void> noSettle(QueueOutcome outcome) async {}
 
   group('AuthEventQueue', () {
+    test(
+      'an item without an event waits its turn and takes no event number',
+      () async {
+        final gate = Completer<void>();
+        final first = queue.enqueue(
+          eventNumber: queue.numberNextEvent(),
+          item: (run) async {
+            await gate.future;
+            log.add('event item');
+          },
+          settle: noSettle,
+        );
+        final recovery = queue.enqueueWithoutEvent(
+          item: (run) async => log.add('recovery item'),
+          settle: (outcome) async => log.add('recovery settles $outcome'),
+        );
+
+        gate.complete();
+        await Future.wait([first, recovery]);
+
+        expect(log, [
+          'event item',
+          'recovery item',
+          'recovery settles QueueOutcome.completed',
+        ]);
+        expect(queue.newestEventNumber, 1);
+      },
+    );
+
+    test('an item that throws an expected failure settles as failed', () async {
+      await queue.enqueueWithoutEvent(
+        item: (run) async => throw const _TemporaryFailure(),
+        settle: (outcome) async => log.add('settles $outcome'),
+      );
+
+      expect(log, ['settles QueueOutcome.failed']);
+    });
+
+    test(
+      'an item without an event that throws still settles as failed',
+      () async {
+        await queue.enqueueWithoutEvent(
+          item: (run) async => throw Exception('boom'),
+          settle: (outcome) async => log.add('settles $outcome'),
+        );
+
+        expect(log, ['settles QueueOutcome.failed']);
+      },
+    );
+
     test('a second item waits for the first to finish', () async {
       final firstGate = Completer<void>();
       final firstStarted = Completer<void>();

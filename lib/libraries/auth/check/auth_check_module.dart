@@ -4,6 +4,7 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/check/auth_event_service.dart';
 import 'package:construculator/libraries/auth/check/interfaces/check_finished_state.dart';
 import 'package:construculator/libraries/auth/check/sign_in_check.dart';
+import 'package:construculator/libraries/auth/check/start_up_recovery.dart';
 import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
@@ -15,6 +16,8 @@ import 'package:construculator/libraries/storage/local_data_delete_service.dart'
 import 'package:construculator/libraries/storage/storage_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Wires the sign-in check, the queue it runs on and the service that feeds
@@ -38,12 +41,21 @@ class AuthCheckModule extends Module {
     SupabaseModule(appBootstrap),
     StorageModule(),
     PowerSyncModule(appBootstrap),
+    ClockModule(),
   ];
 
   @override
   void exportedBinds(Injector i) {
-    i.addSingleton<AuthEventService>(
-      () => AuthEventService(
+    i.addSingleton<AuthEventService>(() {
+      final ownerRecords =
+          appBootstrap.ownerRecordStorage ?? i<OwnerRecordStorageService>();
+      final deleteService = LocalDataDeleteService(
+        ownerRecords: ownerRecords,
+        database: i<PowerSyncDatabaseWrapper>(),
+        syncedData: PowerSyncSyncedDataService(manager: i<PowerSyncManager>()),
+        userSpace: i<StorageService>(),
+      );
+      return AuthEventService(
         wrapper: i<SupabaseWrapper>(),
         queue: AuthEventQueue(
           actionTimeout: _actionTimeout,
@@ -51,22 +63,21 @@ class AuthCheckModule extends Module {
         ),
         state: i<CheckFinishedState>(),
         signInCheck: SignInCheck(
-          ownerRecords: i<OwnerRecordStorageService>(),
-          deleteService: LocalDataDeleteService(
-            ownerRecords: i<OwnerRecordStorageService>(),
-            database: i<PowerSyncDatabaseWrapper>(),
-            syncedData: PowerSyncSyncedDataService(
-              manager: i<PowerSyncManager>(),
-            ),
-            userSpace: i<StorageService>(),
-          ),
+          ownerRecords: ownerRecords,
+          deleteService: deleteService,
           sessionService: appBootstrap.sessionService,
           powerSync: i<PowerSyncManager>(),
           wrapper: i<SupabaseWrapper>(),
           resetIdentity: _resetIdentity,
         ),
-      ),
-    );
+        recovery: StartUpRecovery(
+          ownerRecords: ownerRecords,
+          deleteService: deleteService,
+          wrapper: i<SupabaseWrapper>(),
+          clock: i<Clock>(),
+        ),
+      );
+    });
   }
 
   Future<void> _resetIdentity() async {
