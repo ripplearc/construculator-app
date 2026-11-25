@@ -69,6 +69,10 @@ class CostItemFormScreen extends StatefulWidget {
   /// `null` when the form adds a new line.
   final MaterialCostItem? editedMaterialItem;
 
+  /// Key of the line drawn under the material sheet's title while its form
+  /// is scrolled.
+  static const scrolledLineKey = Key('cost_item_form_scrolled_line');
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -97,11 +101,14 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
 
   final _materialFieldsKey = GlobalKey();
 
-  static const double _oneFieldRow = 72;
+  final _isFormScrolled = ValueNotifier(false);
+
+  static const double _tallestFieldRow = 77;
 
   @override
   void dispose() {
     _numberPad.dispose();
+    _isFormScrolled.dispose();
     super.dispose();
   }
 
@@ -186,10 +193,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     closesPad(_buildBody(context, trailing: scrollingPanel)),
                 panel: closesPad(footer(AddToEstimateFooterPart.panel)),
                 controls: footer(AddToEstimateFooterPart.controls),
-                // About one field row stays in view above the pinned card.
                 minFormHeight: MediaQuery.textScalerOf(
                   context,
-                ).scale(_oneFieldRow),
+                ).scale(_tallestFieldRow + CoreSpacing.space3),
               ),
       ),
     );
@@ -271,9 +277,29 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   Widget _buildSheetHeader(BuildContext context) {
     final title = _screenTitle(context);
     if (widget.type == CostItemType.material) {
-      return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
-        builder: (context, state) => SheetHeader(
-          title: state.data.isEditingExistingLine ? state.data.lineName : title,
+      return ValueListenableBuilder(
+        valueListenable: _isFormScrolled,
+        // Drawn over the title row's bottom edge, so it moves nothing.
+        builder: (context, isScrolled, _) => Stack(
+          children: [
+            BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+              builder: (context, state) => SheetHeader(
+                title: state.data.isEditingExistingLine
+                    ? state.data.lineName
+                    : title,
+              ),
+            ),
+            if (isScrolled)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: CoreDivider(
+                  key: CostItemFormScreen.scrolledLineKey,
+                  color: context.colorTheme.lineLight,
+                ),
+              ),
+          ],
         ),
       );
     }
@@ -365,12 +391,26 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => MaterialCostFormFields(
-        // Keeps the typed values and focus when the pad's layout takes over.
-        key: _materialFieldsKey,
-        editedItem: widget.editedMaterialItem,
-        numberPad: widget.presentAsSheet ? _numberPad : null,
-        trailing: trailing,
+      CostItemType.material => NotificationListener(
+        onNotification: (notification) {
+          // Only the form itself, not the fields' own sideways scrolling one
+          // level down. A form that shrinks back to the top when the pad
+          // closes reports new metrics, not a scroll.
+          final form = switch (notification) {
+            ScrollNotification(depth: 0, :final metrics) => metrics,
+            ScrollMetricsNotification(depth: 0, :final metrics) => metrics,
+            _ => null,
+          };
+          if (form != null) _isFormScrolled.value = form.pixels > 0;
+          return false;
+        },
+        child: MaterialCostFormFields(
+          // Keeps the typed values and focus when the pad's layout takes over.
+          key: _materialFieldsKey,
+          editedItem: widget.editedMaterialItem,
+          numberPad: widget.presentAsSheet ? _numberPad : null,
+          trailing: trailing,
+        ),
       ),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,

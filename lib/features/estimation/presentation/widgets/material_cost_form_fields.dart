@@ -10,6 +10,8 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_fi
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -117,7 +119,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SheetFieldRow(
+            _RevealedFieldRow(
+              key: const Key('material_name_row'),
               label: l10n.materialNameLabel,
               bottomPadding: _nameBottomPadding,
               onTap: _nameFocus.requestFocus,
@@ -135,7 +138,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                     bloc.add(MaterialCostItemTypeChanged(value)),
               ),
             ),
-            SheetFieldRow(
+            _RevealedFieldRow(
+              key: const Key('material_quantity_row'),
               label: l10n.materialQuantityLabel,
               valueGap: _quantityValueGap,
               bottomPadding: _quantityBottomPadding,
@@ -169,7 +173,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
-            SheetFieldRow(
+            _RevealedFieldRow(
+              key: const Key('material_rate_row'),
               label: l10n.materialRateLabel,
               valueGap: CoreSpacing.space2,
               onTap: _rateFocus.requestFocus,
@@ -398,5 +403,51 @@ class _SheetTextField extends StatelessWidget {
       maxLines: 1,
     )..layout();
     return painter.width + _cursorAllowance;
+  }
+}
+
+class _RevealedFieldRow extends SheetFieldRow {
+  const _RevealedFieldRow({
+    super.key,
+    required super.label,
+    required super.child,
+    super.valueGap,
+    super.bottomPadding,
+    super.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => _RevealedWithGap(super.build(context));
+}
+
+class _RevealedWithGap extends SingleChildRenderObjectWidget {
+  const _RevealedWithGap(Widget child) : super(child: child);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderRevealedWithGap();
+}
+
+class _RenderRevealedWithGap extends RenderProxyBox {
+  static const _gap = EdgeInsets.only(bottom: CoreSpacing.space3);
+
+  @override
+  void showOnScreen({
+    RenderObject? descendant,
+    Rect? rect,
+    Duration duration = Duration.zero,
+    Curve curve = Curves.ease,
+  }) {
+    // Storyboard "Reserve then scroll": whole row + 12, after the pad's layout.
+    SchedulerBinding.instance
+      ..addPostFrameCallback((_) {
+        if (!attached) return;
+        super.showOnScreen(
+          rect: _gap.inflateRect(Offset.zero & size),
+          duration: duration,
+          curve: curve,
+        );
+      })
+      ..ensureVisualUpdate();
   }
 }
