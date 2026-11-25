@@ -168,7 +168,7 @@ via #367, and the per-feature data sources land later still (#405 onward).
 | Layer | File | Owns |
 |---|---|---|
 | **Manager** | `powersync_manager.dart` / `powersync_manager_impl.dart` | Global connect/disconnect lifecycle, driven by auth events |
-| **Wrapper** | `powersync_database_wrapper.dart` / `_impl.dart` | Per-call seam (`getAll`/`watch`/`execute`/`writeTransaction`/`syncStream`) returning plain `Map` rows — no PowerSync/sqlite types leak above this layer |
+| **Wrapper** | `powersync_database_wrapper.dart` / `_impl.dart` | Per-call seam (`getAll`/`watch`/`execute`/`writeTransaction`/`syncStream`) returning plain `Map` rows, plus `hasUnsentEdits` for the `ps_crud` upload queue — no PowerSync/sqlite types leak above this layer |
 | **Data source** | e.g. `powersync_cost_estimation_data_source_impl.dart` | Per-feature on-demand sync-stream activation, tied to `watch()` subscription lifetime |
 
 ```dart
@@ -187,6 +187,7 @@ abstract class PowerSyncDatabaseWrapper {
   Future<void> execute(String sql, [List<Object?> parameters = const []]);
   Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action);
   Future<SyncStreamHandle> syncStream(String name);
+  Future<bool> hasUnsentEdits();
 }
 
 abstract class SyncStreamHandle {

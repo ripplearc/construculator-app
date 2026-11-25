@@ -77,6 +77,14 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
     // ignore: no_direct_instantiation, reason: subscription-scoped adapter
     return _PowerSyncStreamHandle(subscription);
   }
+
+  /// Reports whether any write operation is still queued for upload, using the
+  /// SDK's own upload-queue statistics.
+  @override
+  Future<bool> hasUnsentEdits() async {
+    final stats = await _database.getUploadQueueStats();
+    return stats.count > 0;
+  }
 }
 
 // Takes the enclosing transaction's `execute` closure rather than the

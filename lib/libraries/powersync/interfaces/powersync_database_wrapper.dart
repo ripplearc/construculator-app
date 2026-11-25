@@ -90,6 +90,15 @@ abstract class PowerSyncDatabaseWrapper {
   /// [SyncStreamHandle] (rather than PowerSync's `SyncStreamSubscription`)
   /// keeps PowerSync types out of the data-source layer.
   Future<SyncStreamHandle> syncStream(String name);
+
+  /// Whether the upload queue (the `ps_crud` table) holds any write operation:
+  /// an insert, update or delete made on this phone that has not finished
+  /// uploading. An operation stays in the queue until its upload batch is
+  /// completed, so one that is being sent right now still counts.
+  ///
+  /// Returns false when nothing is waiting to upload. Throws if the local
+  /// database cannot be read.
+  Future<bool> hasUnsentEdits();
 }
 
 /// A project-owned handle to an activated on-demand sync stream, returned by

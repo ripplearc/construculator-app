@@ -408,6 +408,36 @@ void main() {
       );
     });
 
+    group('hasUnsentEdits', () {
+      test('returns false when no write is waiting to upload', () async {
+        expect(await fakeWrapper.hasUnsentEdits(), isFalse);
+      });
+
+      test('returns true when the test queued a write', () async {
+        fakeWrapper.unsentEditsQueued = true;
+
+        expect(await fakeWrapper.hasUnsentEdits(), isTrue);
+      });
+
+      test('throws the configured error on every call', () async {
+        final error = Exception('local database unreadable');
+        fakeWrapper.hasUnsentEditsError = error;
+
+        await expectLater(fakeWrapper.hasUnsentEdits(), throwsA(error));
+        await expectLater(fakeWrapper.hasUnsentEdits(), throwsA(error));
+      });
+
+      test('reset puts the answer back to false and clears the error', () async {
+        fakeWrapper.unsentEditsQueued = true;
+        fakeWrapper.hasUnsentEditsError = Exception('x');
+
+        fakeWrapper.reset();
+
+        expect(fakeWrapper.hasUnsentEditsError, isNull);
+        expect(await fakeWrapper.hasUnsentEdits(), isFalse);
+      });
+    });
+
     group('reset', () {
       test('clears recorded calls, stubs, errors, and watch seeds', () async {
         const sql = 'SELECT * FROM projects';
