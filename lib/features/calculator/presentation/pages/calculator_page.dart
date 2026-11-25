@@ -40,9 +40,6 @@ class CalculatorPage extends StatefulWidget {
 class _CalculatorPageState extends State<CalculatorPage> {
   late final CalculatorBloc _bloc;
 
-  DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
-  bool _isKeypadFolded = false;
-
   @override
   void initState() {
     super.initState();
@@ -57,9 +54,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   static const String _attachmentsHeadingLeftBlank = '';
-
-  bool get _showsDetailPanelUnderCollapsedDisplay =>
-      _isKeypadFolded && _currentStage == DisplayAreaStage.collapsed;
 
   final ScrollController _displayScroll = ScrollController();
   final GlobalKey _displayKey = GlobalKey();
@@ -397,7 +391,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       children: [
                         CustomMultiChildLayout(
                           delegate: _DisplayStripPanelLayout(
-                            showsPanel: _showsDetailPanelUnderCollapsedDisplay,
+                            showsPanel: state.showsDetailPanel,
                           ),
                           children: [
                             LayoutId(
@@ -405,7 +399,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                               child: SingleChildScrollView(
                                 controller: _displayScroll,
                                 physics:
-                                    _currentStage != DisplayAreaStage.collapsed
+                                    state.historyStage !=
+                                        DisplayAreaStage.collapsed
                                     ? const NeverScrollableScrollPhysics()
                                     : const AlwaysScrollableScrollPhysics(),
                                 child: CoreDisplayArea(
@@ -440,11 +435,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                   onClose: () => bloc.add(
                                     const CalculatorActiveValueCleared(),
                                   ),
-                                  onStageChanged: (stage) {
-                                    if (_currentStage != stage) {
-                                      setState(() => _currentStage = stage);
-                                    }
-                                  },
+                                  onStageChanged: (stage) => bloc.add(
+                                    CalculatorHistoryStageChanged(stage),
+                                  ),
                                 ),
                               ),
                             ),
@@ -480,7 +473,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                 secondRowHidden: dependentKeys.isNotEmpty,
                               ),
                             ),
-                            if (_showsDetailPanelUnderCollapsedDisplay)
+                            if (state.showsDetailPanel)
                               LayoutId(
                                 id: _PageSlot.panel,
                                 child: state.hasDetails
@@ -544,7 +537,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
                       begin: 1.0,
-                      end: switch (_currentStage) {
+                      end: switch (state.historyStage) {
                         DisplayAreaStage.collapsed => 1.0,
                         DisplayAreaStage.expandedCurrent => 0.95,
                         DisplayAreaStage.expandedPrevious => 0.75,
@@ -604,7 +597,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       onUnitSystemChanged: (unitSystem) =>
                           bloc.add(CalculatorUnitSystemChanged(unitSystem)),
                       onCollapseChanged: (isFolded) =>
-                          setState(() => _isKeypadFolded = isFolded),
+                          bloc.add(CalculatorKeypadFoldChanged(isFolded)),
                     ),
                   ),
                 ],

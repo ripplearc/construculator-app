@@ -58,6 +58,15 @@ class CalculatorState extends Equatable {
   /// that survives a restart is CA-1307's.
   final List<String> groupOrder;
 
+  /// How far the display is pulled down: the collapsed tape, the whole
+  /// current tape, the previous session above it, or the full-screen list
+  /// (UX Design Doc Section 1.6, rule 4.13). Kept for the screen only.
+  final DisplayAreaStage historyStage;
+
+  /// Whether the keypad is folded away under its handle, so the detail
+  /// panel can show under the collapsed display (Section 1.4).
+  final bool isKeypadFolded;
+
   /// What the tape said when it took the last key, or `null`.
   final TapeNotice? notice;
 
@@ -120,6 +129,8 @@ class CalculatorState extends Equatable {
     this.tape = const Tape(),
     this.currentGroupIndex = 0,
     this.groupOrder = CalculatorGroupId.defaultOrder,
+    this.historyStage = DisplayAreaStage.collapsed,
+    this.isKeypadFolded = false,
     this.notice,
     this.refusal,
     this.closesCalculator = false,
@@ -142,6 +153,8 @@ class CalculatorState extends Equatable {
     Tape? tape,
     int? currentGroupIndex,
     List<String>? groupOrder,
+    DisplayAreaStage? historyStage,
+    bool? isKeypadFolded,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
     bool? closesCalculator,
@@ -156,6 +169,8 @@ class CalculatorState extends Equatable {
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
     groupOrder: groupOrder ?? this.groupOrder,
+    historyStage: historyStage ?? this.historyStage,
+    isKeypadFolded: isKeypadFolded ?? this.isKeypadFolded,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
     closesCalculator: closesCalculator ?? this.closesCalculator,
@@ -848,6 +863,8 @@ class CalculatorState extends Equatable {
     tape,
     currentGroupIndex,
     groupOrder,
+    historyStage,
+    isKeypadFolded,
     notice,
     refusal,
     sizeNotAdded,
@@ -859,6 +876,12 @@ class CalculatorState extends Equatable {
     toastClosed,
     materialCounts,
   ];
+
+  /// Whether the detail panel shows under the display: the keypad is
+  /// folded away and the display is collapsed (Section 1.4: the panel takes
+  /// the room the keys leave; a pulled-down display takes it back).
+  bool get showsDetailPanel =>
+      isKeypadFolded && historyStage == DisplayAreaStage.collapsed;
 
   /// What the last key left to say in a red Alert (Section 5), or `null`:
   /// the results an edit removed; the editing guard, with the incomplete
