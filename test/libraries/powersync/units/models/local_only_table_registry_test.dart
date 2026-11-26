@@ -71,6 +71,17 @@ void main() {
       expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
     });
 
+    test('registers calculator_group_order to clear when the user changes, '
+        'so a different account starts from the default order (L3, '
+        'CA-1307)', () {
+      final entry = LocalOnlyTableRegistry.registrations.singleWhere(
+        (entry) =>
+            entry.tableName == DatabaseConstants.calculatorGroupOrderTable,
+      );
+
+      expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
+    });
+
     test('registers calculator_recents to clear when the user changes', () {
       final entry = LocalOnlyTableRegistry.registrations.singleWhere(
         (entry) => entry.tableName == DatabaseConstants.calculatorRecentsTable,
@@ -169,6 +180,7 @@ void main() {
             'DELETE FROM current_company',
             'DELETE FROM your_rate_refusals',
             'DELETE FROM calculator_recents',
+            'DELETE FROM calculator_group_order',
           ]),
         );
       });

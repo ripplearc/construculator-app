@@ -48,4 +48,20 @@ void main() {
       },
     );
   });
+  group('calculator_group_order table', () {
+    final table = schema.tables.singleWhere(
+      (table) => table.name == 'calculator_group_order',
+    );
+
+    test('stays on the phone and is never uploaded', () {
+      expect(table.localOnly, isTrue);
+    });
+
+    test('has the group order as text and when it was set', () {
+      expect(
+        {for (final column in table.columns) column.name: column.type},
+        {'group_order': ColumnType.text, 'updated_at': ColumnType.text},
+      );
+    });
+  });
 }

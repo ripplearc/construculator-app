@@ -249,4 +249,14 @@ class DatabaseConstants {
 
   /// A remembered value's magnitude in its dimension's canonical unit.
   static const String magnitudeColumn = 'magnitude';
+
+  /// Local-only PowerSync table of the order of the function-key groups
+  /// set in View all: one row per phone.
+  static const String calculatorGroupOrderTable = 'calculator_group_order';
+
+  /// The id of the one `calculator_group_order` row.
+  static const String calculatorGroupOrderRowId = 'group_order';
+
+  /// The five group ids in the user's order, as a JSON list.
+  static const String groupOrderColumn = 'group_order';
 }
