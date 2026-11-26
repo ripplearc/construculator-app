@@ -321,6 +321,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   static const String _dmsKey = 'DMS';
 
+  // The Materials keys that name the area on the tape for their trade
+  // (Section 3.3; walkthrough 19.1). On a tape with nothing to name the
+  // key still does what every function key does.
+  static const Map<String, Trade> _tradeKeys = {'Drywal': Trade.drywall};
+
   static const Set<String> _materialsKeys = {
     'Msnry',
     'Drywal',
@@ -344,6 +349,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         return tape.pressTrigKey(function);
       }
       if (id == _dmsKey) return tape.pressDmsKey();
+      if (_tradeKeys[id] case final trade?) {
+        if (tape.pressTradeKey(trade) case final named?) return named;
+      }
       return tape.pressFunctionKey(
         id,
         keyWantsUnit: !PlainNumberKeys.all.contains(id),

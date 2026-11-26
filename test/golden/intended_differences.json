@@ -251,15 +251,9 @@
   },
   {
    "scenario": "S02",
-   "checkpoint": "chip relabeled \"Drywall covered area\"",
-   "reason": "Waits for G1 (CA-1072): [Drywal] on an Area result relabels it \"Drywall covered area\" (UX doc walkthrough 19.1, line 2857), which the engine does not do yet; today the key opens an empty Drywal chip as every function key does, and the Area keeps its name.",
-   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 2, "equals": "Area180ft²"}, {"kind": "tapeAtStartsWith", "index": 3, "prefix": "Drywal"}]}
-  },
-  {
-   "scenario": "S02",
    "checkpoint": "sheet suggestions stay",
-   "reason": "Waits for G1 (CA-1072), as above: with an empty Drywal chip open the display shows no area, so the strip falls to the rule answers of the named values (UX doc rule 4.4, rung 3) and the sheet counts wait for the relabel.",
-   "dart": {"kind": "stripAt", "index": 0, "equals": "Diagonal: 21.93ft"}
+   "reason": "As for sheet size 1: the first seed is 48in x 96in, and 180ft² ÷ 32ft² = 5.63 (UX doc Appendix B, walkthrough 19.1, step 9: after [Drywal] the strip is unchanged).",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Drywall: 5.63 sheets (48in x 96in)"}
   },
   {
    "scenario": "S19",

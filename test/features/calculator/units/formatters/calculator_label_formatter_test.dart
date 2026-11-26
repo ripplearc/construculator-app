@@ -196,6 +196,21 @@ void main() {
       expect(localized.first.label, l10n.calculatorAnswerNumberOfSheets);
     });
 
+    test('an area the Drywal key named reads Drywall covered area, from '
+        'the strings', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+
+      expect(
+        labels.displayLabel(Trade.drywall.coveredAreaKey),
+        l10n.calculatorAnswerDrywallCoveredArea,
+      );
+      expect(
+        labels.displayLabel(Trade.drywall.coveredAreaKey),
+        'Drywall covered area',
+      );
+    });
+
     test('a stored size is drawn as an editable pill under its name, with '
         'the tap it was given', () {
       final l10n = AppLocalizationsEn();

@@ -249,6 +249,12 @@
             <mutation text="kind: id.kind,"/>
         </regex>
 
+
+        <!-- RULE (G1, CA-1072): an area the Drywal key named has no name
+             from the strings -->
+        <regex pattern="_ when id == Trade\.drywall\.coveredAreaKey =&gt;\s*l10n\.calculatorAnswerDrywallCoveredArea," dotAll="true" id="calculator_label_formatter.key_label.covered_area_unnamed">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

@@ -3658,6 +3658,12 @@ abstract class AppLocalizations {
   /// **'Number of sheets'**
   String get calculatorAnswerNumberOfSheets;
 
+  /// Name of the calculator result chip and label row for an area the Drywal key was pressed on (UX Design Doc walkthrough 19.1)
+  ///
+  /// In en, this message translates to:
+  /// **'Drywall covered area'**
+  String get calculatorAnswerDrywallCoveredArea;
+
   /// Value of an accepted drywall sheet count on the calculator's value row and on its tape chip: the count to two decimals and the word for what it counts
   ///
   /// In en, this message translates to:

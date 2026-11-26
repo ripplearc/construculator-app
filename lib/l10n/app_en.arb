@@ -3054,6 +3054,10 @@
   "@calculatorAnswerNumberOfSheets": {
     "description": "Name of the calculator result chip and label row for an accepted drywall sheet count"
   },
+  "calculatorAnswerDrywallCoveredArea": "Drywall covered area",
+  "@calculatorAnswerDrywallCoveredArea": {
+    "description": "Name of the calculator result chip and label row for an area the Drywal key was pressed on (UX Design Doc walkthrough 19.1)"
+  },
   "calculatorValueSheets": "{count} Sheets",
   "@calculatorValueSheets": {
     "description": "Value of an accepted drywall sheet count on the calculator's value row and on its tape chip: the count to two decimals and the word for what it counts",
