@@ -394,8 +394,8 @@ void main() {
         expect(sessionService.startCount, 1);
       });
 
-      test('stops reacting to sign-in events once it is disposed', () {
-        (authManager as Disposable).dispose();
+      test('stops reacting to sign-in events once it is disposed', () async {
+        await authManager.dispose();
 
         supabaseWrapper.setCurrentUser(signedInUser());
 
@@ -406,7 +406,7 @@ void main() {
         'clears the company id kept on the device on sign-out when no '
         'session resolver exists',
         () async {
-          (authManager as Disposable).dispose();
+          await authManager.dispose();
           final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
           await localDataSource.saveCompanyId(
             userId: 'test-id',
