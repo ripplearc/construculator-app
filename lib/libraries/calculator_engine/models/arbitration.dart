@@ -1,0 +1,69 @@
+import 'package:equatable/equatable.dart';
+
+/// The questions the ladder asks, in order, to choose the strip (UX Design
+/// Doc rule 4.4): the first one answered yes is the rung the strip stops
+/// at. The rungs after [rules] — a plain result's implications, a single
+/// value's conversions and the remembered values — are G2's and G3's.
+enum LadderRung {
+  /// 1: the chain holds an error or a step it cannot compute, or a bracket
+  /// is open. The strip shows nothing.
+  error,
+
+  /// 2: an area on the display, or a count just accepted from it: the
+  /// stored sizes that are still on offer.
+  tradeFollowOn,
+
+  /// 3: the named values match a rule, a trig chip waits for its answer, or
+  /// an operator has values on both sides.
+  rules,
+
+  /// No rung of this ladder answered.
+  none,
+}
+
+/// Why the strip shows nothing at [LadderRung.error].
+enum StripSilence {
+  /// A bracket is open (Section 7: no preview until the group closes).
+  openBracket,
+
+  /// The chain holds an error chip or a step it cannot compute (Section
+  /// 5: "after an error the area stays empty on purpose").
+  chainFailed,
+}
+
+/// One question of the ladder as the trace records it: the rung asked and
+/// whether it answered.
+final class LadderStep extends Equatable {
+  /// The rung that was asked.
+  final LadderRung rung;
+
+  /// Whether it had something to say.
+  final bool applies;
+
+  /// The answer [applies] the ladder got when it asked [rung].
+  const LadderStep(this.rung, {required this.applies});
+
+  @override
+  List<Object?> get props => [rung, applies];
+}
+
+/// What the ladder chose for a tape: the rung it stopped at and the trace
+/// of every question asked on the way.
+final class Arbitration extends Equatable {
+  /// The first rung that answered.
+  final LadderRung rung;
+
+  /// Why the strip is empty at [LadderRung.error]; `null` at any other
+  /// rung.
+  final StripSilence? silence;
+
+  /// The questions asked, in order, up to the rung that answered.
+  final List<LadderStep> trace;
+
+  /// What the ladder chose: the [rung] it stopped at and the [trace] of
+  /// the questions that led there.
+  const Arbitration({required this.rung, required this.trace, this.silence});
+
+  @override
+  List<Object?> get props => [rung, silence, trace];
+}

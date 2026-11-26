@@ -1,10 +1,12 @@
 // coverage:ignore-file
 
 export 'angle_memory.dart';
+export 'arbiter.dart';
 export 'chain_arithmetic.dart';
 export 'chain_evaluator.dart';
 export 'deterministic_rules.dart';
 export 'entry_buffer.dart';
+export 'models/arbitration.dart';
 export 'models/calculator_preferences.dart';
 export 'models/chip.dart';
 export 'models/dimension.dart';
