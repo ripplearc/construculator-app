@@ -402,8 +402,7 @@ void main() {
         diff,
         contains(
           'strip=[Drywall: 11.41 sheets (48in x 108in), '
-          'Drywall: 10.27 sheets (48in x 120in), Diagonal: 28.85ft, '
-          'Perimeter: 81.33ft]',
+          'Drywall: 10.27 sheets (48in x 120in)]',
         ),
       );
       expect(
