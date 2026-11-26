@@ -21,6 +21,7 @@ void main() {
     double lineTotal = 520,
     double? deliveryFee,
     String estimateName = 'Bedroom 2',
+    double? estimateTotal = 2993.62,
     AddToEstimateBlock? block,
   }) async {
     tester.view.physicalSize = size;
@@ -46,7 +47,7 @@ void main() {
                       lineTotal: lineTotal,
                       deliveryFee: deliveryFee,
                       estimateName: estimateName,
-                      estimateTotal: 2993.62,
+                      estimateTotal: estimateTotal,
                       block: block,
                     ),
                   ),
@@ -84,6 +85,25 @@ void main() {
         estimateName: 'Master bedroom, flooring, drywall and trim',
       );
       await expectGolden(tester, 'ready_long_name', suffix);
+    });
+
+    testWidgets('ready, estimate total not known', (tester) async {
+      await pumpPanel(tester, theme, estimateName: '', estimateTotal: null);
+      await expectGolden(tester, 'ready_total_not_known', suffix);
+    });
+
+    testWidgets('ready, with delivery fee, estimate total not known', (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        theme,
+        lineTotal: 605,
+        deliveryFee: 85,
+        estimateName: '',
+        estimateTotal: null,
+      );
+      await expectGolden(tester, 'ready_with_delivery_total_not_known', suffix);
     });
 
     const blocks = {

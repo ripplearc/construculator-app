@@ -57,8 +57,9 @@ class CostItemFormScreen extends StatefulWidget {
   final Clock clock;
 
   /// The estimate the equipment sheet adds to; its name and total fill the
-  /// "Adds to this estimate" card. Null while the estimate has not loaded,
-  /// and the sheet works without it.
+  /// "Adds to this estimate" card. Null while the estimate has not loaded or
+  /// failed to load. The sheet works without it and the card shows a dash
+  /// for the estimate total.
   final CostEstimate? estimate;
 
   /// The equipment line already on the estimate that this form edits, or
@@ -209,9 +210,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     CostItemType.material => MaterialAddToEstimateFooter(
       estimateId: widget.estimationId,
       estimateName: estimate?.estimateName ?? '',
-      // TODO: [CA-1483] Show an unknown total, not $0.00, while the estimate summary has not loaded.
-      // https://ripplearc.youtrack.cloud/issue/CA-1483
-      estimateTotal: estimate?.totalCost ?? 0,
+      estimateTotal: estimate?.totalCost,
       numberPad: numberPad,
       part: part,
     ),
@@ -219,9 +218,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     CostItemType.equipment => EquipmentAddToEstimateFooter(
       estimateId: widget.estimationId,
       estimateName: estimate?.estimateName ?? '',
-      // TODO: [CA-1483] Show an unknown total, not $0.00, while the estimate summary has not loaded.
-      // https://ripplearc.youtrack.cloud/issue/CA-1483
-      estimateTotal: estimate?.totalCost ?? 0,
+      estimateTotal: estimate?.totalCost,
     ),
   };
 

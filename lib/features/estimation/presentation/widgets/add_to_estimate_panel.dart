@@ -33,8 +33,10 @@ class AddToEstimatePanel extends StatelessWidget {
   /// The name of the estimate the line is added to.
   final String estimateName;
 
-  /// The estimate's total before this line is added.
-  final double estimateTotal;
+  /// The estimate's total before this line is added, or null while it is not
+  /// known because the estimate has not loaded or failed to load. When the
+  /// line can be totalled, the card then shows a dash in place of both totals.
+  final double? estimateTotal;
 
   /// Why the line cannot be totalled, or null when it can.
   final AddToEstimateBlock? block;
@@ -95,7 +97,13 @@ class AddToEstimatePanel extends StatelessWidget {
         ? money.format(lineTotal)
         : '${change < 0 ? '-' : '+'}${money.format(change.abs())}';
     final hasDeliveryFee = change == null && fee != null && fee > 0;
-    final newTotal = money.format(estimateTotal + (change ?? lineTotal));
+    final knownTotal = estimateTotal;
+    final totalBefore = knownTotal == null
+        ? CoreEstimateSummaryCard.emptyAmount
+        : money.format(knownTotal);
+    final totalAfter = knownTotal == null
+        ? CoreEstimateSummaryCard.emptyAmount
+        : money.format(knownTotal + (change ?? lineTotal));
     return Semantics(
       excludeSemantics: true,
       label: [
@@ -103,11 +111,13 @@ class AddToEstimatePanel extends StatelessWidget {
         shownAmount,
         if (hasDeliveryFee)
           '${l10n.addsToEstimateIncludesDelivery} +${money.format(fee)}',
-        l10n.addsToEstimateTotalSemantics(
-          estimateName,
-          money.format(estimateTotal),
-          newTotal,
-        ),
+        knownTotal == null
+            ? l10n.addsToEstimateTotalUnknownSemantics
+            : l10n.addsToEstimateTotalSemantics(
+                estimateName,
+                totalBefore,
+                totalAfter,
+              ),
       ].join('\n'),
       // TODO: [CA-1379] the charge row is 6 dp taller than the storyboard until CoreUI drops its 24 dp minimum height
       // https://ripplearc.youtrack.cloud/issue/CA-1379
@@ -121,10 +131,8 @@ class AddToEstimatePanel extends StatelessWidget {
               )
             : null,
         estimateName: estimateName,
-        totalBeforeSuffix: l10n.addsToEstimateTotalBeforeSuffix(
-          money.format(estimateTotal),
-        ),
-        totalAfter: newTotal,
+        totalBeforeSuffix: l10n.addsToEstimateTotalBeforeSuffix(totalBefore),
+        totalAfter: totalAfter,
       ),
     );
   }

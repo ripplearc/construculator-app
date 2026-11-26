@@ -132,7 +132,7 @@ void main() {
       return;
     }
     for (var frame = 0; frame < 5; frame++) {
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 40));
     }
   }
 
@@ -151,6 +151,11 @@ void main() {
     await tester.tap(find.byKey(AddCostCategorySheet.rowKey(type)));
     await pumpFrames(tester, settle: settle);
   }
+
+  Finder zeroDollarsInAddToEstimatePanel() => find.descendant(
+    of: find.byKey(AddToEstimateFooter.panelKey),
+    matching: find.textContaining(r'$0.00'),
+  );
 
   Future<void> pumpAppAtRoute(
     WidgetTester tester,
@@ -1090,27 +1095,45 @@ void main() {
     });
 
     group('Add to estimate', () {
-      Future<void> openEquipmentSheet(WidgetTester tester) async {
+      Future<void> openEquipmentSheet(
+        WidgetTester tester, {
+        bool seedsEstimate = true,
+        Completer<void>? heldEstimateLoad,
+      }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        seedEstimate();
-        await pumpAppAtRoute(tester, testEstimationRoute);
-        await tapAddCost(tester, CostItemType.equipment);
-        await tester.pumpAndSettle();
+        if (seedsEstimate) seedEstimate();
+        final settle = heldEstimateLoad == null;
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: settle
+              ? null
+              : () {
+                  fakeSupabase.shouldDelayOperations = true;
+                  fakeSupabase.completer = heldEstimateLoad;
+                },
+          settle: settle,
+        );
+        fakeSupabase.shouldDelayOperations = false;
+        await tapAddCost(tester, CostItemType.equipment, settle: settle);
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
-      Future<void> fillValidDayForm(WidgetTester tester) async {
+      Future<void> fillValidDayForm(
+        WidgetTester tester, {
+        bool settle = true,
+      }) async {
         await tester.enterText(
           find.byKey(const Key('equipment_name_field')),
           'Scissor lift',
         );
         await tester.enterText(find.byKey(const Key('duration_field')), '4');
         await tester.enterText(find.byKey(const Key('rate_field')), '145');
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
       Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
@@ -1161,6 +1184,34 @@ void main() {
         expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
         expect(find.text(r'$3,573.62'), findsOneWidget);
         expect(find.text('Add to estimate'), findsOneWidget);
+      });
+
+      testWidgets('shows a dash for the estimate total when the estimate '
+          'could not be loaded', (tester) async {
+        await openEquipmentSheet(tester, seedsEstimate: false);
+
+        await fillValidDayForm(tester);
+
+        expect(find.text(r'$580.00'), findsOneWidget);
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
+      });
+
+      testWidgets('shows a dash for the estimate total while the estimate is '
+          'still loading, then the total once it arrives', (tester) async {
+        final estimateLoad = Completer<void>();
+        await openEquipmentSheet(tester, heldEstimateLoad: estimateLoad);
+
+        await fillValidDayForm(tester, settle: false);
+
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
+
+        estimateLoad.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
+        expect(find.text(r'$3,573.62'), findsOneWidget);
       });
 
       testWidgets('adding saves the line, closes the sheet and shows the '
@@ -1653,18 +1704,37 @@ void main() {
     });
 
     group('New material cost sheet', () {
-      Future<void> openMaterialSheet(WidgetTester tester) async {
+      Future<void> openMaterialSheet(
+        WidgetTester tester, {
+        bool seedsEstimate = true,
+        Completer<void>? heldEstimateLoad,
+      }) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        seedEstimate();
-        await pumpAppAtRoute(tester, testEstimationRoute);
-        await tapAddCost(tester, CostItemType.material);
-        await tester.pumpAndSettle();
+        if (seedsEstimate) seedEstimate();
+        final settle = heldEstimateLoad == null;
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: settle
+              ? null
+              : () {
+                  fakeSupabase.shouldDelayOperations = true;
+                  fakeSupabase.completer = heldEstimateLoad;
+                },
+          settle: settle,
+        );
+        fakeSupabase.shouldDelayOperations = false;
+        await tapAddCost(tester, CostItemType.material, settle: settle);
+        await pumpFrames(tester, settle: settle);
       }
 
-      Future<void> fillValidMaterialForm(WidgetTester tester) async {
+      Future<void> fillValidMaterialForm(
+        WidgetTester tester, {
+        bool settle = true,
+      }) async {
         await tester.enterText(
           find.byKey(const Key('material_name_field')),
           'Interior paint',
@@ -1673,25 +1743,25 @@ void main() {
           find.byKey(const Key('material_quantity_field')),
           '3',
         );
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         // On this 600 dp screen the number pad leaves one row of the form in
         // view, so the unit button is scrolled to first.
         await tester.ensureVisible(find.byKey(const Key('material_unit_pill')));
         await tester.tap(find.byKey(const Key('material_unit_pill')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         await tester.ensureVisible(
           find.byKey(const Key('unit_option_gallons')),
         );
         await tester.tap(find.byKey(const Key('unit_option_gallons')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         await tester.enterText(
           find.byKey(const Key('material_rate_field')),
           '52',
         );
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
         // A tap on the title closes the number pad, which hides Add.
         await tester.tap(find.text('New material cost'));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
       Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
@@ -1704,6 +1774,34 @@ void main() {
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('New material cost'), findsOneWidget);
         expect(find.text('Enter a material name to continue'), findsOneWidget);
+      });
+
+      testWidgets('shows a dash for the estimate total when the estimate '
+          'could not be loaded', (tester) async {
+        await openMaterialSheet(tester, seedsEstimate: false);
+
+        await fillValidMaterialForm(tester);
+
+        expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
+      });
+
+      testWidgets('shows a dash for the estimate total while the estimate is '
+          'still loading, then the total once it arrives', (tester) async {
+        final estimateLoad = Completer<void>();
+        await openMaterialSheet(tester, heldEstimateLoad: estimateLoad);
+
+        await fillValidMaterialForm(tester, settle: false);
+
+        expect(find.text(r' total  — →'), findsOneWidget);
+        expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
+
+        estimateLoad.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
+        expect(find.text(r'$3,149.62'), findsOneWidget);
       });
 
       testWidgets('opens the sheet even when the estimate cannot be loaded', (
@@ -1729,6 +1827,7 @@ void main() {
         await fillValidMaterialForm(tester);
 
         expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
         expect(find.text(r'$3,149.62'), findsOneWidget);
       });
 

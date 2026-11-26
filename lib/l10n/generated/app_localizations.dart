@@ -4160,6 +4160,12 @@ abstract class AppLocalizations {
     String after,
   );
 
+  /// Screen reader label for the summary card's last row while the estimate's total is not known because the estimate has not loaded or failed to load. It names no estimate, because the name is not known either in that case. No storyboard or Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate total not available'**
+  String get addsToEstimateTotalUnknownSemantics;
+
   /// Label of the full-width submit button on the equipment cost sheet
   ///
   /// In en, this message translates to:

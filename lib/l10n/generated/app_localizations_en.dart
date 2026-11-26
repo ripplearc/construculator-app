@@ -2340,6 +2340,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addsToEstimateTotalUnknownSemantics =>
+      'Estimate total not available';
+
+  @override
   String get addToEstimateButton => 'Add to estimate';
 
   @override
