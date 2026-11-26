@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:equatable/equatable.dart';
 
 /// The questions the ladder asks, in order, to choose the strip (UX Design
@@ -47,11 +48,45 @@ final class LadderStep extends Equatable {
   List<Object?> get props => [rung, applies];
 }
 
-/// What the ladder chose for a tape: the rung it stopped at and the trace
-/// of every question asked on the way.
+/// What kind of chip an offer is drawn as, and what accepting it lands.
+enum StripOfferKind {
+  /// An answer of the rules or of a trig chip, landed under its key.
+  answer,
+
+  /// The running total of the chain, which = lands as Calc.
+  runningTotal,
+}
+
+/// One chip of the strip's row 1: what it is called and what it is worth.
+final class StripOffer extends Equatable {
+  /// The key the offer is labelled by.
+  final String key;
+
+  /// The offered value.
+  final Quantity value;
+
+  /// What kind of offer it is.
+  final StripOfferKind kind;
+
+  /// An offer of [value] under [key], drawn as [kind].
+  const StripOffer({
+    required this.key,
+    required this.value,
+    required this.kind,
+  });
+
+  @override
+  List<Object?> get props => [key, value, kind];
+}
+
+/// What the ladder chose for a tape: the rung it stopped at, row 1 of the
+/// strip, and the trace of every question asked on the way.
 final class Arbitration extends Equatable {
   /// The first rung that answered.
   final LadderRung rung;
+
+  /// Row 1 of the strip, in the order it is drawn.
+  final List<StripOffer> offers;
 
   /// Why the strip is empty at [LadderRung.error]; `null` at any other
   /// rung.
@@ -62,8 +97,13 @@ final class Arbitration extends Equatable {
 
   /// What the ladder chose: the [rung] it stopped at and the [trace] of
   /// the questions that led there.
-  const Arbitration({required this.rung, required this.trace, this.silence});
+  const Arbitration({
+    required this.rung,
+    required this.trace,
+    this.offers = const [],
+    this.silence,
+  });
 
   @override
-  List<Object?> get props => [rung, silence, trace];
+  List<Object?> get props => [rung, offers, silence, trace];
 }

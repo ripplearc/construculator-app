@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
+import 'package:construculator/libraries/calculator_engine/deterministic_rules.dart';
 import 'package:construculator/libraries/calculator_engine/models/arbitration.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/tape.dart';
@@ -12,9 +13,15 @@ import 'package:equatable/equatable.dart';
 ///
 /// Rung 1, the error state: the strip is silent while the chain holds an
 /// error chip or a step it cannot compute, and while a bracket is open.
+/// Rung 3, the rules: a trig chip's answer leads when the chip stands
+/// alone or builds its own ratio, the running total takes the row while an
+/// operator has values on both sides, and otherwise the named values earn
+/// the answers not yet landed.
 class Arbiter extends Equatable {
-  /// Creates the arbiter.
-  const Arbiter();
+  final DeterministicRules _rules;
+
+  /// Creates the arbiter over the geometry rules.
+  const Arbiter({this._rules = const DeterministicRules()});
 
   /// What the ladder chooses for [tape].
   Arbitration arbitrate(Tape tape) {
@@ -26,11 +33,56 @@ class Arbiter extends Equatable {
         trace: const [LadderStep(LadderRung.error, applies: true)],
       );
     }
-    return const Arbitration(
-      rung: LadderRung.none,
-      trace: [LadderStep(LadderRung.error, applies: false)],
+    final runningTotal = switch (tape.runningTotal) {
+      ChainValue(:final value, isCalculation: true) => StripOffer(
+        key: Tape.calcKey,
+        value: value,
+        kind: StripOfferKind.runningTotal,
+      ),
+      _ => null,
+    };
+    final trigAnswer = switch (tape.trigAnswer) {
+      final answer? => _answer(answer),
+      null => null,
+    };
+    final trigLeads = trigAnswer != null && !tape.trigAnswerContinuesAChain;
+    final ruleOffers = runningTotal != null
+        ? const <StripOffer>[]
+        : ruleAnswersFor(tape);
+    final answers =
+        trigAnswer != null || runningTotal != null || ruleOffers.isNotEmpty;
+    return Arbitration(
+      rung: answers ? LadderRung.rules : LadderRung.none,
+      offers: [
+        if (trigLeads) trigAnswer,
+        ?runningTotal,
+        ...ruleOffers,
+        if (trigAnswer != null && !trigLeads) trigAnswer,
+      ],
+      trace: [
+        const LadderStep(LadderRung.error, applies: false),
+        LadderStep(LadderRung.rules, applies: answers),
+      ],
     );
   }
+
+  /// The answers the rules compute from the named values of [tape], minus
+  /// the ones already landed as result chips: the rule answers of row 1,
+  /// and the tiles of the detail panel, which stay while Calc takes the
+  /// row.
+  List<StripOffer> ruleAnswersFor(Tape tape) => [
+    for (final answer in _rules.answersFor(tape.namedValues))
+      if (!tape.chips.any(
+        (chip) => chip is ResultChip && chip.key == answer.key,
+      ))
+        _answer(answer),
+  ];
+
+  static StripOffer _answer(Answer answer) => StripOffer(
+    key: answer.key,
+    value: answer.value,
+    kind: StripOfferKind.answer,
+  );
 
   static StripSilence? _silenceOf(Tape tape) {
     if (tape.openBracket != null) return StripSilence.openBracket;
@@ -57,5 +109,5 @@ class Arbiter extends Equatable {
   }
 
   @override
-  List<Object?> get props => const [];
+  List<Object?> get props => [_rules];
 }
