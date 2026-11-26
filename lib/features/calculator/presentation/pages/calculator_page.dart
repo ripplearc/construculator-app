@@ -273,8 +273,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
               }
               // The red Alert is drawn in the page (below), where no key is
               // under it; coreui's error toast is no live region, so a
-              // screen reader hears it from here.
-              if (state.toast case final toast?) {
+              // screen reader hears it from here. The receipt-look message
+              // is a live region of its own.
+              if (state.toast case final toast?
+                  when toast is! CalculatorEditingGroupToast) {
                 SemanticsService.sendAnnouncement(
                   View.of(context),
                   labels.toastBody(toast),
@@ -400,13 +402,31 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                 CoreSpacing.space4,
                                 CoreSpacing.space1,
                               ),
-                              child: Toast.error(
-                                description: labels.toastBody(toast),
-                                closeLabel: l10n.closeButton,
-                                title: labels.toastTitle(toast),
-                                onClose: () =>
-                                    bloc.add(const CalculatorToastClosed()),
-                              ),
+                              child: switch (toast) {
+                                // a plain message in the receipt look (Section 1.7),
+                                // with no timer (Section 5.6)
+                                // TODO: [CA-1464] the receipt look holds its
+                                // message to two lines, so the Section 5.6
+                                // sentence is cut after "If you typ…" until
+                                // CoreUI lets a message with no Undo wrap.
+                                // https://ripplearc.youtrack.cloud/issue/CA-1464
+                                CalculatorEditingGroupToast() => Toast.receipt(
+                                  description: labels.toastBody(toast),
+                                  actionLabel: l10n.closeButton,
+                                  onAction: () =>
+                                      bloc.add(const CalculatorToastClosed()),
+                                  onClose: () =>
+                                      bloc.add(const CalculatorToastClosed()),
+                                  duration: null,
+                                ),
+                                CalculatorToast() => Toast.error(
+                                  description: labels.toastBody(toast),
+                                  closeLabel: l10n.closeButton,
+                                  title: labels.toastTitle(toast),
+                                  onClose: () =>
+                                      bloc.add(const CalculatorToastClosed()),
+                                ),
+                              },
                             ),
                           ),
                       ],

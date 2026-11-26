@@ -54,6 +54,21 @@
             <mutation text=""/>
         </regex>
 
+        <!-- RULE 5 (S1c bracket 2/2 R1): "Editing this group" closes by a
+             timer, or is drawn as the red Alert -->
+        <regex pattern="onClose: \(\) =>\s*bloc\.add\(const CalculatorToastClosed\(\)\),\s*duration: null," dotAll="true" id="calculator_page.group_toast.timed">
+            <mutation text="onClose: () => bloc.add(const CalculatorToastClosed()), duration: const Duration(seconds: 5),"/>
+        </regex>
+        <regex pattern="CalculatorEditingGroupToast\(\) => Toast\.receipt\(" dotAll="true" id="calculator_page.group_toast.red">
+            <mutation text="CalculatorEditingGroupToast() when false => Toast.receipt("/>
+        </regex>
+        <!-- RULE 5a: the Close action leaves the toast up. A receipt has no
+             ✕ and no timer here, and its action always ends in onClose, so
+             either callback alone closes it: only both silenced are heard -->
+        <regex pattern="onAction: \(\) =>\s*bloc\.add\(const CalculatorToastClosed\(\)\),\s*onClose: \(\) =>\s*bloc\.add\(const CalculatorToastClosed\(\)\)," dotAll="true" id="calculator_page.group_toast.action_unheard">
+            <mutation text="onAction: () {}, onClose: () {},"/>
+        </regex>
+
         <!-- RULE 3 (T1b F1): a new group map keeps the old ordered list -->
         <regex pattern="when identical\(_orderedFor, order\) &amp;&amp;\s*identical\(_orderedFrom, groupsById\)\) \{" dotAll="true" id="calculator_page.groups.stale_after_locale">
             <mutation text="when identical(_orderedFor, order)) {"/>

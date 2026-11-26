@@ -2516,6 +2516,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorChipTapToFinish => 'Finish editing';
 
   @override
+  String get calculatorChipTapToClose => 'Close the bracket';
+
+  @override
   String calculatorUnitName(String unit) {
     String _temp0 = intl.Intl.selectLogic(unit, {
       'inch': 'inches',
@@ -2617,6 +2620,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String calculatorToastKeepsLengthTitle(String key, String value) {
     return '$key keeps $value';
   }
+
+  @override
+  String get calculatorToastEditingGroup =>
+      'Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.';
 
   @override
   String calculatorToastKeepsLengthBody(String unit, String value, String key) {
