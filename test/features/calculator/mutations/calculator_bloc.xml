@@ -194,6 +194,19 @@
             <mutation text="order.removeAt(oldIndex);"/>
         </regex>
 
+        <!-- L3 (CA-1307): a drag is not written to the phone -->
+        <regex pattern="unawaited\(_groupOrder\.saveGroupOrder\(order\)\);" dotAll="true" id="calculator_bloc.reorder.not_saved">
+            <mutation text=""/>
+        </regex>
+
+        <!-- L3 (CA-1307): the group on the keyboard loses its place when the
+             order arrives. (The guard that returns on the same order is not
+             mutated: without it the handler emits an equal state, which Bloc
+             drops, so the mutant cannot be told apart from outside.) -->
+        <regex pattern="final index = shown == null \? -1 : event\.order\.indexOf\(shown\);" dotAll="true" id="calculator_bloc.order_arrived.shown_group_lost">
+            <mutation text="final index = shown == null ? -1 : -1;"/>
+        </regex>
+
         <!-- RULE 20: C and a reset forget the order -->
         <regex pattern="currentGroupIndex: state\.currentGroupIndex,\s*groupOrder: state\.groupOrder," dotAll="true" id="calculator_bloc.cleared.order_forgotten">
             <mutation text="currentGroupIndex: state.currentGroupIndex, groupOrder: CalculatorGroupId.defaultOrder,"/>

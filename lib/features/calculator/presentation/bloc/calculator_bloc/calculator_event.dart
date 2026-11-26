@@ -131,6 +131,18 @@ class CalculatorGroupSelected extends CalculatorEvent {
 
 /// A group was dragged to a new place in the "View all" sheet (Section 1.5:
 /// "The ⠿ handle drags a group into a new order").
+/// The order of the function-key groups this phone keeps arrived from the
+/// store, at the start and after every change (L3).
+class CalculatorGroupOrderArrived extends CalculatorEvent {
+  /// The five group ids in the order to show.
+  final List<String> order;
+
+  const CalculatorGroupOrderArrived(this.order);
+
+  @override
+  List<Object?> get props => [order];
+}
+
 class CalculatorGroupsReordered extends CalculatorEvent {
   /// Where the group was in the order the keyboard showed.
   final int oldIndex;
