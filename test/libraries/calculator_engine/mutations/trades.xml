@@ -127,6 +127,11 @@
             <mutation text="return [ for (final crossSection in crossSections) if (crossSection.hasFace)"/>
             <mutation text="if (!_isAboveZero(length)) return const []; return [ for (final crossSection in crossSections)"/>
         </regex>
+        <!-- CA-1095 2/3 R1: two stored pieces of one size are one and the
+             same piece, so a count cannot name the stored row it came from -->
+        <regex pattern="List&lt;Object\?&gt; get props =&gt; \[width, height, id\];" dotAll="true" id="trades.piece_size.name_not_in_equality">
+            <mutation text="List&lt;Object?&gt; get props =&gt; [width, height];"/>
+        </regex>
     </rules>
 
     <commands>

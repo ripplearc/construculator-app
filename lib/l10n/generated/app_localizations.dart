@@ -3748,6 +3748,30 @@ abstract class AppLocalizations {
   /// **'Collapse'**
   String get calculatorDetailCollapseButton;
 
+  /// Title of the sheet table in the calculator detail panel, naming the area every row counts sheets for
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet quantities for {area}'**
+  String calculatorSheetTableTitle(String area);
+
+  /// Header of the column of stored sheet sizes in the calculator detail panel's sheet table
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get calculatorSheetTableSizeColumn;
+
+  /// Header of the column of sheet counts in the calculator detail panel's sheet table
+  ///
+  /// In en, this message translates to:
+  /// **'No. of sheet'**
+  String get calculatorSheetTableCountColumn;
+
+  /// Screen reader label of the delete button on a row of the calculator detail panel's sheet table
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {size}'**
+  String calculatorSheetTableDeleteSemantics(String size);
+
   /// Head of the calculator label row for a value typed under no function key
   ///
   /// In en, this message translates to:

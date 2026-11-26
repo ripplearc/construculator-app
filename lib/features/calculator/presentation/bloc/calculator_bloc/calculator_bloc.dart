@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -13,6 +14,7 @@ part 'calculator_display_label.dart';
 part 'calculator_event.dart';
 part 'calculator_group_id.dart';
 part 'dependent_key_id.dart';
+part 'calculator_size_table.dart';
 part 'calculator_state.dart';
 part 'calculator_strip_note.dart';
 part 'calculator_suggestion.dart';
@@ -60,6 +62,7 @@ part 'calculator_toast.dart';
 /// own equals.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
+  final DeleteMaterialSizeUseCase _deleteMaterialSize;
 
   static final _logger = AppLogger().tag('CalculatorBloc');
 
@@ -68,11 +71,14 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   Area? _watchedArea;
   MeasurementSystem? _watchedSystem;
 
-  /// Creates the bloc over the use case that counts the stored sheet sizes
-  /// for an area.
-  CalculatorBloc({required this._materialCounts})
-    : super(CalculatorState.initial()) {
+  /// Creates the bloc over the use cases that count the stored sheet sizes
+  /// for an area and remove a size from the store.
+  CalculatorBloc({
+    required this._materialCounts,
+    required this._deleteMaterialSize,
+  }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
+    on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -141,6 +147,29 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) {
     if (event.counts.any((count) => count.area != _watchedArea)) return;
     emit(state.copyWith(materialCounts: event.counts));
+  }
+
+  Future<void> _onSizeRowDeleted(
+    CalculatorSizeRowDeleted event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    final row = state.sizeTable?.rows
+        .where((row) => row.id == event.rowId)
+        .firstOrNull;
+    if (row == null) return;
+    final counts = state.materialCounts;
+    final remaining = [...counts]..remove(row.count);
+    // A swiped row must be gone by the next frame, so it leaves before the
+    // store answers.
+    emit(state.copyWith(materialCounts: remaining));
+    final deleted = await _deleteMaterialSize(
+      trade: row.count.trade,
+      size: row.count.size,
+      system: state.tape.preferences.system,
+    );
+    if (deleted.isLeft() && identical(state.materialCounts, remaining)) {
+      emit(state.copyWith(materialCounts: counts));
+    }
   }
 
   static const Map<String, Unit> _unitKeys = {

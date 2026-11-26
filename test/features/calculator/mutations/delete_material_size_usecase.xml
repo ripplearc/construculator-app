@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- DELETE MATERIAL SIZE USE CASE MUTATION TESTING (CA-1095, T2a 2/3) -->
+    <!-- Targets: which stored size a deleted row of the sheet table removes,
+         and the name the watch gives the size of each count. -->
+
+    <files>
+        <file>lib/features/calculator/domain/usecases/delete_material_size_usecase.dart</file>
+        <file>lib/features/calculator/domain/usecases/watch_material_counts_usecase.dart</file>
+    </files>
+
+    <rules>
+        <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="delete_material_size.store.always_sheets">
+            <mutation text=".watchSizes(SizeStore.sheet, system)"/>
+        </regex>
+        <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="delete_material_size.system.always_imperial">
+            <mutation text=".watchSizes(trade.sizeStore, MeasurementSystem.imperial)"/>
+        </regex>
+        <regex pattern="\? stored\.width == size\.width &amp;&amp; stored\.height == size\.height" dotAll="true" id="delete_material_size.match.any_other_size">
+            <mutation text="? !(stored.width == size.width &amp;&amp; stored.height == size.height)"/>
+        </regex>
+        <!-- R1 (B1): a size named by its stored row is matched by its measure,
+             so of two rows with one size the first goes whichever was
+             swiped; or every other row is taken for it -->
+        <regex pattern=": \(stored\.id \?\? stored\.seed\) == size\.id;" dotAll="true" id="delete_material_size.match.named_row">
+            <mutation text=": stored.width == size.width &amp;&amp; stored.height == size.height;"/>
+            <mutation text=": (stored.id ?? stored.seed) != size.id;"/>
+        </regex>
+        <!-- R1 (B1): a count's size carries no name for a default, or none
+             for a size the user added -->
+        <regex pattern="id: size\.id \?\? size\.seed," dotAll="true" id="watch_material_counts.size.unnamed">
+            <mutation text="id: size.id,"/>
+            <mutation text="id: size.seed,"/>
+        </regex>
+        <regex pattern="return _repository\.deleteSize\(stored\);" dotAll="true" id="delete_material_size.match.not_deleted">
+            <mutation text="continue;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="delete_material_size" expected-return="0">flutter test test/features/calculator/units/domain/usecases/delete_material_size_usecase_test.dart test/features/calculator/units/domain/usecases/watch_material_counts_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

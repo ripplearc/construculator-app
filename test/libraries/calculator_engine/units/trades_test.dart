@@ -183,6 +183,18 @@ void main() {
       expect(block.recount(inches(-0.5, -0.5)), isNull);
     });
 
+    test('two pieces of one size are told apart by what the store calls '
+        'them, and a piece with no name equals its own measure', () {
+      final sheet = inches(48, 96);
+      PieceSize named(String id) =>
+          PieceSize(width: sheet.width, height: sheet.height, id: id);
+      expect(named('a'), named('a'));
+      expect(named('a'), isNot(named('b')));
+      expect(named('a'), isNot(sheet));
+      expect(sheet, inches(48, 96));
+      expect(named('a').squareTicks, sheet.squareTicks);
+    });
+
     test('a piece has a face only when both sides are above zero', () {
       expect(inches(6, 6).hasFace, isTrue);
       expect(inches(0.015625, 0.015625).hasFace, isTrue);

@@ -2136,6 +2136,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorDetailCollapseButton => 'Collapse';
 
   @override
+  String calculatorSheetTableTitle(String area) {
+    return 'Sheet quantities for $area';
+  }
+
+  @override
+  String get calculatorSheetTableSizeColumn => 'Size';
+
+  @override
+  String get calculatorSheetTableCountColumn => 'No. of sheet';
+
+  @override
+  String calculatorSheetTableDeleteSemantics(String size) {
+    return 'Delete $size';
+  }
+
+  @override
   String get calculatorLabelValue => 'Value';
 
   @override

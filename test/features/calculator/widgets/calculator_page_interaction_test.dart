@@ -1,6 +1,8 @@
+import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
+import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -22,6 +24,7 @@ void main() {
     Size size = const Size(390, 844),
     FakeAppRouter? router,
     ThemeData? theme,
+    FakeTradeStoresRepository? stores,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -33,7 +36,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: CalculatorPage(
           router: router ?? FakeAppRouter(),
-          calculatorBlocFactory: calculatorBlocForTests,
+          calculatorBlocFactory: () => calculatorBlocForTests(stores: stores),
         ),
       ),
     );
@@ -1633,6 +1636,152 @@ void main() {
       await tester.tap(find.text(l10n.calculatorDetailCollapseButton));
       await settle(tester);
       expect(find.text(l10n.calculatorDetailExpandButton), findsOneWidget);
+    });
+  });
+
+  group('T2a 2/3: the sheet table of the detail panel (Section 1.4, '
+      '"sheet sizes with the count for each")', () {
+    const panel = Key('calculator_detail_panel');
+    const sheetTableId = 'sheet-quantities';
+
+    Finder handle() => find.bySemanticsLabel(
+      AppLocalizationsEn().calculatorKeyboardHandleSemantics,
+    );
+
+    Finder inPanel(String text) =>
+        find.descendant(of: find.byKey(panel), matching: find.text(text));
+
+    Future<void> typeAndFold(WidgetTester tester, List<String> keys) async {
+      for (final key in keys) {
+        await press(tester, key);
+      }
+      await settle(tester);
+      await tester.tap(handle());
+      await settle(tester);
+    }
+
+    const area180Typed = [
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_zero',
+      'calc_key_feet',
+      'calc_key_feet',
+    ];
+
+    testWidgets('after Area 180ft² the folded panel shows the sheet table: '
+        'one row per stored size with its count (walkthrough 11.3)', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      for (final key in const [
+        'calc_key_Length',
+        'calc_key_two',
+        'calc_key_zero',
+        'calc_key_feet',
+        'calc_key_Height',
+        'calc_key_nine',
+        'calc_key_feet',
+      ]) {
+        await press(tester, key);
+      }
+      await tester.tap(find.byKey(CoreResultButton.testKey));
+      await typeAndFold(tester, const []);
+
+      expect(inPanel(l10n.calculatorSheetTableTitle('180ft²')), findsOneWidget);
+      expect(inPanel(l10n.calculatorSheetTableSizeColumn), findsOneWidget);
+      expect(inPanel(l10n.calculatorSheetTableCountColumn), findsOneWidget);
+      for (final (size, count) in const [
+        ('48in x 96in', '5.63'),
+        ('48in x 108in', '5.00'),
+        ('48in x 120in', '4.50'),
+      ]) {
+        expect(inPanel(size), findsOneWidget);
+        expect(inPanel(count), findsOneWidget);
+      }
+    });
+
+    testWidgets('a typed 180ft² has no tiles to show but folds to the sheet '
+        'table', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await typeAndFold(tester, area180Typed);
+
+      expect(find.byKey(panel), findsOneWidget);
+      expect(inPanel(l10n.calculatorSheetTableTitle('180ft²')), findsOneWidget);
+      expect(inPanel('48in x 96in'), findsOneWidget);
+    });
+
+    testWidgets('the trash button deletes a row: it leaves the table and its '
+        'chip leaves the strip, and the value stays', (tester) async {
+      await pumpPage(tester);
+      await typeAndFold(tester, area180Typed);
+      final bloc = blocOf(tester);
+      final tape = bloc.state.tape;
+      Finder onTheStrip108() => find.descendant(
+        of: find.byType(CoreSuggestionArea),
+        matching: find.textContaining('48in x 108in', findRichText: true),
+      );
+      expect(onTheStrip108(), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          CoreGeometryArea.deleteRowKey(sheetTableId, 'sheet_48x108in'),
+        ),
+      );
+      await settle(tester);
+
+      expect(inPanel('48in x 108in'), findsNothing);
+      expect(inPanel('48in x 96in'), findsOneWidget);
+      expect(inPanel('48in x 120in'), findsOneWidget);
+      expect(onTheStrip108(), findsNothing);
+      expect(bloc.state.tape, tape);
+    });
+
+    testWidgets('a full swipe deletes a row and the table redraws without it '
+        '(Section 1.4: "swiped to delete")', (tester) async {
+      await pumpPage(tester);
+      await typeAndFold(tester, area180Typed);
+
+      await tester.drag(inPanel('48in x 120in'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(inPanel('48in x 120in'), findsNothing);
+      expect(inPanel('48in x 96in'), findsOneWidget);
+    });
+
+    testWidgets('swiping the first of two rows with one size removes that row '
+        'alone: the other stays on the table and no error is thrown (B1)', (
+      tester,
+    ) async {
+      final stores = FakeTradeStoresRepository();
+      addTearDown(stores.dispose);
+      await tester.runAsync(() async {
+        final sheets = await stores
+            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+            .first;
+        await stores.addSize(sheets.first);
+      });
+      await pumpPage(tester, stores: stores);
+      await typeAndFold(tester, area180Typed);
+      expect(inPanel('48in x 96in'), findsNWidgets(2));
+
+      await tester.drag(
+        find.ancestor(
+          of: find.byKey(
+            CoreGeometryArea.deleteRowKey(sheetTableId, 'sheet_48x96in'),
+          ),
+          matching: find.byType(Dismissible),
+        ),
+        const Offset(-600, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(inPanel('48in x 96in'), findsOneWidget);
+      expect(inPanel('48in x 108in'), findsOneWidget);
+      expect(inPanel('48in x 120in'), findsOneWidget);
     });
   });
 }

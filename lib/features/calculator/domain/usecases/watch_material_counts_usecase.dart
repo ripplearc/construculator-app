@@ -14,7 +14,9 @@ import 'package:construculator/libraries/calculator_engine/trades.dart';
 ///
 /// The engine counts over a [PieceSize]; this is the one place a stored
 /// size becomes one, which keeps the engine free of the feature's
-/// entities. The stream is the repository's own watch, so it ends when the
+/// entities. Each piece carries what the store calls its row — the row's
+/// id, or the default it stands in for — so that two stored rows of one
+/// size stay two counts, and a count can name the row to delete. The stream is the repository's own watch, so it ends when the
 /// repository is disposed.
 class WatchMaterialCountsUseCase {
   final TradeStoresRepository _repository;
@@ -33,16 +35,14 @@ class WatchMaterialCountsUseCase {
     required Area area,
     required MeasurementSystem system,
   }) => _repository
-      .watchSizes(_storeOf(trade), system)
+      .watchSizes(trade.sizeStore, system)
       .map(
         (sizes) => _trades.countsFor(trade, area, sizes.map(_pieceOf).toList()),
       );
 
-  SizeStore _storeOf(Trade trade) => switch (trade) {
-    Trade.drywall => SizeStore.sheet,
-    Trade.masonry => SizeStore.masonry,
-  };
-
-  PieceSize _pieceOf(StoredSize size) =>
-      PieceSize(width: size.width, height: size.height);
+  PieceSize _pieceOf(StoredSize size) => PieceSize(
+    width: size.width,
+    height: size.height,
+    id: size.id ?? size.seed,
+  );
 }

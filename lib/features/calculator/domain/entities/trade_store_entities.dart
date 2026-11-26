@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 import 'package:equatable/equatable.dart';
 
 /// The three stores that hold a width and a height (UX Design Doc term
@@ -12,6 +13,15 @@ enum SizeStore {
 
   /// Footing cross-sections the `Footng` key computes volume by.
   footing,
+}
+
+/// The store of sizes a [Trade] counts by: drywall sheets, masonry pieces.
+extension TradeSizeStore on Trade {
+  /// The store this trade's counts read and its table edits.
+  SizeStore get sizeStore => switch (this) {
+    Trade.drywall => SizeStore.sheet,
+    Trade.masonry => SizeStore.masonry,
+  };
 }
 
 /// A stored width × height (48in x 96in), kept in ticks so a sheet count

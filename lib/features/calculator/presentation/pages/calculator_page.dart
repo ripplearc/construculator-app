@@ -270,19 +270,41 @@ class _CalculatorPageState extends State<CalculatorPage> {
       ),
   ];
 
-  Widget _detailPanel(
+  static const String _sheetTableId = 'sheet-quantities';
+
+  CoreSizesTableData _sheetTable(
     CalculatorLabelFormatter labels,
-    List<CalculatorSuggestion> dimensions,
-  ) => SingleChildScrollView(
-    key: const Key('calculator_detail_panel'),
-    child: CoreGeometryArea(
-      dimensionsLabel: labels.l10n.calculatorDetailDimensionsTitle,
-      expandLabel: labels.l10n.calculatorDetailExpandButton,
-      collapseLabel: labels.l10n.calculatorDetailCollapseButton,
-      attachmentsTitleLabel: _attachmentsHeadingLeftBlank,
-      dimensions: _dimensionTiles(labels, dimensions),
-    ),
+    CalculatorSizeTable table,
+  ) => CoreSizesTableData(
+    id: _sheetTableId,
+    title: labels.l10n.calculatorSheetTableTitle(table.areaText),
+    columns: [
+      CoreSizesColumn(title: labels.l10n.calculatorSheetTableSizeColumn),
+      CoreSizesColumn(title: labels.l10n.calculatorSheetTableCountColumn),
+    ],
+    rows: [
+      for (final row in table.rows)
+        CoreSizeCardData(id: row.id, values: [row.sizeText, row.countText]),
+    ],
+    deleteRowSemanticsLabelBuilder: (row) =>
+        labels.l10n.calculatorSheetTableDeleteSemantics(row.values.first),
+    onDeleted: (id) => _bloc.add(CalculatorSizeRowDeleted(id)),
   );
+
+  Widget _detailPanel(CalculatorLabelFormatter labels, CalculatorState state) =>
+      SingleChildScrollView(
+        key: const Key('calculator_detail_panel'),
+        child: CoreGeometryArea(
+          dimensionsLabel: labels.l10n.calculatorDetailDimensionsTitle,
+          expandLabel: labels.l10n.calculatorDetailExpandButton,
+          collapseLabel: labels.l10n.calculatorDetailCollapseButton,
+          attachmentsTitleLabel: _attachmentsHeadingLeftBlank,
+          dimensions: _dimensionTiles(labels, state.dimensions),
+          tables: [
+            if (state.sizeTable case final table?) _sheetTable(labels, table),
+          ],
+        ),
+      );
 
   Map<String, FunctionGroup> _buildGroups(CalculatorLabelFormatter labels) => {
     for (final group in _groupTable)
@@ -437,9 +459,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             if (_showsDetailPanelUnderCollapsedDisplay)
                               LayoutId(
                                 id: _PageSlot.panel,
-                                child: state.dimensions.isEmpty
-                                    ? const SizedBox.shrink()
-                                    : _detailPanel(labels, state.dimensions),
+                                child: state.hasDetails
+                                    ? _detailPanel(labels, state)
+                                    : const SizedBox.shrink(),
                               ),
                           ],
                         ),
