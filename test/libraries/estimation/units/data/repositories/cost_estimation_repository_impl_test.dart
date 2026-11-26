@@ -2197,6 +2197,83 @@ void main() {
       );
     });
 
+    group('watchEstimation', () {
+      Map<String, dynamic> phoneRow(String name) => buildEstimationMap(
+        id: estimateIdDefault,
+        projectId: testProjectId,
+        estimateName: name,
+      );
+
+      test('sends the phone row first', () async {
+        fakePhoneDatabase.seedRows([phoneRow('Created offline')]);
+
+        final first = await repository.watchEstimation(estimateIdDefault).first;
+
+        expect(first.getRightOrNull()!.estimateName, 'Created offline');
+      });
+
+      test(
+        'sends a new value when sync changes the name, and a not-found failure '
+        'when the row is deleted',
+        () async {
+          fakePhoneDatabase.seedRows([phoneRow('Before')]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final values = StreamQueue(
+            repository.watchEstimation(estimateIdDefault),
+          );
+          addTearDown(values.cancel);
+
+          expect((await values.next).getRightOrNull()!.estimateName, 'Before');
+          fakePhoneDatabase.replaceRow(phoneRow('After'));
+          expect((await values.next).getRightOrNull()!.estimateName, 'After');
+          fakePhoneDatabase.removeRow(estimateIdDefault);
+          expect(
+            (await values.next).getLeftOrNull(),
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          );
+        },
+      );
+
+      test('sends the server row when the phone has no such row', () async {
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, [
+          phoneRow('Only on the server'),
+        ]);
+
+        final first = await repository.watchEstimation(estimateIdDefault).first;
+
+        expect(first.getRightOrNull()!.estimateName, 'Only on the server');
+      });
+
+      test('sends a not-found failure when neither has the row', () async {
+        final first = await repository.watchEstimation(estimateIdDefault).first;
+
+        expect(
+          first.getLeftOrNull(),
+          EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        );
+      });
+
+      test('sends the row sync brings after the server had none', () async {
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final values = StreamQueue(
+          repository.watchEstimation(estimateIdDefault),
+        );
+        addTearDown(values.cancel);
+
+        expect((await values.next).isLeft(), isTrue);
+        fakePhoneDatabase.seedRows([phoneRow('Arrived')]);
+        expect((await values.next).getRightOrNull()!.estimateName, 'Arrived');
+      });
+
+      test('sends a failure when the phone cannot be watched', () async {
+        fakePhoneDatabase.watchError = Exception('database is locked');
+
+        final first = await repository.watchEstimation(estimateIdDefault).first;
+
+        expect(first.getLeftOrNull(), isA<UnexpectedFailure>());
+      });
+    });
+
     group('a write on a row of a full oldest-first list', () {
       Future<StreamQueue<Either<Failure, List<CostEstimate>>>>
       watchFirstPageOfThree() async {

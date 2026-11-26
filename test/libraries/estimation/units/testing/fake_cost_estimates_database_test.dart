@@ -104,6 +104,28 @@ void main() {
       await queue.cancel();
     });
 
+    test('watches one row by id, sending an empty list once it is gone', () async {
+      database.seedRows([row('a', name: 'Before'), row('b')]);
+      // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+      final queue = StreamQueue(
+        database.watch(
+          'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1',
+          parameters: ['a'],
+        ),
+      );
+
+      final first = await queue.next;
+      database.replaceRow(row('a', name: 'After'));
+      final replaced = await queue.next;
+      database.removeRow('a');
+      final removed = await queue.next;
+
+      expect(ids(first), equals(['a']));
+      expect(replaced.single['estimate_name'], equals('After'));
+      expect(removed, isEmpty);
+      await queue.cancel();
+    });
+
     test('fails a new watch with watchError', () async {
       database.watchError = StateError('phone copy unavailable');
 

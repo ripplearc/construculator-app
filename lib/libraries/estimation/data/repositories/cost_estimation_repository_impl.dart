@@ -738,6 +738,37 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
+  @override
+  Stream<Either<Failure, CostEstimate>> watchEstimation(
+    String estimationId,
+  ) async* {
+    var phoneHadRow = false;
+    try {
+      await for (final phoneDto in _localDataSource.watchEstimationById(
+        id: estimationId,
+      )) {
+        phoneHadRow = phoneHadRow || phoneDto != null;
+        final dto =
+            phoneDto ??
+            (phoneHadRow
+                ? null
+                : await _dataSource.getEstimationById(estimationId));
+        if (dto == null) {
+          _logger.warning('Estimation not found: $estimationId');
+          yield Left(
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          );
+        } else {
+          yield Right(dto.toDomain());
+        }
+      }
+    } catch (e) {
+      yield Left(
+        _handleError(e, 'watching estimation', estimationId: estimationId),
+      );
+    }
+  }
+
   // TODO: [CA-1452] A rename moves the last edited date on the server, but the storyboard says it changes only the name.
   // https://ripplearc.youtrack.cloud/issue/CA-1452
   @override

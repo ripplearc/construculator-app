@@ -27,6 +27,19 @@
         <regex pattern="final dto = phoneDto \?\? await _dataSource\.getEstimationById\(estimationId\);" dotAll="true" id="repo.get.ignore_server_row">
             <mutation text="final dto = phoneDto;"/>
         </regex>
+        <!-- watchEstimation: phone first, server only before the phone ever had the row -->
+        <regex pattern="phoneHadRow = phoneHadRow \|\| phoneDto != null;" dotAll="true" id="repo.watch.never_remember_phone_row">
+            <mutation text="phoneHadRow = false;"/>
+        </regex>
+        <regex pattern="\(phoneHadRow\s*\?\s*null\s*:\s*await _dataSource\.getEstimationById\(estimationId\)\)" dotAll="true" id="repo.watch.always_ask_server">
+            <mutation text="await _dataSource.getEstimationById(estimationId)"/>
+        </regex>
+        <regex pattern="\(phoneHadRow\s*\?\s*null\s*:\s*await _dataSource\.getEstimationById\(estimationId\)\)" dotAll="true" id="repo.watch.never_ask_server">
+            <mutation text="null"/>
+        </regex>
+        <regex pattern="yield Right\(dto\.toDomain\(\)\);" dotAll="true" id="repo.watch.skip_value">
+            <mutation text=""/>
+        </regex>
 
 
         <!-- RULE 7: In hasMoreEstimations, return wrong default value -->

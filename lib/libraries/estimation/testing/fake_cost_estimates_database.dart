@@ -11,6 +11,10 @@ import 'package:construculator/libraries/powersync/testing/fake_powersync_databa
 /// from the SQL, and it emits again each time the rows change. Calls are still
 /// recorded in [watchCalls].
 ///
+/// A watch of one row by id (`SELECT * FROM cost_estimates WHERE id = ? LIMIT 1`)
+/// sends the row, or an empty list when there is none, each time the rows
+/// change.
+///
 /// A write the data source makes through [execute] changes the stored rows the
 /// way SQLite would and sends the new rows to every open watch, as the real
 /// database does for a local write. It understands the `INSERT`, the
@@ -95,8 +99,15 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
     Duration throttle = kDefaultWatchThrottle,
   }) {
-    _orderOf(sql);
+    final byId = sql == _selectById;
+    if (!byId) _orderOf(sql);
     super.watch(sql, parameters: parameters, throttle: throttle);
+    List<Map<String, dynamic>> select() => byId
+        ? [
+            for (final row in _rows)
+              if (row['id'] == parameters.single) {...row},
+          ]
+        : _select(sql, parameters);
     return Stream.multi((listener) {
       final error = watchError;
       if (error != null) {
@@ -104,9 +115,9 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
         listener.close();
         return;
       }
-      listener.add(_select(sql, parameters));
+      listener.add(select());
       final subscription = _rowsChanged.stream.listen(
-        (_) => listener.add(_select(sql, parameters)),
+        (_) => listener.add(select()),
       );
       listener.onCancel = subscription.cancel;
     });

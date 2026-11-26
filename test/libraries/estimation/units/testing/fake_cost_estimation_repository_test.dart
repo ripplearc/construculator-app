@@ -41,6 +41,20 @@ void main() {
       expect(() => repository.getEstimation('est-1'), throwsUnimplementedError);
     });
 
+    test('watchEstimation returns the set stream and records the ID', () async {
+      final estimate = CostEstimate.defaultEstimate(createdAt: DateTime.now());
+      repository.watchEstimationStream = Stream.value(Right(estimate));
+
+      final result = await repository.watchEstimation('est-1').single;
+
+      expect(result.getRightOrNull(), equals(estimate));
+      expect(repository.lastWatchEstimationId, equals('est-1'));
+    });
+
+    test('watchEstimation throws UnimplementedError when no stream is set', () {
+      expect(() => repository.watchEstimation('est-1'), throwsUnimplementedError);
+    });
+
     test('changeLockStatus throws UnimplementedError', () {
       expect(
         () => repository.changeLockStatus(

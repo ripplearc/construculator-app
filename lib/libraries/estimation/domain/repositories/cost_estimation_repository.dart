@@ -99,6 +99,20 @@ abstract class CostEstimationRepository {
   /// the cost items.
   Future<Either<Failure, CostEstimate>> getEstimation(String estimationId);
 
+  /// Follows a single cost estimation by its ID, so a change to the row is seen
+  /// without asking again.
+  ///
+  /// Sends the current estimation first, then a new value each time the phone's
+  /// row changes, including a change that sync brings from another phone. The
+  /// first value comes from the server when the phone has no such row yet.
+  /// Sends a not-found failure when the row is gone, for example after a
+  /// delete on another phone. The stream keeps running after a failure that
+  /// the next change can clear.
+  ///
+  /// The `totalCost` of each value is the stored column. It is not the sum of
+  /// the cost items.
+  Stream<Either<Failure, CostEstimate>> watchEstimation(String estimationId);
+
   /// Creates a new cost estimation.
   ///
   /// Returns a [Future] that completes with the created [CostEstimate] containing

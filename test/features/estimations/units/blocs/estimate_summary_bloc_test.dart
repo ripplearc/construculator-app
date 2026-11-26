@@ -19,10 +19,52 @@ import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_cost_items_database.dart';
 import '../../helpers/cost_item_test_data_map_factory.dart';
 
+/// A phone that holds cost items and, when a test sets it, the estimate row.
+///
+/// With no estimate row, the summary falls back to the server for the estimate.
+/// [setEstimateRow] changes the row the way a sync does, and every open watch
+/// of the row sends it again.
+class _PhoneWithEstimate extends FakeCostItemsDatabase {
+  final _estimateChanges = StreamController<void>.broadcast(sync: true);
+  Map<String, dynamic>? _estimateRow;
+
+  void setEstimateRow(Map<String, dynamic>? row) {
+    _estimateRow = row == null ? null : {...row, 'is_locked': 0};
+    _estimateChanges.add(null);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watch(
+    String sql, {
+    List<Object?> parameters = const [],
+    Duration throttle = kDefaultWatchThrottle,
+  }) {
+    if (!sql.contains('FROM ${DatabaseConstants.costEstimatesTable}')) {
+      return super.watch(sql, parameters: parameters, throttle: throttle);
+    }
+    List<Map<String, dynamic>> current() => [
+      if (_estimateRow != null) {..._estimateRow!},
+    ];
+    return Stream.multi((listener) {
+      listener.add(current());
+      final subscription = _estimateChanges.stream.listen(
+        (_) => listener.add(current()),
+      );
+      listener.onCancel = subscription.cancel;
+    });
+  }
+
+  @override
+  void reset() {
+    super.reset();
+    _estimateRow = null;
+  }
+}
+
 void main() {
   group('EstimateSummaryBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
-    late FakeCostItemsDatabase phone;
+    late _PhoneWithEstimate phone;
 
     const estimateId = 'estimate-1';
 
@@ -31,7 +73,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
       );
       Modular.init(EstimationModule(bootstrap));
-      phone = FakeCostItemsDatabase();
+      phone = _PhoneWithEstimate();
       Modular.replaceInstance<PowerSyncDatabaseWrapper>(phone);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
@@ -237,6 +279,108 @@ void main() {
           'Kitchen',
         ),
       ],
+    );
+
+    blocTest<EstimateSummaryBloc, EstimateSummaryState>(
+      'emits the new name when sync renames the estimate, with the same total',
+      setUp: () {
+        seedEstimate();
+        phone.setEstimateRow(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId,
+            estimateName: 'Bedroom 2',
+            totalCost: 1,
+          ),
+        );
+      },
+      build: () => Modular.get<EstimateSummaryBloc>(),
+      act: (bloc) async {
+        bloc.add(const EstimateSummaryRequested(estimateId));
+        await bloc.stream.firstWhere((s) => s is EstimateSummaryLoaded);
+        phone.setEstimateRow(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId,
+            estimateName: 'Master bedroom',
+            totalCost: 1,
+          ),
+        );
+      },
+      expect: () => [
+        isA<EstimateSummaryLoading>(),
+        isA<EstimateSummaryLoaded>().having(
+          (s) => s.estimate.estimateName,
+          'name',
+          'Bedroom 2',
+        ),
+        isA<EstimateSummaryLoaded>()
+            .having((s) => s.estimate.estimateName, 'name', 'Master bedroom')
+            .having((s) => s.estimate.totalCost, 'total', 2993.62),
+      ],
+    );
+
+    blocTest<EstimateSummaryBloc, EstimateSummaryState>(
+      'emits a not-found failure when the estimate is deleted on another phone',
+      setUp: () {
+        seedEstimate();
+        phone.setEstimateRow(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId,
+            estimateName: 'Bedroom 2',
+            totalCost: 1,
+          ),
+        );
+      },
+      build: () => Modular.get<EstimateSummaryBloc>(),
+      act: (bloc) async {
+        bloc.add(const EstimateSummaryRequested(estimateId));
+        await bloc.stream.firstWhere((s) => s is EstimateSummaryLoaded);
+        phone.setEstimateRow(null);
+      },
+      expect: () => [
+        isA<EstimateSummaryLoading>(),
+        isA<EstimateSummaryLoaded>(),
+        isA<EstimateSummaryFailure>().having(
+          (s) => s.failure,
+          'failure',
+          EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        ),
+      ],
+    );
+
+    blocTest<EstimateSummaryBloc, EstimateSummaryState>(
+      'reads the item total once, not again for each change to the estimate',
+      setUp: () {
+        seedEstimate();
+        phone.setEstimateRow(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId,
+            estimateName: 'Bedroom 2',
+            totalCost: 1,
+          ),
+        );
+      },
+      build: () => Modular.get<EstimateSummaryBloc>(),
+      act: (bloc) async {
+        bloc.add(const EstimateSummaryRequested(estimateId));
+        await bloc.stream.firstWhere((s) => s is EstimateSummaryLoaded);
+        expect(fakeSupabaseWrapper.getMethodCalls(), isNotEmpty);
+        fakeSupabaseWrapper.clearMethodCalls();
+        phone.setEstimateRow(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId,
+            estimateName: 'Master bedroom',
+            totalCost: 1,
+          ),
+        );
+        await bloc.stream.firstWhere(
+          (s) =>
+              s is EstimateSummaryLoaded &&
+              s.estimate.estimateName == 'Master bedroom',
+        );
+      },
+      verify: (_) {
+        expect(fakeSupabaseWrapper.getMethodCalls(), isEmpty);
+      },
     );
   });
 }
