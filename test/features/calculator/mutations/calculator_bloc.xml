@@ -209,19 +209,45 @@
 
         <!-- S2b 2/2 (CA-1091): Undo leaves the tape as it is, View leaves
              the display where it is, or the next key keeps the card -->
-        <regex pattern="emit\(state\.copyWith\(tape: banked, bankedTape: \(\) =&gt; null\)\);" dotAll="true" id="calculator_bloc.undo.tape_left">
-            <mutation text="emit(state.copyWith(bankedTape: () =&gt; null));"/>
-            <mutation text="emit(state.copyWith(tape: banked));"/>
+        <regex pattern="tape: banked,\s*bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null," dotAll="true" id="calculator_bloc.undo.tape_left">
+            <mutation text="bankedTape: () =&gt; null, bankedSessionId: () =&gt; null,"/>
+            <mutation text="tape: banked, bankedSessionId: () =&gt; null,"/>
         </regex>
         <regex pattern="historyStage: DisplayAreaStage\.fullScreen,\s*bankedTape: \(\) =&gt; null," dotAll="true" id="calculator_bloc.view.display_left">
             <mutation text="bankedTape: () =&gt; null,"/>
             <mutation text="historyStage: DisplayAreaStage.fullScreen,"/>
         </regex>
-        <regex pattern="toastClosed: false,\s*sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null,\s*groupEditsNoticed:" dotAll="true" id="calculator_bloc.key.card_kept">
-            <mutation text="toastClosed: false, sizeNotAdded: false, groupEditsNoticed:"/>
+        <regex pattern="toastClosed: false,\s*sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null,\s*groupEditsNoticed:" dotAll="true" id="calculator_bloc.key.card_kept">
+            <mutation text="toastClosed: false, sizeNotAdded: false, bankedSessionId: () =&gt; null, groupEditsNoticed:"/>
         </regex>
         <regex pattern="refusedUnit: \(\) =&gt; unit,\s*toastClosed: false,\s*sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null," dotAll="true" id="calculator_bloc.refused_key.card_kept">
             <mutation text="refusedUnit: () =&gt; unit, toastClosed: false, sizeNotAdded: false,"/>
+        </regex>
+
+        <!-- U1 1/2 (CA-1097): the card forgets which session it names, Undo
+             leaves the session in history, or Undo, View, the next key or
+             a refused key keeps the id of a card that is gone; the id is
+             left out of the state's equality -->
+        <regex pattern="bankedSessionId: \(\) =&gt; event\.sessionId," dotAll="true" id="calculator_bloc.banked.session_forgotten">
+            <mutation text="bankedSessionId: () =&gt; null,"/>
+        </regex>
+        <regex pattern="if \(sessionId != null\) await _deleteSession\(sessionId\);" dotAll="true" id="calculator_bloc.undo.session_left_in_history">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="tape: banked,\s*bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null," dotAll="true" id="calculator_bloc.undo.session_id_kept">
+            <mutation text="tape: banked, bankedTape: () =&gt; null,"/>
+        </regex>
+        <regex pattern="historyStage: DisplayAreaStage\.fullScreen,\s*bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null," dotAll="true" id="calculator_bloc.view.session_id_kept">
+            <mutation text="historyStage: DisplayAreaStage.fullScreen, bankedTape: () =&gt; null,"/>
+        </regex>
+        <regex pattern="bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null,\s*groupEditsNoticed:" dotAll="true" id="calculator_bloc.key.session_id_kept">
+            <mutation text="bankedTape: () =&gt; null, groupEditsNoticed:"/>
+        </regex>
+        <regex pattern="sizeNotAdded: false,\s*bankedTape: \(\) =&gt; null,\s*bankedSessionId: \(\) =&gt; null,\s*\),\s*\);\s*\}\s*\}" dotAll="true" id="calculator_bloc.refused_key.session_id_kept">
+            <mutation text="sizeNotAdded: false, bankedTape: () =&gt; null, ), ); } }"/>
+        </regex>
+        <regex pattern="bankedTape,\s*bankedSessionId,\s*bankedCarriedForward," dotAll="true" id="calculator_state.props.session_id_ignored">
+            <mutation text="bankedTape, bankedCarriedForward,"/>
         </regex>
 
         <!-- RULE 20: C and a reset forget the order -->
@@ -230,8 +256,8 @@
         </regex>
 
         <!-- RULE 21: the order is left out of the state's equality -->
-        <regex pattern="currentGroupIndex,\s*groupOrder,\s*notice," dotAll="true" id="calculator_state.props.drop_group_order">
-            <mutation text="currentGroupIndex, notice,"/>
+        <regex pattern="currentGroupIndex,\s*groupOrder,\s*historyStage," dotAll="true" id="calculator_state.props.drop_group_order">
+            <mutation text="currentGroupIndex, historyStage,"/>
         </regex>
 
         <!-- RULE 23 (S1c 3/5, CA-1089): a tapped chip never reaches the tape -->
@@ -270,8 +296,8 @@
 
         <!-- RULE 28a: C forgets how many toasts were raised, so the page
              would show the toast C's state still holds -->
-        <regex pattern="groupOrder: state\.groupOrder,\s*toastsRaised: state\.toastsRaised," dotAll="true" id="calculator_bloc.cleared.toast_count_forgotten">
-            <mutation text="groupOrder: state.groupOrder,"/>
+        <regex pattern="isKeypadFolded: state\.isKeypadFolded,\s*toastsRaised: state\.toastsRaised," dotAll="true" id="calculator_bloc.cleared.toast_count_forgotten">
+            <mutation text="isKeypadFolded: state.isKeypadFolded,"/>
         </regex>
 
         <!-- RULE 29: every state is counted as a toast, so the page shows

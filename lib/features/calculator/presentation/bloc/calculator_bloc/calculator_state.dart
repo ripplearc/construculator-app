@@ -74,6 +74,12 @@ class CalculatorState extends Equatable {
   /// the pending Undo of a hidden card is never pressed.
   final Tape? bankedTape;
 
+  /// The id history keeps [bankedTape] under, so that Undo takes the
+  /// session out of history again (walkthrough 13.2: "Undo rolls the
+  /// history entry back as well as restoring the tape"); `null` with no
+  /// bank pending.
+  final String? bankedSessionId;
+
   /// Whether the last bank carried its result forward into the new tape
   /// (rule 4.9: an operator after a result), so the card says so.
   final bool bankedCarriedForward;
@@ -143,6 +149,7 @@ class CalculatorState extends Equatable {
     this.historyStage = DisplayAreaStage.collapsed,
     this.isKeypadFolded = false,
     this.bankedTape,
+    this.bankedSessionId,
     this.bankedCarriedForward = false,
     this.notice,
     this.refusal,
@@ -169,6 +176,7 @@ class CalculatorState extends Equatable {
     DisplayAreaStage? historyStage,
     bool? isKeypadFolded,
     Tape? Function()? bankedTape,
+    String? Function()? bankedSessionId,
     bool? bankedCarriedForward,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
@@ -187,6 +195,9 @@ class CalculatorState extends Equatable {
     historyStage: historyStage ?? this.historyStage,
     isKeypadFolded: isKeypadFolded ?? this.isKeypadFolded,
     bankedTape: bankedTape != null ? bankedTape() : this.bankedTape,
+    bankedSessionId: bankedSessionId != null
+        ? bankedSessionId()
+        : this.bankedSessionId,
     bankedCarriedForward: bankedCarriedForward ?? this.bankedCarriedForward,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
@@ -883,6 +894,7 @@ class CalculatorState extends Equatable {
     historyStage,
     isKeypadFolded,
     bankedTape,
+    bankedSessionId,
     bankedCarriedForward,
     notice,
     refusal,

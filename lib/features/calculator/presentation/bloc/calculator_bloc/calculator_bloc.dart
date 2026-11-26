@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
@@ -64,10 +65,16 @@ part 'calculator_toast.dart';
 /// redrew — changes nothing. = lands the leading suggestion when the strip
 /// has one (term 2.15: "= still lands that suggestion"), else the tape's
 /// own equals.
+///
+/// The "Saved to history" card names the session history keeps its tape
+/// under ([CalculatorSessionBanked]), and Undo takes that session out of
+/// history again behind the tape it brings back (U1, CA-1097; walkthrough
+/// 13.2).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
   final AddMaterialSizeUseCase _addMaterialSize;
+  final DeleteCalculationSessionUseCase _deleteSession;
 
   static final _logger = AppLogger().tag('CalculatorBloc');
 
@@ -77,11 +84,13 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   MeasurementSystem? _watchedSystem;
 
   /// Creates the bloc over the use cases that count the stored sheet sizes
-  /// for an area, and add a size to the store or remove one.
+  /// for an area, add a size to the store or remove one, and take a
+  /// banked tape out of history again.
   CalculatorBloc({
     required this._materialCounts,
     required this._deleteMaterialSize,
     required this._addMaterialSize,
+    required this._deleteSession,
   }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
@@ -425,18 +434,27 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     emit,
     state.copyWith(
       bankedTape: () => event.tape,
+      bankedSessionId: () => event.sessionId,
       bankedCarriedForward: event.carriedForward,
       toastClosed: false,
     ),
   );
 
-  void _onUndoPressed(
+  Future<void> _onUndoPressed(
     CalculatorUndoPressed event,
     Emitter<CalculatorState> emit,
-  ) {
+  ) async {
     final banked = state.bankedTape;
     if (banked == null) return;
-    emit(state.copyWith(tape: banked, bankedTape: () => null));
+    final sessionId = state.bankedSessionId;
+    emit(
+      state.copyWith(
+        tape: banked,
+        bankedTape: () => null,
+        bankedSessionId: () => null,
+      ),
+    );
+    if (sessionId != null) await _deleteSession(sessionId);
   }
 
   void _onHistoryViewPressed(
@@ -446,6 +464,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     state.copyWith(
       historyStage: DisplayAreaStage.fullScreen,
       bankedTape: () => null,
+      bankedSessionId: () => null,
     ),
   );
 
@@ -513,6 +532,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             toastClosed: false,
             sizeNotAdded: false,
             bankedTape: () => null,
+            bankedSessionId: () => null,
             groupEditsNoticed: notice == TapeNotice.editingThisGroup
                 ? state.groupEditsNoticed + 1
                 : null,
@@ -530,6 +550,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             toastClosed: false,
             sizeNotAdded: false,
             bankedTape: () => null,
+            bankedSessionId: () => null,
           ),
         );
     }

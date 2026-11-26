@@ -10,11 +10,13 @@ import 'package:construculator/features/calculator/domain/repositories/calculato
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/calculation/calculation_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/router_module.dart';
@@ -26,7 +28,8 @@ import 'package:powersync/powersync.dart';
 /// lifetime, the settings repository, which follows the signed-in profile
 /// through the auth library, and the trade stores repository over the
 /// synced `user_calculator_stores` rows, which the bloc reads the sheet
-/// counts through.
+/// counts through. The history a banked tape is taken out of again is the
+/// calculation library's, imported here.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
   /// [AuthLibraryModule] so the repository sees the same auth state as the
@@ -39,6 +42,7 @@ class CalculatorModule extends Module {
   @override
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
+    CalculationLibraryModule(appBootstrap),
     PowerSyncModule(appBootstrap),
     ClockModule(),
     RouterModule(),
@@ -86,11 +90,15 @@ class CalculatorModule extends Module {
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: i()),
     );
+    i.add<DeleteCalculationSessionUseCase>(
+      () => DeleteCalculationSessionUseCase(repository: i()),
+    );
     i.add<CalculatorBloc>(
       () => CalculatorBloc(
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        deleteSession: i(),
       ),
     );
   }

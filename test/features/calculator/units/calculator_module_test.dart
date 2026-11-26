@@ -2,11 +2,14 @@ import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/calculation/domain/repositories/calculation_session_repository.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -79,6 +82,25 @@ void main() {
       test('binds one trade stores repository over PowerSync', () {
         final repository = Modular.get<TradeStoresRepository>();
         expect(repository, same(Modular.get<TradeStoresRepository>()));
+      });
+
+      test('imports the calculation library\'s history and builds a bloc of '
+          'its own for each page over the use case that takes a banked tape '
+          'out again', () async {
+        expect(
+          Modular.get<CalculationSessionRepository>(),
+          same(Modular.get<CalculationSessionRepository>()),
+        );
+        expect(
+          Modular.get<DeleteCalculationSessionUseCase>(),
+          isA<DeleteCalculationSessionUseCase>(),
+        );
+
+        final bloc = Modular.get<CalculatorBloc>();
+        final another = Modular.get<CalculatorBloc>();
+        expect(bloc, isNot(same(another)));
+        await bloc.close();
+        await another.close();
       });
 
       test('disposes the trade stores with the module', () async {

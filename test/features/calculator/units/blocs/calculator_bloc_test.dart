@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/features/calculator/presentation/formatters/calcu
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculation/testing/fake_calculation_session_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/errors/calculator_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -25,11 +27,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// the real [WatchMaterialCountsUseCase] and [DeleteMaterialSizeUseCase]
 /// and a fake trade-stores repository
 /// showing Appendix B's defaults, as the production module wires it, so
-/// each test resolves a fresh instance via `Modular.get`.
+/// each test resolves a fresh instance via `Modular.get`. History is the
+/// calculation library's, so its fake stands in for it.
 class _CalculatorBlocTestModule extends Module {
   final FakeTradeStoresRepository stores;
+  final FakeCalculationSessionRepository history;
 
-  _CalculatorBlocTestModule(this.stores);
+  _CalculatorBlocTestModule(this.stores, this.history);
 
   @override
   void binds(Injector i) {
@@ -42,11 +46,15 @@ class _CalculatorBlocTestModule extends Module {
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: stores),
     );
+    i.add<DeleteCalculationSessionUseCase>(
+      () => DeleteCalculationSessionUseCase(repository: history),
+    );
     i.add<CalculatorBloc>(
       () => CalculatorBloc(
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        deleteSession: i(),
       ),
     );
   }
@@ -54,17 +62,20 @@ class _CalculatorBlocTestModule extends Module {
 
 void main() {
   late FakeTradeStoresRepository stores;
+  late FakeCalculationSessionRepository history;
   late CalculatorBloc bloc;
 
   setUp(() {
     stores = FakeTradeStoresRepository();
-    Modular.init(_CalculatorBlocTestModule(stores));
+    history = FakeCalculationSessionRepository();
+    Modular.init(_CalculatorBlocTestModule(stores, history));
     bloc = Modular.get<CalculatorBloc>();
   });
 
-  tearDown(() {
-    bloc.close();
+  tearDown(() async {
+    await bloc.close();
     stores.dispose();
+    history.dispose();
     Modular.destroy();
   });
 
@@ -2733,6 +2744,155 @@ void main() {
           expect(bloc.state.toast, isNot(isA<CalculatorSavedToHistoryToast>()));
         },
       );
+    });
+
+    group('U1 1/2 (CA-1097): the card names the session history keeps its '
+        'tape under, and Undo takes that session out again (walkthrough '
+        '13.2)', () {
+      List<String> sessionIds() => [
+        for (final session in history.sessions) session.id,
+      ];
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Undo brings the tape back and takes the session the card names out '
+        'of history; the other sessions stay',
+        build: () => bloc,
+        act: (bloc) async {
+          await history.bankSession(pressed('1 + 1 ='));
+          await history.bankSession(pressed('2 + 3 ='));
+          bloc
+            ..add(
+              CalculatorSessionBanked(
+                pressed('2 + 3 ='),
+                sessionId: 'session-2',
+              ),
+            )
+            ..add(const CalculatorUndoPressed());
+        },
+        expect: () => [
+          CalculatorState(
+            bankedTape: pressed('2 + 3 ='),
+            bankedSessionId: 'session-2',
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('2 + 3 =')).copyWith(toastsRaised: 1),
+        ],
+        verify: (bloc) {
+          expect(sessionIds(), contains('session-1'));
+          expect(sessionIds(), isNot(contains('session-2')));
+          expect(history.tapes.keys, isNot(contains('session-2')));
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a card that names no session undoes the tape and takes nothing out '
+        'of history',
+        build: () => bloc,
+        act: (bloc) async {
+          await history.bankSession(pressed('2 + 3 ='));
+          bloc
+            ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+            ..add(const CalculatorUndoPressed());
+        },
+        skip: 1,
+        expect: () => [tapeState(pressed('2 + 3 =')).copyWith(toastsRaised: 1)],
+        verify: (bloc) => expect(sessionIds(), contains('session-1')),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'View forgets the session with the card, so an Undo after it takes '
+        'nothing out of history',
+        build: () => bloc,
+        act: (bloc) async {
+          await history.bankSession(pressed('2 + 3 ='));
+          bloc
+            ..add(
+              CalculatorSessionBanked(
+                pressed('2 + 3 ='),
+                sessionId: 'session-1',
+              ),
+            )
+            ..add(const CalculatorHistoryViewPressed())
+            ..add(const CalculatorUndoPressed());
+        },
+        skip: 1,
+        expect: () => [
+          const CalculatorState(
+            toastsRaised: 1,
+            historyStage: DisplayAreaStage.fullScreen,
+          ),
+        ],
+        verify: (bloc) => expect(sessionIds(), contains('session-1')),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the next key forgets the session with the card, and so does a key '
+        'the tape refuses',
+        build: () => bloc,
+        act: (bloc) async {
+          await history.bankSession(pressed('2 + 3 ='));
+          bloc
+            ..add(
+              CalculatorSessionBanked(
+                pressed('2 + 3 ='),
+                sessionId: 'session-1',
+              ),
+            )
+            ..add(const CalculatorDigitPressed('9'))
+            ..add(
+              CalculatorSessionBanked(
+                pressed('2 + 3 ='),
+                sessionId: 'session-1',
+              ),
+            )
+            ..add(const CalculatorEqualsPressed())
+            ..add(const CalculatorUndoPressed());
+        },
+        skip: 1,
+        verify: (bloc) {
+          expect(bloc.state.refusal, isNotNull);
+          expect(bloc.state.bankedTape, isNull);
+          expect(bloc.state.bankedSessionId, isNull);
+          expect(sessionIds(), contains('session-1'));
+        },
+        expect: () => [
+          tapeState(pressed('9')).copyWith(toastsRaised: 1),
+          tapeState(pressed('9')).copyWith(
+            bankedTape: () => pressed('2 + 3 ='),
+            bankedSessionId: () => 'session-1',
+            toastsRaised: 2,
+          ),
+          isA<CalculatorState>()
+              .having((state) => state.tape, 'tape', pressed('9'))
+              .having((state) => state.refusal, 'refusal', isNotNull)
+              .having((state) => state.bankedTape, 'card', isNull)
+              .having((state) => state.bankedSessionId, 'session', isNull),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Undo still brings the tape back when the session is gone from '
+        'history already',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            CalculatorSessionBanked(pressed('2 + 3 ='), sessionId: 'session-9'),
+          )
+          ..add(const CalculatorUndoPressed()),
+        skip: 1,
+        expect: () => [tapeState(pressed('2 + 3 =')).copyWith(toastsRaised: 1)],
+      );
+
+      test('two cards that name different sessions are different states', () {
+        expect(
+          const CalculatorState(bankedSessionId: 'session-1'),
+          isNot(const CalculatorState(bankedSessionId: 'session-2')),
+        );
+        expect(
+          const CalculatorState(bankedSessionId: 'session-1'),
+          const CalculatorState(bankedSessionId: 'session-1'),
+        );
+      });
     });
 
     group('T1b: the order of the function-key groups (Section 1.5)', () {
