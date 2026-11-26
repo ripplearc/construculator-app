@@ -3172,6 +3172,104 @@
       }
     }
   },
+  "calculatorSheetTableAddButton": "Add size",
+  "@calculatorSheetTableAddButton": {
+    "description": "Action of the calculator detail panel's sheet table that opens the size editor to add a sheet size, and the title of that editor"
+  },
+  "calculatorSizeEditorLengthField": "Length",
+  "@calculatorSizeEditorLengthField": {
+    "description": "First field of the calculator's size editor: the width of the sheet size being added"
+  },
+  "calculatorSizeEditorWidthField": "Width",
+  "@calculatorSizeEditorWidthField": {
+    "description": "Second field of the calculator's size editor: the height of the sheet size being added"
+  },
+  "calculatorSizeEditorAddButton": "Add",
+  "@calculatorSizeEditorAddButton": {
+    "description": "Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes"
+  },
+  "calculatorToastSizeNotAddedTitle": "Size not added",
+  "@calculatorToastSizeNotAddedTitle": {
+    "description": "Title of the red Alert when the store refuses a size sent from the calculator's size editor (CA-1095)"
+  },
+  "calculatorToastSizeNotAddedBody": "This size was not added. Try again.",
+  "@calculatorToastSizeNotAddedBody": {
+    "description": "Body of the 'Size not added' Alert of the calculator (CA-1095)"
+  },
+  "calculatorSizeEditorSizeError": "Size must be more than zero.",
+  "@calculatorSizeEditorSizeError": {
+    "description": "Error under a field of the calculator's size editor when the field holds no size, or a size of zero"
+  },
+  "calculatorSizeEditorNoUnitError": "{number} has no unit yet. Press a unit key.",
+  "@calculatorSizeEditorNoUnitError": {
+    "description": "Error under a field of the calculator's size editor when the field holds a number with no unit (UX Design Doc term 2.16)",
+    "placeholders": {
+      "number": {
+        "type": "String",
+        "example": "48"
+      }
+    }
+  },
+  "calculatorSizeEditorUnitUsedTwiceError": "{unit, select, inch{{face} is already used. Press ⌫ to remove it.} millimetre{{face} is already used. Press ⌫ to remove it.} yard{{face} is already used. Type feet next.} metre{{face} is already used. Type cm next.} centimetre{{face} is already used. Type mm next.} other{{face} is already used. Type inches next.}}",
+  "@calculatorSizeEditorUnitUsedTwiceError": {
+    "description": "Error under a field of the calculator's size editor when a unit key is pressed a second time (4 Feet 4 Feet): the face of the key, and the smaller unit to type next (UX Design Doc term 2.16)",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "foot"
+      },
+      "face": {
+        "type": "String",
+        "example": "Feet"
+      }
+    }
+  },
+  "calculatorSizeEditorOtherSystemError": "Use feet and inches, or m and cm.",
+  "@calculatorSizeEditorOtherSystemError": {
+    "description": "Error under a field of the calculator's size editor when a unit of the other system follows the first (4 Feet 20 CM; UX Design Doc term 2.16)"
+  },
+  "calculatorSizeEditorLargerUnitFirstError": "Type {larger} first, then {smaller}.",
+  "@calculatorSizeEditorLargerUnitFirstError": {
+    "description": "Error under a field of the calculator's size editor when a larger unit follows a smaller one (6 Inch 4 Feet; UX Design Doc term 2.16)",
+    "placeholders": {
+      "larger": {
+        "type": "String",
+        "example": "feet"
+      },
+      "smaller": {
+        "type": "String",
+        "example": "inches"
+      }
+    }
+  },
+  "calculatorSizeEditorUnitWord": "{unit, select, foot{feet} inch{inches} yard{yards} metre{m} centimetre{cm} millimetre{mm} other{{unit}}}",
+  "@calculatorSizeEditorUnitWord": {
+    "description": "A length unit as a size editor error names it: feet and inches spelled out, the metric units by their signs (UX Design Doc term 2.16)",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "foot"
+      }
+    }
+  },
+  "calculatorSizeEditorRoundsToZeroError": "{typed} rounds to {shown}. Type a bigger size.",
+  "@calculatorSizeEditorRoundsToZeroError": {
+    "description": "Error under a field of the calculator's size editor when the size is above zero and shows as zero (UX Design Doc term 2.16)",
+    "placeholders": {
+      "typed": {
+        "type": "String",
+        "example": "0.0001in"
+      },
+      "shown": {
+        "type": "String",
+        "example": "0in"
+      }
+    }
+  },
+  "calculatorSizeEditorTooLargeError": "Over 19,999,999.99. Type a smaller size.",
+  "@calculatorSizeEditorTooLargeError": {
+    "description": "Error under a field of the calculator's size editor when the size is above the largest number the calculator writes (UX Design Doc term 2.16)"
+  },
   "calculatorLabelValue": "Value",
   "@calculatorLabelValue": {
     "description": "Head of the calculator label row for a value typed under no function key"

@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/errors/calculator_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -63,6 +67,7 @@ part 'calculator_toast.dart';
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
+  final AddMaterialSizeUseCase _addMaterialSize;
 
   static final _logger = AppLogger().tag('CalculatorBloc');
 
@@ -72,13 +77,15 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   MeasurementSystem? _watchedSystem;
 
   /// Creates the bloc over the use cases that count the stored sheet sizes
-  /// for an area and remove a size from the store.
+  /// for an area, and add a size to the store or remove one.
   CalculatorBloc({
     required this._materialCounts,
     required this._deleteMaterialSize,
+    required this._addMaterialSize,
   }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
+    on<CalculatorSizeEditorClosed>(_onSizeEditorClosed);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -169,6 +176,38 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     );
     if (deleted.isLeft() && identical(state.materialCounts, remaining)) {
       emit(state.copyWith(materialCounts: counts));
+    }
+  }
+
+  Future<void> _onSizeEditorClosed(
+    CalculatorSizeEditorClosed event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    if (event.fields case [final lengthText, final widthText]) {
+      final width = state.sizeEntryLength(lengthText);
+      final height = state.sizeEntryLength(widthText);
+      if (width == null || height == null) return;
+      final added = await _addMaterialSize(
+        trade: Trade.drywall,
+        width: width,
+        height: height,
+      );
+      added.fold((failure) {
+        // Nobody signed in is the app's to answer, with the sign-in
+        // screen; any other refusal the user is told about here.
+        // TODO: [CA-1538] Keep the editor open with both values instead,
+        // once CoreUI lets the app answer Add before the sheet closes.
+        // https://ripplearc.youtrack.cloud/issue/CA-1538
+        if (failure case CalculatorFailure(
+          errorType: CalculatorErrorType.notSignedIn,
+        )) {
+          return;
+        }
+        _emitCountingToast(
+          emit,
+          state.copyWith(sizeNotAdded: true, toastClosed: false),
+        );
+      }, (_) {});
     }
   }
 
@@ -426,6 +465,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             removedResults: removed,
             refusedUnit: () => null,
             toastClosed: false,
+            sizeNotAdded: false,
             groupEditsNoticed: notice == TapeNotice.editingThisGroup
                 ? state.groupEditsNoticed + 1
                 : null,
@@ -441,6 +481,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             removedResults: const [],
             refusedUnit: () => unit,
             toastClosed: false,
+            sizeNotAdded: false,
           ),
         );
     }

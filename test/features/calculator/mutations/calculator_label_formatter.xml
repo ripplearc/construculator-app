@@ -176,6 +176,42 @@
         <regex pattern="groupHeader: l10n\.calculatorGroupHeader," dotAll="true" id="calculator_label_formatter.keyboard.visible_group_header">
             <mutation text="groupHeader: l10n.calculatorGroupHeaderSemantics,"/>
         </regex>
+        <!-- T2a 3/3 R1 (CA-1095): a field of the size editor is answered in
+             another reason's words, and the "Size not added" Alert loses its
+             title or reads its title twice -->
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.zero\) =&gt;\s*l10n\.calculatorSizeEditorSizeError," dotAll="true" id="calculator_label_formatter.size_entry.zero_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.zero) =&gt; l10n.calculatorToastFinishValueTitle,"/>
+        </regex>
+        <regex pattern="SizeEntryRefused\(\) =&gt; l10n\.calculatorToastFinishValueTitle," dotAll="true" id="calculator_label_formatter.size_entry.unfinished_words">
+            <mutation text="SizeEntryRefused() =&gt; l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.tooLarge\) =&gt;\s*l10n\.calculatorSizeEditorTooLargeError," dotAll="true" id="calculator_label_formatter.size_entry.too_large_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.tooLarge) =&gt; l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <!-- T2a 3/3 R2 (CA-1095; B3, B4): a mistake of a size field is
+             answered in another mistake's words, or its two names are
+             swapped -->
+        <regex pattern="l10n\.calculatorSizeEditorUnitUsedTwiceError\(unit\.name, unitFace\)," dotAll="true" id="calculator_label_formatter.size_entry.used_twice_words">
+            <mutation text="l10n.calculatorToastFinishValueTitle,"/>
+        </regex>
+        <regex pattern="SizeEntryRefused\(reason: SizeEntryRefusal\.otherSystem\) =&gt;\s*l10n\.calculatorSizeEditorOtherSystemError," dotAll="true" id="calculator_label_formatter.size_entry.other_system_words">
+            <mutation text="SizeEntryRefused(reason: SizeEntryRefusal.otherSystem) =&gt; l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <regex pattern="l10n\.calculatorSizeEditorUnitWord\(unit\.name\),\s*l10n\.calculatorSizeEditorUnitWord\(after\.name\)," dotAll="true" id="calculator_label_formatter.size_entry.larger_and_smaller_swapped">
+            <mutation text="l10n.calculatorSizeEditorUnitWord(after.name), l10n.calculatorSizeEditorUnitWord(unit.name),"/>
+        </regex>
+        <regex pattern="l10n\.calculatorSizeEditorNoUnitError\(typed\)," dotAll="true" id="calculator_label_formatter.size_entry.no_unit_words">
+            <mutation text="l10n.calculatorSizeEditorSizeError,"/>
+        </regex>
+        <regex pattern="l10n\.calculatorSizeEditorRoundsToZeroError\(typed, shownAs\)," dotAll="true" id="calculator_label_formatter.size_entry.typed_and_shown_swapped">
+            <mutation text="l10n.calculatorSizeEditorRoundsToZeroError(shownAs, typed),"/>
+        </regex>
+        <regex pattern="CalculatorSizeNotAddedToast\(\) =&gt; l10n\.calculatorToastSizeNotAddedTitle," dotAll="true" id="calculator_label_formatter.size_not_added.no_title">
+            <mutation text="CalculatorSizeNotAddedToast() =&gt; null,"/>
+        </regex>
+        <regex pattern="CalculatorSizeNotAddedToast\(\) =&gt; l10n\.calculatorToastSizeNotAddedBody," dotAll="true" id="calculator_label_formatter.size_not_added.title_as_body">
+            <mutation text="CalculatorSizeNotAddedToast() =&gt; l10n.calculatorToastSizeNotAddedTitle,"/>
+        </regex>
     </rules>
 
     <commands>

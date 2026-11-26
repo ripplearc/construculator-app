@@ -1784,4 +1784,139 @@ void main() {
       expect(inPanel('48in x 120in'), findsOneWidget);
     });
   });
+
+  group('T2a 3/3: "+ Add size" opens the size editor (Section 1.4; term '
+      '2.18; walkthrough 11.4)', () {
+    const panel = Key('calculator_detail_panel');
+
+    Finder handle() => find.bySemanticsLabel(
+      AppLocalizationsEn().calculatorKeyboardHandleSemantics,
+    );
+
+    Finder inPanel(String text) =>
+        find.descendant(of: find.byKey(panel), matching: find.text(text));
+
+    Finder inEditor(Finder finder) => find.descendant(
+      of: find.byType(CoreValueEditorSheet),
+      matching: finder,
+    );
+
+    Future<void> foldOn180SquareFeet(WidgetTester tester) async {
+      for (final key in const [
+        'calc_key_one',
+        'calc_key_eight',
+        'calc_key_zero',
+        'calc_key_feet',
+        'calc_key_feet',
+      ]) {
+        await press(tester, key);
+      }
+      await settle(tester);
+      await tester.tap(handle());
+      await settle(tester);
+    }
+
+    Future<void> typeInEditor(WidgetTester tester, List<String> keys) async {
+      for (final key in keys) {
+        await tester.tap(inEditor(find.byKey(ValueKey(key))));
+        await tester.pump();
+      }
+    }
+
+    Future<void> openAddSize(WidgetTester tester) async {
+      await tester.tap(
+        find.bySemanticsLabel(l10nOf(tester).calculatorSheetTableAddButton),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Add size opens the editor titled Add size with Length and '
+        'Width fields and an Add key', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await foldOn180SquareFeet(tester);
+
+      await openAddSize(tester);
+
+      expect(
+        inEditor(find.text(l10n.calculatorSheetTableAddButton)),
+        findsOneWidget,
+      );
+      expect(
+        inEditor(find.text('${l10n.calculatorSizeEditorLengthField}*')),
+        findsOneWidget,
+      );
+      expect(
+        inEditor(find.text('${l10n.calculatorSizeEditorWidthField}*')),
+        findsOneWidget,
+      );
+      expect(
+        inEditor(find.text(l10n.calculatorSizeEditorAddButton)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('4 [Feet], the Width field, 12 [Feet] and Add put 48in x '
+        '144in at 3.75 at the end of the table, and Area 180ft² stays', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await foldOn180SquareFeet(tester);
+      final tape = blocOf(tester).state.tape;
+
+      await openAddSize(tester);
+      await typeInEditor(tester, const ['calc_key_four', 'calc_key_feet']);
+      await tester.tap(
+        inEditor(find.text('${l10n.calculatorSizeEditorWidthField}*')),
+      );
+      await tester.pump();
+      await typeInEditor(tester, const [
+        'calc_key_one',
+        'calc_key_two',
+        'calc_key_feet',
+      ]);
+      await tester.tap(inEditor(find.byKey(CoreResultButton.testKey)));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreValueEditorSheet), findsNothing);
+      expect(inPanel('48in x 144in'), findsOneWidget);
+      expect(inPanel('3.75'), findsOneWidget);
+      expect(blocOf(tester).state.tape, tape);
+    });
+
+    testWidgets('a size of zero is refused on Add: the field says "Size must '
+        'be more than zero.", the editor stays and nothing is added (term '
+        '2.16)', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await foldOn180SquareFeet(tester);
+      final bloc = blocOf(tester);
+
+      await openAddSize(tester);
+      await typeInEditor(tester, const ['calc_key_zero', 'calc_key_feet']);
+      await tester.tap(inEditor(find.byKey(CoreResultButton.testKey)));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreValueEditorSheet), findsOneWidget);
+      expect(
+        inEditor(find.text(l10n.calculatorSizeEditorSizeError)),
+        findsWidgets,
+      );
+      expect(bloc.state.sizeTable!.rows, hasLength(3));
+    });
+
+    testWidgets('closing the editor without Add adds nothing', (tester) async {
+      await pumpPage(tester);
+      await foldOn180SquareFeet(tester);
+
+      await openAddSize(tester);
+      await typeInEditor(tester, const ['calc_key_four', 'calc_key_feet']);
+      await tester.tapAt(const Offset(195, 20));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreValueEditorSheet), findsNothing);
+      expect(blocOf(tester).state.sizeTable!.rows, hasLength(3));
+    });
+  });
 }

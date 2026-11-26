@@ -5,6 +5,7 @@ import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -746,6 +747,62 @@ void main() {
               ),
             );
           }
+        }
+      },
+    );
+
+    testWidgets(
+      '"+ Add size" in the sheet table is a button read as "Add size", and '
+      'the table meets the label guideline in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        final addSize = find.bySemanticsLabel(
+          l10n.calculatorSheetTableAddButton,
+        );
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          BlocProvider.of<CalculatorBloc>(
+              tester.element(find.byType(CoreKeyboard)),
+            )
+            ..add(const CalculatorDigitPressed('1'))
+            ..add(const CalculatorDigitPressed('8'))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorUnitSelected(Unit.foot));
+          await tester.pump();
+          await tester.tap(
+            find.bySemanticsLabel(l10n.calculatorKeyboardHandleSemantics),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          // TODO: [CA-1522] CoreUI draws the add action 24 dp tall, so its
+          // tap target size is not checked until CoreUI gives it 48 dp.
+          // https://ripplearc.youtrack.cloud/issue/CA-1522
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            addSize,
+            checkTapTargetSize: false,
+            checkTextContrast: theme.brightness == Brightness.dark,
+          );
+          final data = tester.getSemantics(addSize).getSemanticsData();
+          expect(data.flagsCollection.isButton, isTrue);
+          expect(data.hasAction(SemanticsAction.tap), isTrue);
+          await _expectLightThemeContrastOf(
+            tester,
+            theme,
+            find.descendant(
+              of: find.byKey(const Key('calculator_detail_panel')),
+              matching: find.text(l10n.calculatorSheetTableAddButton),
+            ),
+          );
         }
       },
     );

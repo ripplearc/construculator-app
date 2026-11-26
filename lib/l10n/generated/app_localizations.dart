@@ -3772,6 +3772,93 @@ abstract class AppLocalizations {
   /// **'Delete {size}'**
   String calculatorSheetTableDeleteSemantics(String size);
 
+  /// Action of the calculator detail panel's sheet table that opens the size editor to add a sheet size, and the title of that editor
+  ///
+  /// In en, this message translates to:
+  /// **'Add size'**
+  String get calculatorSheetTableAddButton;
+
+  /// First field of the calculator's size editor: the width of the sheet size being added
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get calculatorSizeEditorLengthField;
+
+  /// Second field of the calculator's size editor: the height of the sheet size being added
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get calculatorSizeEditorWidthField;
+
+  /// Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calculatorSizeEditorAddButton;
+
+  /// Title of the red Alert when the store refuses a size sent from the calculator's size editor (CA-1095)
+  ///
+  /// In en, this message translates to:
+  /// **'Size not added'**
+  String get calculatorToastSizeNotAddedTitle;
+
+  /// Body of the 'Size not added' Alert of the calculator (CA-1095)
+  ///
+  /// In en, this message translates to:
+  /// **'This size was not added. Try again.'**
+  String get calculatorToastSizeNotAddedBody;
+
+  /// Error under a field of the calculator's size editor when the field holds no size, or a size of zero
+  ///
+  /// In en, this message translates to:
+  /// **'Size must be more than zero.'**
+  String get calculatorSizeEditorSizeError;
+
+  /// Error under a field of the calculator's size editor when the field holds a number with no unit (UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'{number} has no unit yet. Press a unit key.'**
+  String calculatorSizeEditorNoUnitError(String number);
+
+  /// Error under a field of the calculator's size editor when a unit key is pressed a second time (4 Feet 4 Feet): the face of the key, and the smaller unit to type next (UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'{unit, select, inch{{face} is already used. Press ⌫ to remove it.} millimetre{{face} is already used. Press ⌫ to remove it.} yard{{face} is already used. Type feet next.} metre{{face} is already used. Type cm next.} centimetre{{face} is already used. Type mm next.} other{{face} is already used. Type inches next.}}'**
+  String calculatorSizeEditorUnitUsedTwiceError(String unit, String face);
+
+  /// Error under a field of the calculator's size editor when a unit of the other system follows the first (4 Feet 20 CM; UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'Use feet and inches, or m and cm.'**
+  String get calculatorSizeEditorOtherSystemError;
+
+  /// Error under a field of the calculator's size editor when a larger unit follows a smaller one (6 Inch 4 Feet; UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'Type {larger} first, then {smaller}.'**
+  String calculatorSizeEditorLargerUnitFirstError(
+    String larger,
+    String smaller,
+  );
+
+  /// A length unit as a size editor error names it: feet and inches spelled out, the metric units by their signs (UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'{unit, select, foot{feet} inch{inches} yard{yards} metre{m} centimetre{cm} millimetre{mm} other{{unit}}}'**
+  String calculatorSizeEditorUnitWord(String unit);
+
+  /// Error under a field of the calculator's size editor when the size is above zero and shows as zero (UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'{typed} rounds to {shown}. Type a bigger size.'**
+  String calculatorSizeEditorRoundsToZeroError(String typed, String shown);
+
+  /// Error under a field of the calculator's size editor when the size is above the largest number the calculator writes (UX Design Doc term 2.16)
+  ///
+  /// In en, this message translates to:
+  /// **'Over 19,999,999.99. Type a smaller size.'**
+  String get calculatorSizeEditorTooLargeError;
+
   /// Head of the calculator label row for a value typed under no function key
   ///
   /// In en, this message translates to:

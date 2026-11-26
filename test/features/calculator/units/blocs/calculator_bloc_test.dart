@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
+import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
+import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -37,8 +39,15 @@ class _CalculatorBlocTestModule extends Module {
     i.add<DeleteMaterialSizeUseCase>(
       () => DeleteMaterialSizeUseCase(repository: stores),
     );
+    i.add<AddMaterialSizeUseCase>(
+      () => AddMaterialSizeUseCase(repository: stores),
+    );
     i.add<CalculatorBloc>(
-      () => CalculatorBloc(materialCounts: i(), deleteMaterialSize: i()),
+      () => CalculatorBloc(
+        materialCounts: i(),
+        deleteMaterialSize: i(),
+        addMaterialSize: i(),
+      ),
     );
   }
 }
@@ -4766,6 +4775,288 @@ void main() {
           expect(await storedSheets(), hasLength(2));
         },
       );
+    });
+
+    group('T2a 3/3: "+ Add size" in the sheet table (Section 1.4; term '
+        '2.18)', () {
+      List<String> rows(CalculatorState state) => [
+        for (final row in state.sizeTable!.rows)
+          '${row.sizeText} ${row.countText}',
+      ];
+
+      List<String> stripSizes(CalculatorState state) => [
+        for (final chip in state.materialOffers) chip.basis!,
+      ];
+
+      void type180SquareFeet(CalculatorBloc bloc) => bloc
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('8'))
+        ..add(const CalculatorDigitPressed('0'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorUnitSelected(Unit.foot));
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '4 [Feet] by 12 [Feet] adds 48in x 144in at 3.75 after the last row, '
+        'with its chip at the end of the strip; the tape stays (walkthrough '
+        '11.4)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc.add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']));
+        },
+        verify: (bloc) {
+          expect(rows(bloc.state), [
+            '48in x 96in 5.63',
+            '48in x 108in 5.00',
+            '48in x 120in 4.50',
+            '48in x 144in 3.75',
+          ]);
+          expect(stripSizes(bloc.state).last, '48in x 144in');
+          expect(bloc.state.tape, pressed('1 8 0 ft ft'));
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a number with no unit adds no size, in either field: nothing says '
+        'whether 8 is inches or feet (B3; term 2.16)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          final added = bloc.stream.firstWhere(
+            (state) => state.materialCounts.length == 4,
+          );
+          bloc
+            ..add(const CalculatorSizeEditorClosed(['4Feet', '8']))
+            ..add(const CalculatorSizeEditorClosed(['48', '8Feet']))
+            ..add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']));
+          await added;
+        },
+        verify: (bloc) {
+          expect(bloc.state.materialCounts, hasLength(4));
+          expect(rows(bloc.state).last, '48in x 144in 3.75');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Add is the equals key: 4 [Feet] 6 by 8 [Feet] adds 54in x 96in at '
+        '5.00, and 48 [Inch] 1 / 2 by 96 [Inch] adds 48.5in x 96in (B1; rule '
+        '4.5; Section 6)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          final four = bloc.stream.firstWhere(
+            (state) => state.materialCounts.length == 4,
+          );
+          bloc.add(const CalculatorSizeEditorClosed(['4Feet6', '8Feet']));
+          await four;
+          final five = bloc.stream.firstWhere(
+            (state) => state.materialCounts.length == 5,
+          );
+          bloc.add(const CalculatorSizeEditorClosed(['48Inch1/2', '96Inch']));
+          await five;
+        },
+        verify: (bloc) {
+          expect(rows(bloc.state).skip(3), [
+            '54in x 96in 5.00',
+            '48.5in x 96in 5.57',
+          ]);
+        },
+      );
+
+      for (final (length, width) in const [
+        ('0Feet', '12Feet'),
+        ('4Feet', '0'),
+        ('4Feet', ''),
+        ('4+2Feet', '12Feet'),
+        ('4Feet4Feet', '8Feet'),
+        ('4Feet20CM', '8Feet'),
+        ('6Inch4Feet', '8Feet'),
+        ('0.0001Inch', '96Inch'),
+        ('99999999999999Inch', '96Inch'),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'Length "$length" by Width "$width" spells no size and adds nothing',
+          build: () => bloc,
+          act: (bloc) async {
+            type180SquareFeet(bloc);
+            await bloc.stream.firstWhere(
+              (state) => state.materialCounts.isNotEmpty,
+            );
+            bloc.add(CalculatorSizeEditorClosed([length, width]));
+          },
+          verify: (bloc) async {
+            expect(rows(bloc.state), hasLength(3));
+            expect(
+              await stores
+                  .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                  .first,
+              hasLength(3),
+            );
+          },
+        );
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a size the store refuses is said so in a red Alert, "Size not '
+        'added", which the next key clears, and no row is added (N2)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          stores.writeFailure = const CalculatorFailure(
+            errorType: CalculatorErrorType.storageError,
+          );
+          final refused = bloc.stream.firstWhere((state) => state.sizeNotAdded);
+          bloc.add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']));
+          final told = await refused;
+          expect(told.toast, const CalculatorSizeNotAddedToast());
+          expect(told.toastsRaised, 1);
+          expect(rows(told), hasLength(3));
+          final cleared = bloc.stream.firstWhere(
+            (state) => !state.sizeNotAdded,
+          );
+          bloc.add(const CalculatorDigitPressed('7'));
+          expect((await cleared).toast, isNull);
+        },
+        verify: (bloc) async {
+          expect(
+            await stores
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first,
+            hasLength(3),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a key the tape refuses clears "Size not added" too, as any key '
+        'clears the last one\'s message (N2)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          stores.writeFailure = const CalculatorFailure(
+            errorType: CalculatorErrorType.storageError,
+          );
+          final refused = bloc.stream.firstWhere((state) => state.sizeNotAdded);
+          bloc.add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']));
+          await refused;
+          final cleared = bloc.stream.firstWhere(
+            (state) => !state.sizeNotAdded,
+          );
+          bloc.add(const CalculatorFractionPressed());
+          expect((await cleared).refusal, isNotNull);
+        },
+        verify: (bloc) async {
+          expect(
+            await stores
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first,
+            hasLength(3),
+          );
+        },
+      );
+
+      test('two states that differ only in "Size not added" are not equal, '
+          'so the page draws the Alert and takes it down again', () {
+        expect(
+          const CalculatorState(sizeNotAdded: true),
+          isNot(equals(const CalculatorState())),
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'with nobody signed in the add says nothing of its own: the app '
+        'answers that with the sign-in screen (N2)',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          stores.signedIn = false;
+          bloc
+            ..add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']))
+            ..add(const CalculatorGroupSelected(1));
+          await bloc.stream.firstWhere((state) => state.currentGroupIndex == 1);
+        },
+        verify: (bloc) {
+          expect(bloc.state.sizeNotAdded, isFalse);
+          expect(bloc.state.toast, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the editor closed without Add adds nothing',
+        build: () => bloc,
+        act: (bloc) async {
+          type180SquareFeet(bloc);
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          bloc.add(const CalculatorSizeEditorClosed([]));
+        },
+        verify: (bloc) async {
+          expect(rows(bloc.state), hasLength(3));
+          expect(
+            await stores
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first,
+            hasLength(3),
+          );
+        },
+      );
+
+      test('the editor reads a field under the unit system in force: 0.4mm '
+          'is a size under Imperial and rounds to 0mm under Metric, and a '
+          'number with no unit is a size under neither', () {
+        final imperial = CalculatorState.initial();
+        final metric = tapeState(
+          const Tape(
+            preferences: CalculatorPreferences(
+              system: MeasurementSystem.metric,
+            ),
+          ),
+        );
+        expect(imperial.sizeEntryLength('0.4MM'), isNotNull);
+        expect(
+          metric.sizeEntry('0.4MM'),
+          const SizeEntryRefused(
+            SizeEntryRefusal.roundsToZero,
+            typed: '0.4mm',
+            shownAs: '0mm',
+          ),
+        );
+        for (final state in [imperial, metric]) {
+          expect(state.sizeEntryLength('1200'), isNull);
+          expect(
+            state.sizeEntry('1200'),
+            const SizeEntryRefused(SizeEntryRefusal.noUnit, typed: '1200'),
+          );
+        }
+        expect(metric.sizeEntryLength('0'), isNull);
+        expect(
+          metric.sizeEntry('0'),
+          const SizeEntryRefused(SizeEntryRefusal.zero),
+        );
+        expect(
+          imperial.sizeEntry('4Feet20CM'),
+          const SizeEntryRefused(SizeEntryRefusal.otherSystem),
+        );
+      });
     });
 
     test(
