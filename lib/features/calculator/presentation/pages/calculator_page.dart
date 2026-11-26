@@ -4,6 +4,7 @@ import 'package:construculator/libraries/calculator_engine/calculator_engine.dar
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -24,6 +25,57 @@ class CalculatorPage extends StatefulWidget {
 
 class _CalculatorPageState extends State<CalculatorPage> {
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
+
+  final ScrollController _displayScroll = ScrollController();
+  final GlobalKey _displayKey = GlobalKey();
+  final GlobalKey _alertKey = GlobalKey();
+  double? _displayOffsetBeforeAlert;
+
+  @override
+  void dispose() {
+    _displayScroll.dispose();
+    super.dispose();
+  }
+
+  void _keepValueAboveAlert(String value) {
+    if (!mounted || !_displayScroll.hasClients) return;
+    final alert = _alertKey.currentContext?.findRenderObject();
+    if (alert is! RenderBox) {
+      if (_displayOffsetBeforeAlert case final offset?) {
+        _displayScroll.jumpTo(offset);
+        _displayOffsetBeforeAlert = null;
+      }
+      return;
+    }
+    final shown = _valueBoxOf(value);
+    if (shown == null) return;
+    final hiddenHeight =
+        shown.localToGlobal(shown.size.bottomLeft(Offset.zero)).dy -
+        alert.localToGlobal(Offset.zero).dy;
+    if (hiddenHeight <= 0) return;
+    _displayOffsetBeforeAlert ??= _displayScroll.offset;
+    _displayScroll.jumpTo(
+      (_displayScroll.offset + hiddenHeight).clamp(
+        0.0,
+        _displayScroll.position.maxScrollExtent,
+      ),
+    );
+  }
+
+  RenderBox? _valueBoxOf(String value) {
+    RenderBox? valueBox;
+    void visit(Element element) {
+      if (element.widget case Text(:final data) when data == value) {
+        if (element.findRenderObject() case final RenderBox box) {
+          valueBox = box;
+        }
+      }
+      element.visitChildren(visit);
+    }
+
+    _displayKey.currentContext?.visitChildElements(visit);
+    return valueBox;
+  }
 
   Locale? _groupsLocale;
   Map<String, FunctionGroup>? _groupsById;
@@ -212,79 +264,153 @@ class _CalculatorPageState extends State<CalculatorPage> {
         body: SafeArea(
           child: BlocConsumer<CalculatorBloc, CalculatorState>(
             listenWhen: (previous, current) =>
-                current.closesCalculator && !previous.closesCalculator,
-            listener: (_, _) => widget.router.pop(),
+                (current.closesCalculator && !previous.closesCalculator) ||
+                current.toastsRaised != previous.toastsRaised,
+            listener: (context, state) {
+              if (state.closesCalculator) {
+                widget.router.pop();
+                return;
+              }
+              // The red Alert is drawn in the page (below), where no key is
+              // under it; coreui's error toast is no live region, so a
+              // screen reader hears it from here.
+              if (state.toast case final toast?) {
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
+                  labels.toastBody(toast),
+                  Directionality.of(context),
+                );
+              }
+            },
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
               final dependentKeys = state.dependentKeys;
               final groups = _groupsInOrder(groupsById, state.groupOrder);
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _keepValueAboveAlert(labels.valueText(state)),
+              );
 
               return Column(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: _currentStage != DisplayAreaStage.collapsed
-                          ? const NeverScrollableScrollPhysics()
-                          : const AlwaysScrollableScrollPhysics(),
-                      child: CoreDisplayArea(
-                        label: switch (state.displayLabel) {
-                          final label? => labels.labelText(label),
-                          null => null,
-                        },
-                        value: labels.valueText(state),
-                        isTyping: state.displayLabel?.isTyping ?? false,
-                        closeSemanticLabel: l10n.closeButton,
-                        historyPlaceholder: l10n.calculatorHistoryPlaceholder,
-                        chipsList: labels.localizeChips(
-                          state.chipsList,
-                          onChipTap: (index) =>
-                              bloc.add(CalculatorChipTapped(index)),
-                        ),
-                        // TODO(CA-965): previousSessions is unwired pending
-                        // research into archiving trigger, data model, and
-                        // persistence approach for calculation history.
-                        dependentKeys: [
-                          for (final key in dependentKeys)
-                            labels.dependentKey(
-                              key,
-                              onPressed: () =>
-                                  bloc.add(const CalculatorReadAsAccepted()),
+                    child: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: _displayScroll,
+                                physics:
+                                    _currentStage != DisplayAreaStage.collapsed
+                                    ? const NeverScrollableScrollPhysics()
+                                    : const AlwaysScrollableScrollPhysics(),
+                                child: CoreDisplayArea(
+                                  key: _displayKey,
+                                  label: switch (state.displayLabel) {
+                                    final label? => labels.labelText(label),
+                                    null => null,
+                                  },
+                                  value: labels.valueText(state),
+                                  isTyping:
+                                      state.displayLabel?.isTyping ?? false,
+                                  closeSemanticLabel: l10n.closeButton,
+                                  historyPlaceholder:
+                                      l10n.calculatorHistoryPlaceholder,
+                                  chipsList: labels.localizeChips(
+                                    state.chipsList,
+                                    onChipTap: (index) =>
+                                        bloc.add(CalculatorChipTapped(index)),
+                                  ),
+                                  // TODO(CA-965): previousSessions is unwired pending
+                                  // research into archiving trigger, data model, and
+                                  // persistence approach for calculation history.
+                                  dependentKeys: [
+                                    for (final key in dependentKeys)
+                                      labels.dependentKey(
+                                        key,
+                                        onPressed: () => bloc.add(
+                                          const CalculatorReadAsAccepted(),
+                                        ),
+                                      ),
+                                  ],
+                                  onClose: () => bloc.add(
+                                    const CalculatorActiveValueCleared(),
+                                  ),
+                                  onStageChanged: (stage) {
+                                    if (_currentStage != stage) {
+                                      setState(() => _currentStage = stage);
+                                    }
+                                  },
+                                ),
+                              ),
                             ),
-                        ],
-                        onClose: () =>
-                            bloc.add(const CalculatorActiveValueCleared()),
-                        onStageChanged: (stage) {
-                          if (_currentStage != stage) {
-                            setState(() => _currentStage = stage);
-                          }
-                        },
-                      ),
+                            CoreSuggestionArea(
+                              layout: CoreSuggestionLayout.twoRows,
+                              // TODO: [CA-1094] Draw a strip note in the warning
+                              // colour, as Section 1.8 asks, once the strip has a
+                              // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
+                              suggestionAreaPlaceholder: labels.stripText(
+                                state.stripNote,
+                              ),
+                              aiSuggestions: _stripRow(
+                                labels,
+                                bloc,
+                                state.suggestions,
+                              ),
+                              conversionSuggestions: _stripRow(
+                                labels,
+                                bloc,
+                                state.conversions,
+                              ),
+                              hiddenChipsTextBuilder:
+                                  l10n.calculatorStripHiddenChips,
+                              expandToggleSemanticsLabelBuilder:
+                                  l10n.calculatorStripExpandSemantics,
+                              collapseToggleSemanticsLabel:
+                                  l10n.calculatorStripCollapseSemantics,
+                              toggleSemanticsLabel:
+                                  l10n.calculatorStripToggleSemantics,
+                              conversionsRowTagLabel:
+                                  l10n.calculatorStripConversionsTag,
+                              conversionsRowSemanticsLabel:
+                                  l10n.calculatorStripConversionsSemantics,
+                              secondRowHidden: dependentKeys.isNotEmpty,
+                            ),
+                          ],
+                        ),
+                        if (state.toast case final toast?
+                            when !state.toastClosed)
+                          Positioned(
+                            key: _alertKey,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Padding(
+                              key: const ValueKey('calculator_alert'),
+                              // Drawn over the bottom of the display area, so
+                              // the key sheet never moves and nothing
+                              // overflows on a short phone; the box ends 4 px
+                              // above the top edge of the key sheet, and the
+                              // display scrolls the value out from under it,
+                              // since it may cover neither a key nor the
+                              // result value (term 2.21).
+                              padding: const EdgeInsets.fromLTRB(
+                                CoreSpacing.space4,
+                                0,
+                                CoreSpacing.space4,
+                                CoreSpacing.space1,
+                              ),
+                              child: Toast.error(
+                                description: labels.toastBody(toast),
+                                closeLabel: l10n.closeButton,
+                                title: labels.toastTitle(toast),
+                                onClose: () =>
+                                    bloc.add(const CalculatorToastClosed()),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                  CoreSuggestionArea(
-                    layout: CoreSuggestionLayout.twoRows,
-                    // TODO: [CA-1094] Draw a strip note in the warning
-                    // colour, as Section 1.8 asks, once the strip has a
-                    // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
-                    suggestionAreaPlaceholder: labels.stripText(
-                      state.stripNote,
-                    ),
-                    aiSuggestions: _stripRow(labels, bloc, state.suggestions),
-                    conversionSuggestions: _stripRow(
-                      labels,
-                      bloc,
-                      state.conversions,
-                    ),
-                    hiddenChipsTextBuilder: l10n.calculatorStripHiddenChips,
-                    expandToggleSemanticsLabelBuilder:
-                        l10n.calculatorStripExpandSemantics,
-                    collapseToggleSemanticsLabel:
-                        l10n.calculatorStripCollapseSemantics,
-                    toggleSemanticsLabel: l10n.calculatorStripToggleSemantics,
-                    conversionsRowTagLabel: l10n.calculatorStripConversionsTag,
-                    conversionsRowSemanticsLabel:
-                        l10n.calculatorStripConversionsSemantics,
-                    secondRowHidden: dependentKeys.isNotEmpty,
                   ),
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
