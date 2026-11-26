@@ -349,6 +349,24 @@ void main() {
       expect(calc('2 0 0 ÷ 5 = tap1 ⌫ 0 % = 5'), '40');
     });
 
+    test('a reopened percent bracket that now holds a unit cannot close: a '
+        'percent has no unit, the tape stays as it was, and a plain number '
+        'closes it as a percent again (N9; rule 4.12)', () {
+      final reopened = press(const Tape(), '1 0 0 × ( 2 ) % tap1 ⌫ 2 ft');
+
+      expect(
+        pressKey(reopened, ')'),
+        const TapeRefused(TapeRefusal.percentHasNoUnit),
+      );
+      expect(
+        pressKey(reopened, '='),
+        const TapeRefused(TapeRefusal.percentHasNoUnit),
+      );
+      final plain = press(reopened, '⌫ ⌫ 3 )');
+      expect(lastChipText(plain), '×(3)%');
+      expect(calc('1 0 0 × ( 2 ) % tap1 ⌫ 3'), '3');
+    });
+
     test('row 391: one ⌫ removes only the %, on a number and on a bracket', () {
       final tape = press(const Tape(), '5 0 + 1 0 % ⌫');
       expect(tape, press(const Tape(), '5 0 + 1 0'));

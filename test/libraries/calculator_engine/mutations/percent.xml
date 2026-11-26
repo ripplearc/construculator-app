@@ -118,6 +118,13 @@
         <regex pattern="isPercent: false," dotAll="true" id="percent.emptied.keeps_the_mark">
             <mutation text=""/>
         </regex>
+
+        <!-- RULE 8 (R2, N9): a reopened percent bracket closes on a total
+             with a unit, or a plain bracket with a unit is refused -->
+        <regex pattern="when bracket\.isPercent &amp;&amp; value is! Scalar\) \{" dotAll="true" id="percent.reopened_bracket.closes_with_a_unit">
+            <mutation text="when false) {"/>
+            <mutation text="when value is! Scalar) {"/>
+        </regex>
     </rules>
 
     <exclude>

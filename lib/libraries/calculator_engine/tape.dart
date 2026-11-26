@@ -2289,7 +2289,10 @@ class Tape extends Equatable {
   /// chip, and a value before it is active again, so a digit continues it.
   /// Closing empty a bracket that ⌫ reopened cancels the edit instead and
   /// brings the group back as it was. An inside that cannot be computed
-  /// keeps the bracket open (Section 5.3).
+  /// keeps the bracket open (Section 5.3), and so does a unit typed into a
+  /// percent bracket a tap reopened: a percent has no unit (rule 4.12), so
+  /// the close is refused as % on such a bracket is
+  /// ([TapeRefusal.percentHasNoUnit]).
   TapeOutcome closeBracket() {
     final index = openBracketIndex;
     if (index == null) return const TapeRefused(TapeRefusal.noBracketToClose);
@@ -2313,6 +2316,11 @@ class Tape extends Equatable {
     if (total case final ChainFailed failure) return TapeBracketFailed(failure);
     if (total is ChainEmpty) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
+    }
+    if (total case ChainValue(
+      :final value,
+    ) when bracket.isPercent && value is! Scalar) {
+      return const TapeRefused(TapeRefusal.percentHasNoUnit);
     }
     return _closedAndRecomputedAt(
       index,
