@@ -496,6 +496,35 @@ void main() {
     expect(equalsFace(tester), l10n.calculatorAnswerArea);
   });
 
+  testWidgets('an accepted sheet count reads 12.83 Sheets on the value row '
+      'and on its chip, with the pill Sheet size: 48in x 96in under it '
+      '(G1, CA-1072; rule 4.7; row 217)', (tester) async {
+    await pumpPage(tester, size: const Size(800, 844));
+    final l10n = l10nOf(tester);
+    await typeRectangle(tester);
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(CoreSuggestionArea.animationDuration);
+    await tester.pump();
+
+    await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+    await tester.pump();
+    await tester.pump();
+
+    final display = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(display.value, l10n.calculatorValueSheets('12.83'));
+    expect(display.chipsList.last.value, l10n.calculatorValueSheets('12.83'));
+    expect(display.dependentKeys.single.label, l10n.calculatorPillSheetSize);
+    expect(display.dependentKeys.single.value, '48in x 96in');
+    expect(display.dependentKeys.single.kind, CoreDependentKeyKind.editable);
+    expect(find.byKey(CoreDisplayArea.dependentKeyTestKey(0)), findsOneWidget);
+    // A tapped chip keeps its highlight for a second.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('after Area is accepted the strip leads with the sheet counts '
       'as predictive chips, each with its size from l10n, and tapping one '
       'lands Number of sheets (S2a, CA-1090; rule 4.4 rung 2a; row 218)', (

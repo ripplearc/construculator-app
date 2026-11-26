@@ -124,6 +124,109 @@ void main() {
     );
   });
 
+  group('CalculatorLabelFormatter: a count says what it counts (rule 4.7; '
+      'rows 217, 218)', () {
+    PieceSize sheet() => PieceSize(
+      width: const Length(48 * Length.ticksPerInch, unit: Unit.inch),
+      height: const Length(96 * Length.ticksPerInch, unit: Unit.inch),
+    );
+
+    test('the value row of an accepted sheet count reads 12.83 Sheets, and '
+        'every other value reads as it is', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+      final counted = CalculatorState.initial().copyWith(
+        tape: Tape(
+          chips: [
+            ResultChip(
+              key: Trade.drywall.resultKey,
+              value: const Scalar(12.83),
+              size: sheet(),
+            ),
+          ],
+        ),
+      );
+
+      expect(labels.valueText(counted), l10n.calculatorValueSheets('12.83'));
+      expect(labels.valueText(counted), '12.83 Sheets');
+      expect(labels.countText(Trade.drywall.resultKey, '5.63'), '5.63 Sheets');
+      expect(labels.countText(Trade.drywall.offerKey, '5.63'), '5.63');
+      expect(labels.countText('Area', '180ft²'), '180ft²');
+      expect(labels.countText(null, '12'), '12');
+    });
+
+    test('the tape chip of a sheet count reads 12.83 Sheets under Number of '
+        'sheets, dashed while a chip before it is edited too; the dash a '
+        'reopened bracket puts in its place stays a dash, and another chip '
+        'under the same key keeps its text', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+
+      final localized = labels.localizeChips([
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.result,
+          label: Trade.drywall.resultKey,
+          value: '12.83',
+        ),
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.dashed,
+          label: Trade.drywall.resultKey,
+          value: '5.63',
+        ),
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.result,
+          label: Trade.drywall.resultKey,
+          value: CalculatorState.staleResultDash,
+        ),
+        const CoreCalculatorChip(
+          type: CoreCalculatorChipType.result,
+          label: 'Area',
+          value: '180ft²',
+        ),
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.result,
+          label: Trade.drywall.resultKey,
+        ),
+      ]);
+
+      expect(
+        [for (final chip in localized) chip.value],
+        ['12.83 Sheets', '5.63 Sheets', '—', '180ft²', null],
+      );
+      expect(localized.first.label, l10n.calculatorAnswerNumberOfSheets);
+    });
+
+    test('a stored size is drawn as an editable pill under its name, with '
+        'the tap it was given', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+      var taps = 0;
+
+      final sheetSize = labels.dependentKey(
+        const CalculatorStoredSizePill(
+          id: DependentKeyId.sheetSize,
+          sizeText: '48in x 96in',
+        ),
+        onPressed: () => taps++,
+      );
+      final pieceSize = labels.dependentKey(
+        const CalculatorStoredSizePill(
+          id: DependentKeyId.pieceSize,
+          sizeText: '8in x 16in',
+        ),
+        onPressed: () {},
+      );
+      sheetSize.onPressed!();
+
+      expect(sheetSize.label, l10n.calculatorPillSheetSize);
+      expect(sheetSize.value, '48in x 96in');
+      expect(sheetSize.kind, CoreDependentKeyKind.editable);
+      expect(taps, 1);
+      expect(pieceSize.label, l10n.calculatorPillPieceSize);
+      expect(pieceSize.value, '8in x 16in');
+    });
+  });
+
   group('CalculatorLabelFormatter keyboard semantics (CA-1198)', () {
     final l10n = AppLocalizationsEn();
     final semantics = CalculatorLabelFormatter(l10n).keyboardSemantics;

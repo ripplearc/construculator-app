@@ -228,8 +228,8 @@
   {
    "scenario": "S01",
    "checkpoint": "dependent key shows the sheet size",
-   "reason": "Waits for G1 (CA-1072): the engine's result chip carries no stored fact yet, so the accepted count has no Sheet size pill (UX doc rule 4.7). S2a (CA-1090) lands the count under Number of sheets and keeps the other sizes on the strip (decision tree row 218); the pill and the recompute on edit come with the engine's trade rung.",
-   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 3, "equals": "Number of sheets12.83"}, {"kind": "depKeyShown", "equals": false}]}
+   "reason": "UX doc Appendix B and decision tree rows 214 and 217: the first sheet seed is 48in x 96in, never the prototype's metric sheet written in inches (47.24in x 94.49in, Appendix D), so the pill of the accepted count reads Sheet size: 48in x 96in and the count reads 12.83 Sheets (rule 4.7; walkthrough 11.1).",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 3, "equals": "Number of sheets12.83 Sheets"}, {"kind": "depKey", "equals": "Sheet size: 48in x 96in"}]}
   },
   {
    "scenario": "S02",

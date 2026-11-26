@@ -5442,6 +5442,79 @@ void main() {
         );
       }
 
+      test('an accepted count carries the stored size it was made at as a '
+          'pill, Sheet size: 48in x 96in, and the next count accepted '
+          'carries its own (rule 4.7; rows 217, 218)', () {
+        final first = accepting(withCounts('1 8 0 ft ft'), 0);
+        final second = accepting(first, 0);
+
+        expect(first.dependentKeys, const [
+          CalculatorStoredSizePill(
+            id: DependentKeyId.sheetSize,
+            sizeText: '48in x 96in',
+          ),
+        ]);
+        expect(second.dependentKeys, const [
+          CalculatorStoredSizePill(
+            id: DependentKeyId.sheetSize,
+            sizeText: '48in x 108in',
+          ),
+        ]);
+      });
+
+      test('the pill belongs to the count on the display: none before a '
+          'count is accepted, none once a key puts another chip there or a '
+          'tap reopens one, none under a count that names no size, and a '
+          'masonry count carries its Piece size', () {
+        final offered = withCounts('1 8 0 ft ft');
+        final counted = accepting(offered, 0);
+        final unnamed = offered.suggestions.first.count!;
+        final piece = PieceSize(
+          width: const Length(8 * Length.ticksPerInch, unit: Unit.inch),
+          height: const Length(16 * Length.ticksPerInch, unit: Unit.inch),
+        );
+
+        expect(offered.dependentKeys, isEmpty);
+        expect(
+          counted
+              .copyWith(tape: pressed('[Length]', tape: counted.tape))
+              .dependentKeys,
+          isEmpty,
+        );
+        expect(
+          counted
+              .copyWith(tape: (counted.tape.tapChip(0) as TapeChanged).tape)
+              .dependentKeys,
+          isEmpty,
+          reason: 'the display reads the reopened area, not the count',
+        );
+        expect(
+          tapeState(
+            (offered.tape.landAnswer(Trade.drywall.resultKey, unnamed.value)
+                    as TapeChanged)
+                .tape,
+          ).dependentKeys,
+          isEmpty,
+        );
+        expect(
+          tapeState(
+            (offered.tape.landAnswer(
+                      Trade.masonry.resultKey,
+                      unnamed.value,
+                      size: piece,
+                    )
+                    as TapeChanged)
+                .tape,
+          ).dependentKeys,
+          const [
+            CalculatorStoredSizePill(
+              id: DependentKeyId.pieceSize,
+              sizeText: '8in x 16in',
+            ),
+          ],
+        );
+      });
+
       for (final keys in [
         '[Length] 3 ft',
         '× 2 =',

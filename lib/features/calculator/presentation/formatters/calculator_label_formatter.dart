@@ -75,10 +75,19 @@ class CalculatorLabelFormatter {
     TrigFunction.arctangent => l10n.calculatorKeyAtanFullName,
   };
 
-  /// The text of the value row: the state's reading of the chip, or the
-  /// word "Error" under an error chip's title (Section 5).
-  String valueText(CalculatorState state) =>
-      state.valueReadsError ? l10n.calculatorValueError : state.valueText;
+  /// The text of the value row: the state's reading of the chip, a count
+  /// with its unit word ("12.83 Sheets", walkthrough 11.1), or the word
+  /// "Error" under an error chip's title (Section 5).
+  String valueText(CalculatorState state) => state.valueReadsError
+      ? l10n.calculatorValueError
+      : countText(state.displayLabel?.keyId, state.valueText);
+
+  /// [value] as it reads under the key [keyId]: a sheet count says what it
+  /// counts, "12.83 Sheets"; any other value reads as it is.
+  String countText(String? keyId, String value) =>
+      keyId == Trade.drywall.resultKey
+      ? l10n.calculatorValueSheets(value)
+      : value;
 
   /// The title of an error chip.
   String errorTitle(CalculationError error) => switch (error) {
@@ -257,7 +266,8 @@ class CalculatorLabelFormatter {
 
   /// A pill under the value, named from i18n: the Read-as offer as the
   /// sentence "Input 8.45° as 8.45in/12in" (or "Re-input …" when the tap
-  /// rebuilds an answer).
+  /// rebuilds an answer), and a stored size under its name, "Sheet size:
+  /// 48in x 96in".
   CoreDependentKeyData dependentKey(
     CalculatorDependentKey key, {
     required VoidCallback onPressed,
@@ -274,6 +284,13 @@ class CalculatorLabelFormatter {
         value: targetText,
         kind: CoreDependentKeyKind.offer,
         semanticsHint: l10n.calculatorPillReadAsHint,
+        onPressed: onPressed,
+      ),
+    CalculatorStoredSizePill(:final id, :final sizeText) =>
+      CoreDependentKeyData(
+        label: pillLabel(id),
+        value: sizeText,
+        kind: id.kind,
         onPressed: onPressed,
       ),
   };
@@ -344,7 +361,15 @@ class CalculatorLabelFormatter {
           final label? => displayLabel(label),
           null => null,
         },
-        value: chip.value,
+        value: switch ((chip.type, chip.value)) {
+          (
+            CoreCalculatorChipType.result || CoreCalculatorChipType.dashed,
+            final value?,
+          )
+              when value != CalculatorState.staleResultDash =>
+            countText(chip.label, value),
+          (_, final value) => value,
+        },
         factor: chip.factor,
         onTap: switch (chip.type) {
           CoreCalculatorChipType.editable ||

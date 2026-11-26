@@ -3054,6 +3054,16 @@
   "@calculatorAnswerNumberOfSheets": {
     "description": "Name of the calculator result chip and label row for an accepted drywall sheet count"
   },
+  "calculatorValueSheets": "{count} Sheets",
+  "@calculatorValueSheets": {
+    "description": "Value of an accepted drywall sheet count on the calculator's value row and on its tape chip: the count to two decimals and the word for what it counts",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "12.83"
+      }
+    }
+  },
   "calculatorOfferSheetCount": "{count} sheets ({size})",
   "@calculatorOfferSheetCount": {
     "description": "Value of a sheet-count chip on the calculator's suggestion strip: the count to two decimals and the stored sheet size it assumed",

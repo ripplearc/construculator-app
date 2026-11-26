@@ -168,7 +168,8 @@ class BlocScenarioDriver implements ScenarioDriver {
     // the chip draws its parentheses and its operator is the factor icon
     BracketChip(:final operator, :final isOpen) =>
       '${operator?.symbol ?? ''}(${chip.value}${isOpen ? '' : ')'}',
-    _ => '${chip.value}',
+    // a count says what it counts, as the page writes it: 12.83 Sheets
+    _ => '${_labels.localizeChips([chip]).single.value}',
   };
 
   // A pill as the prototype's DOM reads it: an offer is a sentence, a
@@ -417,49 +418,53 @@ void main() {
       );
     });
 
-    test('S01 passes the engine\'s checkpoints, accepts Area and the first '
-        'sheet count from the strip, and fails at the Sheet size pill with a '
-        'readable diff', () async {
-      final s01 = scenarios.firstWhere((s) => s.id == 'S01');
-      final result = await runScenario(s01, driver);
-      expect(result.passed, isFalse);
-      final diff = ReplayReport.describeFailure(result).join('\n');
-      expect(
-        diff,
-        contains(
-          'S01 Area happy path — FAILED at step 19 '
-          '"dependent key shows the sheet size"',
-        ),
-      );
-      expect(
-        diff,
-        contains("expected: depKey == 'Sheet size: 47.24in x 94.49in'"),
-      );
-      expect(diff, contains('actual:   '));
-      expect(
-        diff,
-        contains(
-          'tape=[Length22ft, Width18ft 8in, Area410.67ft², '
-          'Number of sheets12.83]',
-        ),
-      );
-      expect(
-        diff,
-        contains(
-          'strip=[Drywall: 11.41 sheets (48in x 108in), '
-          'Drywall: 10.27 sheets (48in x 120in)]',
-        ),
-      );
-      expect(
-        diff,
-        contains("source:   r=>r.depKey==='Sheet size: 47.24in x 94.49in'"),
-      );
-      expect(
-        diff,
-        contains('ladder=[error: no, tradeFollowOn: yes]'),
-        reason: 'the diff says which rung chose the strip (G1, CA-1072)',
-      );
-    });
+    test(
+      'S01 passes the engine\'s checkpoints, accepts Area and the first '
+      'sheet count from the strip, and differs from the prototype at the '
+      'Sheet size pill by the stored size alone, with a readable diff',
+      () async {
+        final s01 = scenarios.firstWhere((s) => s.id == 'S01');
+        final result = await runScenario(s01, driver);
+        expect(result.passed, isFalse);
+        final diff = ReplayReport.describeFailure(result).join('\n');
+        expect(
+          diff,
+          contains(
+            'S01 Area happy path — FAILED at step 19 '
+            '"dependent key shows the sheet size"',
+          ),
+        );
+        expect(
+          diff,
+          contains("expected: depKey == 'Sheet size: 47.24in x 94.49in'"),
+        );
+        expect(diff, contains('actual:   '));
+        expect(
+          diff,
+          contains(
+            'tape=[Length22ft, Width18ft 8in, Area410.67ft², '
+            'Number of sheets12.83 Sheets]',
+          ),
+        );
+        expect(
+          diff,
+          contains(
+            'strip=[Drywall: 11.41 sheets (48in x 108in), '
+            'Drywall: 10.27 sheets (48in x 120in)]',
+          ),
+        );
+        expect(diff, contains("depKey='Sheet size: 48in x 96in'"));
+        expect(
+          diff,
+          contains("source:   r=>r.depKey==='Sheet size: 47.24in x 94.49in'"),
+        );
+        expect(
+          diff,
+          contains('ladder=[error: no, tradeFollowOn: yes]'),
+          reason: 'the diff says which rung chose the strip (G1, CA-1072)',
+        );
+      },
+    );
 
     test('the driver reads the "Saved to history" card as the action toast, '
         'counts the sessions in history, and taps Undo and View by the '

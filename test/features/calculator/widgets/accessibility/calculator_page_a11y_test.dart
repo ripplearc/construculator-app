@@ -383,6 +383,54 @@ void main() {
       }
     });
 
+    testWidgets('the Sheet size pill under an accepted count meets the label '
+        'and contrast guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+      final l10n = AppLocalizationsEn();
+      Future<void> type(List<String> keys) async {
+        for (final key in keys) {
+          await tester.tap(find.byKey(ValueKey(key)));
+          await tester.pump();
+        }
+        await tester.pump();
+        await tester.pump(CoreSuggestionArea.animationDuration);
+        await tester.pump();
+      }
+
+      final pill = find.byKey(CoreDisplayArea.dependentKeyTestKey(0));
+      // Tap target size is disabled as in the close-button test.
+      for (final theme in kA11yTestThemes) {
+        // The page keeps its bloc across the theme pumps, so each round
+        // starts from an empty tape.
+        await tester.pumpWidget(makeTestableWidget(theme: theme));
+        await type(const [
+          'calc_key_clearAll',
+          'calc_key_one',
+          'calc_key_eight',
+          'calc_key_zero',
+          'calc_key_feet',
+          'calc_key_feet',
+        ]);
+        await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+        await tester.pump();
+        // A tapped chip keeps its highlight for a second.
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          pill,
+          checkTapTargetSize: false,
+          checkTextContrast: theme.brightness == Brightness.dark,
+        );
+        await _expectLightThemeContrastOf(tester, theme, pill);
+        expect(
+          tester.getSemantics(pill).label,
+          contains(l10n.calculatorPillSheetSize),
+        );
+      }
+    });
+
     testWidgets('a strip note meets the contrast guideline in both themes', (
       tester,
     ) async {

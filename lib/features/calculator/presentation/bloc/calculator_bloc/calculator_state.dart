@@ -304,9 +304,11 @@ class CalculatorState extends Equatable {
   };
 
   /// The pills under the value (Section 1.1): the Read-as offer the tape
-  /// makes for the number on the display (term 2.14). A pitch answer
-  /// carries no pill: the strip lists its other two readings and Pitch
-  /// cycles them (Section 8, "There is no 'Pitch written as' pill").
+  /// makes for the number on the display (term 2.14), and under a count
+  /// the stored size it was made at, "Sheet size: 48in x 96in" (rule 4.7).
+  /// A pitch answer carries no pill: the strip lists its other two
+  /// readings and Pitch cycles them (Section 8, "There is no 'Pitch
+  /// written as' pill").
   List<CalculatorDependentKey> get dependentKeys => [
     if (tape.readAsOffer case final offer?)
       if (tape.chips[offer.chipIndex] case final ValueChip chip)
@@ -315,7 +317,28 @@ class CalculatorState extends Equatable {
           sourceText: _entryTextOf(chip),
           targetText: _withReadingSuffix(offer.next.text, offer.to),
         ),
+    if (countOnDisplay case (:final trade, :final size)?)
+      CalculatorStoredSizePill(
+        id: switch (trade) {
+          Trade.drywall => DependentKeyId.sheetSize,
+          Trade.masonry => DependentKeyId.pieceSize,
+        },
+        sizeText: tape.formatter.formatPieceSize(size),
+      ),
   ];
+
+  /// The count on the display with the stored size it was made at (rule
+  /// 4.7): the trade that counted it and the size its pill states. `null`
+  /// when the display reads anything else, a count that names no size
+  /// included.
+  ({Trade trade, PieceSize size})? get countOnDisplay {
+    if (_chipRead case ResultChip(:final key, size: final size?)) {
+      for (final trade in Trade.values) {
+        if (trade.resultKey == key) return (trade: trade, size: size);
+      }
+    }
+    return null;
+  }
 
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
 
@@ -713,7 +736,7 @@ class CalculatorState extends Equatable {
               '(${inner.map(_valueTextOf).join()})%',
             BracketChip(:final inner) => inner.map(_valueTextOf).join(),
             ResultChip() when openIndex != null && index > openIndex =>
-              _staleResultDash,
+              staleResultDash,
             _ => _valueTextOf(chip),
           },
           factor: switch (chip) {
@@ -738,10 +761,10 @@ class CalculatorState extends Equatable {
     ];
   }
 
-  // What a result after a reopened bracket reads while the bracket is open
-  // (Section 7: "shows a dash, 'Calc —', so that no out-of-date number can
-  // be read").
-  static const String _staleResultDash = '—';
+  /// What a result after a reopened bracket reads while the bracket is open
+  /// (Section 7: "shows a dash, 'Calc —', so that no out-of-date number can
+  /// be read"); the page writes it as it is, with no unit word after it.
+  static const String staleResultDash = '—';
 
   String _valueTextOf(TapeChip chip) => switch (chip) {
     final ValueChip chip =>
