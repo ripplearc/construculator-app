@@ -167,17 +167,21 @@
             <mutation text="bool _isAboveZero(Length length) =&gt; length.ticks &gt; 0;"/>
         </regex>
 
-        <!-- RULE 17 (R1, review of 19 Nov, blocker 1): the count of
-             spacings in a length rounds a whole number up too, takes a
-             length of one part of a tick as no section, counts a Calc
-             length only when it is exact, puts the bound a part short, or
-             takes two parts past as whole -->
-        <regex pattern="if \(whole &gt; 0 &amp;&amp; over\.compareTo\(_onePartOfATick\) &lt;= 0\) return whole;" dotAll="true" id="trades.spacings.one_part_of_a_tick">
+        <!-- RULE 17 (R1 and R2, reviews of 19 and 26 Nov, blocker 1): the
+             count of spacings in a length rounds a whole number up too,
+             takes a length of one part of a tick as no section, counts a
+             Calc length only when it is exact or within one part of a tick,
+             takes half a tick past as whole, or puts the bound at a whole
+             tick -->
+        <regex pattern="if \(whole &gt; 0 &amp;&amp; over\.compareTo\(_halfATick\) &lt; 0\) return whole;" dotAll="true" id="trades.spacings.half_a_tick">
             <mutation text=""/>
-            <mutation text="if (over.compareTo(_onePartOfATick) &lt;= 0) return whole;"/>
+            <mutation text="if (over.compareTo(_halfATick) &lt; 0) return whole;"/>
             <mutation text="if (whole &gt; 0 &amp;&amp; over.isZero) return whole;"/>
-            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_onePartOfATick) &lt; 0) return whole;"/>
-            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_onePartOfATick * const Rational(2)) &lt;= 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_halfATick) &lt;= 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_halfATick * const Rational(2)) &lt; 0) return whole;"/>
+        </regex>
+        <regex pattern="const Rational _halfATick = Rational\(1, Length\.ticksPerInch \* 2\);" dotAll="true" id="trades.spacings.bound_is_one_part">
+            <mutation text="const Rational _halfATick = Rational(1, Length.ticksPerInch * Length.partsPerTick);"/>
         </regex>
         <regex pattern="return whole \+ 1;" dotAll="true" id="trades.spacings.rounds_up">
             <mutation text="return whole;"/>

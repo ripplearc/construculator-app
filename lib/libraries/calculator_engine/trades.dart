@@ -209,11 +209,13 @@ final class FenceCount extends Equatable {
 
   /// Sections of fence: the length over the spacing, rounded up, computed
   /// exactly over the inches so that 24m at 2.4m is ten sections and not
-  /// eleven. A length within one part of a tick ([Length.partsPerTick]) of a
-  /// whole number of spacings is that many, because a computed length is
-  /// kept only to that part: Calc 24m from 57.6m² ÷ 2.4m is ten sections
-  /// too, as the screen reads it. A length above zero always has at least
-  /// one, and lengths too long for exact sums are counted in ticks.
+  /// eleven. A length less than half a tick ([Length.ticksPerInch]) past a
+  /// whole number of spacings is that many: the screen writes no length
+  /// finer than a tick, and a computed length carries the rounding of every
+  /// step that made it, so Calc 24m from 57.6m² ÷ 2.4m is ten sections and
+  /// so is Calc 20m from 10m² ÷ 2m × 4 at 2m, as the screen reads them. A
+  /// length above zero always has at least one, and lengths too long for
+  /// exact sums are counted in ticks.
   int get sections => _spacingsIn(length, onCentre);
 
   /// One post more than there are sections.
@@ -295,16 +297,13 @@ const int _squareTicksPerSquareFoot =
 
 bool _isAboveZero(Length length) => length.preciseTicks > 0;
 
-const Rational _onePartOfATick = Rational(
-  1,
-  Length.ticksPerInch * Length.partsPerTick,
-);
+const Rational _halfATick = Rational(1, Length.ticksPerInch * 2);
 
 int _spacingsIn(Length length, Length spacing) {
   try {
     final whole = (length.inches / spacing.inches).floor();
     final over = length.inches - spacing.inches * Rational(whole);
-    if (whole > 0 && over.compareTo(_onePartOfATick) <= 0) return whole;
+    if (whole > 0 && over.compareTo(_halfATick) < 0) return whole;
     return whole + 1;
   } on RationalOverflow {
     final ticksOver = length.preciseTicks - 1 / Length.partsPerTick;

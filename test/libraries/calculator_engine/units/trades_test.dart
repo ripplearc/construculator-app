@@ -547,8 +547,8 @@ void main() {
           }
         });
 
-        test('a length one part of a tick past a whole number of spacings '
-            'is that many, and two parts past is one more', () {
+        test('a length less than half a tick past a whole number of '
+            'spacings is that many, and half a tick past is one more', () {
           final twentyFour = metres(24);
           Length plusParts(int parts) => Length.exact(
             twentyFour.inches +
@@ -560,8 +560,65 @@ void main() {
             onCentre: metres(2.4),
             railsPerSection: 1,
           )!;
+          const halfATick = Length.partsPerTick ~/ 2;
           expect(fenceOn(plusParts(1)).sections, 10);
-          expect(fenceOn(plusParts(2)).sections, 11);
+          expect(fenceOn(plusParts(halfATick - 1)).sections, 10);
+          expect(fenceOn(plusParts(halfATick)).sections, 11);
+          expect(
+            trades
+                .fenceFor(
+                  Length.exact(
+                    const Rational(96 * 12) + const Rational(1, 64),
+                    unit: Unit.footInch,
+                  ),
+                  onCentre: eightFeet,
+                  railsPerSection: 1,
+                )!
+                .posts,
+            14,
+            reason: 'a typed 96ft 0-1/64in is past twelve spacings of 8ft',
+          );
+        });
+
+        test('R2 (review of 26 Nov): a Calc length multiplied after its '
+            'division counts as the typed length does — Calc 20m from '
+            '10m² ÷ 2m × 4 at 2m is 10 sections, 11 posts and 30 rails, '
+            'Calc 4m from 2m² ÷ 2m × 4 at 2m is 3 members, and Calc 96ft '
+            'from 96ft² ÷ 7ft × 7 at 8ft is 13 posts', () {
+          Length multiplied(Length side, Length one, Length by, double times) =>
+              combined(
+                    combined(
+                      combined(side, Operator.multiply, one),
+                      Operator.divide,
+                      by,
+                    ),
+                    Operator.multiply,
+                    Scalar(times),
+                  )
+                  as Length;
+
+          final calc20 = multiplied(metres(10), metres(1), metres(2), 4);
+          expect(formatter.format(calc20), '20m');
+          expect(calc20.inches, isNot(metres(20).inches));
+          final fence = trades.fenceFor(
+            calc20,
+            onCentre: metres(2),
+            railsPerSection: 3,
+          )!;
+          expect([fence.sections, fence.posts, fence.rails], [10, 11, 30]);
+
+          final calc4 = multiplied(metres(2), metres(1), metres(2), 4);
+          expect(formatter.format(calc4), '4m');
+          expect(trades.spacingCountsFor(calc4, [metres(2)]).single.members, 3);
+
+          final calc96 = multiplied(feet(96), feet(1), feet(7), 7);
+          expect(formatter.format(calc96), '96ft 0in');
+          expect(
+            trades
+                .fenceFor(calc96, onCentre: eightFeet, railsPerSection: 1)!
+                .posts,
+            13,
+          );
         });
 
         test('a length of one part of a tick is still one section', () {
