@@ -13,6 +13,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 import '../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
@@ -55,6 +56,7 @@ void main() {
           ),
         ),
       );
+      startTestSession();
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostItemRepository>();

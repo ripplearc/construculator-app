@@ -15,6 +15,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   late AppLocalizations l10n;
@@ -27,6 +28,7 @@ void main() {
         ),
       ),
     );
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(FakeYourRatesDatabase());
     l10n = lookupAppLocalizations(const Locale('en'));
   });

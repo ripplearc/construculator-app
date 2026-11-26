@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   setUpAll(() {
@@ -23,6 +24,7 @@ void main() {
         ),
       ),
     );
+    startTestSession();
   });
 
   tearDownAll(() {
