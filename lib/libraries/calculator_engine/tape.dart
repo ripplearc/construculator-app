@@ -613,6 +613,11 @@ class Tape extends Equatable {
   /// that can no longer be computed"). Only a trig answer is rebuilt: the
   /// Calc of a chain an Arctangent continues (5 + [ATAN] 16 ÷ 12 = is Calc
   /// 58.13°) is the chain's to recompute, so for it the answer is `null`.
+  /// Behind a step of a chain with no Calc between them, as while the
+  /// divisor a ÷ 0 reopened is retyped, the answer is rebuilt on the chain's
+  /// total and never on the step's own number: 2 ÷ 4 = [ASIN] with the
+  /// divisor retyped as 8 is Arcsine 14.48°, the angle of 0.25, and as 0.2
+  /// it has no answer, since 10 has no arcsine.
   ResultChip? rebuiltTrigAnswer(ResultChip answer) {
     if (_trigQuestionAsked case (
       :final function,
@@ -636,6 +641,10 @@ class Tape extends Equatable {
     }
     final operand = switch (chips.lastOrNull) {
       final ValueChip chip when chip.trigFunction != null => chip.trigOperand,
+      ValueChip(operator: _?) => switch (_lastChainTotal) {
+        ChainValue(:final value) => value,
+        ChainOutcome() => null,
+      },
       final ValueChip chip => chip.value(parser),
       ResultChip(:final value) => value,
       _ => null,
@@ -1994,6 +2003,11 @@ class Tape extends Equatable {
       :final index,
       chip: ValueChip(entry: EntryBuffer(isEmpty: true)),
     )) {
+      if (index > 0 && _isDivisionByZeroBeforeItsDivisor(index - 1)) {
+        return TapeChanged(
+          _with([...chips.sublist(0, index - 1), ...chips.sublist(index)]),
+        );
+      }
       if (index == 0 && chips.length > 1 && _needsAValueBefore(chips[1])) {
         return const TapeRefused(TapeRefusal.typeANewFirstValue);
       }
@@ -2175,6 +2189,7 @@ class Tape extends Equatable {
         final closed = _withFractionClosedAsInches();
         if (closed._unfinished case final refusal?) return refusal;
         (tape: tape, removed: removed) = closed._sealedReporting();
+        if (tape.active != null) return _changed(tape, removed: removed);
       }
     }
     // The seal may have removed results before the tapped chip, so it is
@@ -2336,7 +2351,8 @@ class Tape extends Equatable {
   }
 
   bool _isDivisionByZeroBeforeItsDivisor(int index) =>
-      chips[index] == const ErrorChip(CalculationError.divisionByZero) &&
+      chips[index] is ErrorChip &&
+      (chips[index] as ErrorChip).isAnOpenDivisionByZero &&
       index + 1 < chips.length &&
       chips[index + 1] is ValueChip &&
       (chips[index + 1] as ValueChip).operator == Operator.divide;
@@ -2597,6 +2613,12 @@ class Tape extends Equatable {
             final error) {
       final repaired = _with([...chips.sublist(0, index - 1), divisor]);
       final landed = repaired._rebuiltError(error);
+      if (landed case ErrorChip(error: CalculationError.divisionByZero)) {
+        return (
+          tape: _replaceChipAt(index, _reopenedEmpty(divisor)),
+          removed: const [],
+        );
+      }
       return _with([
         ...repaired.chips,
         ?landed,

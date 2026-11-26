@@ -466,6 +466,13 @@ final class ErrorChip extends TapeChip {
 
   const ErrorChip(this.error, {this.replacesAResult = false, this.readIn});
 
+  /// Whether this is the error chip of a ÷ 0 whose divisor can still be
+  /// retyped (Section 5, "Division by zero"), in whatever unit the result
+  /// it stands for was read: the chain goes on through it to the divisor
+  /// after it. False for an error that replaces a result (rule 4.8).
+  bool get isAnOpenDivisionByZero =>
+      error == CalculationError.divisionByZero && !replacesAResult;
+
   @override
   List<Object?> get props => [error, replacesAResult, readIn];
 }

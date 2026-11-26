@@ -41,7 +41,7 @@
 
         <!-- RULE: a chain continues through any error chip, or through any
              operator after ÷ 0, not only the reopened ÷ -->
-        <regex pattern="bool _continuesAfter\(List&lt;TapeChip&gt; chips, int index\) =&gt;\s*chips\[index\] == const ErrorChip\(CalculationError\.divisionByZero\) &amp;&amp;\s*index \+ 1 &lt; chips\.length &amp;&amp;" dotAll="true" id="chain_evaluator.continues_after.any_error">
+        <regex pattern="bool _continuesAfter\(List&lt;TapeChip&gt; chips, int index\) =&gt;\s*chips\[index\] is ErrorChip &amp;&amp;\s*\(chips\[index\] as ErrorChip\)\.isAnOpenDivisionByZero &amp;&amp;\s*index \+ 1 &lt; chips\.length &amp;&amp;" dotAll="true" id="chain_evaluator.continues_after.any_error">
             <mutation text="bool _continuesAfter(List&lt;TapeChip&gt; chips, int index) =&gt; index + 1 &lt; chips.length &amp;&amp;"/>
         </regex>
         <regex pattern="BracketChip\(:final operator\) =&gt; operator == Operator\.divide," dotAll="true" id="chain_evaluator.continues_after.any_operator">

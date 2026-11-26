@@ -181,6 +181,37 @@
         <regex pattern="identical\(chip, tapped\) \|\| _isMarkedCopyOf\(chip, tapped\)" dotAll="true" id="tape_edit_recompute.tap.marked_copy_lost">
             <mutation text="identical(chip, tapped)"/>
         </regex>
+
+        <!-- RULE R4-1: the error chip of a ÷ 0 is known only when its result
+             was read in no picked unit, so a result read in inches stops
+             the chain (in the tape and in the fold) -->
+        <regex pattern="\(chips\[index\] as ErrorChip\)\.isAnOpenDivisionByZero &amp;&amp;" dotAll="true" id="tape_edit_recompute.zero_divisor.picked_unit_stops_chain">
+            <mutation text="chips[index] == const ErrorChip(CalculationError.divisionByZero) &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE R4-2: a trig answer behind a step of a chain is rebuilt on
+             the step's own number, not on the chain total -->
+        <regex pattern="ValueChip\(operator: _\?\) =&gt; switch \(_lastChainTotal\) \{\s*ChainValue\(:final value\) =&gt; value,\s*ChainOutcome\(\) =&gt; null,\s*\}," dotAll="true" id="tape_edit_recompute.zero_divisor.trig_on_divisor_alone">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE R4-3: ⌫ on the empty divisor a ÷ 0 edit reopened removes
+             the ÷ step and leaves the error chip -->
+        <regex pattern="if \(index &gt; 0 &amp;&amp; _isDivisionByZeroBeforeItsDivisor\(index - 1\)\) \{" dotAll="true" id="tape_edit_recompute.zero_divisor.backspace_removes_step">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE R4-4: a second 0 into the reopened divisor seals a ÷ 0 chip
+             with an error after it -->
+        <regex pattern="if \(landed case ErrorChip\(error: CalculationError\.divisionByZero\)\) \{" dotAll="true" id="tape_edit_recompute.zero_divisor.second_zero_sealed">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE R4-5: a tap on another chip opens it beside the divisor
+             the seal reopened -->
+        <regex pattern="if \(tape\.active != null\) return _changed\(tape, removed: removed\);" dotAll="true" id="tape_edit_recompute.zero_divisor.tap_opens_second_chip">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

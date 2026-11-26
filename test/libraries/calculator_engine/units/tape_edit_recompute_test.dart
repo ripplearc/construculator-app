@@ -913,5 +913,139 @@ void main() {
       final byEquals = press(const Tape(), '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 = 5 =');
       expect(texts(byEquals), ['10', '÷5', 'Calc2', '÷5', 'Calc0.4']);
     });
+
+    test('a trig answer behind the divisor a ÷ 0 edit reopened is rebuilt on '
+        'the chain total as the divisor is typed, never on the divisor '
+        'alone, and stands while the chain gives it no answer (rule 4.8, '
+        'Section 5.5)', () {
+      final waiting = press(const Tape(), '2 ÷ 4 = [ASIN] tap:1 ⌫ 0 tap:1');
+      expect(texts(waiting), ['2', 'divisionByZero', '÷', 'Arcsine30°']);
+
+      expect(
+        texts(press(waiting, '8')).last,
+        'Arcsine14.48°',
+        reason: '2 ÷ 8 is 0.25, and 8 alone has no arcsine',
+      );
+      expect(texts(press(waiting, '8 =')), [
+        '2',
+        '÷8',
+        'Calc0.25',
+        'Arcsine14.48°',
+      ]);
+      expect(
+        texts(press(waiting, '0')).last,
+        'Arcsine30°',
+        reason: '2 ÷ 0 has no answer yet, so the result stands',
+      );
+      expect(
+        texts(press(waiting, '0 . 2')).last,
+        'Arcsine30°',
+        reason: '2 ÷ 0.2 is 10, which has no arcsine: never asin(0.2)',
+      );
+      final sealed = pressOnce(press(waiting, '0 . 2'), '=');
+      expect(
+        sealed,
+        isA<TapeChanged>()
+            .having((c) => texts(c.tape), 'tape', ['2', '÷0.2', 'Calc10'])
+            .having((c) => c.removed, 'removed', ['Arcsine']),
+      );
+      expect(
+        texts(press(const Tape(), '1 ÷ 2 = [ASIN] tap:1 ⌫ 0 tap:1 0 . 5')).last,
+        'Arcsine30°',
+        reason: '1 ÷ 0.5 is 2, which has no arcsine: never asin(0.5)',
+      );
+    });
+
+    test('a result read in a picked unit recomputes live behind the divisor '
+        'a ÷ 0 edit reopened, as a result with no picked unit does (rule '
+        '4.8)', () {
+      final waiting = press(
+        const Tape(),
+        '1 0 ft ÷ 2 = in + 1 in = tap:1 ⌫ 0 tap:1',
+      );
+      expect(texts(waiting), [
+        '10ft',
+        'divisionByZero',
+        '÷',
+        '+1in',
+        'Calc5ft 1in',
+      ]);
+
+      expect(texts(press(waiting, '4')).last, 'Calc2ft 7in');
+      expect(texts(press(waiting, '4 tap:2')), [
+        '10ft',
+        '÷4',
+        'Calc30in',
+        '+1in',
+        'Calc2ft 7in',
+      ]);
+    });
+
+    test('a second 0 into the divisor a ÷ 0 edit reopened reopens it empty '
+        'again, as a typed 5 ÷ 0 = 0 = does: no chip is removed and none is '
+        'named (Section 5.5, "Edit makes a divisor zero")', () {
+      final again = press(const Tape(), '5 ÷ 2 = + 1 = tap:1 ⌫ 0 tap:1 0');
+      for (final sealing in ['tap:2', '=']) {
+        final outcome = pressOnce(again, sealing);
+        expect(
+          outcome,
+          isA<TapeChanged>()
+              .having((c) => c.removed, 'removed', isEmpty)
+              .having((c) => c.notice, 'notice', isNull),
+          reason: sealing,
+        );
+        final waiting = (outcome as TapeChanged).tape;
+        expect(texts(waiting), [
+          '5',
+          'divisionByZero',
+          '÷',
+          '+1',
+          'Calc3.5',
+        ], reason: sealing);
+        expect(waiting.editing!.index, 2, reason: sealing);
+        expect(texts(press(waiting, '4 =')), [
+          '5',
+          '÷4',
+          'Calc1.25',
+          '+1',
+          'Calc2.25',
+        ], reason: sealing);
+      }
+    });
+
+    test('⌫ on the empty divisor a ÷ 0 edit reopened removes the error chip '
+        'and leaves the ÷ open with every later chip kept, as 5 ÷ 0 = ⌫ '
+        'does; a second ⌫ removes the ÷ (Section 5, "Division by zero")', () {
+      final waiting = press(const Tape(), '1 0 ÷ 4 = × 2 = tap:1 ⌫ 0 tap:1');
+      expect(texts(waiting), ['10', 'divisionByZero', '÷', '×2', 'Calc5']);
+
+      final outcome = waiting.backspace();
+      expect(
+        outcome,
+        isA<TapeChanged>()
+            .having((c) => c.removed, 'removed', isEmpty)
+            .having((c) => c.notice, 'notice', isNull),
+      );
+      final open = (outcome as TapeChanged).tape;
+      expect(texts(open), ['10', '÷', '×2', 'Calc5']);
+      expect(open.editing!.index, 1);
+      expect(texts(press(open, '5 =')), ['10', '÷5', '×2', 'Calc4']);
+      expect(texts(press(open, '⌫')), ['10', '×2', 'Calc20']);
+    });
+
+    test('a tap on another chip that seals a ÷ 0 edit leaves the reopened '
+        'divisor the only chip being typed, and is refused after that until '
+        'a divisor is typed', () {
+      final edited = press(const Tape(), '5 ÷ 2 = + 1 = tap:1 ⌫ 0');
+      final waiting = press(edited, 'tap:0');
+
+      expect(texts(waiting), ['5', 'divisionByZero', '÷', '+1', 'Calc3.5']);
+      expect(waiting.editing!.index, 2);
+      expect((waiting.chips[0] as ValueChip).isActive, isFalse);
+      expect(
+        waiting.tapChip(0),
+        const TapeRefused(TapeRefusal.typeADivisorFirst),
+      );
+    });
   });
 }

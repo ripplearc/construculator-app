@@ -314,7 +314,8 @@ class ChainEvaluator extends Equatable {
   };
 
   bool _continuesAfter(List<TapeChip> chips, int index) =>
-      chips[index] == const ErrorChip(CalculationError.divisionByZero) &&
+      chips[index] is ErrorChip &&
+      (chips[index] as ErrorChip).isAnOpenDivisionByZero &&
       index + 1 < chips.length &&
       switch (chips[index + 1]) {
         ValueChip(:final operator) ||
