@@ -26,6 +26,7 @@ void main() {
   late FakeOwnerRecordStorageService ownerRecords;
   late FakeSyncedDataService syncedData;
   late FakeSupabaseWrapper wrapper;
+  late FakeClockImpl clock;
   late AuthEventQueue queue;
   late StartUpRecovery recovery;
 
@@ -49,7 +50,8 @@ void main() {
   setUp(() {
     ownerRecords = FakeOwnerRecordStorageService();
     syncedData = FakeSyncedDataService();
-    wrapper = FakeSupabaseWrapper(clock: FakeClockImpl());
+    clock = FakeClockImpl(DateTime.utc(2026, 11, 25, 9));
+    wrapper = FakeSupabaseWrapper(clock: clock);
     wrapper.setCurrentUser(FakeUser(id: 'user-a', createdAt: '2026-01-01'));
     // ignore: no_direct_instantiation, reason: unit test builds the queue from its settings
     queue = AuthEventQueue(
@@ -68,7 +70,8 @@ void main() {
         registrations: const [],
       ),
       wrapper: wrapper,
-      removalPollInterval: Duration.zero,
+      clock: clock,
+      removalPollInterval: const Duration(milliseconds: 1),
     );
   });
 
@@ -81,7 +84,7 @@ void main() {
         expect(ownerRecords.writes, isEmpty);
       });
 
-      test('does nothing when the record has no flag', () async {
+      test('does nothing when a session is saved', () async {
         ownerRecords.seed(OwnerRecord(userId: 'user-a'));
         wrapper.seedSavedSession(_savedSessionOf('user-a'));
 
@@ -89,6 +92,55 @@ void main() {
 
         expect(syncedData.deleteCallCount, 0);
         expect(ownerRecords.record, OwnerRecord(userId: 'user-a'));
+      });
+
+      test('saves today as the sign-out date when no session is saved and '
+          'none was saved before', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+
+        await runRecovery();
+
+        expect(
+          ownerRecords.record,
+          OwnerRecord(
+            userId: 'user-a',
+            signOutDate: DateTime.utc(2026, 11, 25, 9),
+          ),
+        );
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test('keeps the earlier sign-out date', () async {
+        final earlier = DateTime.utc(2026, 11, 1);
+        ownerRecords.seed(OwnerRecord(userId: 'user-a', signOutDate: earlier));
+
+        await runRecovery();
+
+        expect(ownerRecords.writes, isEmpty);
+        expect(ownerRecords.record?.signOutDate, earlier);
+      });
+
+      test('saves no date and deletes nothing when the saved session cannot '
+          'be read', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.shouldFailReadSavedSession = true;
+
+        await expectLater(
+          runRecovery(),
+          throwsA(isA<SavedSessionUnreadableException>()),
+        );
+
+        expect(ownerRecords.writes, isEmpty);
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test('saves no date when a saved value is not a session', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.seedSavedSession('{broken');
+
+        await runRecovery();
+
+        expect(ownerRecords.writes, isEmpty);
       });
 
       test('fails on an unreadable owner record without deleting', () async {
