@@ -74,7 +74,7 @@
         </regex>
 
         <!-- RULE 10: an answer already on the tape is offered again -->
-        <regex pattern="if \(!tape\.chips\.any\(\s*\(chip\) =&gt; chip is ResultChip &amp;&amp; chip\.key == answer\.key,\s*\)\)" dotAll="true" id="arbiter.rules.landed_answer_offered_again">
+        <regex pattern="if \(!tape\.chips\.any\(\s*\(chip\) =&gt; chip is ResultChip &amp;&amp; _lands\(chip, answer\.key\),\s*\)\)" dotAll="true" id="arbiter.rules.landed_answer_offered_again">
             <mutation text="if (true)"/>
         </regex>
 
@@ -104,15 +104,15 @@
 
         <!-- RULE 14: the area is looked for on the last count, not before
              the counts; or a tape of counts alone is read out of range -->
-        <regex pattern="final before = chips\.length - counts - 1;\s*return before &lt; 0 \? null : _finishedAreaIn\(chips\[before\]\);" dotAll="true" id="arbiter.counts.area_before_the_counts">
-            <mutation text="final before = chips.length - counts; return before &lt; 0 ? null : _finishedAreaIn(chips[before]);"/>
-            <mutation text="final before = chips.length - counts - 1; return _finishedAreaIn(chips[before]);"/>
+        <regex pattern="final before = chips\.length - counts - 1;\s*return before &lt; 0 \? null : chips\[before\];" dotAll="true" id="arbiter.counts.area_before_the_counts">
+            <mutation text="final before = chips.length - counts; return before &lt; 0 ? null : chips[before];"/>
+            <mutation text="final before = chips.length - counts - 1; return chips[before];"/>
         </regex>
 
         <!-- RULE 15: with no count accepted the area is not read off the
              display -->
-        <regex pattern="if \(counts == 0\) return _finishedAreaIn\(beingTyped \?\? chips\.lastOrNull\);" dotAll="true" id="arbiter.counts.area_on_the_display">
-            <mutation text="if (counts != 0) return _finishedAreaIn(beingTyped ?? chips.lastOrNull);"/>
+        <regex pattern="if \(counts == 0\) return beingTyped \?\? chips\.lastOrNull;" dotAll="true" id="arbiter.counts.area_on_the_display">
+            <mutation text="if (counts != 0) return beingTyped ?? chips.lastOrNull;"/>
         </regex>
 
         <!-- RULE 16: a Calc that is an area is counted -->
@@ -137,10 +137,25 @@
             <mutation text="(chip.key, chip.value),"/>
         </regex>
 
-        <!-- RULE 18: an area is counted in masonry pieces -->
-        <regex pattern="_trades\.countsFor\(\s*Trade\.drywall,\s*area,\s*stores\.sizesFor\(Trade\.drywall\),\s*\);" dotAll="true" id="arbiter.counts.wrong_trade">
-            <mutation text="_trades.countsFor(Trade.masonry, area, stores.sizesFor(Trade.masonry));"/>
-            <mutation text="_trades.countsFor(Trade.drywall, area, stores.sizesFor(Trade.masonry));"/>
+        <!-- RULE 18: every area is counted in masonry pieces, or in
+             sheets; or a trade counts by the other trade's sizes -->
+        <regex pattern="final trade = tape\.countedAreaTrade;" dotAll="true" id="arbiter.counts.wrong_trade">
+            <mutation text="const trade = Trade.masonry;"/>
+            <mutation text="const trade = Trade.drywall;"/>
+        </regex>
+        <regex pattern="_trades\.countsFor\(trade, area, stores\.sizesFor\(trade\)\);" dotAll="true" id="arbiter.counts.other_trades_sizes">
+            <mutation text="_trades.countsFor(trade, area, stores.sizesFor(Trade.drywall));"/>
+            <mutation text="_trades.countsFor(Trade.drywall, area, stores.sizesFor(trade));"/>
+        </regex>
+
+        <!-- RULE 18e: the Area a trade key named is offered again behind
+             its counts; a covered area is counted for the wrong trade -->
+        <regex pattern="chip\.key == key \|\| chip\.namedFrom == key;" dotAll="true" id="arbiter.rules.named_area_offered_again">
+            <mutation text="chip.key == key;"/>
+        </regex>
+        <regex pattern="ResultChip\(:final key\) when key == Trade\.masonry\.coveredAreaKey =&gt;\s*Trade\.masonry," dotAll="true" id="arbiter.counts.masonry_area_counted_in_sheets">
+            <mutation text="ResultChip(:final key) when key == Trade.drywall.coveredAreaKey =&gt; Trade.masonry,"/>
+            <mutation text="ResultChip(:final key) when key == Trade.masonry.coveredAreaKey =&gt; Trade.drywall,"/>
         </regex>
 
         <!-- RULE 18a: a silent strip forgets the area on the display, or
@@ -195,7 +210,7 @@
     </rules>
 
     <commands>
-        <command group="arbiter" expected-return="0">flutter test test/libraries/calculator_engine/units/arbiter_test.dart</command>
+        <command group="arbiter" expected-return="0">flutter test test/libraries/calculator_engine/units/arbiter_test.dart test/libraries/calculator_engine/units/tape_trade_key_test.dart</command>
     </commands>
 
     <threshold failure="85">

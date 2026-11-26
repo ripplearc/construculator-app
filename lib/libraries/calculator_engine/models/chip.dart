@@ -379,16 +379,23 @@ final class ResultChip extends TapeChip {
   /// chip before it is edited. `null` for an answer no store stands behind.
   final PieceSize? size;
 
+  /// For an area a trade key named ("Drywall covered area"), the key of the
+  /// answer it named — Area, Wall area, Circle area, Polygon area or Calc —
+  /// so that an edit before it finds the same answer again; `null` for a
+  /// typed area and for every other result.
+  final String? namedFrom;
+
   const ResultChip({
     required this.key,
     required this.value,
     this.operator,
     this.readIn,
     this.size,
+    this.namedFrom,
   });
 
   @override
-  List<Object?> get props => [key, value, operator, readIn, size];
+  List<Object?> get props => [key, value, operator, readIn, size, namedFrom];
 }
 
 /// One chip that holds a whole bracket (term 2.22): the operator before it

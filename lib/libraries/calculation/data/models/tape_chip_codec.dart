@@ -16,7 +16,9 @@ import 'package:construculator/libraries/calculator_engine/trades.dart';
 /// conversion re-spelled it from, the ton it was typed under and its key's
 /// flags; a result keeps its key and value at full precision, and a count
 /// the stored size it was made at (`size`, written only for a result that
-/// carries one, so a tape with none reads and writes as before); a bracket
+/// carries one, so a tape with none reads and writes as before), and an
+/// area a trade key named the key of the answer it named (`named_from`,
+/// written the same way); a bracket
 /// keeps what was typed inside it, whether it is open, and the list a
 /// reopened bracket can be restored to. The operator that leads a chip is
 /// its `op`; the values are written by `TapeValueCodec`.
@@ -54,6 +56,7 @@ abstract final class TapeChipCodec {
   static const String _widthKey = 'width';
   static const String _heightKey = 'height';
   static const String _idKey = 'id';
+  static const String _namedFromKey = 'named_from';
 
   /// The JSON text of [chips]; [text] renders a chip for its `text`.
   static String encode(
@@ -112,6 +115,7 @@ abstract final class TapeChipCodec {
             _heightKey: TapeValueCodec.quantity(size.height),
             _idKey: size.id,
           },
+        _namedFromKey: ?chip.namedFrom,
       },
       BracketChip() => {
         _typeKey: 'bracket',
@@ -171,6 +175,7 @@ abstract final class TapeChipCodec {
           '$where.$_sizeKey',
         ),
       },
+      namedFrom: TapeValueCodec.optionalText(json, _namedFromKey, where),
     ),
     'bracket' => BracketChip(
       operator: _operator(json, where),

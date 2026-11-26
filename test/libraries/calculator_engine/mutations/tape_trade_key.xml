@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE: THE DRYWAL AND MSNRY KEYS (G1, CA-1072; UX Design
+         Doc Section 3.3, walkthroughs 19.1 and 19.2, Section 9) -->
+    <!-- Targets: which chip the key names and under which name (RULES 1-5);
+         what it lands when no area is on the tape yet (RULES 6-8); how a
+         covered area is made again after an edit before it (RULES 9-11). -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the key names an area inside an open bracket or while a
+             chip is reopened -->
+        <regex pattern="if \(editing != null \|\| openBracket != null\) return null;" dotAll="true" id="tape_trade_key.guards.acts_in_an_edit_or_a_bracket">
+            <mutation text="if (openBracket != null) return null;"/>
+            <mutation text="if (editing != null) return null;"/>
+        </regex>
+
+        <!-- RULE 2: only an Area is named, not a Wall or a Circle area
+             (Section 3.3: "Takes: An area on the tape") -->
+        <regex pattern="if \(shown case ResultChip\(value: Area\(\)\)\) \{" dotAll="true" id="tape_trade_key.names.any_area_answer">
+            <mutation text="if (shown case ResultChip(value: Area(), key: DeterministicRules.areaKey)) {"/>
+        </regex>
+
+        <!-- RULE 3: the named area forgets which answer it was, or a covered
+             area named again takes the covered name for its answer -->
+        <regex pattern="namedFrom: shown\.namedFrom \?\? shown\.key," dotAll="true" id="tape_trade_key.names.which_answers">
+            <mutation text="namedFrom: shown.key,"/>
+            <mutation text="namedFrom: shown.namedFrom,"/>
+        </regex>
+
+        <!-- RULE 3a: the Area two sides make lands without its answer -->
+        <regex pattern="return _landedNaming\(named, value, DeterministicRules\.areaKey\);" dotAll="true" id="tape_trade_key.lands.answer_forgotten">
+            <mutation text="return landAnswer(named, value);"/>
+        </regex>
+
+        <!-- RULE 4: the area keeps its old name -->
+        <regex pattern="ResultChip\(\s*key: named,\s*value: shown\.value," dotAll="true" id="tape_trade_key.names.old_name_kept">
+            <mutation text="ResultChip(key: shown.key, value: shown.value,"/>
+        </regex>
+
+        <!-- RULE 5: every trade's name is taken for a covered area, or
+             none is -->
+        <regex pattern="Trade\.values\.any\(\(trade\) =&gt; trade\.coveredAreaKey == key\);" dotAll="true" id="tape_trade_key.names.covered_area_key">
+            <mutation text="false;"/>
+        </regex>
+
+        <!-- RULE 6: an area an operator leads is named -->
+        <regex pattern="if \(shown case ValueChip\(operator: null\)\) \{" dotAll="true" id="tape_trade_key.lands.area_in_a_chain">
+            <mutation text="if (shown case ValueChip()) {"/>
+        </regex>
+
+        <!-- RULE 7: every answer of the sides is taken for an area, so two
+             sides that make one area land none -->
+        <regex pattern="if \(answer\.value is Area\) answer," dotAll="true" id="tape_trade_key.lands.every_answer_an_area">
+            <mutation text="answer,"/>
+        </regex>
+
+        <!-- RULE 8: the first area lands when the sides could mean more
+             than one -->
+        <regex pattern="if \(areas case \[Answer\(key: DeterministicRules\.areaKey, :final value\)\]\) \{" dotAll="true" id="tape_trade_key.lands.first_of_several">
+            <mutation text="if (areas case [Answer(:final value), ...]) {"/>
+        </regex>
+
+        <!-- RULE 9: a covered area is not made again after an edit -->
+        <regex pattern="if \(isACoveredAreaKey\(result\.key\)\) return _coveredAgain\(result\);" dotAll="true" id="tape_trade_key.rebuild.not_made_again">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 10: a covered area named from a typed area or a Calc is
+             not read off its chain -->
+        <regex pattern="ChainValue\(value: final Area area\) =&gt; area," dotAll="true" id="tape_trade_key.rebuild.chain_not_read">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 11: a covered area is made again from the floor Area, or
+             from the first answer of the rules, whatever it named; or it
+             forgets what it named -->
+        <regex pattern="\.where\(\(answer\) =&gt; answer\.key == from\)" dotAll="true" id="tape_trade_key.rebuild.first_answer">
+            <mutation text=".where((answer) =&gt; answer.key == DeterministicRules.areaKey)"/>
+            <mutation text=".where((answer) =&gt; true)"/>
+        </regex>
+        <regex pattern="readIn: covered\.readIn,\s*namedFrom: from," dotAll="true" id="tape_trade_key.rebuild.named_answer_forgotten">
+            <mutation text="readIn: covered.readIn,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_trade_key" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_trade_key_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

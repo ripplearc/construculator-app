@@ -219,6 +219,29 @@ void main() {
       );
     });
 
+    test('an area a trade key named keeps the answer it named, and a result '
+        'that names none writes no named_from', () {
+      final chips = <TapeChip>[
+        const ResultChip(
+          key: 'Drywall covered area',
+          value: Area(352.0 * 147456),
+          namedFrom: 'Wall area',
+        ),
+        const ResultChip(key: 'Calc', value: Scalar(2)),
+      ];
+
+      final json = TapeChipCodec.encode(chips);
+      final written =
+          (jsonDecode(json) as Map<String, Object?>)['chips']! as List<Object?>;
+
+      expect(TapeChipCodec.decode(json), chips);
+      expect((written[0]! as Map<String, Object?>)['named_from'], 'Wall area');
+      expect(
+        (written[1]! as Map<String, Object?>).containsKey('named_from'),
+        isFalse,
+      );
+    });
+
     test('an empty tape round-trips as an empty chip list', () {
       final json = TapeChipCodec.encode([]);
       expect(jsonDecode(json), {'schema_version': 1, 'chips': []});
