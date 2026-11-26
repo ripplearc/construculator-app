@@ -6,6 +6,7 @@
 
     <files>
         <file>lib/features/calculator/domain/usecases/delete_material_size_usecase.dart</file>
+        <file>lib/features/calculator/domain/entities/trade_store_entities.dart</file>
     </files>
 
     <rules>
@@ -15,18 +16,18 @@
         <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="delete_material_size.system.always_imperial">
             <mutation text=".watchSizes(trade.sizeStore, MeasurementSystem.imperial)"/>
         </regex>
-        <regex pattern="\? stored\.width == size\.width &amp;&amp; stored\.height == size\.height" dotAll="true" id="delete_material_size.match.any_other_size">
-            <mutation text="? !(stored.width == size.width &amp;&amp; stored.height == size.height)"/>
+        <regex pattern="\? width == size\.width &amp;&amp; height == size\.height" dotAll="true" id="delete_material_size.match.any_other_size">
+            <mutation text="? !(width == size.width &amp;&amp; height == size.height)"/>
         </regex>
         <!-- R1 (B1): a size named by its stored row is matched by its measure,
              so of two rows with one size the first goes whichever was
              swiped; or every other row is taken for it -->
-        <regex pattern=": \(stored\.id \?\? stored\.seed\) == size\.id;" dotAll="true" id="delete_material_size.match.named_row">
-            <mutation text=": stored.width == size.width &amp;&amp; stored.height == size.height;"/>
-            <mutation text=": (stored.id ?? stored.seed) != size.id;"/>
+        <regex pattern=": \(id \?\? seed\) == size\.id;" dotAll="true" id="delete_material_size.match.named_row">
+            <mutation text=": width == size.width &amp;&amp; height == size.height;"/>
+            <mutation text=": (id ?? seed) != size.id;"/>
         </regex>
-        <regex pattern="return _repository\.deleteSize\(stored\);" dotAll="true" id="delete_material_size.match.not_deleted">
-            <mutation text="continue;"/>
+        <regex pattern="if \(stored\.isTheRowOf\(size\)\) return _repository\.deleteSize\(stored\);" dotAll="true" id="delete_material_size.match.not_deleted">
+            <mutation text="if (stored.isTheRowOf(size)) continue;"/>
         </regex>
     </rules>
 

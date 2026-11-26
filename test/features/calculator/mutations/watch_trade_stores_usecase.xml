@@ -7,6 +7,7 @@
 
     <files>
         <file>lib/features/calculator/domain/usecases/watch_trade_stores_usecase.dart</file>
+        <file>lib/features/calculator/domain/entities/trade_store_entities.dart</file>
     </files>
 
     <rules>
@@ -22,8 +23,8 @@
         </regex>
 
         <!-- RULE 3: the two stores swap sides in the snapshot -->
-        <regex pattern="sheetSizes: sheets\.map\(_pieceOf\)\.toList\(\),\s*masonrySizes: pieces\.map\(_pieceOf\)\.toList\(\)," dotAll="true" id="watch_trade_stores.snapshot.sides_swapped">
-            <mutation text="sheetSizes: pieces.map(_pieceOf).toList(), masonrySizes: sheets.map(_pieceOf).toList(),"/>
+        <regex pattern="sheetSizes: \[for \(final size in sheets\) size\.piece\],\s*masonrySizes: \[for \(final size in pieces\) size\.piece\]," dotAll="true" id="watch_trade_stores.snapshot.sides_swapped">
+            <mutation text="sheetSizes: [for (final size in pieces) size.piece], masonrySizes: [for (final size in sheets) size.piece],"/>
         </regex>
 
         <!-- No rule for .distinct(): the data source's watch drops a
@@ -33,9 +34,9 @@
 
         <!-- RULE 4: a piece carries no name for a default, or none for a
              size the user added -->
-        <regex pattern="id: size\.id \?\? size\.seed," dotAll="true" id="watch_trade_stores.piece.unnamed">
-            <mutation text="id: size.id,"/>
-            <mutation text="id: size.seed,"/>
+        <regex pattern="PieceSize\(width: width, height: height, id: id \?\? seed\);" dotAll="true" id="watch_trade_stores.piece.unnamed">
+            <mutation text="PieceSize(width: width, height: height, id: id);"/>
+            <mutation text="PieceSize(width: width, height: height, id: seed);"/>
         </regex>
     </rules>
 

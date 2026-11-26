@@ -33,14 +33,8 @@ class DeleteMaterialSizeUseCase {
   }) async {
     final sizes = await _repository.watchSizes(trade.sizeStore, system).first;
     for (final stored in sizes) {
-      if (_isTheStoredRowOf(size, stored)) {
-        return _repository.deleteSize(stored);
-      }
+      if (stored.isTheRowOf(size)) return _repository.deleteSize(stored);
     }
     return const Right(null);
   }
-
-  bool _isTheStoredRowOf(PieceSize size, StoredSize stored) => size.id == null
-      ? stored.width == size.width && stored.height == size.height
-      : (stored.id ?? stored.seed) == size.id;
 }

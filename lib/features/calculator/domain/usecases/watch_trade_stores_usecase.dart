@@ -13,11 +13,9 @@ import 'package:rxdart/rxdart.dart';
 /// the next emission, and the strip counts by it without being asked.
 ///
 /// The engine counts over a [PieceSize]; this is where a stored size
-/// becomes one, which keeps the engine free of the feature's entities.
-/// Each piece carries what the store calls its row — the row's id, or the
-/// default it stands in for — so that two stored rows of one size stay two
-/// counts. The stream is built on the repository's own watches, so it ends
-/// when the repository is disposed.
+/// becomes one ([StoredSize.piece]), which keeps the engine free of the
+/// feature's entities. The stream is built on the repository's own
+/// watches, so it ends when the repository is disposed.
 class WatchTradeStoresUseCase {
   final TradeStoresRepository _repository;
 
@@ -30,14 +28,8 @@ class WatchTradeStoresUseCase {
         _repository.watchSizes(SizeStore.sheet, system),
         _repository.watchSizes(SizeStore.masonry, system),
         (sheets, pieces) => TradeStores(
-          sheetSizes: sheets.map(_pieceOf).toList(),
-          masonrySizes: pieces.map(_pieceOf).toList(),
+          sheetSizes: [for (final size in sheets) size.piece],
+          masonrySizes: [for (final size in pieces) size.piece],
         ),
       ).distinct();
-
-  PieceSize _pieceOf(StoredSize size) => PieceSize(
-    width: size.width,
-    height: size.height,
-    id: size.id ?? size.seed,
-  );
 }

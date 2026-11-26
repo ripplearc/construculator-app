@@ -4,6 +4,7 @@ import 'package:construculator/features/calculator/domain/repositories/recents_r
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/update_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -118,6 +119,13 @@ void main() {
 
         expect(stores.sheetSizes, hasLength(3));
         expect(stores.masonrySizes, hasLength(2));
+      });
+
+      test('binds the use case that rewrites a stored size', () {
+        expect(
+          Modular.get<UpdateMaterialSizeUseCase>(),
+          isA<UpdateMaterialSizeUseCase>(),
+        );
       });
 
       test('disposes the trade stores with the module', () async {

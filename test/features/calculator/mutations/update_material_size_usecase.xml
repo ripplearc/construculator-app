@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- UPDATE MATERIAL SIZE USE CASE MUTATION TESTING (T2b 1/3, CA-1096) -->
+    <!-- Targets: which store and unit system the size is looked for in,
+         which stored row is rewritten, what it is rewritten to, and what
+         happens to a size the store no longer holds (rule 4.7; row 409). -->
+
+    <files>
+        <file>lib/features/calculator/domain/usecases/update_material_size_usecase.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the size is looked for among the sheets whatever the
+             trade, or under Imperial whatever the system -->
+        <regex pattern="\.watchSizes\(trade\.sizeStore, system\)" dotAll="true" id="update_material_size.store.always_sheets">
+            <mutation text=".watchSizes(SizeStore.sheet, system)"/>
+            <mutation text=".watchSizes(trade.sizeStore, MeasurementSystem.imperial)"/>
+        </regex>
+
+        <!-- RULE 2: the first row of the store is rewritten, or no row is
+             ever found -->
+        <regex pattern="if \(stored\.isTheRowOf\(size\)\) \{" dotAll="true" id="update_material_size.match.wrong_row">
+            <mutation text="if (true) {"/>
+            <mutation text="if (false) {"/>
+            <mutation text="if (!stored.isTheRowOf(size)) {"/>
+        </regex>
+
+        <!-- RULE 3: the row is rewritten with one of its old measures -->
+        <regex pattern="stored\.copyWith\(width: width, height: height\)," dotAll="true" id="update_material_size.row.old_measure_kept">
+            <mutation text="stored.copyWith(width: width),"/>
+            <mutation text="stored.copyWith(height: height),"/>
+            <mutation text="stored.copyWith(width: height, height: width),"/>
+        </regex>
+
+        <!-- RULE 4: a size the store no longer holds goes to the sheets
+             whatever the trade, or with its measures swapped -->
+        <regex pattern="store: trade\.sizeStore,\s*width: width,\s*height: height," dotAll="true" id="update_material_size.added_back.wrong_store">
+            <mutation text="store: SizeStore.sheet, width: width, height: height,"/>
+            <mutation text="store: trade.sizeStore, width: height, height: width,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="update_material_size" expected-return="0">flutter test test/features/calculator/units/domain/usecases/update_material_size_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

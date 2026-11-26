@@ -1180,6 +1180,49 @@ void main() {
       expect((landed.chips.last as ResultChip).size, sheet(48, 96));
     });
 
+    test('the count the tape ends on is made again at another size, in '
+        'place: 5.63 at 48in x 96in reads 5.40 at 48in x 100in (rule 4.7; '
+        'walkthrough 19.1, step 16)', () {
+      final counted = count(press(const Tape(), '1 8 0 ft ft'), sheet(48, 96));
+
+      final resized = counted.withLastCountAt(sheet(48, 100))!;
+
+      expect(texts(resized), ['180ft²', 'Number of sheets5.40']);
+      expect((resized.chips.last as ResultChip).size, sheet(48, 100));
+    });
+
+    test('of two counts the last one alone is made again, and an edit '
+        'after it counts at the new size', () {
+      final both = count(
+        count(lengthWidthArea(), sheet(48, 96)),
+        sheet(48, 120),
+      );
+
+      final resized = both.withLastCountAt(sheet(48, 100))!;
+      final edited = press(resized, 'tap:0 ✕ 3 0 ft tap:0');
+
+      expect(texts(resized).sublist(3), [
+        'Number of sheets12.83',
+        'Number of sheets12.32',
+      ]);
+      expect(texts(edited).sublist(3), [
+        'Number of sheets17.50',
+        'Number of sheets16.80',
+      ]);
+    });
+
+    test('there is no count to make again on a tape that ends on an area, '
+        'on a count that names no size, or at a size with no face', () {
+      final area = lengthWidthArea();
+      final unnamed = changed(
+        area.landAnswer(Trade.drywall.resultKey, const Scalar(12.83)),
+      );
+
+      expect(area.withLastCountAt(sheet(48, 100)), isNull);
+      expect(unnamed.withLastCountAt(sheet(48, 100)), isNull);
+      expect(count(area, sheet(48, 96)).withLastCountAt(sheet(0, 100)), isNull);
+    });
+
     test('a masonry count is made again as a masonry count', () {
       final counted = count(
         lengthWidthArea(),
