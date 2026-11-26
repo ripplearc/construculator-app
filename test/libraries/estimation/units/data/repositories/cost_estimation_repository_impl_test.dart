@@ -2289,6 +2289,28 @@ void main() {
         expect((await values.next).getRightOrNull()!.estimateName, 'Arrived');
       });
 
+      test(
+        'keeps watching after the server could not be reached, and sends the '
+        'row sync brings',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnSelect = true;
+          fakeSupabaseWrapper.selectExceptionType =
+              SupabaseExceptionType.socket;
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final values = StreamQueue(
+            repository.watchEstimation(estimateIdDefault),
+          );
+          addTearDown(values.cancel);
+
+          expect(
+            (await values.next).getLeftOrNull(),
+            EstimationFailure(errorType: EstimationErrorType.connectionError),
+          );
+          fakePhoneDatabase.seedRows([phoneRow('Arrived')]);
+          expect((await values.next).getRightOrNull()!.estimateName, 'Arrived');
+        },
+      );
+
       test('sends a failure when the phone cannot be watched', () async {
         fakePhoneDatabase.watchError = Exception('database is locked');
 

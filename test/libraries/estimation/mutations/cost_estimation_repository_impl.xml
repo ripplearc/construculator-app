@@ -31,11 +31,14 @@
         <regex pattern="phoneHadRow = phoneHadRow \|\| phoneDto != null;" dotAll="true" id="repo.watch.never_remember_phone_row">
             <mutation text="phoneHadRow = false;"/>
         </regex>
-        <regex pattern="\(phoneHadRow\s*\?\s*null\s*:\s*await _dataSource\.getEstimationById\(estimationId\)\)" dotAll="true" id="repo.watch.always_ask_server">
-            <mutation text="await _dataSource.getEstimationById(estimationId)"/>
+        <regex pattern="if \(dto == null &amp;&amp; !phoneHadRow\) \{" dotAll="true" id="repo.watch.always_ask_server">
+            <mutation text="if (dto == null) {"/>
         </regex>
-        <regex pattern="\(phoneHadRow\s*\?\s*null\s*:\s*await _dataSource\.getEstimationById\(estimationId\)\)" dotAll="true" id="repo.watch.never_ask_server">
-            <mutation text="null"/>
+        <regex pattern="if \(dto == null &amp;&amp; !phoneHadRow\) \{" dotAll="true" id="repo.watch.never_ask_server">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="estimationId: estimationId,\s*\),\s*\);\s*continue;" dotAll="true" id="repo.watch.server_failure_ends_loop">
+            <mutation text="estimationId: estimationId, ), ); return;"/>
         </regex>
         <regex pattern="yield Right\(dto\.toDomain\(\)\);" dotAll="true" id="repo.watch.skip_value">
             <mutation text=""/>

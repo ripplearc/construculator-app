@@ -748,11 +748,21 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         id: estimationId,
       )) {
         phoneHadRow = phoneHadRow || phoneDto != null;
-        final dto =
-            phoneDto ??
-            (phoneHadRow
-                ? null
-                : await _dataSource.getEstimationById(estimationId));
+        CostEstimateDto? dto = phoneDto;
+        if (dto == null && !phoneHadRow) {
+          try {
+            dto = await _dataSource.getEstimationById(estimationId);
+          } catch (e) {
+            yield Left(
+              _handleError(
+                e,
+                'getting estimation',
+                estimationId: estimationId,
+              ),
+            );
+            continue;
+          }
+        }
         if (dto == null) {
           _logger.warning('Estimation not found: $estimationId');
           yield Left(

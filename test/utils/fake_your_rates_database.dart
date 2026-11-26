@@ -172,8 +172,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   }
 
   /// For the refused-defaults table, emits the row now and again after every
-  /// change to that table, as the real database does. Any other query is
-  /// answered by the base fake.
+  /// change to that table, as the real database does. A watch of a cost
+  /// estimate finds no row, as a phone that has not synced the estimate does.
+  /// Any other query is answered by the base fake.
   @override
   Stream<List<Map<String, dynamic>>> watch(
     String sql, {
@@ -182,6 +183,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   }) {
     if (sql.contains(DatabaseConstants.costItemsTable)) {
       return costItems.watch(sql, parameters: parameters, throttle: throttle);
+    }
+    if (sql.contains(DatabaseConstants.costEstimatesTable)) {
+      return Stream.value(const []);
     }
     if (!sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       return super.watch(sql, parameters: parameters, throttle: throttle);
