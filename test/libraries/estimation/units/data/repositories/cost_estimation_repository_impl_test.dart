@@ -2234,6 +2234,30 @@ void main() {
         },
       );
 
+      test(
+        'sends a not-found failure when the row is deleted on the phone, '
+        'though the server still has it',
+        () async {
+          fakeSupabaseWrapper
+              .addTableData(DatabaseConstants.costEstimatesTable, [
+                phoneRow('Still on the server'),
+              ]);
+          fakePhoneDatabase.seedRows([phoneRow('On the phone')]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final values = StreamQueue(
+            repository.watchEstimation(estimateIdDefault),
+          );
+          addTearDown(values.cancel);
+
+          expect((await values.next).isRight(), isTrue);
+          fakePhoneDatabase.removeRow(estimateIdDefault);
+          expect(
+            (await values.next).getLeftOrNull(),
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          );
+        },
+      );
+
       test('sends the server row when the phone has no such row', () async {
         fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, [
           phoneRow('Only on the server'),
