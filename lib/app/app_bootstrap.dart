@@ -7,6 +7,7 @@ import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
+import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:powersync/powersync.dart';
 
@@ -145,6 +146,10 @@ class AppBootstrap {
   /// is active.
   final SessionService sessionService;
 
+  /// Where the owner record is kept, or null to use the file in the app's own
+  /// storage.
+  final OwnerRecordStorageService? ownerRecordStorage;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -157,5 +162,6 @@ class AppBootstrap {
     required this.appLifecycleWrapper,
     required this.appVersion,
     required this.sessionService,
+    this.ownerRecordStorage,
   });
 }

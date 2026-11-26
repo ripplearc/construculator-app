@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/errors/expected_exception.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 
 /// How a queue item ended, as the settle step sees it.
@@ -105,6 +106,21 @@ class AuthEventQueue {
   }) {
     if (eventNumber <= _lastAcceptedEventNumber) return _tail;
     _lastAcceptedEventNumber = eventNumber;
+    return _append(item, settle);
+  }
+
+  /// Adds an item that has no auth event of its own, such as start-up
+  /// recovery, and returns a future that completes when its settle step has
+  /// ended. The future never completes with an error.
+  Future<void> enqueueWithoutEvent({
+    required Future<void> Function(QueueRun run) item,
+    required Future<void> Function(QueueOutcome outcome) settle,
+  }) => _append(item, settle);
+
+  Future<void> _append(
+    Future<void> Function(QueueRun run) item,
+    Future<void> Function(QueueOutcome outcome) settle,
+  ) {
     final done = _tail.then((_) => _run(item, settle));
     _tail = done;
     return done;
@@ -130,6 +146,9 @@ class AuthEventQueue {
     } on QueueTimeoutException {
       _logger.error('Queue item timed out in run ${run.id}');
       outcome = QueueOutcome.timedOut;
+    } on ExpectedException catch (error) {
+      _logger.warning('Queue item failed', error.runtimeType);
+      outcome = QueueOutcome.failed;
     } catch (error) {
       _logger.error('Queue item failed', error.runtimeType);
       outcome = QueueOutcome.failed;
