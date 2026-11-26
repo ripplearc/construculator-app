@@ -27,10 +27,11 @@ const Map<Operator, CoreIconData> operatorIcons = {
 /// The getters at the end are what the page renders, read straight off the
 /// tape with its formatter: the label and value rows, the chips, and the
 /// strip (CA-1088, S1b) in the fixed order of Section 1.2 — what the
-/// engine answers today, with no ranking, no trade follow-ons, no bind
-/// offers and no remembered values, which the ladder's rungs (G1 to G3)
-/// add as one more call in the same mapping. T1a (CA-1092) owns the
-/// display's final shape.
+/// engine answers today and the sheet counts the store answers for the
+/// area on screen (S2a, CA-1090), with no ranking, no cost or weight, no
+/// bind offers and no remembered values, which the ladder's other rungs
+/// (G1 to G3) add as one more call in the same mapping. T1a (CA-1092) owns
+/// the display's final shape.
 class CalculatorState extends Equatable {
   /// The label the equals key reads while a chain continues from a result
   /// (rule 4.9: "only the equals key relabels to Ans while the chain is
@@ -102,6 +103,13 @@ class CalculatorState extends Equatable {
   /// How many reopenings of a bracket are told how to close it.
   static const int groupEditToastsShown = 3;
 
+  /// The sheet counts the trade store last answered for the area the bloc
+  /// watches (S2a, CA-1090; requirement R9), one per stored size in the
+  /// user's order; empty until the store answers. Each count carries the
+  /// area it was made from, so a count of an area no longer on screen is
+  /// never offered while the store's next answer is on its way.
+  final List<TradeCount> materialCounts;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
@@ -115,6 +123,7 @@ class CalculatorState extends Equatable {
     this.toastClosed = false,
     this.refusedUnit,
     this.groupEditsNoticed = 0,
+    this.materialCounts = const [],
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -135,6 +144,7 @@ class CalculatorState extends Equatable {
     bool? toastClosed,
     Unit? Function()? refusedUnit,
     int? groupEditsNoticed,
+    List<TradeCount>? materialCounts,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -147,6 +157,7 @@ class CalculatorState extends Equatable {
     toastClosed: toastClosed ?? this.toastClosed,
     refusedUnit: refusedUnit != null ? refusedUnit() : this.refusedUnit,
     groupEditsNoticed: groupEditsNoticed ?? this.groupEditsNoticed,
+    materialCounts: materialCounts ?? this.materialCounts,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -340,7 +351,16 @@ class CalculatorState extends Equatable {
   /// = banks the running total (rule 4.6). Otherwise the rule answers the
   /// named values earn, minus the ones already landed as result chips
   /// (Section 8: after Pitch-rise is accepted the other two spellings stay
-  /// on offer). Empty while the chain holds an error chip or a step it
+  /// on offer). An area on screen earns its sheet counts first (rule 4.4:
+  /// "After Area is accepted the strip shows sheet counts (2a)"; a typed
+  /// area as much as a computed one, rung 5 and Section 9), the rule
+  /// answers behind them (walkthrough 11.1: "the strip moves on to drywall";
+  /// walkthrough 19.1 under the fold: the three counts "plus 3 more").
+  /// Once a count is accepted the ladder stops at that rung (rule 4.4, rung
+  /// 2: "was a trade result just accepted? then offer the other stored
+  /// sizes"), so the row holds the other sizes and no rule answer
+  /// (walkthrough 15.2, step 4), and nothing once every size is accepted.
+  /// Empty while the chain holds an error chip or a step it
   /// cannot compute ("after an error the area stays empty on purpose";
   /// ÷ 0 before and after its =, doc line 771) and while a bracket is open
   /// (Section 7: no preview until the group closes).
@@ -362,8 +382,82 @@ class CalculatorState extends Equatable {
     final trigLeads = trigAnswer != null && !tape.trigAnswerContinuesAChain;
     return [
       if (trigLeads) trigAnswer,
-      if (runningTotal != null) runningTotal else ...dimensions,
+      if (runningTotal != null)
+        runningTotal
+      else ...[
+        ...materialOffers,
+        if (_countsTheTapeEndsOn.isEmpty) ...dimensions,
+      ],
       if (trigAnswer != null && !trigLeads) trigAnswer,
+    ];
+  }
+
+  /// The area the trade follow-ons count (rule 4.4): the finished area on
+  /// the display — an accepted Area (rung 2a) or a typed 180ft² (rung 5;
+  /// Section 9: "A typed area is as good as a computed one"), never a Calc,
+  /// whose rung (4) offers its cost and conversions and no sheet counts.
+  /// While the tape ends on the counts accepted from that area it is still
+  /// the area before them, so every other size stays on offer after one
+  /// count is accepted, and after a second (row 218; Section 9, "the other
+  /// sizes stay on the strip"), and while a chip before them is reopened
+  /// (row 219). A key after the counts puts something else on the display,
+  /// and the area leaves with it: a length, a Calc or a new number earns no
+  /// count. `null` when nothing on the display is an area, which is also
+  /// when a function key has just opened an empty chip (rung 6 is the
+  /// memory's, G2). The bloc watches the store for this area; nothing is
+  /// counted here.
+  Area? get areaForCounts {
+    final counts = _countsTheTapeEndsOn;
+    if (counts.isEmpty) return _finishedAreaIn(_chipRead);
+    final before = tape.chips.length - counts.length - 1;
+    return before < 0 ? null : _finishedAreaIn(tape.chips[before]);
+  }
+
+  List<ResultChip> get _countsTheTapeEndsOn => [
+    for (final chip in tape.chips.reversed.takeWhile(_isACount))
+      chip as ResultChip,
+  ];
+
+  static bool _isACount(TapeChip chip) =>
+      chip is ResultChip &&
+      Trade.values.any((trade) => trade.resultKey == chip.key);
+
+  Area? _finishedAreaIn(TapeChip? chip) => switch (chip) {
+    final ValueChip chip => switch (chip.value(tape.parser)) {
+      final Area area => area,
+      _ => null,
+    },
+    ResultChip(value: final Area area, :final key) when key != Tape.calcKey =>
+      area,
+    _ => null,
+  };
+
+  /// The sheet counts of the strip (term 2.10; Section 9, "One chip per
+  /// stored size"): [materialCounts] for [areaForCounts], in the store's
+  /// order, each with its size inside the chip, minus the counts already
+  /// accepted from that area ("the other sizes stay on the strip", row
+  /// 218). An accepted count hides one offer of its value and no more, so
+  /// two stored sizes that count the same (48in x 96in and 96in x 48in) do
+  /// not leave together, and a count accepted from an earlier area hides
+  /// nothing of this one. Empty while the store's answer for the area on
+  /// screen is still on its way.
+  List<CalculatorSuggestion> get materialOffers {
+    final area = areaForCounts;
+    final accepted = [
+      for (final chip in _countsTheTapeEndsOn) (chip.key, chip.value),
+    ];
+    return [
+      for (final count in materialCounts)
+        if (count.area == area &&
+            !accepted.remove((count.trade.resultKey, count.value)))
+          CalculatorSuggestion(
+            key: count.trade.offerKey,
+            value: count.value,
+            kind: CalculatorSuggestionKind.materialCount,
+            text: tape.formatter.format(count.value),
+            count: count,
+            basis: tape.formatter.formatPieceSize(count.size),
+          ),
     ];
   }
 
@@ -618,6 +712,7 @@ class CalculatorState extends Equatable {
     groupEditsNoticed,
     toastsRaised,
     toastClosed,
+    materialCounts,
   ];
 
   /// What the last key left to say in a red Alert (Section 5), or `null`:

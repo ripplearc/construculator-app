@@ -232,10 +232,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
     for (final suggestion in suggestions)
       SuggestionData(
         label: labels.suggestionLabel(suggestion),
-        value: suggestion.text,
+        value: labels.suggestionText(suggestion),
         kind: switch (suggestion.kind) {
           CalculatorSuggestionKind.answer ||
           CalculatorSuggestionKind.runningTotal => SuggestionKind.deterministic,
+          CalculatorSuggestionKind.materialCount => SuggestionKind.predictive,
           CalculatorSuggestionKind.conversion => SuggestionKind.conversion,
         },
         onTap: () => bloc.add(CalculatorSuggestionAccepted(suggestion)),

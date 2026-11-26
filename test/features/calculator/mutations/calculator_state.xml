@@ -47,14 +47,62 @@
             <mutation text="tape.namedValues,)) _answer(answer.key, answer.value),"/>
             <mutation text="tape.namedValues,)) if (_hasLanded(answer.key)) _answer(answer.key, answer.value),"/>
         </regex>
-        <regex pattern="if \(runningTotal != null\) runningTotal else \.\.\.dimensions," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
-            <mutation text="if (runningTotal != null) runningTotal,"/>
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
+            <mutation text="if (runningTotal != null) runningTotal else ...materialOffers,"/>
         </regex>
         <!-- RULE: the tiles give way to Calc as row 1 does -->
         <regex pattern="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; \[" dotAll="true" id="calculator_state.dimensions.hidden_by_calc">
             <mutation text="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; [ if (tape.runningTotal case ChainValue(isCalculation: true)) ...const &lt;CalculatorSuggestion&gt;[] else"/>
         </regex>
 
+        <!-- RULES (S2a 1/2, CA-1090): the sheet counts on the strip -->
+        <!-- RULE: a count of an area no longer on the display is offered, or
+             the count already landed stays on offer -->
+        <regex pattern="if \(count\.area == area &amp;&amp;\s*!accepted\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="calculator_state.material_offers.stale_or_landed_shown">
+            <mutation text="if (!accepted.remove((count.trade.resultKey, count.value)))"/>
+            <mutation text="if (count.area == area)"/>
+        </regex>
+        <!-- RULE: the rule answers lead the counts, or the counts never reach
+             row 1 -->
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.suggestions.counts_behind_or_gone">
+            <mutation text="if (runningTotal != null) runningTotal else ...[...dimensions, ...materialOffers],"/>
+            <mutation text="if (runningTotal != null) runningTotal else ...dimensions,"/>
+        </regex>
+        <!-- RULE (R2): the rule answers stay on row 1 after a count is
+             accepted, where the ladder stops at the other sizes (rule 4.4,
+             rung 2) -->
+        <regex pattern="if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions," dotAll="true" id="calculator_state.suggestions.ladder_runs_past_an_accepted_count">
+            <mutation text="...dimensions,"/>
+        </regex>
+        <!-- RULE: a Calc that is an area earns sheet counts (rule 4.4 rung 4
+             offers its cost and conversions, never a count) -->
+        <regex pattern="ResultChip\(value: final Area area, :final key\) when key != Tape\.calcKey =&gt;" dotAll="true" id="calculator_state.area_for_counts.calc_counted">
+            <mutation text="ResultChip(value: final Area area, :final key) =&gt;"/>
+        </regex>
+        <!-- RULE: a count on the tape no longer names its area, so the other
+             sizes leave the strip once one is accepted (row 218) -->
+        <regex pattern="return before &lt; 0 \? null : _finishedAreaIn\(tape\.chips\[before\]\);" dotAll="true" id="calculator_state.area_for_counts.other_sizes_leave">
+            <mutation text="return null;"/>
+        </regex>
+        <!-- RULE (R1, B1): the counts of an area the user left stay on the
+             strip, read off an area earlier on the tape -->
+        <regex pattern="if \(counts\.isEmpty\) return _finishedAreaIn\(_chipRead\);" dotAll="true" id="calculator_state.area_for_counts.old_area_kept">
+            <mutation text="if (counts.isEmpty) { return _finishedAreaIn(_chipRead) ?? _finishedAreaIn(tape.chips.firstOrNull); }"/>
+        </regex>
+        <!-- RULE (R1): only the last count names its area, so the sizes left
+             leave the strip once a second count is accepted -->
+        <regex pattern="for \(final chip in tape\.chips\.reversed\.takeWhile\(_isACount\)\)" dotAll="true" id="calculator_state.area_for_counts.second_count_loses_the_area">
+            <mutation text="for (final chip in tape.chips.reversed.take(1).where(_isACount))"/>
+        </regex>
+        <!-- RULE (R1, N2): one accepted count hides every offer of its value,
+             every count of the trade, or a count of a later area -->
+        <regex pattern="!accepted\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="calculator_state.landed_count.hides_every_count">
+            <mutation text="!accepted.contains((count.trade.resultKey, count.value)))"/>
+            <mutation text="accepted.isEmpty)"/>
+        </regex>
+        <regex pattern="for \(final chip in _countsTheTapeEndsOn\) \(chip\.key, chip\.value\)," dotAll="true" id="calculator_state.landed_count.earlier_area_hides">
+            <mutation text="for (final chip in tape.chips.whereType&lt;ResultChip&gt;()) (chip.key, chip.value),"/>
+        </regex>
     </rules>
 
     <commands>

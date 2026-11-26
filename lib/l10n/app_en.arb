@@ -3050,6 +3050,28 @@
   "@calculatorAnswerCone": {
     "description": "Name of the calculator answer for the volume of a cone, on the suggestion strip, the equals key and the result chip"
   },
+  "calculatorOfferDrywall": "Drywall",
+  "@calculatorOfferDrywall": {
+    "description": "Name of the sheet-count chip the calculator offers for an area on the suggestion strip, and of the equals key when it lands one"
+  },
+  "calculatorAnswerNumberOfSheets": "Number of sheets",
+  "@calculatorAnswerNumberOfSheets": {
+    "description": "Name of the calculator result chip and label row for an accepted drywall sheet count"
+  },
+  "calculatorOfferSheetCount": "{count} sheets ({size})",
+  "@calculatorOfferSheetCount": {
+    "description": "Value of a sheet-count chip on the calculator's suggestion strip: the count to two decimals and the stored sheet size it assumed",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "5.63"
+      },
+      "size": {
+        "type": "String",
+        "example": "48in x 96in"
+      }
+    }
+  },
   "calculatorEqualsAns": "Ans",
   "@calculatorEqualsAns": {
     "description": "Face of the calculator equals key while a chain continues from a previous result"
