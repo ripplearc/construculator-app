@@ -300,5 +300,18 @@ void main() {
         },
       );
     });
+
+    group('removing the saved session', () {
+      test('empties secure storage without a sign-out', () async {
+        final wrapper = buildWrapper(secure, _authServer());
+        secure.seed(_sessionKey, '{broken');
+        await wrapper.initialize();
+
+        await wrapper.removeSavedSession();
+
+        expect(secure.storedKeys, isEmpty);
+        expect(await wrapper.readSavedSession(), isA<SavedSessionAbsent>());
+      });
+    });
   });
 }

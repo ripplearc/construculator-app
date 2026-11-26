@@ -41,6 +41,7 @@ class AuthEventService implements Disposable {
   bool _isRecoveryPending = true;
   bool _hasAttemptedRecovery = false;
   bool _recoveryFoundOwnerRecordUnreadable = false;
+  bool _isBlockedBySavedSessionWithoutSession = false;
 
   /// Starts listening to [wrapper] at once.
   AuthEventService({
@@ -124,9 +125,21 @@ class AuthEventService implements Disposable {
   }
 
   Future<void> _handle(QueueRun run, supabase.AuthState event) async {
-    if (_isRecoveryPending) await _recover(run);
+    if (_isRecoveryPending) {
+      try {
+        await _recover(run);
+      } on SavedSessionUnreadableException {
+        if (_isFirstEventWithoutSession(event)) {
+          _isBlockedBySavedSessionWithoutSession = true;
+        }
+        rethrow;
+      }
+    }
     final userId = event.session?.user.id;
     if (userId == null) {
+      if (await _removeUnreadableSavedSessionOnFirstEvent(run, event.event)) {
+        return;
+      }
       // TODO: [CA-1462] Replace this clear with the sign-out handler, which
       // decides by the reason whether to delete or keep the data.
       // https://ripplearc.youtrack.cloud/issue/CA-1462
@@ -143,6 +156,26 @@ class AuthEventService implements Disposable {
     );
   }
 
+  Future<bool> _removeUnreadableSavedSessionOnFirstEvent(
+    QueueRun run,
+    supabase.AuthChangeEvent event,
+  ) async {
+    if (event != supabase.AuthChangeEvent.initialSession) return false;
+    try {
+      return await _recovery.removeUnreadableSavedSession(run);
+    } on SavedSessionNotLoadedException {
+      _isBlockedBySavedSessionWithoutSession = true;
+      rethrow;
+    } on SavedSessionUnreadableException {
+      _isBlockedBySavedSessionWithoutSession = true;
+      rethrow;
+    }
+  }
+
+  bool _isFirstEventWithoutSession(supabase.AuthState event) =>
+      event.session == null &&
+      event.event == supabase.AuthChangeEvent.initialSession;
+
   bool _isFreshSignInEvent(supabase.AuthChangeEvent event) =>
       event == supabase.AuthChangeEvent.signedIn ||
       event == supabase.AuthChangeEvent.passwordRecovery;
@@ -150,7 +183,10 @@ class AuthEventService implements Disposable {
   Future<void> _settle(int eventNumber, QueueOutcome outcome) async {
     final signedInUserId = _wrapper.currentSession?.user.id;
     final CheckState result;
-    if (signedInUserId == null) {
+    if (_isBlockedBySavedSessionWithoutSession) {
+      _isBlockedBySavedSessionWithoutSession = false;
+      result = Blocked(signedInUserId);
+    } else if (signedInUserId == null) {
       result = const FinishedNobodySignedIn();
     } else if (outcome == QueueOutcome.completed &&
         _signInCheck.activeModuleUserId == signedInUserId) {

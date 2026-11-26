@@ -68,6 +68,9 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
       _sessionStorage.readSavedSession();
 
   @override
+  Future<void> removeSavedSession() => _sessionStorage.removePersistedSession();
+
+  @override
   Stream<supabase.AuthState> get onAuthStateChange =>
       _supabaseClient.auth.onAuthStateChange;
 

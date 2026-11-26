@@ -10,6 +10,7 @@ import 'package:construculator/libraries/storage/local_data_delete_service.dart'
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -45,6 +46,25 @@ void main() {
       settle: (outcome) async {},
     );
     if (error != null) throw error!;
+  }
+
+  Future<bool> runRemoval() async {
+    Object? error;
+    var removed = false;
+    await queue.enqueue(
+      eventNumber: queue.numberNextEvent(),
+      item: (run) async {
+        try {
+          removed = await recovery.removeUnreadableSavedSession(run);
+        } catch (e) {
+          error = e;
+          rethrow;
+        }
+      },
+      settle: (outcome) async {},
+    );
+    if (error != null) throw error!;
+    return removed;
   }
 
   setUp(() {
@@ -427,6 +447,150 @@ void main() {
         ownerRecords.record?.pendingDelete,
         const PendingDelete.logoutOrNoOwnerRecord(),
       );
+    });
+
+    group('removing a saved value Supabase could not load', () {
+      const brokenValue = '{broken';
+
+      setUp(() => wrapper.setCurrentUser(null));
+
+      test('does nothing when no value is saved', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+
+        final removed = await runRemoval();
+
+        expect(removed, isFalse);
+        expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
+        expect(ownerRecords.writes, isEmpty);
+      });
+
+      test('removes the value and saves the sign-out date', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.seedSavedSession(brokenValue);
+
+        final removed = await runRemoval();
+
+        expect(removed, isTrue);
+        expect(await wrapper.readSavedSession(), isA<SavedSessionAbsent>());
+        expect(
+          ownerRecords.record,
+          OwnerRecord(
+            userId: 'user-a',
+            signOutDate: DateTime.utc(2026, 11, 25, 9),
+          ),
+        );
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test('removes the value and writes nothing when no owner record '
+          'exists', () async {
+        wrapper.seedSavedSession(brokenValue);
+
+        final removed = await runRemoval();
+
+        expect(removed, isTrue);
+        expect(ownerRecords.writes, isEmpty);
+      });
+
+      test('keeps the earlier sign-out date', () async {
+        final earlier = DateTime.utc(2026, 11, 1);
+        ownerRecords.seed(OwnerRecord(userId: 'user-a', signOutDate: earlier));
+        wrapper.seedSavedSession(brokenValue);
+
+        await runRemoval();
+
+        expect(ownerRecords.record?.signOutDate, earlier);
+      });
+
+      test('keeps a pending-delete flag and saves no date', () async {
+        ownerRecords.seed(
+          OwnerRecord(
+            userId: 'user-a',
+            pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),
+          ),
+        );
+        wrapper.seedSavedSession(brokenValue);
+
+        final removed = await runRemoval();
+
+        expect(removed, isTrue);
+        expect(ownerRecords.writes, isEmpty);
+        expect(
+          ownerRecords.record?.pendingDelete,
+          const PendingDelete.logoutOrNoOwnerRecord(),
+        );
+      });
+
+      test(
+        'keeps a pending-delete flag that names nobody, without failing',
+        () async {
+          ownerRecords.seed(
+            OwnerRecord(
+              pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),
+            ),
+          );
+          wrapper.seedSavedSession(brokenValue);
+
+          await runRemoval();
+
+          expect(ownerRecords.writes, isEmpty);
+        },
+      );
+
+      test(
+        'removes nothing when a session has been current since the read',
+        () async {
+          ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+          wrapper.seedSavedSession(brokenValue);
+          wrapper.setCurrentUser(
+            FakeUser(id: 'user-b', createdAt: '2026-01-01'),
+          );
+
+          final removed = await runRemoval();
+
+          expect(removed, isFalse);
+          expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
+          expect(await wrapper.readSavedSession(), isA<SavedSessionFound>());
+        },
+      );
+
+      test('keeps a value that reads fine and fails', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+
+        await expectLater(
+          runRemoval(),
+          throwsA(isA<SavedSessionNotLoadedException>()),
+        );
+
+        expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
+        expect(ownerRecords.writes, isEmpty);
+      });
+
+      test('removes and saves nothing when the read fails', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.seedSavedSession(brokenValue);
+        wrapper.shouldFailReadSavedSession = true;
+
+        await expectLater(
+          runRemoval(),
+          throwsA(isA<SavedSessionUnreadableException>()),
+        );
+
+        expect(wrapper.getMethodCallsFor('removeSavedSession'), isEmpty);
+        expect(ownerRecords.writes, isEmpty);
+      });
+
+      test('saves no date when the removal fails', () async {
+        ownerRecords.seed(OwnerRecord(userId: 'user-a'));
+        wrapper.seedSavedSession(brokenValue);
+        wrapper.shouldThrowOnRemoveSavedSession = true;
+
+        await expectLater(runRemoval(), throwsException);
+
+        expect(ownerRecords.writes, isEmpty);
+      });
     });
   });
 }

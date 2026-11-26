@@ -469,6 +469,39 @@ void main() {
           },
         );
 
+        test(
+          'removeSavedSession removes the session and emits no event',
+          () async {
+            fakeWrapper.seedSavedSession('{broken');
+            final events = <supabase.AuthState>[];
+            final subscription = fakeWrapper.onAuthStateChange.listen(
+              events.add,
+            );
+
+            await fakeWrapper.removeSavedSession();
+            await subscription.cancel();
+
+            expect(
+              await fakeWrapper.readSavedSession(),
+              isA<SavedSessionAbsent>(),
+            );
+            expect(events, isEmpty);
+          },
+        );
+
+        test('removeSavedSession throws when set to fail and keeps the '
+            'session', () async {
+          fakeWrapper.seedSavedSession('{broken');
+          fakeWrapper.shouldThrowOnRemoveSavedSession = true;
+
+          await expectLater(fakeWrapper.removeSavedSession(), throwsException);
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionFound>(),
+          );
+        });
+
         test('reset removes the saved session and the failure', () async {
           fakeWrapper.seedSavedSession('{"access_token":"a"}');
           fakeWrapper.shouldFailReadSavedSession = true;

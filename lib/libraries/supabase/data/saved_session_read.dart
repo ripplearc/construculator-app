@@ -26,9 +26,11 @@ final class SavedSessionFound extends SavedSessionRead with Equatable {
   /// counts as "not a session", because Supabase keeps a value that throws
   /// anything while loading.
   ///
-  /// This is Supabase's own test: the text is JSON and holds an access token.
-  /// A value that fails it gives a first auth event with no session, and
-  /// Supabase leaves the value saved.
+  /// This is Supabase's own test: the text is JSON and holds an access token
+  /// and a user. A value that is not JSON, or has a bad user, gives a first
+  /// auth event with no session, and Supabase leaves the value saved. A JSON
+  /// value with no access token makes Supabase end the session itself and
+  /// remove the value.
   bool get isReadableSession => _session != null;
 
   /// The user the saved session belongs to, or null when [isReadableSession]

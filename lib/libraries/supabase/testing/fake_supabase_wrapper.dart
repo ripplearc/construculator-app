@@ -288,6 +288,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
+  /// Emits Supabase's first event when it found no session to load.
+  void emitInitialSessionWithoutSession() {
+    _authStateController.add(
+      _createAuthState(supabase.AuthChangeEvent.initialSession, null),
+    );
+  }
+
   @override
   Stream<supabase.AuthState> get onAuthStateChange =>
       _authStateController.stream;
@@ -484,6 +491,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// until [signOut] removes it.
   void seedSavedSession(String value) {
     _savedSession = SavedSessionFound(value);
+  }
+
+  /// Makes [removeSavedSession] throw
+  bool shouldThrowOnRemoveSavedSession = false;
+
+  @override
+  Future<void> removeSavedSession() async {
+    _methodCalls.add({'method': 'removeSavedSession'});
+    if (shouldThrowOnRemoveSavedSession) {
+      throw ServerException(Trace.current(), Exception('Removal failed'));
+    }
+    _savedSession = const SavedSessionAbsent();
   }
 
   @override
@@ -1289,6 +1308,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowAfterSignOutEndedSession = false;
     signOutGate = null;
     shouldFailReadSavedSession = false;
+    shouldThrowOnRemoveSavedSession = false;
     savedSessionReadsAfterSignOutBeforeRemoval = 0;
     afterReadSavedSession = null;
     _savedSession = const SavedSessionAbsent();
