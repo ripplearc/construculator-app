@@ -124,6 +124,26 @@
         <regex pattern="if \(text != null\) _textKey: text\(chip\)," dotAll="true" id="tape_chip_codec.text.always_written">
             <mutation text="_textKey: text?.call(chip) ?? '',"/>
         </regex>
+
+        <!-- RULE 13 (G1, CA-1072; rule 4.7): a count's stored size is
+             written without its name or turned on its side, dropped on
+             read, read on its side, or a side that is no length is taken
+             for one -->
+        <regex pattern="_idKey: size\.id," dotAll="true" id="tape_chip_codec.size.name_dropped">
+            <mutation text="_idKey: null,"/>
+        </regex>
+        <regex pattern="_widthKey: TapeValueCodec\.quantity\(size\.width\),\s*_heightKey: TapeValueCodec\.quantity\(size\.height\)," dotAll="true" id="tape_chip_codec.size.written_on_its_side">
+            <mutation text="_widthKey: TapeValueCodec.quantity(size.height), _heightKey: TapeValueCodec.quantity(size.width),"/>
+        </regex>
+        <regex pattern="size: switch \(json\[_sizeKey\]\) \{\s*null =&gt; null," dotAll="true" id="tape_chip_codec.size.dropped_on_read">
+            <mutation text="size: switch (null) { null =&gt; null,"/>
+        </regex>
+        <regex pattern="width: _length\(json\[_widthKey\], '\$where\.\$_widthKey'\),\s*height: _length\(json\[_heightKey\], '\$where\.\$_heightKey'\)," dotAll="true" id="tape_chip_codec.size.read_on_its_side">
+            <mutation text="width: _length(json[_heightKey], '$where.$_heightKey'), height: _length(json[_widthKey], '$where.$_widthKey'),"/>
+        </regex>
+        <regex pattern="final Length length =&gt; length,\s*_ =&gt; throw FormatException\('Unreadable tape: \$where'\)," dotAll="true" id="tape_chip_codec.size.any_quantity_a_side">
+            <mutation text="final Length length =&gt; length, _ =&gt; const Length(0, unit: Unit.inch),"/>
+        </regex>
     </rules>
 
     <commands>

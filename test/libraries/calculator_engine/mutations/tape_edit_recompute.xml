@@ -5,9 +5,13 @@
          removal of one that cannot be rebuilt. Critical path: a wrong
          recompute shows a stale or a missing answer. -->
 
+    <!-- G1 (CA-1072): a count is made again at the stored size it was made
+         at (RULES G1-1 to G1-8). -->
+
     <files>
         <file>lib/libraries/calculator_engine/tape.dart</file>
         <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
     </files>
 
     <rules>
@@ -211,6 +215,50 @@
              the seal reopened -->
         <regex pattern="if \(tape\.active != null\) return _changed\(tape, removed: removed\);" dotAll="true" id="tape_edit_recompute.zero_divisor.tap_opens_second_chip">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE G1-1: a count is not made again after an edit -->
+        <regex pattern="if \(result\.size case final size\?\) return _recounted\(result, size\);" dotAll="true" id="tape_edit.recount.count_not_made_again">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE G1-2: the recount reads the last chip, a count, for its
+             area -->
+        <regex pattern="chips\.reversed\.skip\(acceptedCounts\.length\)\.firstOrNull," dotAll="true" id="tape_edit.recount.area_read_from_the_counts">
+            <mutation text="chips.reversed.firstOrNull,"/>
+            <mutation text="chips.reversed.skip(acceptedCounts.length + 1).firstOrNull,"/>
+        </regex>
+
+        <!-- RULE G1-3: a count is made again under another trade's rule -->
+        <regex pattern="\.where\(\(trade\) =&gt; trade\.resultKey == count\.key\)" dotAll="true" id="tape_edit.recount.wrong_trade">
+            <mutation text=".where((trade) =&gt; trade.resultKey != count.key)"/>
+            <mutation text=".where((trade) =&gt; true)"/>
+        </regex>
+
+        <!-- RULE G1-4: the count made again keeps its old value -->
+        <regex pattern="\[final made\] =&gt; ResultChip\(key: count\.key, value: made\.value, size: size\)," dotAll="true" id="tape_edit.recount.old_value_kept">
+            <mutation text="[final made] =&gt; ResultChip(key: count.key, value: count.value, size: size),"/>
+        </regex>
+
+        <!-- RULE G1-5: the count made again loses its size -->
+        <regex pattern="\[final made\] =&gt; ResultChip\(key: count\.key, value: made\.value, size: size\)," dotAll="true" id="tape_edit.recount.size_lost">
+            <mutation text="[final made] =&gt; ResultChip(key: count.key, value: made.value),"/>
+        </regex>
+
+        <!-- RULE G1-6: a count lands without its size -->
+        <regex pattern="final answer = ResultChip\(key: key, value: value, size: size\);" dotAll="true" id="tape_edit.recount.lands_without_size">
+            <mutation text="final answer = ResultChip(key: key, value: value);"/>
+        </regex>
+
+        <!-- RULE G1-7: a count accepted during an edit lands without its
+             size -->
+        <regex pattern="return _leavingEdit\(\(tape\) =&gt; tape\.landAnswer\(key, value, size: size\)\);" dotAll="true" id="tape_edit.recount.lands_without_size_from_an_edit">
+            <mutation text="return _leavingEdit((tape) =&gt; tape.landAnswer(key, value));"/>
+        </regex>
+
+        <!-- RULE G1-8: two counts that differ by size alone are equal -->
+        <regex pattern="List&lt;Object\?&gt; get props =&gt; \[key, value, operator, readIn, size\];" dotAll="true" id="tape_edit.recount.size_not_in_equality">
+            <mutation text="List&lt;Object?&gt; get props =&gt; [key, value, operator, readIn];"/>
         </regex>
     </rules>
 

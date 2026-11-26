@@ -2,6 +2,7 @@ import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
 
@@ -372,15 +373,22 @@ final class ResultChip extends TapeChip {
   /// rebuilds it (rule 4.8); `null` for the unit the chain answered in.
   final Unit? readIn;
 
+  /// The stored size a count was made at (requirement R8; rule 4.7: "a
+  /// result built on a stored fact states it"): what its Sheet size or
+  /// Piece size pill shows, and what the count is made again from when a
+  /// chip before it is edited. `null` for an answer no store stands behind.
+  final PieceSize? size;
+
   const ResultChip({
     required this.key,
     required this.value,
     this.operator,
     this.readIn,
+    this.size,
   });
 
   @override
-  List<Object?> get props => [key, value, operator, readIn];
+  List<Object?> get props => [key, value, operator, readIn, size];
 }
 
 /// One chip that holds a whole bracket (term 2.22): the operator before it

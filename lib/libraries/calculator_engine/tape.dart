@@ -2087,9 +2087,13 @@ class Tape extends Equatable {
   /// that answer, as pressing Pitch again does, and adds no new chip
   /// (Section 8: "a tap on one of them rewrites the last tape entry, like
   /// pressing Pitch again, and adds no new entry"; decision tree row 255).
-  TapeOutcome landAnswer(String key, Quantity value) {
+  ///
+  /// A count lands with the stored [size] it was made at
+  /// ([ResultChip.size]; rule 4.7), so that an edit before it counts the
+  /// new area at the same size.
+  TapeOutcome landAnswer(String key, Quantity value, {PieceSize? size}) {
     if (editing != null) {
-      return _leavingEdit((tape) => tape.landAnswer(key, value));
+      return _leavingEdit((tape) => tape.landAnswer(key, value, size: size));
     }
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
@@ -2103,7 +2107,7 @@ class Tape extends Equatable {
       );
     }
     final tape = _withFractionClosedAsInches()._withFieldClosed();
-    final answer = ResultChip(key: key, value: value);
+    final answer = ResultChip(key: key, value: value, size: size);
     if (tape.endsWithOperator) {
       return const TapeRefused(TapeRefusal.operatorNeedsANumber);
     }
@@ -2658,6 +2662,7 @@ class Tape extends Equatable {
     if (TrigFunction.values.any((function) => _isAnswerOf(result, function))) {
       return rebuiltTrigAnswer(result);
     }
+    if (result.size case final size?) return _recounted(result, size);
     if (result.key == calcKey) {
       return switch (_lastChainTotal) {
         ChainValue(:final value, :final isCalculation)
@@ -2705,6 +2710,23 @@ class Tape extends Equatable {
       }
     }
     return null;
+  }
+
+  // A count is made again from the area before it at the size it was made
+  // at (rule 4.7: "recomputes in place"); with no area left to count, or an
+  // area of zero or less, there is no count and the chip goes.
+  ResultChip? _recounted(ResultChip count, PieceSize size) {
+    final area = _finishedAreaIn(
+      chips.reversed.skip(acceptedCounts.length).firstOrNull,
+    );
+    final trade = Trade.values
+        .where((trade) => trade.resultKey == count.key)
+        .firstOrNull;
+    if (area == null || trade == null) return null;
+    return switch (const Trades().countsFor(trade, area, [size])) {
+      [final made] => ResultChip(key: count.key, value: made.value, size: size),
+      _ => null,
+    };
   }
 
   Quantity _inTheReadingOf(ResultChip result, Quantity value) {

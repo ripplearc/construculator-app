@@ -122,6 +122,103 @@ void main() {
       ]);
     });
 
+    test('a count keeps the stored size it was made at, with the name of '
+        'its stored row or with none; a result with no size writes no size, '
+        'so a tape banked before reads as it did (rule 4.7)', () {
+      PieceSize sheet({String? id}) => PieceSize(
+        width: const Length(48 * Length.ticksPerInch, unit: Unit.inch),
+        height: const Length(96 * Length.ticksPerInch, unit: Unit.inch),
+        id: id,
+      );
+      final chips = <TapeChip>[
+        const ResultChip(key: 'Area', value: Area(180.0 * 147456)),
+        ResultChip(
+          key: 'Number of sheets',
+          value: const Scalar(5.625),
+          size: sheet(id: 'sheet_48x96in'),
+        ),
+        ResultChip(
+          key: 'Number of sheets',
+          value: const Scalar(5.625),
+          size: sheet(),
+        ),
+      ];
+
+      final json = TapeChipCodec.encode(chips);
+      final written =
+          (jsonDecode(json) as Map<String, Object?>)['chips']! as List<Object?>;
+
+      expect(TapeChipCodec.decode(json), chips);
+      expect(
+        (written[0]! as Map<String, Object?>).containsKey('size'),
+        isFalse,
+      );
+      expect(
+        ((written[1]! as Map<String, Object?>)['size']!
+            as Map<String, Object?>)['id'],
+        'sheet_48x96in',
+      );
+    });
+
+    test('a size whose side is no length, or is missing, is refused naming '
+        'where it sits', () {
+      final side =
+          (jsonDecode(
+                TapeChipCodec.encode(const [
+                  ResultChip(
+                    key: 'Width',
+                    value: Length(48 * Length.ticksPerInch, unit: Unit.inch),
+                  ),
+                ]),
+              )
+              as Map<String, Object?>);
+      final length =
+          ((side['chips']! as List<Object?>).single!
+              as Map<String, Object?>)['value'];
+      final scalar =
+          (((jsonDecode(
+                            TapeChipCodec.encode(const [
+                              ResultChip(key: 'Calc', value: Scalar(2)),
+                            ]),
+                          )
+                          as Map<String, Object?>)['chips']!
+                      as List<Object?>)
+                  .single!
+              as Map<String, Object?>)['value'];
+      String tape(Map<String, Object?> size) => jsonEncode({
+        'schema_version': 1,
+        'chips': [
+          {
+            'type': 'result',
+            'key': 'Number of sheets',
+            'value': scalar,
+            'size': size,
+          },
+        ],
+      });
+
+      expect(
+        () => TapeChipCodec.decode(tape({'width': scalar, 'height': length})),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('chips[0].size.width'),
+          ),
+        ),
+      );
+      expect(
+        () => TapeChipCodec.decode(tape({'width': length})),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('chips[0].size.height'),
+          ),
+        ),
+      );
+    });
+
     test('an empty tape round-trips as an empty chip list', () {
       final json = TapeChipCodec.encode([]);
       expect(jsonDecode(json), {'schema_version': 1, 'chips': []});

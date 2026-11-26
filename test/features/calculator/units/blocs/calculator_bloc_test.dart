@@ -5282,7 +5282,9 @@ void main() {
             ResultChip(
               key: Trade.drywall.resultKey,
               value: state.materialCounts.first.value,
+              size: state.materialCounts.first.size,
             ),
+            reason: 'the count lands with the size it was made at (rule 4.7)',
           );
           expect(rowOne(state), [
             'Drywall: 5.00 (48in x 108in)',
@@ -5347,7 +5349,11 @@ void main() {
         final landed = withCounts('', tape: areaAccepted());
         final count = landed.suggestions.first.count!;
         final counted =
-            (landed.tape.landAnswer(count.trade.resultKey, count.value)
+            (landed.tape.landAnswer(
+                      count.trade.resultKey,
+                      count.value,
+                      size: count.size,
+                    )
                     as TapeChanged)
                 .tape;
         final reopened = landed.copyWith(
@@ -5426,7 +5432,11 @@ void main() {
         final count = state.suggestions[index].count!;
         return state.copyWith(
           tape:
-              (state.tape.landAnswer(count.trade.resultKey, count.value)
+              (state.tape.landAnswer(
+                        count.trade.resultKey,
+                        count.value,
+                        size: count.size,
+                      )
                       as TapeChanged)
                   .tape,
         );
