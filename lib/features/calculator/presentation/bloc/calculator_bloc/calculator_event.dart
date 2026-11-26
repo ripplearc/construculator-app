@@ -154,6 +154,34 @@ class CalculatorKeypadFoldChanged extends CalculatorEvent {
   List<Object?> get props => [isFolded];
 }
 
+/// A tape was banked to history and a clean tape started (rule 4.9); the
+/// card shows with Undo and View until the next key press.
+class CalculatorSessionBanked extends CalculatorEvent {
+  /// The tape that went to history, as it was.
+  final Tape tape;
+
+  /// Whether its result opened the new tape as a Calc chip (an operator
+  /// after a result), so the card reads "carried forward".
+  final bool carriedForward;
+
+  const CalculatorSessionBanked(this.tape, {this.carriedForward = false});
+
+  @override
+  List<Object?> get props => [tape, carriedForward];
+}
+
+/// Undo on the "Saved to history" card: the banked tape comes back exactly
+/// and the card closes (Section 1.7).
+class CalculatorUndoPressed extends CalculatorEvent {
+  const CalculatorUndoPressed();
+}
+
+/// View on the "Saved to history" card: history opens full screen and the
+/// card closes (Section 1.7).
+class CalculatorHistoryViewPressed extends CalculatorEvent {
+  const CalculatorHistoryViewPressed();
+}
+
 class CalculatorGroupsReordered extends CalculatorEvent {
   /// Where the group was in the order the keyboard showed.
   final int oldIndex;

@@ -67,6 +67,17 @@ class CalculatorState extends Equatable {
   /// panel can show under the collapsed display (Section 1.4).
   final bool isKeypadFolded;
 
+  /// The tape the last bank took to history, kept in memory for Undo until
+  /// the next key press or View (Section 1.7, term 2.19); `null` until a
+  /// bank and after either. The card's own ✕ hides the card ([toastClosed])
+  /// and leaves the tape here: Undo is reachable from the card alone, so
+  /// the pending Undo of a hidden card is never pressed.
+  final Tape? bankedTape;
+
+  /// Whether the last bank carried its result forward into the new tape
+  /// (rule 4.9: an operator after a result), so the card says so.
+  final bool bankedCarriedForward;
+
   /// What the tape said when it took the last key, or `null`.
   final TapeNotice? notice;
 
@@ -131,6 +142,8 @@ class CalculatorState extends Equatable {
     this.groupOrder = CalculatorGroupId.defaultOrder,
     this.historyStage = DisplayAreaStage.collapsed,
     this.isKeypadFolded = false,
+    this.bankedTape,
+    this.bankedCarriedForward = false,
     this.notice,
     this.refusal,
     this.closesCalculator = false,
@@ -155,6 +168,8 @@ class CalculatorState extends Equatable {
     List<String>? groupOrder,
     DisplayAreaStage? historyStage,
     bool? isKeypadFolded,
+    Tape? Function()? bankedTape,
+    bool? bankedCarriedForward,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
     bool? closesCalculator,
@@ -171,6 +186,8 @@ class CalculatorState extends Equatable {
     groupOrder: groupOrder ?? this.groupOrder,
     historyStage: historyStage ?? this.historyStage,
     isKeypadFolded: isKeypadFolded ?? this.isKeypadFolded,
+    bankedTape: bankedTape != null ? bankedTape() : this.bankedTape,
+    bankedCarriedForward: bankedCarriedForward ?? this.bankedCarriedForward,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
     closesCalculator: closesCalculator ?? this.closesCalculator,
@@ -865,6 +882,8 @@ class CalculatorState extends Equatable {
     groupOrder,
     historyStage,
     isKeypadFolded,
+    bankedTape,
+    bankedCarriedForward,
     notice,
     refusal,
     sizeNotAdded,
@@ -911,6 +930,20 @@ class CalculatorState extends Equatable {
     if (notice == TapeNotice.editingThisGroup &&
         groupEditsNoticed <= groupEditToastsShown) {
       return const CalculatorEditingGroupToast();
+    }
+    if (bankedTape case final banked?) {
+      final result = switch (banked.chips.lastOrNull) {
+        ResultChip(:final key, :final value) => (
+          key: key,
+          text: banked.formatter.format(value),
+        ),
+        _ => null,
+      };
+      return CalculatorSavedToHistoryToast(
+        resultKey: result?.key,
+        resultText: result?.text,
+        carriedForward: bankedCarriedForward,
+      );
     }
     final typed = tape.beingTyped;
     final key = typed?.key;

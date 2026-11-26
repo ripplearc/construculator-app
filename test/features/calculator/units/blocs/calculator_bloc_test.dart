@@ -2471,6 +2471,270 @@ void main() {
       );
     });
 
+    group('S2b 2/2: the "Saved to history" card and the pending Undo '
+        '(Section 1.7, term 2.19, rule 4.9; CA-1091)', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a banked tape shows the card with its result, and the next key '
+        'closes the card and still does its job',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorDigitPressed('9')),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          tapeState(pressed('9')).copyWith(toastsRaised: 1),
+        ],
+        verify: (bloc) => expect(bloc.state.toast, isNull),
+      );
+
+      test('the card names the key and the result the tape rendered, and '
+          'says carried forward when an operator took it', () {
+        expect(
+          CalculatorState(bankedTape: pressed('2 + 3 =')).toast,
+          const CalculatorSavedToHistoryToast(
+            resultKey: 'Calc',
+            resultText: '5',
+            carriedForward: false,
+          ),
+        );
+        expect(
+          CalculatorState(
+            bankedTape: pressed('2 + 3 ='),
+            bankedCarriedForward: true,
+          ).toast,
+          const CalculatorSavedToHistoryToast(
+            resultKey: 'Calc',
+            resultText: '5',
+            carriedForward: true,
+          ),
+        );
+        expect(
+          CalculatorState(bankedTape: pressed('[Length] 2 2 ft')).toast,
+          const CalculatorSavedToHistoryToast(
+            resultKey: null,
+            resultText: null,
+            carriedForward: false,
+          ),
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Undo brings the banked tape back exactly and closes the card; Undo '
+        'with no card does nothing',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('[Length] 2 2 ft × 2 =')))
+          ..add(const CalculatorUndoPressed())
+          ..add(const CalculatorUndoPressed()),
+        expect: () => [
+          CalculatorState(
+            bankedTape: pressed('[Length] 2 2 ft × 2 ='),
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('[Length] 2 2 ft × 2 =')).copyWith(toastsRaised: 1),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.tape, pressed('[Length] 2 2 ft × 2 ='));
+          expect(bloc.state.toast, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'View opens history full screen and closes the card; a new bank '
+        'replaces the card',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(
+            CalculatorSessionBanked(pressed('4 × 5 ='), carriedForward: true),
+          )
+          ..add(const CalculatorHistoryViewPressed()),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          CalculatorState(
+            bankedTape: pressed('4 × 5 ='),
+            bankedCarriedForward: true,
+            toastsRaised: 2,
+          ),
+          const CalculatorState(
+            bankedCarriedForward: true,
+            toastsRaised: 2,
+            historyStage: DisplayAreaStage.fullScreen,
+          ),
+        ],
+        verify: (bloc) => expect(bloc.state.toast, isNull),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'banking an empty tape shows the card with no result',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const CalculatorSessionBanked(Tape())),
+        expect: () => [
+          const CalculatorState(bankedTape: Tape(), toastsRaised: 1),
+        ],
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorSavedToHistoryToast(
+            resultKey: null,
+            resultText: null,
+            carriedForward: false,
+          ),
+        ),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a tape that ended in an error banks with the card naming no result',
+        build: () => bloc,
+        act: (bloc) => bloc.add(CalculatorSessionBanked(pressed('5 ÷ 0 ='))),
+        verify: (bloc) {
+          expect(bloc.state.bankedTape, isNotNull);
+          expect(bloc.state.bankedTape!.chips.last, isNot(isA<ResultChip>()));
+          expect(
+            bloc.state.toast,
+            const CalculatorSavedToHistoryToast(
+              resultKey: null,
+              resultText: null,
+              carriedForward: false,
+            ),
+          );
+        },
+      );
+
+      test('the card renders a result with its unit as the tape did', () {
+        expect(
+          CalculatorState(
+            bankedTape: pressed('[Length] 1 2 ft × 5 ft ='),
+          ).toast,
+          const CalculatorSavedToHistoryToast(
+            resultKey: 'Calc',
+            resultText: '60ft²',
+            carriedForward: false,
+          ),
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Undo after the next key closed the card does nothing: the typed key '
+        'stays',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorDigitPressed('9'))
+          ..add(const CalculatorUndoPressed()),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          tapeState(pressed('9')).copyWith(toastsRaised: 1),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.tape, pressed('9'));
+          expect(bloc.state.bankedTape, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'View twice is one state: the next key is the next state, typed into '
+        'the full-screen display',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorHistoryViewPressed())
+          ..add(const CalculatorHistoryViewPressed())
+          ..add(const CalculatorDigitPressed('9')),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          const CalculatorState(
+            toastsRaised: 1,
+            historyStage: DisplayAreaStage.fullScreen,
+          ),
+          tapeState(pressed('9')).copyWith(
+            toastsRaised: 1,
+            historyStage: DisplayAreaStage.fullScreen,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C after a bank closes the card with the tape, and a reset does too',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(CalculatorSessionBanked(pressed('4 × 5 =')))
+          ..add(const CalculatorResetRequested()),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          const CalculatorState(toastsRaised: 1),
+          CalculatorState(bankedTape: pressed('4 × 5 ='), toastsRaised: 2),
+          const CalculatorState(toastsRaised: 2),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.bankedTape, isNull);
+          expect(bloc.state.toast, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the card\'s ✕ hides the card and leaves the banked tape, as Undo is '
+        'reachable from the card alone',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorToastClosed()),
+        expect: () => [
+          CalculatorState(bankedTape: pressed('2 + 3 ='), toastsRaised: 1),
+          CalculatorState(
+            bankedTape: pressed('2 + 3 ='),
+            toastsRaised: 1,
+            toastClosed: true,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toastClosed, isTrue);
+          expect(bloc.state.bankedTape, pressed('2 + 3 ='));
+        },
+      );
+
+      test('a bank while an edit\'s removed result is still to be said shows '
+          'the removed-result Alert, not the card', () {
+        expect(
+          CalculatorState(
+            bankedTape: pressed('2 + 3 ='),
+            removedResults: const ['Arcsine'],
+          ).toast,
+          const CalculatorResultRemovedToast(keys: ['Arcsine']),
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a bank arriving while the removed-result Alert shows keeps that '
+        'Alert and holds the tape for Undo behind it',
+        build: () => bloc,
+        seed: () => const CalculatorState(removedResults: ['Arcsine']),
+        act: (bloc) => bloc.add(CalculatorSessionBanked(pressed('2 + 3 ='))),
+        verify: (bloc) {
+          expect(bloc.state.bankedTape, pressed('2 + 3 ='));
+          expect(
+            bloc.state.toast,
+            const CalculatorResultRemovedToast(keys: ['Arcsine']),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a refused key after a bank closes the card too, and its Alert shows',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(CalculatorSessionBanked(pressed('2 + 3 =')))
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 1,
+        verify: (bloc) {
+          expect(bloc.state.bankedTape, isNull);
+          expect(bloc.state.refusal, isNotNull);
+          expect(bloc.state.toast, isNot(isA<CalculatorSavedToHistoryToast>()));
+        },
+      );
+    });
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,

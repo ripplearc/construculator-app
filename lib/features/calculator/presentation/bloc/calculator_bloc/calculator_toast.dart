@@ -218,6 +218,33 @@ final class CalculatorPercentNeedsANumberToast extends CalculatorToast {
   List<Object?> get props => [operator];
 }
 
+/// The "Saved to history" card (Section 1.7, term 2.19): a session was
+/// banked; the card names the result it took ("Calc 60ft²"), says
+/// "carried forward" when an operator took it into the new tape (rule
+/// 4.9), and offers Undo and View. It has no timer: it stays until the
+/// next key press.
+final class CalculatorSavedToHistoryToast extends CalculatorToast {
+  /// The key of the banked tape's last result, or `null` for a tape banked
+  /// without one.
+  final String? resultKey;
+
+  /// The banked tape's last result as the tape rendered it ("60ft²"), or
+  /// `null`.
+  final String? resultText;
+
+  /// Whether the result opened the new tape as a Calc chip.
+  final bool carriedForward;
+
+  const CalculatorSavedToHistoryToast({
+    required this.resultKey,
+    required this.resultText,
+    required this.carriedForward,
+  });
+
+  @override
+  List<Object?> get props => [resultKey, resultText, carriedForward];
+}
+
 /// "% needs an operator first": % on a number no operator leads, inside an
 /// open bracket (( 12 then %, rule 4.12) or on its own (CA-1376).
 final class CalculatorPercentNeedsAnOperatorToast extends CalculatorToast {

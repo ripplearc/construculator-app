@@ -4851,6 +4851,30 @@ abstract class AppLocalizations {
   /// **'{key} keeps {value}'**
   String calculatorToastKeepsLengthTitle(String key, String value);
 
+  /// The receipt card after a tape is banked to history, beside the result it took (UX Design Doc Section 1.7, term 2.19)
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to history'**
+  String get calculatorToastSavedToHistory;
+
+  /// The result named on the receipt card when an operator after a result took it into the new tape (UX Design Doc rule 4.9)
+  ///
+  /// In en, this message translates to:
+  /// **'{result} carried forward'**
+  String calculatorToastSavedToHistoryCarriedForward(String result);
+
+  /// The Undo action on the receipt card: brings the banked tape back (UX Design Doc Section 1.7)
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get calculatorUndoButton;
+
+  /// The View action on the receipt card: opens history (UX Design Doc Section 1.7)
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get calculatorViewHistoryButton;
+
   /// Toast when a closed bracket is reopened on the calculator tape, shown the first three times only (UX Design Doc Section 5.6, 'Editing this group')
   ///
   /// In en, this message translates to:

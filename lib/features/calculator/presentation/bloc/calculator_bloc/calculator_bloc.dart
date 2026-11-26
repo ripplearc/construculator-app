@@ -102,6 +102,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupsReordered>(_onGroupsReordered);
     on<CalculatorHistoryStageChanged>(_onHistoryStageChanged);
     on<CalculatorKeypadFoldChanged>(_onKeypadFoldChanged);
+    on<CalculatorSessionBanked>(_onSessionBanked);
+    on<CalculatorUndoPressed>(_onUndoPressed);
+    on<CalculatorHistoryViewPressed>(_onHistoryViewPressed);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
     on<CalculatorToastClosed>(_onToastClosed);
@@ -415,6 +418,37 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
   ) => emit(state.copyWith(isKeypadFolded: event.isFolded));
 
+  void _onSessionBanked(
+    CalculatorSessionBanked event,
+    Emitter<CalculatorState> emit,
+  ) => _emitCountingToast(
+    emit,
+    state.copyWith(
+      bankedTape: () => event.tape,
+      bankedCarriedForward: event.carriedForward,
+      toastClosed: false,
+    ),
+  );
+
+  void _onUndoPressed(
+    CalculatorUndoPressed event,
+    Emitter<CalculatorState> emit,
+  ) {
+    final banked = state.bankedTape;
+    if (banked == null) return;
+    emit(state.copyWith(tape: banked, bankedTape: () => null));
+  }
+
+  void _onHistoryViewPressed(
+    CalculatorHistoryViewPressed event,
+    Emitter<CalculatorState> emit,
+  ) => emit(
+    state.copyWith(
+      historyStage: DisplayAreaStage.fullScreen,
+      bankedTape: () => null,
+    ),
+  );
+
   void _onGroupsReordered(
     CalculatorGroupsReordered event,
     Emitter<CalculatorState> emit,
@@ -478,6 +512,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             refusedUnit: () => null,
             toastClosed: false,
             sizeNotAdded: false,
+            bankedTape: () => null,
             groupEditsNoticed: notice == TapeNotice.editingThisGroup
                 ? state.groupEditsNoticed + 1
                 : null,
@@ -494,6 +529,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             refusedUnit: () => unit,
             toastClosed: false,
             sizeNotAdded: false,
+            bankedTape: () => null,
           ),
         );
     }

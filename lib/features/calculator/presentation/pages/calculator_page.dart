@@ -521,6 +521,24 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                       bloc.add(const CalculatorToastClosed()),
                                   duration: null,
                                 ),
+                                // the "Saved to history" card: no timer, Undo
+                                // and View (Section 1.7, term 2.19)
+                                CalculatorSavedToHistoryToast() =>
+                                  Toast.receipt(
+                                    description: labels.toastBody(toast),
+                                    highlight: labels.toastHighlight(toast),
+                                    actionLabel: l10n.calculatorUndoButton,
+                                    onAction: () =>
+                                        bloc.add(const CalculatorUndoPressed()),
+                                    secondaryLabel:
+                                        l10n.calculatorViewHistoryButton,
+                                    onSecondary: () => bloc.add(
+                                      const CalculatorHistoryViewPressed(),
+                                    ),
+                                    onClose: () =>
+                                        bloc.add(const CalculatorToastClosed()),
+                                    duration: null,
+                                  ),
                                 CalculatorToast() => Toast.error(
                                   description: labels.toastBody(toast),
                                   closeLabel: l10n.closeButton,
