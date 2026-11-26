@@ -186,6 +186,35 @@ enum TapeRefusal {
   /// it. The caller names the operator from the tape.
   operatorNeedsANumber,
 
+  /// % on an operator still waiting for its number (12 + then %): "Type a
+  /// number first", "Type the number after +, then press %." (rule 4.12).
+  /// The caller names the operator from the tape.
+  percentNeedsANumber,
+
+  /// % on a number no operator leads, as ( 12 then %: "% needs an operator
+  /// first" (rule 4.12; Section 7, "Percent"). A percent is a percent of
+  /// the total before it, or a number ÷ 100 under × or ÷.
+  percentNeedsAnOperator,
+
+  /// A second % on a percent, or a key that would type into one (a digit,
+  /// a point, D:M:S, a fraction, a function or trig key): "Already a
+  /// percent" (rule 4.12; 200 × 10 % then %). 50 + 10 % + 10 % works,
+  /// since the + starts a new number.
+  alreadyAPercent,
+
+  /// A unit key on a percent (50 + 10 % then Feet): "That number is a
+  /// percent" (rule 4.12). The total keeps its unit; the percent has none.
+  percentTakesNoUnit,
+
+  /// % on a number with a unit, or an angle (5 Feet + 10 Feet then %): "A
+  /// percent has no unit" (rule 4.12).
+  percentHasNoUnit,
+
+  /// % on a closed bracket a ÷ leads that is worth 0 (5 ÷ ( 2 − 2 ) then
+  /// %): "Cannot divide by zero" (rule 4.12; Section 5, "Division by
+  /// zero"). The caller names the bracket from the tape.
+  percentDividesByZero,
+
   /// = straight after a result chip (Area = =): "Result already shown",
   /// "Press C to start a new entry" (owner decision of 31 October 2026).
   /// Nothing lands; a strip chip tapped still lands its answer.
@@ -779,6 +808,7 @@ class Tape extends Equatable {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
+    if (_refusedOnAPercent() case final refusal?) return refusal;
     if (_endsWithClosedBracket) return _answeredOnClosedBracket(function);
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
@@ -958,6 +988,7 @@ class Tape extends Equatable {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
+    if (_refusedOnAPercent() case final refusal?) return refusal;
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
       return _replaceLast(
@@ -1072,6 +1103,7 @@ class Tape extends Equatable {
     if (openBracketIndex case final index?) {
       return _inside(index, (inner) => inner.typeDigit(digit));
     }
+    if (_refusedOnAPercent() case final refusal?) return refusal;
     if (editing == null && _endsWithClosedBracket) {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
     }
@@ -1106,6 +1138,7 @@ class Tape extends Equatable {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
+    if (_refusedOnAPercent() case final refusal?) return refusal;
     final chip = active;
     if (chip == null) {
       return switch (chips.lastOrNull) {
@@ -1527,6 +1560,7 @@ class Tape extends Equatable {
         entry: const EntryBuffer(),
         exact: () => null,
         poundsPerTon: () => null,
+        isPercent: false,
       ),
     );
   }
@@ -1552,6 +1586,7 @@ class Tape extends Equatable {
     if (openBracketIndex case final index?) {
       return _inside(index, (inner) => inner.typeFraction());
     }
+    if (_refusedOnAPercent() case final refusal?) return refusal;
     final chip = active;
     if (chip == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
     if (_holdsARecalledAngle(chip)) {
@@ -1595,6 +1630,7 @@ class Tape extends Equatable {
         ),
       );
     }
+    if (_refusedOnAPercent(isUnit: true) case final refusal?) return refusal;
     if (editing == null && _endsWithClosedBracket) {
       return const TapeRefused(TapeRefusal.groupCannotTakeUnit);
     }
@@ -1757,6 +1793,83 @@ class Tape extends Equatable {
   /// the strip offers when it is a calculation, the error the strip goes
   /// silent for, or nothing.
   ChainOutcome get runningTotal => evaluator.fold(chips);
+
+  /// % marks the number being typed as a percent (UX Design Doc Section
+  /// 7, "Percent"): after + or − it is that percent of the running total
+  /// (1,000 + 500 + 10 % = 1,650; inside an open bracket, of the bracket's
+  /// own total), after × or ÷ the number ÷ 100 (200 ÷ 10 % = 2,000), and
+  /// the chain is still worked left to right, so 2 + 3 × 10 % is 0.5. A
+  /// closed bracket an operator leads takes it too, worth the percent of
+  /// what it folds to. The percent is a plain number and the total keeps
+  /// its unit: 5ft + 10 % = 5ft 6in. Refused with the tape unchanged (rule
+  /// 4.12) on an operator with no number yet
+  /// ([TapeRefusal.percentNeedsANumber]), on a percent
+  /// ([TapeRefusal.alreadyAPercent]), on a number with a unit or an angle
+  /// ([TapeRefusal.percentHasNoUnit]), on a number no operator leads or a
+  /// named one, as ( 12 then % ([TapeRefusal.percentNeedsAnOperator]), and
+  /// on a bracket worth 0 after ÷ ([TapeRefusal.percentDividesByZero]).
+  ///
+  /// On a chip a tap reopened the key is judged against that chip, so the
+  /// reason fits it: 50 + 10 + 2 with +10 reopened takes the %, and a
+  /// reopened +10% answers "Already a percent". A percent stays finished
+  /// while it is reopened: a digit, a point, D:M:S or a unit on it is
+  /// refused as on a fresh one, ⌫ takes the % off first, and a chip that
+  /// ✕ or ÷ 0 empties loses the mark with its number.
+  TapeOutcome pressPercent() {
+    if (openBracketIndex case final index?) {
+      return _inside(index, (inner) => inner.pressPercent());
+    }
+    final chip = active;
+    if (chip == null) return _percentOfTheLastChip;
+    if (chip.isPercent) return const TapeRefused(TapeRefusal.alreadyAPercent);
+    if (chip.entry.isEmpty) {
+      return TapeRefused(
+        chip.operator == null
+            ? TapeRefusal.percentNeedsAnOperator
+            : TapeRefusal.percentNeedsANumber,
+      );
+    }
+    if (chip.entry.isDegreesMinutesSeconds ||
+        chip.entry.tokens.any((token) => token.unit != null)) {
+      return const TapeRefused(TapeRefusal.percentHasNoUnit);
+    }
+    if (chip.operator == null || chip.key != null) {
+      return const TapeRefused(TapeRefusal.percentNeedsAnOperator);
+    }
+    if (_unfinished case final refusal?) return refusal;
+    return _replaceLast(chip.copyWith(isPercent: true));
+  }
+
+  TapeOutcome get _percentOfTheLastChip {
+    final last = chips.lastOrNull;
+    if (last is! BracketChip) {
+      return const TapeRefused(TapeRefusal.percentNeedsAnOperator);
+    }
+    if (last.isPercent) return const TapeRefused(TapeRefusal.alreadyAPercent);
+    if (last.operator == null) {
+      return const TapeRefused(TapeRefusal.percentNeedsAnOperator);
+    }
+    return switch (evaluator.fold(last.inner)) {
+      ChainValue(value: Scalar(value: 0))
+          when last.operator == Operator.divide =>
+        const TapeRefused(TapeRefusal.percentDividesByZero),
+      ChainValue(value: Scalar()) => _replaceLastChip(
+        last.copyWith(isPercent: true),
+      ),
+      ChainValue() ||
+      ChainFailed() ||
+      ChainEmpty() => const TapeRefused(TapeRefusal.percentHasNoUnit),
+    };
+  }
+
+  TapeOutcome? _refusedOnAPercent({bool isUnit = false}) {
+    if (active case ValueChip(isPercent: true)) {
+      return TapeRefused(
+        isUnit ? TapeRefusal.percentTakesNoUnit : TapeRefusal.alreadyAPercent,
+      );
+    }
+    return null;
+  }
 
   /// An operator seals the active chip and opens the next one under it; on
   /// an operator chip still waiting for its number it changes the operator,
@@ -1989,6 +2102,7 @@ class Tape extends Equatable {
         exact: () => null,
         poundsPerTon: () => null,
         isActive: true,
+        isPercent: false,
       ),
     ]);
   }
@@ -2062,6 +2176,10 @@ class Tape extends Equatable {
   /// all, so the chip is empty under its key again and the drawer can be
   /// offered once more: a recalled value is finished and never becomes a
   /// typed start that ⌫ edits into one digit at a time (rule 4.16).
+  ///
+  /// On a percent, a number or a closed bracket, ⌫ removes only the %
+  /// (Section 7, "Percent": "One ⌫ removes only the %"): 50 + 10 % then ⌫
+  /// reads 50 + 10.
   TapeOutcome backspace() {
     if (openBracketIndex case final index?) {
       final bracket = chips[index] as BracketChip;
@@ -2069,6 +2187,15 @@ class Tape extends Equatable {
         return _bracketRemoved(index, bracket);
       }
       return _inside(index, (inner) => inner.backspace());
+    }
+    if (active case final chip? when chip.isPercent) {
+      return _replaceLast(chip.copyWith(isPercent: false));
+    }
+    if (editing == null) {
+      if (chips.lastOrNull case final BracketChip bracket
+          when bracket.isPercent) {
+        return _replaceLastChip(bracket.copyWith(isPercent: false));
+      }
     }
     if (editing case (
       :final index,
@@ -2162,7 +2289,10 @@ class Tape extends Equatable {
   /// chip, and a value before it is active again, so a digit continues it.
   /// Closing empty a bracket that ⌫ reopened cancels the edit instead and
   /// brings the group back as it was. An inside that cannot be computed
-  /// keeps the bracket open (Section 5.3).
+  /// keeps the bracket open (Section 5.3), and so does a unit typed into a
+  /// percent bracket a tap reopened: a percent has no unit (rule 4.12), so
+  /// the close is refused as % on such a bracket is
+  /// ([TapeRefusal.percentHasNoUnit]).
   TapeOutcome closeBracket() {
     final index = openBracketIndex;
     if (index == null) return const TapeRefused(TapeRefusal.noBracketToClose);
@@ -2186,6 +2316,11 @@ class Tape extends Equatable {
     if (total case final ChainFailed failure) return TapeBracketFailed(failure);
     if (total is ChainEmpty) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
+    }
+    if (total case ChainValue(
+      :final value,
+    ) when bracket.isPercent && value is! Scalar) {
+      return const TapeRefused(TapeRefusal.percentHasNoUnit);
     }
     return _closedAndRecomputedAt(
       index,
@@ -2435,6 +2570,7 @@ class Tape extends Equatable {
     poundsPerTon: () => null,
     isActive: true,
     isEditing: true,
+    isPercent: false,
   );
 
   ChainOutcome get _lastChainTotal {

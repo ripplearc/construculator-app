@@ -222,6 +222,10 @@ typedef ArctangentDivisor = ({double number, String text});
 /// 4.8), starts nothing: it folds to nothing until a chip with no operator
 /// starts a chain, so no number is computed from part of a broken chain.
 ///
+/// A percent is worth that percent of the running total after + or −, and
+/// the number ÷ 100 after × or ÷ ([ValueChip.isPercent]; Section 7,
+/// "Percent"): 1,000 + 500 + 10 % is 1,650 and 2 + 3 × 10 % is 0.5.
+///
 /// A trig chip is worth its answer, except an Arctangent whose number is
 /// followed by ÷ and bare numbers with no key: the ÷ builds the ratio for
 /// ATAN ([ArctangentReach]; Section 6, "Trig chips in a chain"). While that
@@ -270,7 +274,8 @@ class ChainEvaluator extends Equatable {
           }
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
-        case ValueChip(:final operator) || BracketChip(:final operator):
+        case ValueChip(:final operator, :final isPercent) ||
+            BracketChip(:final operator, :final isPercent):
           final reach = ArctangentReach.from(chips, index, evaluator: this);
           final ({Quantity value, int steps})? reading;
           if (reach != null && reach.end == chips.length && operator == null) {
@@ -282,12 +287,23 @@ class ChainEvaluator extends Equatable {
             reading = _readingOf(chip);
           }
           if (reading == null) return const ChainEmpty();
-          running = _joined(
-            running,
-            operator,
-            reading.value,
-            stepsInside: reading.steps,
-          );
+          final worth = isPercent
+              ? _percentOf(running, operator, reading.value)
+              : ArithmeticValue(reading.value);
+          running = switch (worth) {
+            ArithmeticValue(:final value) => _joined(
+              running,
+              operator,
+              value,
+              stepsInside: reading.steps,
+            ),
+            ArithmeticFailed(:final error) => _failedAt(
+              running,
+              operator,
+              reading.value,
+              error,
+            ),
+          };
       }
       index = next;
     }
@@ -299,6 +315,51 @@ class ChainEvaluator extends Equatable {
   }
 
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
+
+  ArithmeticOutcome _percentOf(
+    _RunningChain running,
+    Operator? operator,
+    Quantity percent,
+  ) {
+    if (percent is! Scalar) {
+      return const ArithmeticFailed(CalculationError.dimensionError);
+    }
+    final fraction = Scalar(percent.value / QuantityFormatter.percent);
+    final total = running.total;
+    if (total == null || running.failure != null) {
+      return ArithmeticValue(fraction);
+    }
+    return switch (operator) {
+      Operator.add || Operator.subtract => arithmetic.combine(
+        total,
+        Operator.multiply,
+        fraction,
+      ),
+      Operator.multiply || Operator.divide || null => ArithmeticValue(fraction),
+    };
+  }
+
+  _RunningChain _failedAt(
+    _RunningChain running,
+    Operator? operator,
+    Quantity value,
+    CalculationError error,
+  ) {
+    final total = running.total;
+    if (total == null || operator == null || running.failure != null) {
+      return running;
+    }
+    return (
+      total: total,
+      steps: running.steps,
+      failure: ChainFailed(
+        error,
+        left: total,
+        operator: operator,
+        right: value,
+      ),
+    );
+  }
 
   static bool _lostItsLeftValue(TapeChip chip) => switch (chip) {
     ValueChip(followsARemovedResult: true) ||

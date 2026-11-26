@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE PERCENT MUTATION TESTING (CA-1376) -->
+    <!-- Targets: what a percent is worth (a percent of the running total
+         after + or −, the number ÷ 100 after × or ÷, on a number and on a
+         closed bracket), when the % key is refused (no number yet, no
+         operator, a unit, a second %, a bracket a ÷ would divide by zero),
+         the keys a percent refuses after it, ⌫ taking off only the %, and the
+         chip's "+10%". Critical path: a percent read the wrong way changes a
+         price or a quantity by the size of the percent. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the fold ignores the percent, reads it whole, or takes it
+             off the wrong side -->
+        <regex pattern="final worth = isPercent\s*\? _percentOf\(running, operator, reading\.value\)\s*: ArithmeticValue\(reading\.value\);" dotAll="true" id="percent.fold.ignored">
+            <mutation text="final worth = ArithmeticValue(reading.value);"/>
+            <mutation text="final worth = isPercent &amp;&amp; chip is ValueChip ? _percentOf(running, operator, reading.value) : ArithmeticValue(reading.value);"/>
+        </regex>
+        <regex pattern="final fraction = Scalar\(percent\.value / QuantityFormatter\.percent\);" dotAll="true" id="percent.fold.not_a_hundredth">
+            <mutation text="final fraction = Scalar(percent.value);"/>
+            <mutation text="final fraction = Scalar(percent.value * QuantityFormatter.percent);"/>
+        </regex>
+        <regex pattern="total,\s*Operator\.multiply,\s*fraction,\s*\)," dotAll="true" id="percent.fold.of_the_total">
+            <mutation text="total, Operator.divide, fraction, ),"/>
+        </regex>
+        <!-- RULE 1b (R1, B1 and N3): a percent that is not a plain number is
+             folded as it stands, or a percent step that fails joins its bare
+             number and reads as a dimension error -->
+        <regex pattern="if \(percent is! Scalar\) \{\s*return const ArithmeticFailed\(CalculationError\.dimensionError\);\s*\}" dotAll="true" id="percent.fold.not_a_number_passes">
+            <mutation text="if (percent is! Scalar) { return ArithmeticValue(percent); }"/>
+        </regex>
+        <regex pattern="ArithmeticFailed\(:final error\) =&gt; _failedAt\(\s*running,\s*operator,\s*reading\.value,\s*error,\s*\)," dotAll="true" id="percent.fold.failure_reads_as_dimension">
+            <mutation text="ArithmeticFailed() =&gt; _joined(running, operator, reading.value),"/>
+        </regex>
+
+        <!-- RULE 2: the % key marks nothing, marks a percent again, or names
+             the wrong refusal -->
+        <regex pattern="if \(chip\.isPercent\) return const TapeRefused\(TapeRefusal\.alreadyAPercent\);" dotAll="true" id="percent.key.second_percent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="chip\.operator == null\s*\? TapeRefusal\.percentNeedsAnOperator\s*: TapeRefusal\.percentNeedsANumber," dotAll="true" id="percent.key.no_number_named_wrong">
+            <mutation text="chip.operator == null ? TapeRefusal.percentNeedsANumber : TapeRefusal.percentNeedsAnOperator,"/>
+        </regex>
+        <regex pattern="if \(chip\.entry\.isDegreesMinutesSeconds \|\|\s*chip\.entry\.tokens\.any\(\(token\) =&gt; token\.unit != null\)\) \{" dotAll="true" id="percent.key.unit_or_angle">
+            <mutation text="if (chip.entry.tokens.any((token) =&gt; token.unit != null)) {"/>
+            <mutation text="if (chip.entry.isDegreesMinutesSeconds) {"/>
+        </regex>
+        <regex pattern="if \(chip\.operator == null \|\| chip\.key != null\) \{" dotAll="true" id="percent.key.no_operator">
+            <mutation text="if (chip.operator == null) {"/>
+            <mutation text="if (chip.key != null) {"/>
+        </regex>
+        <regex pattern="if \(_unfinished case final refusal\?\) return refusal;\s*return _replaceLast\(chip\.copyWith\(isPercent: true\)\);" dotAll="true" id="percent.key.unfinished">
+            <mutation text="return _replaceLast(chip.copyWith(isPercent: true));"/>
+        </regex>
+        <regex pattern="return _replaceLast\(chip\.copyWith\(isPercent: true\)\);" dotAll="true" id="percent.key.marks_nothing">
+            <mutation text="return _replaceLast(chip);"/>
+        </regex>
+
+        <!-- RULE 3: a closed bracket's percent -->
+        <regex pattern="if \(last\.isPercent\) return const TapeRefused\(TapeRefusal\.alreadyAPercent\);" dotAll="true" id="percent.bracket.second_percent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(last\.operator == null\) \{\s*return const TapeRefused\(TapeRefusal\.percentNeedsAnOperator\);" dotAll="true" id="percent.bracket.no_operator">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.percentNeedsAnOperator);"/>
+        </regex>
+        <regex pattern="ChainValue\(value: Scalar\(value: 0\)\)\s*when last\.operator == Operator\.divide =&gt;" dotAll="true" id="percent.bracket.zero_under_any_operator">
+            <mutation text="ChainValue(value: Scalar(value: 0)) =&gt;"/>
+        </regex>
+        <regex pattern="ChainValue\(value: Scalar\(\)\) =&gt; _replaceLastChip\(\s*last\.copyWith\(isPercent: true\),\s*\)," dotAll="true" id="percent.bracket.marks_nothing">
+            <mutation text="ChainValue(value: Scalar()) =&gt; _replaceLastChip(last),"/>
+        </regex>
+
+        <!-- RULE 4: a key after a percent types into it, an edit of a percent
+             is refused, or a unit reads as a second % -->
+        <regex pattern="TapeOutcome\? _refusedOnAPercent\(\{bool isUnit = false\}\) \{\s*if \(active case ValueChip\(isPercent: true\)\) \{" dotAll="true" id="percent.after.reopened_percent_takes_keys">
+            <mutation text="TapeOutcome? _refusedOnAPercent({bool isUnit = false}) { if (editing != null) return null; if (active case ValueChip(isPercent: true)) {"/>
+        </regex>
+        <regex pattern="isUnit \? TapeRefusal\.percentTakesNoUnit : TapeRefusal\.alreadyAPercent," dotAll="true" id="percent.after.unit_named_wrong">
+            <mutation text="TapeRefusal.alreadyAPercent,"/>
+        </regex>
+        <regex pattern="if \(_refusedOnAPercent\(\) case final refusal\?\) return refusal;" dotAll="true" id="percent.after.key_types_into_it">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_refusedOnAPercent\(isUnit: true\) case final refusal\?\) return refusal;" dotAll="true" id="percent.after.unit_lands">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 5: ⌫ takes off more than the %, or leaves it -->
+        <regex pattern="if \(active case final chip\? when chip\.isPercent\) \{" dotAll="true" id="percent.backspace.number">
+            <mutation text="if (active case final chip? when false) {"/>
+            <mutation text="if (active case final chip? when chip.isPercent &amp;&amp; editing == null) {"/>
+        </regex>
+        <regex pattern="if \(chips\.lastOrNull case final BracketChip bracket\s*when bracket\.isPercent\) \{" dotAll="true" id="percent.backspace.bracket">
+            <mutation text="if (chips.lastOrNull case final BracketChip bracket when !bracket.isPercent &amp;&amp; bracket.isPercent) {"/>
+        </regex>
+
+        <!-- RULE 6: the chip loses its % sign -->
+        <regex pattern="String get text =&gt; isPercent \? '\$\{entry\.text\}%' : entry\.text;" dotAll="true" id="percent.chip.no_sign">
+            <mutation text="String get text =&gt; entry.text;"/>
+        </regex>
+        <regex pattern="'\$\{isPercent &amp;&amp; !isOpen \? '%' : ''\}';" dotAll="true" id="percent.chip.bracket_no_sign">
+            <mutation text="'';"/>
+            <mutation text="'${isPercent ? '%' : ''}';"/>
+        </regex>
+
+        <!-- RULE 7 (R1, N1 and N7): % on a reopened chip closes the edit and
+             is judged against the end of the tape, or a chip that ✕ or ÷ 0
+             empties keeps its percent mark -->
+        <regex pattern="TapeOutcome pressPercent\(\) \{\s*if \(openBracketIndex case final index\?\) \{" dotAll="true" id="percent.key.reopened_chip_left">
+            <mutation text="TapeOutcome pressPercent() { if (editing != null) { return _leavingEdit((tape) =&gt; tape.pressPercent()); } if (openBracketIndex case final index?) {"/>
+        </regex>
+        <regex pattern="isPercent: false," dotAll="true" id="percent.emptied.keeps_the_mark">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 8 (R2, N9): a reopened percent bracket closes on a total
+             with a unit, or a plain bracket with a unit is refused -->
+        <regex pattern="when bracket\.isPercent &amp;&amp; value is! Scalar\) \{" dotAll="true" id="percent.reopened_bracket.closes_with_a_unit">
+            <mutation text="when false) {"/>
+            <mutation text="when value is! Scalar) {"/>
+        </regex>
+    </rules>
+
+    <exclude>
+        <token begin="//" end="\n"/>
+        <token begin="/*" end="*/"/>
+    </exclude>
+
+    <commands>
+        <command group="percent" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_percent_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
