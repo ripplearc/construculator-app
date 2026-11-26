@@ -100,6 +100,16 @@
         <regex pattern="TapeChanged\(\s*:final tape,\s*notice: TapeNotice\.resultRemoved,\s*:final removed,\s*\)\s*when tape\._hasAStepToLand =&gt;" dotAll="true" id="tape_bracket_edit.equals.removed_answer_lands_nothing">
             <mutation text="TapeChanged(:final tape, notice: TapeNotice.resultRemoved, :final removed) when false =&gt;"/>
         </regex>
+
+        <!-- RULE (R4): a Calc behind a closed bracket that is the whole tape
+             and holds one value is removed at the close, or one behind a
+             bracket beside another value is kept -->
+        <regex pattern="when isCalculation \|\| _isALoneClosedBracket =&gt;" dotAll="true" id="tape_bracket_edit.close.lone_bracket_is_no_calculation">
+            <mutation text="when isCalculation =&gt;"/>
+        </regex>
+        <regex pattern="\[BracketChip\(isOpen: false\)\] =&gt; true," dotAll="true" id="tape_bracket_edit.close.any_last_bracket_is_a_calculation">
+            <mutation text="[..., BracketChip(isOpen: false)] =&gt; true,"/>
+        </regex>
     </rules>
 
     <commands>

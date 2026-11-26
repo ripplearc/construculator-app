@@ -1860,9 +1860,9 @@ class Tape extends Equatable {
             when tape._hasAStepToLand =>
           _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
         // the close took an old answer with it, so the step left pending
-        // at the end is landed as well: ( 2 + 3 ) = × 4, the bracket
-        // reopened and retyped as (5), reads (5) | ×4 | Calc 20 (Section
-        // 7: "= closes the bracket first and then lands the Calc")
+        // at the end is landed as well: 7 ( 2 + 3 ) = × 4, the bracket
+        // reopened and retyped as (5), reads 7 | (5) | ×4 | Calc 20
+        // (Section 7: "= closes the bracket first and then lands the Calc")
         TapeChanged(
           :final tape,
           notice: TapeNotice.resultRemoved,
@@ -2468,18 +2468,25 @@ class Tape extends Equatable {
     _ => null,
   };
 
+  bool get _isALoneClosedBracket => switch (chips) {
+    [BracketChip(isOpen: false)] => true,
+    _ => false,
+  };
+
   TapeChip? _rebuilt(ResultChip result, {required bool failsAsError}) {
     if (TrigFunction.values.any((function) => _isAnswerOf(result, function))) {
       return rebuiltTrigAnswer(result);
     }
     if (result.key == calcKey) {
       return switch (_lastChainTotal) {
-        ChainValue(:final value, isCalculation: true) => ResultChip(
-          key: calcKey,
-          value: _inTheReadingOf(result, value),
-          operator: result.operator,
-          readIn: result.readIn,
-        ),
+        ChainValue(:final value, :final isCalculation)
+            when isCalculation || _isALoneClosedBracket =>
+          ResultChip(
+            key: calcKey,
+            value: _inTheReadingOf(result, value),
+            operator: result.operator,
+            readIn: result.readIn,
+          ),
         ChainFailed(:final error) when failsAsError => ErrorChip(
           error,
           replacesAResult: true,

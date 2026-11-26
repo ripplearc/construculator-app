@@ -117,14 +117,63 @@ void main() {
     test('= on a reopened bracket in the middle lands the step left pending '
         'at the end even when the close removed the old answer, and still '
         'names the answer that went (R2 nit; Section 7)', () {
-      final tape = press(const Tape(), '( 2 + 3 ( = × 4');
-      expect(texts(tape), ['(2+3)', 'Calc5', '×4']);
-      final outcome = press(tape, 'tap:0 ⌫ ⌫ ⌫ 5').pressEquals();
+      final tape = press(const Tape(), '7 ( 2 + 3 ( = × 4');
+      expect(texts(tape), ['7', '(2+3)', 'Calc5', '×4']);
+      final outcome = press(tape, 'tap:1 ⌫ ⌫ ⌫ 5').pressEquals();
       final TapeChanged(tape: landed, :notice, :removed) =
           outcome as TapeChanged;
-      expect(texts(landed), ['(5)', '×4', 'Calc20']);
+      expect(
+        texts(landed),
+        ['7', '(5)', '×4', 'Calc20'],
+        reason:
+            'beside the 7 the bracket is not the whole tape, so with one '
+            'value in it it is no calculation and its Calc goes',
+      );
       expect(notice, TapeNotice.resultRemoved);
       expect(removed, ['Calc']);
+    });
+
+    test('a reopened bracket retyped to one value and closed keeps the Calc '
+        'after it and recomputes every answer behind, since a closed '
+        'bracket on its own is a calculation (Section 7: "( 12 ) then = '
+        'gives Calc 12", "Closing the bracket recomputes every answer '
+        'after it")', () {
+      final alone = press(const Tape(), '( 2 + 3 ( =');
+      expect(texts(alone), ['(2+3)', 'Calc5']);
+      for (final closing in ['=', '(']) {
+        final outcome = pressOnce(press(alone, 'tap:0 ⌫ ⌫ ⌫ 7'), closing);
+        expect(
+          outcome,
+          isA<TapeChanged>()
+              .having((c) => texts(c.tape), 'tape', ['(7)', 'Calc7'])
+              .having((c) => c.removed, 'removed', isEmpty)
+              .having((c) => c.notice, 'notice', isNull),
+          reason: closing,
+        );
+      }
+
+      final chained = press(const Tape(), '( 2 + 3 ( = × 4 =');
+      expect(texts(chained), ['(2+3)', 'Calc5', '×4', 'Calc20']);
+      final outcome = pressOnce(press(chained, 'tap:0 ⌫ ⌫ ⌫ 7'), '(');
+      expect(
+        outcome,
+        isA<TapeChanged>()
+            .having((c) => texts(c.tape), 'tape', [
+              '(7)',
+              'Calc7',
+              '×4',
+              'Calc28',
+            ])
+            .having((c) => c.removed, 'removed', isEmpty),
+      );
+
+      final pending = press(const Tape(), '( 2 + 3 ( = × 4');
+      expect(texts(press(pending, 'tap:0 ⌫ ⌫ ⌫ 7 =')), [
+        '(7)',
+        'Calc7',
+        '×4',
+        'Calc28',
+      ]);
     });
 
     test('closing a reopened bracket with nothing changed puts the tape back '

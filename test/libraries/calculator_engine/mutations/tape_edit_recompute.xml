@@ -54,7 +54,7 @@
         </regex>
 
         <!-- RULE 2f: a Calc is rebuilt from a lone operand -->
-        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; ResultChip\(\s*key: calcKey,\s*value: _inTheReadingOf\(result, value\),\s*operator: result\.operator," dotAll="true" id="tape_edit.recompute.calc_from_lone_operand">
+        <regex pattern="ChainValue\(:final value, :final isCalculation\)\s*when isCalculation \|\| _isALoneClosedBracket =&gt;\s*ResultChip\(\s*key: calcKey,\s*value: _inTheReadingOf\(result, value\),\s*operator: result\.operator," dotAll="true" id="tape_edit.recompute.calc_from_lone_operand">
             <mutation text="ChainValue(:final value) =&gt; ResultChip(key: calcKey, value: _inTheReadingOf(result, value), operator: result.operator,"/>
         </regex>
 
