@@ -1,7 +1,9 @@
 import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/features/calculator/domain/repositories/group_order_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
@@ -76,6 +78,16 @@ void main() {
         expect(repository, same(Modular.get<RecentsRepository>()));
       });
 
+      test('binds one group order repository over PowerSync, showing the '
+          'keyboard\'s default order until one is set (L3, CA-1307)', () async {
+        final repository = Modular.get<GroupOrderRepository>();
+        expect(repository, same(Modular.get<GroupOrderRepository>()));
+        expect(
+          await repository.watchGroupOrder().first,
+          CalculatorGroupId.defaultOrder,
+        );
+      });
+
       test('binds one trade stores repository over PowerSync', () {
         final repository = Modular.get<TradeStoresRepository>();
         expect(repository, same(Modular.get<TradeStoresRepository>()));
@@ -88,6 +100,19 @@ void main() {
           emitsInOrder([hasLength(2), emitsDone]),
         );
         await expectLater(spacings, emits(hasLength(2)));
+
+        Modular.destroy();
+
+        await ended;
+      });
+
+      test('disposes the group order with the module (L3, CA-1307)', () async {
+        final order = Modular.get<GroupOrderRepository>().watchGroupOrder();
+        final ended = expectLater(
+          order,
+          emitsInOrder([CalculatorGroupId.defaultOrder, emitsDone]),
+        );
+        await expectLater(order, emits(CalculatorGroupId.defaultOrder));
 
         Modular.destroy();
 

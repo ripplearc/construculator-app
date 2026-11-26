@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- GROUP ORDER MUTATION TESTING (L3, CA-1307) -->
+    <!-- Targets: PowerSyncLocalGroupOrderDataSource and
+         GroupOrderRepositoryImpl. A weakened guard here writes a second
+         order row, hides a change, shows an order that is missing a group
+         or names one twice, or drops the keyboard's watch on an unreadable
+         row. -->
+
+    <files>
+        <file>lib/features/calculator/data/data_source/powersync_local_group_order_data_source.dart</file>
+        <file>lib/features/calculator/data/repositories/group_order_repository_impl.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a second order row is inserted instead of the one being
+             rewritten -->
+        <regex pattern="if \(existing\.isEmpty\) \{\s*await transaction\.execute\(_insertSql, \[" dotAll="true" id="group_order_data_source.replace.always_inserts">
+            <mutation text="if (true) { await transaction.execute(_insertSql, ["/>
+        </regex>
+
+        <!-- RULE 2: a row whose list is not a list of strings is read anyway -->
+        <regex pattern="if \(decoded is List &amp;&amp; decoded\.every\(\(id\) =&gt; id is String\)\) \{" dotAll="true" id="group_order_data_source.order.any_list_read">
+            <mutation text="if (decoded is List) {"/>
+        </regex>
+
+        <!-- RULE 3: the same order written again is emitted again -->
+        <regex pattern="\.map\(_order\)\s*\.distinct\(listEquals\)," dotAll="true" id="group_order_data_source.watch.repeats">
+            <mutation text=".map(_order),"/>
+        </regex>
+
+        <!-- RULE 4: no stored order shows nothing, or a stored order is
+             shown unchecked -->
+        <regex pattern="if \(stored == null\) return defaultOrder;\s*if \(_namesEveryGroupOnce\(stored\)\) return stored;" dotAll="true" id="group_order_repository.shown.unchecked">
+            <mutation text="if (stored == null) return defaultOrder; return stored;"/>
+            <mutation text="if (stored == null) return const []; if (_namesEveryGroupOnce(stored)) return stored;"/>
+        </regex>
+
+        <!-- RULE 5: an order missing a group, naming one twice, or naming
+             an unknown one is accepted -->
+        <regex pattern="order\.length == defaultOrder\.length &amp;&amp;\s*order\.toSet\(\)\.length == order\.length &amp;&amp;\s*order\.every\(defaultOrder\.contains\);" dotAll="true" id="group_order_repository.names_every_group_once">
+            <mutation text="order.toSet().length == order.length &amp;&amp; order.every(defaultOrder.contains);"/>
+            <mutation text="order.length == defaultOrder.length &amp;&amp; order.every(defaultOrder.contains);"/>
+            <mutation text="order.length == defaultOrder.length &amp;&amp; order.toSet().length == order.length;"/>
+        </regex>
+
+        <!-- RULE 6: an unreadable row ends the watch, or any error shows
+             the default -->
+        <regex pattern="if \(error is FormatException\) \{" dotAll="true" id="group_order_repository.watch.unreadable_row">
+            <mutation text="if (false) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 7: a save the store refuses is reported as a success -->
+        <regex pattern="await _dataSource\.replaceGroupOrder\(order, _clock\.now\(\)\);\s*return const Right\(null\);" dotAll="true" id="group_order_repository.save.failure_hidden">
+            <mutation text="try { await _dataSource.replaceGroupOrder(order, _clock.now()); } catch (_) {} return const Right(null);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="group_order" expected-return="0">flutter test test/features/calculator/units/data/data_source/powersync_local_group_order_data_source_test.dart test/features/calculator/units/data/repositories/group_order_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
