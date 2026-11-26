@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
@@ -108,6 +109,13 @@ final class ValueChip extends TapeChip {
   /// entry again. Cleared when the chip seals.
   final bool isEditing;
 
+  /// Whether the result this step's operator led on from was removed by an
+  /// edit (Section 5.5), so the step has no left value: it stays on the
+  /// tape, computes nothing, and = is refused with
+  /// [TapeRefusal.stepLostItsValue] until ⌫ removes the step (product
+  /// decision of 13 November 2026).
+  final bool followsARemovedResult;
+
   /// Whether a second decimal point, or the D:M:S key, may read the chip's
   /// number as degrees, minutes and seconds (Section 5.4, "A second decimal
   /// point makes an angle"): a bare number, which the trig keys read as
@@ -126,6 +134,7 @@ final class ValueChip extends TapeChip {
     this.readsDegrees = false,
     this.isActive = true,
     this.isEditing = false,
+    this.followsARemovedResult = false,
   });
 
   /// The value the chip stands for: the exact quantity a conversion kept,
@@ -301,6 +310,7 @@ final class ValueChip extends TapeChip {
     bool? readsDegrees,
     bool? isActive,
     bool? isEditing,
+    bool? followsARemovedResult,
   }) {
     return ValueChip(
       key: key != null ? key() : this.key,
@@ -312,6 +322,8 @@ final class ValueChip extends TapeChip {
       readsDegrees: readsDegrees ?? this.readsDegrees,
       isActive: isActive ?? this.isActive,
       isEditing: isEditing ?? this.isEditing,
+      followsARemovedResult:
+          followsARemovedResult ?? this.followsARemovedResult,
     );
   }
 
@@ -326,6 +338,7 @@ final class ValueChip extends TapeChip {
     readsDegrees,
     isActive,
     isEditing,
+    followsARemovedResult,
   ];
 }
 
@@ -341,10 +354,19 @@ final class ResultChip extends TapeChip {
   /// The operator that leads into this chip when it continues a chain.
   final Operator? operator;
 
-  const ResultChip({required this.key, required this.value, this.operator});
+  /// The unit a unit key converted this answer to, kept when an edit
+  /// rebuilds it (rule 4.8); `null` for the unit the chain answered in.
+  final Unit? readIn;
+
+  const ResultChip({
+    required this.key,
+    required this.value,
+    this.operator,
+    this.readIn,
+  });
 
   @override
-  List<Object?> get props => [key, value, operator];
+  List<Object?> get props => [key, value, operator, readIn];
 }
 
 /// One chip that holds a whole bracket (term 2.22): the operator before it
@@ -372,11 +394,16 @@ final class BracketChip extends TapeChip {
   /// bracket opened by the key, or once the edit closes.
   final List<TapeChip>? original;
 
+  /// Whether the result this bracket's operator led on from was removed by
+  /// an edit, as [ValueChip.followsARemovedResult] says of a step.
+  final bool followsARemovedResult;
+
   const BracketChip({
     this.operator,
     this.inner = const [],
     this.isOpen = true,
     this.original,
+    this.followsARemovedResult = false,
   });
 
   /// The bracket as the tape spells it, "+(3×4" while open and "+(3×4)"
@@ -398,17 +425,26 @@ final class BracketChip extends TapeChip {
     List<TapeChip>? inner,
     bool? isOpen,
     List<TapeChip>? Function()? original,
+    bool? followsARemovedResult,
   }) {
     return BracketChip(
       operator: operator != null ? operator() : this.operator,
       inner: inner ?? this.inner,
       isOpen: isOpen ?? this.isOpen,
       original: original != null ? original() : this.original,
+      followsARemovedResult:
+          followsARemovedResult ?? this.followsARemovedResult,
     );
   }
 
   @override
-  List<Object?> get props => [operator, inner, isOpen, original];
+  List<Object?> get props => [
+    operator,
+    inner,
+    isOpen,
+    original,
+    followsARemovedResult,
+  ];
 }
 
 /// The place a step could not be computed (term 2.4). The strip goes
@@ -417,8 +453,26 @@ final class ErrorChip extends TapeChip {
   /// What went wrong.
   final CalculationError error;
 
-  const ErrorChip(this.error);
+  /// Whether the chip stands where an edit's recompute found a result
+  /// failing (rule 4.8), so that a ÷ after it is a step of its own and never
+  /// read as a divisor ÷ 0 reopened (Section 5, "Division by zero").
+  final bool replacesAResult;
+
+  /// The unit the result this chip replaced was read in, kept so that the
+  /// result reads in it again once the chain is repaired: 10ft ÷ 2 = read
+  /// in inches, edited to ÷ 0 and back to ÷ 4, reads Calc 30in (product
+  /// decision of 13 November 2026).
+  final Unit? readIn;
+
+  const ErrorChip(this.error, {this.replacesAResult = false, this.readIn});
+
+  /// Whether this is the error chip of a ÷ 0 whose divisor can still be
+  /// retyped (Section 5, "Division by zero"), in whatever unit the result
+  /// it stands for was read: the chain goes on through it to the divisor
+  /// after it. False for an error that replaces a result (rule 4.8).
+  bool get isAnOpenDivisionByZero =>
+      error == CalculationError.divisionByZero && !replacesAResult;
 
   @override
-  List<Object?> get props => [error];
+  List<Object?> get props => [error, replacesAResult, readIn];
 }

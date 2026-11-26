@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE: THE RESULTS AFTER A REOPENED CHIP (S1c 2/5, CA-1089) -->
+    <!-- Targets: the recompute of the results after the edited chip and the
+         removal of one that cannot be rebuilt. Critical path: a wrong
+         recompute shows a stale or a missing answer. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 2: a result nothing can rebuild is kept at the seal too -->
+        <regex pattern="\} else if \(!removesStale\) \{\s*kept\.add\(chip\);" dotAll="true" id="tape_edit.recompute.unrebuilt_kept">
+            <mutation text="} else if (true) { kept.add(chip);"/>
+        </regex>
+
+        <!-- RULE 2a: a result nothing can rebuild is removed mid-edit -->
+        <regex pattern="\} else if \(!removesStale\) \{\s*kept\.add\(chip\);" dotAll="true" id="tape_edit.recompute.unrebuilt_removed_mid_edit">
+            <mutation text="} else if (false) { kept.add(chip);"/>
+        </regex>
+
+        <!-- RULE 2b: the seal keeps a stale result like a keystroke does -->
+        <regex pattern="\)\._recomputedAfter\(index, removesStale: !chip\.isActive\);" dotAll="true" id="tape_edit.recompute.seal_keeps_stale">
+            <mutation text=")._recomputedAfter(index, removesStale: false);"/>
+        </regex>
+
+        <!-- RULE 2c: a leaving key loses the name of the result the seal
+             removed -->
+        <regex pattern="TapeChanged\(tape: final after, :final notice\) when removed\.isNotEmpty =>\s*_changed\(after, notice: notice, removed: removed\)," dotAll="true" id="tape_edit.recompute.leaving_key_unnamed">
+            <mutation text="TapeChanged(tape: final after, :final notice) when removed.isNotEmpty => TapeChanged(after, notice: notice),"/>
+        </regex>
+
+        <!-- RULE 2d: an error chip is never rebuilt -->
+        <regex pattern="case final ErrorChip error\s*when !_isDivisionByZeroBeforeItsDivisor\(index\):\s*rebuilt = _with\(kept\)\._rebuiltError\(error\);" dotAll="true" id="tape_edit.recompute.error_chip_kept">
+            <mutation text="case ErrorChip(): kept.add(chip); continue;"/>
+        </regex>
+
+        <!-- RULE 2e: the error chip before a reopened divisor is rebuilt too -->
+        <regex pattern="when !_isDivisionByZeroBeforeItsDivisor\(index\):" dotAll="true" id="tape_edit.recompute.divisor_error_rebuilt">
+            <mutation text="when true:"/>
+        </regex>
+
+        <!-- RULE 2g: a Calc whose chain fails at the seal is removed instead
+             of landing its error -->
+        <regex pattern="ChainFailed\(:final error\) when failsAsError =&gt; ErrorChip\(\s*error,\s*replacesAResult: true,\s*readIn: result\.readIn,\s*\)," dotAll="true" id="tape_edit.recompute.failed_calc_removed_at_seal">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 2h: a Calc whose chain fails lands its error mid-edit -->
+        <regex pattern="ChainFailed\(:final error\) when failsAsError =&gt; ErrorChip\(\s*error,\s*replacesAResult: true,\s*readIn: result\.readIn,\s*\)," dotAll="true" id="tape_edit.recompute.failed_calc_errors_mid_edit">
+            <mutation text="ChainFailed(:final error) =&gt; ErrorChip(error, replacesAResult: true, readIn: result.readIn),"/>
+        </regex>
+
+        <!-- RULE 2f: a Calc is rebuilt from a lone operand -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; ResultChip\(\s*key: calcKey,\s*value: _inTheReadingOf\(result, value\),\s*operator: result\.operator," dotAll="true" id="tape_edit.recompute.calc_from_lone_operand">
+            <mutation text="ChainValue(:final value) =&gt; ResultChip(key: calcKey, value: _inTheReadingOf(result, value), operator: result.operator,"/>
+        </regex>
+
+        <!-- RULE 3: the removed result is not named, or only the first of
+             two is (R1, nit 3) -->
+        <regex pattern="broken\.add\(index\);\s*removed\.add\(key\);" dotAll="true" id="tape_edit.recompute.removed_unnamed">
+            <mutation text="broken.add(index);"/>
+            <mutation text="broken.add(index); if (removed.isEmpty) removed.add(key);"/>
+        </regex>
+
+        <!-- RULE 7 (R1, B3): the tap keeps the index it carried after the
+             seal removed chips -->
+        <regex pattern="final found = tape\.chips\.indexWhere\(\s*\(chip\) => identical\(chip, tapped\) \|\| _isMarkedCopyOf\(chip, tapped\),\s*\);" dotAll="true" id="tape_edit.tap.stale_index">
+            <mutation text="final found = index;"/>
+        </regex>
+
+        <!-- RULE 8 (R1, B5): a rebuilt result loses the unit or the spelling
+             it was given -->
+        <regex pattern="if \(unit == null \|\| unit == _unitOf\(value\)\) return value;" dotAll="true" id="tape_edit.rebuilt.unit_lost">
+            <mutation text="return value;"/>
+        </regex>
+        <regex pattern="if \(\(value, result\.value\) case \(\s*final Angle angle,\s*Angle\(:final spelling\),?\s*\)\) \{\s*return angle\.spelledAs\(spelling\);\s*\}" dotAll="true" id="tape_edit.rebuilt.spelling_lost">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 4: a named answer is matched to any key -->
+        <regex pattern="if \(answer\.key == result\.key\) \{" dotAll="true" id="tape_edit.recompute.any_answer_matches">
+            <mutation text="if (true) {"/>
+        </regex>
+
+
+        <!-- RULE 20: a step after an error chip an edit left in the chain
+             starts a new chain, so 10ft + 2 = + 3ft + 4ft lands Calc 7ft -->
+        <regex pattern="if \(brokenOff &amp;&amp; _leadsOn\(chip\)\) \{" dotAll="true" id="tape_edit.recompute.broken_chain_restarts">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 21: the = that seals an edit which removed results lands a
+             fresh Calc in the same press -->
+        <regex pattern="if \(removed\.isNotEmpty\) \{\s*return _changed\(tape, removed: removed\);" dotAll="true" id="tape_edit.equals.lands_after_removal">
+            <mutation text="if (false) { return _changed(tape, removed: removed);"/>
+        </regex>
+
+        <!-- RULE 22: a rebuilt result keeps the unit it was last written in,
+             not the unit a unit key chose, or forgets the user's choice -->
+        <regex pattern="return _readIn\(value, result\.readIn\);" dotAll="true" id="tape_edit.rebuild.reading_not_chosen">
+            <mutation text="return _readIn(value, _unitOf(result.value));"/>
+            <mutation text="return _readIn(value, null);"/>
+        </regex>
+        <regex pattern="operator: result\.operator,\s*readIn: unit,\s*\)," dotAll="true" id="tape_edit.convert_result.choice_not_kept">
+            <mutation text="operator: result.operator, ),"/>
+        </regex>
+
+        <!-- RULE 23: a trig answer whose operand result went is rebuilt on
+             the value before it -->
+        <regex pattern="broken\.contains\(index - 1\) &amp;&amp;\s*TrigFunction\.values\.any\(" dotAll="true" id="tape_edit.recompute.orphan_trig_kept">
+            <mutation text="false &amp;&amp; TrigFunction.values.any("/>
+        </regex>
+
+        <!-- RULE R2-1: a Calc is rebuilt from every kept chip, so a chip with
+             no reading anywhere on the tape empties a separate chain -->
+        <regex pattern="if \(result\.key == calcKey\) \{\s*return switch \(_lastChainTotal\) \{" dotAll="true" id="tape_edit_recompute.rebuilt.whole_tape">
+            <mutation text="if (result.key == calcKey) { return switch (runningTotal) {"/>
+        </regex>
+
+        <!-- RULE R2-2: a step after a removed result is never marked -->
+        <regex pattern="removed\.add\(key\);\s*leftWentMissing = key != calcKey;" dotAll="true" id="tape_edit_recompute.removed.step_unmarked">
+            <mutation text="removed.add(key); leftWentMissing = false;"/>
+            <mutation text="removed.add(key); leftWentMissing = true;"/>
+        </regex>
+
+        <!-- RULE R2-3: = computes the marked step from the value before the gap -->
+        <regex pattern="if \(chips\.any\(_lostItsLeftValue\)\) \{\s*return const TapeRefused\(TapeRefusal\.stepLostItsValue\);\s*\}" dotAll="true" id="tape_edit_recompute.equals.marked_step_lands">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE R2-4: the fold reads a marked step as a step of its chain -->
+        <regex pattern="if \(_lostItsLeftValue\(chip\)\) \{\s*running = _nothing;\s*brokenOff = true;\s*index = next;\s*continue;\s*\}" dotAll="true" id="chain_evaluator.fold.marked_step_counts">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE R2-5: a unit that breaks the chain is taken inside an edit -->
+        <regex pattern="TapeOutcome _keptWhileTheChainHolds\(TapeOutcome outcome\) \{\s*if \(editing == null\) return outcome;" dotAll="true" id="tape_edit_recompute.unit.clash_taken">
+            <mutation text="TapeOutcome _keptWhileTheChainHolds(TapeOutcome outcome) { return outcome;"/>
+        </regex>
+
+        <!-- RULE R2-6: an edit that makes a divisor zero keeps the ÷0 and
+             lands an error where the Calc stood -->
+        <regex pattern="if \(kept\.lastOrNull\s*case ValueChip\(operator: Operator\.divide\)\s*&amp;&amp;\s*final divisor\) \{" dotAll="true" id="tape_edit_recompute.divisor.not_reopened">
+            <mutation text="if (kept.lastOrNull case ValueChip(operator: Operator.subtract) &amp;&amp; final divisor) {"/>
+        </regex>
+
+        <!-- RULE R2-7: the unit the user picked is dropped when a result turns
+             into an error -->
+        <regex pattern="replacesAResult: true,\s*readIn: result\.readIn," dotAll="true" id="tape_edit_recompute.error.drops_read_in">
+            <mutation text="replacesAResult: true, readIn: null,"/>
+        </regex>
+
+        <!-- RULE R2-8: the seal of a repaired divisor leaves the error chip
+             before it and lands no Calc -->
+        <regex pattern="if \(chip\.isEditing\) \{\s*if \(closed\._withTheDivisionBeforeRepaired\(sealed\) case final repaired\?\) \{" dotAll="true" id="tape_edit_recompute.seal.division_unrepaired">
+            <mutation text="if (false) { if (closed._withTheDivisionBeforeRepaired(sealed) case final repaired?) {"/>
+        </regex>
+
+        <!-- RULE R3-1: ⌫ on a step whose left value was removed takes one
+             digit off it, so the fix its Alert names needs two presses -->
+        <regex pattern="when !sealed\.isActive &amp;&amp; !sealed\.followsARemovedResult\) \{" dotAll="true" id="tape_edit_recompute.backspace.lost_step_reopened">
+            <mutation text="when !sealed.isActive) {"/>
+        </regex>
+
+        <!-- RULE R3-2: an edit that makes a divisor zero removes the results
+             after it, where the doc row removes no chip -->
+        <regex pattern="divisorWaits = true;" dotAll="true" id="tape_edit_recompute.zero_divisor.later_results_removed">
+            <mutation text="divisorWaits = false;"/>
+        </regex>
+
+        <!-- RULE R3-3: a result after a reopened divisor is rebuilt from the
+             divisor alone, without the value before the error chip -->
+        <regex pattern="ErrorChip\(\) =&gt; _isDivisionByZeroBeforeItsDivisor\(at\)," dotAll="true" id="tape_edit_recompute.zero_divisor.chain_stops_at_error">
+            <mutation text="ErrorChip() =&gt; false,"/>
+        </regex>
+
+        <!-- RULE R2-9: a tap loses the chip a mark copied -->
+        <regex pattern="identical\(chip, tapped\) \|\| _isMarkedCopyOf\(chip, tapped\)" dotAll="true" id="tape_edit_recompute.tap.marked_copy_lost">
+            <mutation text="identical(chip, tapped)"/>
+        </regex>
+
+        <!-- RULE R4-1: the error chip of a ÷ 0 is known only when its result
+             was read in no picked unit, so a result read in inches stops
+             the chain (in the tape and in the fold) -->
+        <regex pattern="\(chips\[index\] as ErrorChip\)\.isAnOpenDivisionByZero &amp;&amp;" dotAll="true" id="tape_edit_recompute.zero_divisor.picked_unit_stops_chain">
+            <mutation text="chips[index] == const ErrorChip(CalculationError.divisionByZero) &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE R4-2: a trig answer behind a step of a chain is rebuilt on
+             the step's own number, not on the chain total -->
+        <regex pattern="ValueChip\(operator: _\?\) =&gt; switch \(_lastChainTotal\) \{\s*ChainValue\(:final value\) =&gt; value,\s*ChainOutcome\(\) =&gt; null,\s*\}," dotAll="true" id="tape_edit_recompute.zero_divisor.trig_on_divisor_alone">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE R4-3: ⌫ on the empty divisor a ÷ 0 edit reopened removes
+             the ÷ step and leaves the error chip -->
+        <regex pattern="if \(index &gt; 0 &amp;&amp; _isDivisionByZeroBeforeItsDivisor\(index - 1\)\) \{" dotAll="true" id="tape_edit_recompute.zero_divisor.backspace_removes_step">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE R4-4: a second 0 into the reopened divisor seals a ÷ 0 chip
+             with an error after it -->
+        <regex pattern="if \(landed case ErrorChip\(error: CalculationError\.divisionByZero\)\) \{" dotAll="true" id="tape_edit_recompute.zero_divisor.second_zero_sealed">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE R4-5: a tap on another chip opens it beside the divisor
+             the seal reopened -->
+        <regex pattern="if \(tape\.active != null\) return _changed\(tape, removed: removed\);" dotAll="true" id="tape_edit_recompute.zero_divisor.tap_opens_second_chip">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_edit_recompute" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_edit_recompute_test.dart test/libraries/calculator_engine/units/tape_edit_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
