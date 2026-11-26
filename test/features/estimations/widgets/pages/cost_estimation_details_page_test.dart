@@ -105,7 +105,6 @@ void main() {
     storage.reset();
     fakeSupabase.reset();
     database.reset();
-    (Modular.get<AuthManager>() as Disposable).dispose();
     Modular.dispose<AuthManager>();
     await Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(

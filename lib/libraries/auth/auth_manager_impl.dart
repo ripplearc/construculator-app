@@ -17,11 +17,9 @@ import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-/// Listens to the Supabase auth events for as long as it is not disposed.
-class AuthManagerImpl implements AuthManager, Disposable {
+class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
@@ -31,8 +29,6 @@ class AuthManagerImpl implements AuthManager, Disposable {
   final Future<void> Function() _clearKeptCompanyId;
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
-  StreamSubscription<supabase.AuthState>? _authSubscription;
-
   late final StreamSubscription<supabase.AuthState> _authSubscription;
 
   String? _sessionUserId;
@@ -69,11 +65,6 @@ class AuthManagerImpl implements AuthManager, Disposable {
     } catch (_) {
       // The data source already logged it, and sign-out must still finish.
     }
-  }
-
-  @override
-  void dispose() {
-    unawaited(_authSubscription?.cancel());
   }
 
   void _emitAuthStateChanged(AuthStatus status, UserCredential? user) {
