@@ -95,6 +95,19 @@ class CalculatorReadAsAccepted extends CalculatorEvent {
   const CalculatorReadAsAccepted();
 }
 
+/// A chip of the tape was tapped (Section 1.1: "Tap an input chip to edit
+/// it"; rule 4.8): a finished value reopens in place, the chip being edited
+/// seals, and a result says it is read, not edited.
+class CalculatorChipTapped extends CalculatorEvent {
+  /// Index of the chip on the tape, as the display lists it.
+  final int index;
+
+  const CalculatorChipTapped(this.index);
+
+  @override
+  List<Object?> get props => [index];
+}
+
 /// The display's ✕ was tapped: it clears the value being typed.
 class CalculatorActiveValueCleared extends CalculatorEvent {
   const CalculatorActiveValueCleared();

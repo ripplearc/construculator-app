@@ -3054,6 +3054,10 @@
   "@calculatorEqualsAns": {
     "description": "Face of the calculator equals key while a chain continues from a previous result"
   },
+  "calculatorEqualsUpdate": "Update",
+  "@calculatorEqualsUpdate": {
+    "description": "Face of the calculator equals key while a tape chip is reopened for edit and the tape has a result: the press finishes the edit and recomputes the result"
+  },
   "calculatorStripPlaceholder": "Here you can see smart suggestions from us",
   "@calculatorStripPlaceholder": {
     "description": "Text of the calculator suggestion strip when nothing applies yet"
@@ -3676,6 +3680,14 @@
         "example": "Shapes"
       }
     }
+  },
+  "calculatorChipTapToEdit": "Edit",
+  "@calculatorChipTapToEdit": {
+    "description": "Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)"
+  },
+  "calculatorChipTapToFinish": "Finish editing",
+  "@calculatorChipTapToFinish": {
+    "description": "Screen reader hint of a tap on the chip being typed or edited on the calculator tape: the tap seals the chip, as = does (UX Design Doc rule 4.8)"
   },
   "unitNamePieces": "{count, plural, =1{piece} other{pieces}}",
   "@unitNamePieces": {

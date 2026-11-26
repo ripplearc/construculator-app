@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -52,6 +53,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorReadAsAccepted>(_onReadAsAccepted);
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorActiveValueCleared>(_onActiveValueCleared);
+    on<CalculatorChipTapped>(_onChipTapped);
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorGroupsReordered>(_onGroupsReordered);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
@@ -130,6 +132,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorReadAsAccepted event,
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) => tape.reInput());
+
+  void _onChipTapped(
+    CalculatorChipTapped event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.tapChip(event.index));
 
   void _onActiveValueCleared(
     CalculatorActiveValueCleared event,

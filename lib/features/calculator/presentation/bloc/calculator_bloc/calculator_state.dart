@@ -37,6 +37,13 @@ class CalculatorState extends Equatable {
   /// open"); never a chip's key.
   static const String ansKey = 'Ans';
 
+  /// The label the equals key reads while a chip is reopened for edit and
+  /// the tape has a result: pressing it finishes the edit and the result is
+  /// worked out again, the word the value editor sheet uses (product
+  /// decision of 13 November 2026). With no result yet the key shows the =
+  /// sign, and the press still lands what [equalsLands] names.
+  static const String updateKey = 'Update';
+
   /// The tape of chips, with the preferences it is rendered by.
   final Tape tape;
 
@@ -371,14 +378,22 @@ class CalculatorState extends Equatable {
   /// [ansKey] when that suggestion is the Calc of a chain continuing from
   /// a result (rule 4.9; a chip with no operator starts a chain and a result
   /// chip restarts it, Section 7), `null` for the = sign, so the key never
-  /// names an answer that pressing it would not land.
-  String? get equalsKeyId => switch (equalsLands) {
-    null => null,
-    CalculatorSuggestion(kind: CalculatorSuggestionKind.runningTotal)
-        when _chainStartsOnAResult =>
-      ansKey,
-    CalculatorSuggestion(:final key) => key,
-  };
+  /// names an answer that pressing it would not land. While a chip is
+  /// reopened for edit the key reads [updateKey] over a tape with a result
+  /// and the = sign over one without (product decision of 13 November
+  /// 2026), whatever the strip offers.
+  String? get equalsKeyId {
+    if (tape.editing != null) return _hasAResult ? updateKey : null;
+    return switch (equalsLands) {
+      null => null,
+      CalculatorSuggestion(kind: CalculatorSuggestionKind.runningTotal)
+          when _chainStartsOnAResult =>
+        ansKey,
+      CalculatorSuggestion(:final key) => key,
+    };
+  }
+
+  bool get _hasAResult => tape.chips.any((chip) => chip is ResultChip);
 
   bool get _stripIsSilent =>
       tape.openBracket != null ||
@@ -476,11 +491,16 @@ class CalculatorState extends Equatable {
   /// parentheses — and the operator that leads it is its factor. The chips
   /// before an open bracket are inert: dimmed and deaf to a tap until it
   /// closes ("Chips before an open bracket are dimmed and cannot be tapped").
+  /// While a chip is being edited in place the results after it are drawn
+  /// dashed (rule 4.8: "results downstream show dashed while the edit is
+  /// open"); they keep their value, which recomputes as the edit goes.
   List<CoreCalculatorChip> get chipsList {
     final waitsOnOpenBracket = tape.openBracket != null;
+    final editedIndex = tape.editing?.index;
     return [
       for (final (index, chip) in tape.chips.indexed)
         CoreCalculatorChip(
+          key: ValueKey('calc_chip_$index'),
           label: switch (chip) {
             ValueChip(:final key) => key,
             ResultChip(:final key) => key,
@@ -499,6 +519,8 @@ class CalculatorState extends Equatable {
           type: switch (chip) {
             ValueChip(isActive: true) => CoreCalculatorChipType.active,
             ValueChip() => CoreCalculatorChipType.editable,
+            ResultChip() when editedIndex != null && index > editedIndex =>
+              CoreCalculatorChipType.dashed,
             BracketChip(isOpen: true) => CoreCalculatorChipType.bracketOpen,
             BracketChip() => CoreCalculatorChipType.bracketClosed,
             ResultChip() => CoreCalculatorChipType.result,
