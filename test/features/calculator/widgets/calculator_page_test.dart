@@ -661,33 +661,33 @@ void main() {
     final l10n = AppLocalizationsEn();
     final labels = CalculatorLabelFormatter(l10n);
 
-    expect(labels.stripText(null), l10n.calculatorStripPlaceholder);
+    expect(labels.noteText(null), isNull);
     expect(
-      labels.stripText(
+      labels.noteText(
         const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
       ),
       l10n.calculatorNotePitchUnderRightAngle,
     );
     expect(
-      labels.stripText(
+      labels.noteText(
         const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
       ),
       l10n.calculatorNotePitchAtLeastZero,
     );
     expect(
-      labels.stripText(const CalculatorFlatPitchHasNoRunNote()),
+      labels.noteText(const CalculatorFlatPitchHasNoRunNote()),
       l10n.calculatorNoteFlatPitchHasNoRun,
     );
     expect(
-      labels.stripText(const CalculatorSlopeOutOfRangeNote()),
+      labels.noteText(const CalculatorSlopeOutOfRangeNote()),
       l10n.calculatorNoteSlopeAboveZero,
     );
     expect(
-      labels.stripText(const CalculatorPitchHasNoDmsNote()),
+      labels.noteText(const CalculatorPitchHasNoDmsNote()),
       l10n.calculatorNotePitchHasNoDms,
     );
     expect(
-      labels.stripText(
+      labels.noteText(
         const CalculatorTrigCannotAnswerNote(TrigFunction.arccosine),
       ),
       l10n.calculatorNoteTrigCannotAnswer(l10n.calculatorKeyAcosFullName),

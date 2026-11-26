@@ -277,10 +277,9 @@ class CalculatorLabelFormatter {
       ),
   };
 
-  /// The strip note (Section 1.8), or the strip's placeholder when the
-  /// strip has nothing to say.
-  String stripText(CalculatorStripNote? note) => switch (note) {
-    null => l10n.calculatorStripPlaceholder,
+  /// The words of a strip note (Section 1.8), or `null` when no note shows.
+  String? noteText(CalculatorStripNote? note) => switch (note) {
+    null => null,
     CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true) =>
       l10n.calculatorNotePitchUnderRightAngle,
     CalculatorPitchOutOfRangeNote() => l10n.calculatorNotePitchAtLeastZero,

@@ -108,6 +108,48 @@ void main() {
       );
     });
 
+    testWidgets('renders a strip note in its own slot: warning colour, Body '
+        'Medium, the whole strip (Section 1.8; CA-1094)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      // The picture is taken on a finished value, Run 12ft, so the label
+      // draws no typing dots: they are a Lottie file that loads in the
+      // background, and a picture with them depends on which test ran
+      // before this one. The note stays while the pitch does.
+      blocOf(tester)
+        ..add(const CalculatorKeySelected('Pitch'))
+        ..add(const CalculatorDigitPressed('9'))
+        ..add(const CalculatorDigitPressed('5'))
+        ..add(const CalculatorKeySelected('Run'))
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorUnitSelected(Unit.foot));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        blocOf(tester).state.displayLabel,
+        isA<CalculatorDisplayLabel>().having(
+          (label) => label.isTyping,
+          'isTyping',
+          isFalse,
+        ),
+      );
+      expect(
+        blocOf(tester).state.stripNote,
+        const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+      );
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_strip_note$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders an open bracket chip with the chips before it dimmed '
         '(term 2.22)', (tester) async {
       tester.view.physicalSize = size;

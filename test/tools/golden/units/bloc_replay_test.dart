@@ -172,10 +172,10 @@ class BlocScenarioDriver implements ScenarioDriver {
         _ => null,
       },
       hint: switch (state.stripNote) {
-        final note? => _labels.stripText(note),
+        final note? => _labels.noteText(note),
         null =>
           state.suggestions.isEmpty && state.conversions.isEmpty
-              ? _labels.stripText(null)
+              ? _labels.l10n.calculatorStripPlaceholder
               : null,
       },
       depKey: state.dependentKeys.isEmpty
@@ -644,7 +644,7 @@ void main() {
         'nothing applies, and the typing ellipsis on an active chip', () async {
       expect(
         driver.snapshot().hint,
-        BlocScenarioDriver._labels.stripText(null),
+        BlocScenarioDriver._labels.l10n.calculatorStripPlaceholder,
       );
       for (final key in const ['fk:Pitch', 'd:8', 'd:9', 'd:9']) {
         await driver.perform(KeyStep(key));
@@ -653,7 +653,7 @@ void main() {
       expect(out.strip, isEmpty);
       expect(
         out.hint,
-        BlocScenarioDriver._labels.stripText(
+        BlocScenarioDriver._labels.noteText(
           const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
         ),
       );
