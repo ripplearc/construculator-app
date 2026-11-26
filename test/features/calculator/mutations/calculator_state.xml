@@ -40,6 +40,21 @@
             <mutation text=""/>
             <mutation text="if (tape.editing != null) return _hasAResult ? null : updateKey;"/>
         </regex>
+        <!-- RULE (T2a 1/2, CA-1095): an accepted answer keeps its tile in
+             the detail panel and its chip on row 1, or the tiles and the
+             rule answers of row 1 are gone -->
+        <regex pattern="tape\.namedValues,\s*\)\)\s*if \(!_hasLanded\(answer\.key\)\) _answer\(answer\.key, answer\.value\)," dotAll="true" id="calculator_state.dimensions.landed_answer_stays">
+            <mutation text="tape.namedValues,)) _answer(answer.key, answer.value),"/>
+            <mutation text="tape.namedValues,)) if (_hasLanded(answer.key)) _answer(answer.key, answer.value),"/>
+        </regex>
+        <regex pattern="if \(runningTotal != null\) runningTotal else \.\.\.dimensions," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
+            <mutation text="if (runningTotal != null) runningTotal,"/>
+        </regex>
+        <!-- RULE: the tiles give way to Calc as row 1 does -->
+        <regex pattern="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; \[" dotAll="true" id="calculator_state.dimensions.hidden_by_calc">
+            <mutation text="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; [ if (tape.runningTotal case ChainValue(isCalculation: true)) ...const &lt;CalculatorSuggestion&gt;[] else"/>
+        </regex>
+
     </rules>
 
     <commands>

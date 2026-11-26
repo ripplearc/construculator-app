@@ -3177,6 +3177,89 @@ void main() {
       });
     });
 
+    group('T2a 1/2: the tiles of the detail panel (Section 1.4)', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      List<String> tiles(CalculatorState state) => [
+        for (final dimension in state.dimensions)
+          '${dimension.key}: ${dimension.text}',
+      ];
+
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'ft' => const CalculatorUnitSelected(Unit.foot),
+            '=' => const CalculatorEqualsPressed(),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'two named sides give a tile for every value they work out',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '[Length] 2 0 ft [Height] 9 ft'),
+        skip: 6,
+        expect: () => [tapeState(pressed('[Length] 2 0 ft [Height] 9 ft'))],
+        verify: (bloc) {
+          expect(tiles(bloc.state), [
+            'Area: 180ft²',
+            'Diagonal: 21.93ft',
+            'Perimeter: 58ft',
+          ]);
+          expect([
+            for (final dimension in bloc.state.dimensions) dimension.kind,
+          ], everyElement(CalculatorSuggestionKind.answer));
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an accepted answer leaves the tiles: after Area 180ft² they read '
+        'Diagonal 21.93ft and Perimeter 58ft (walkthrough 11.3, decision '
+        'tree row 224)',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '[Length] 2 0 ft [Height] 9 ft ='),
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
+          expect(bloc.state.valueText, '180ft²');
+          expect(tiles(bloc.state), ['Diagonal: 21.93ft', 'Perimeter: 58ft']);
+        },
+      );
+
+      test('one named value gives the tiles of its shape (walkthrough '
+          '18.1: Radius 6ft)', () {
+        expect(tiles(stateOf('[Radius] 6 ft')), [
+          'Diameter: 12ft',
+          'Circle area: 113.1ft²',
+          'Circumference: 37.7ft',
+        ]);
+      });
+
+      test('the tiles are the tape\'s: they stay while Calc takes row 1 of '
+          'the strip', () {
+        final chained = stateOf('[Length] 2 0 ft [Height] 9 ft × 2');
+        expect(
+          [for (final suggestion in chained.suggestions) suggestion.kind],
+          [CalculatorSuggestionKind.runningTotal],
+        );
+        expect(tiles(chained), [
+          'Area: 180ft²',
+          'Diagonal: 21.93ft',
+          'Perimeter: 58ft',
+        ]);
+      });
+
+      test('a tape with no named value has no tile', () {
+        expect(CalculatorState.initial().dimensions, isEmpty);
+        expect(stateOf('1 2 ft').dimensions, isEmpty);
+        expect(stateOf('[Length] 2 0 ft').dimensions, isEmpty);
+      });
+    });
+
     test(
       'the initial state is an empty imperial tape with the first group',
       () {

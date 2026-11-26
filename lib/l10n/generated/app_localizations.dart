@@ -3718,6 +3718,24 @@ abstract class AppLocalizations {
   /// **'Convert to other units'**
   String get calculatorStripConversionsSemantics;
 
+  /// Title of the tiles in the calculator detail panel that show the values worked out from what was typed, such as Diagonal and Perimeter
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions'**
+  String get calculatorDetailDimensionsTitle;
+
+  /// Button in the calculator detail panel that shows every dimension tile
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get calculatorDetailExpandButton;
+
+  /// Button in the calculator detail panel that goes back to the first dimension tiles
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get calculatorDetailCollapseButton;
+
   /// Head of the calculator label row for a value typed under no function key
   ///
   /// In en, this message translates to:
