@@ -57,4 +57,14 @@ void main() {
       );
     });
   });
+
+  group('SavedSessionFound.userId', () {
+    test('is the id of the user in the session', () {
+      expect(SavedSessionFound(_session()).userId, 'u1');
+    });
+
+    test('is null when the value is not a readable session', () {
+      expect(const SavedSessionFound('{broken').userId, isNull);
+    });
+  });
 }
