@@ -3713,9 +3713,13 @@
       }
     }
   },
-  "calculatorToastValueEmptyBody": "The value is empty — type a new value, or backspace to delete the chip.",
+  "calculatorToastValueEmptyBody": "The value is empty. Type a new value, or press ⌫ to delete the chip.",
   "@calculatorToastValueEmptyBody": {
-    "description": "Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing (UX Design Doc Section 5)"
+    "description": "Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing, the place of a removed bracket included (UX Design Doc Section 5; product decision of 13 November 2026: no dash, and the key is named ⌫)"
+  },
+  "calculatorToastTypeNewFirstValue": "Type a new first value, or press C to start again.",
+  "@calculatorToastTypeNewFirstValue": {
+    "description": "Red Alert when ⌫ is pressed again on the emptied first chip of a chain, which cannot be deleted (UX Design Doc rule 4.8)"
   },
   "calculatorToastResultRemoved": "{key} removed — can't recompute from the new value.",
   "@calculatorToastResultRemoved": {

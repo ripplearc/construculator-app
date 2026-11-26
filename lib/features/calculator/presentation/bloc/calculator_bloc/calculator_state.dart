@@ -592,6 +592,7 @@ class CalculatorState extends Equatable {
   /// What the last key left to say in a red Alert (Section 5), or `null`:
   /// the results an edit removed; the editing guard, with the incomplete
   /// number as the value row shows it, which is nothing for an empty chip;
+  /// ⌫ again on the emptied first chip of a chain (rule 4.8);
   /// and the unit guards, named for the unit the key stood for — "takes a
   /// length, not `<kind>`" (one message whether the unit came first or after
   /// a finished length) and "keeps" under a dimension key on fresh entry
@@ -617,6 +618,8 @@ class CalculatorState extends Equatable {
     return switch ((refusal, refusedUnit, key)) {
       (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _, _) =>
         CalculatorFinishValueToast(value: valueText),
+      (TapeRefused(reason: TapeRefusal.typeANewFirstValue), _, _) =>
+        const CalculatorTypeNewFirstValueToast(),
       (
         TapeEntryRefused(reason: EntryRefusal.cannotAppendUnit),
         final unit?,
