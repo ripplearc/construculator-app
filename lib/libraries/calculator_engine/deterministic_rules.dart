@@ -66,10 +66,11 @@ enum PolygonSpan {
   flats,
 }
 
-/// Why the rules answer nothing for a named value they would otherwise
-/// read (UX Design Doc Section 5.4, "A pitch has to be under 90°"): the
-/// strip shows the reason instead of its placeholder, and keeps showing it
-/// when a second dimension is named on top of the value (S89).
+/// Why the rules cannot use a named value they would otherwise read (UX
+/// Design Doc Section 5.4, "A pitch has to be under 90°"; Section 1.8, "A
+/// count that is not whole"): the strip shows the reason as its note, and
+/// keeps showing it when a second dimension is named on top of the value
+/// (S89).
 enum RuleRefusal {
   /// Pitch holds 90° or more, or below 0°: at 90° the wall is vertical,
   /// with no rise per 12in of run, and below 0° the roof drops below grade.
@@ -82,6 +83,11 @@ enum RuleRefusal {
 
   /// Slope holds 0% or less.
   slopeOutOfRange,
+
+  /// Sides holds a count that is not a whole number of 3 or more, so no
+  /// regular polygon has it (UX Design Doc Section 1.8, "A count that is
+  /// not whole"; decision tree row 339: Diameter 12ft Sides 6.5).
+  sidesNotWhole,
 }
 
 /// An answer the named values on the tape earn (UX Design Doc Section 8):
@@ -274,12 +280,22 @@ class DeterministicRules extends Equatable {
     AngleSpelling.degreesMinutesSeconds => pitchDegreesKey,
   };
 
-  /// Why the rules answer nothing for the pitch or the slope in
-  /// [namedValues], or `null` when both are in range or absent: a pitch
-  /// below 0° or of 90° or more, a flat pitch with a Rise alone, a slope of
-  /// 0% or less (Section 5.4). The reason survives a Diag or any other
-  /// value named on top (S89).
-  RuleRefusal? refusalFor(Map<String, Quantity> namedValues) {
+  /// Why the rules cannot use the pitch, the slope or the sides in
+  /// [namedValues], or `null` when each is usable or absent: a pitch below
+  /// 0° or of 90° or more, a flat pitch with a Rise alone, a slope of 0% or
+  /// less (Section 5.4), a Sides count that is not a whole number of 3 or
+  /// more (Section 1.8). The reason survives a Diag or any other value
+  /// named on top (S89).
+  ///
+  /// The Sides refusal is for a finished count ("Shown only once the entry
+  /// is finished", Section 1.8). While the count is still being typed
+  /// ([sidesStillTyped]) a 1 or a 2 is the start of 12 or 24 and is not
+  /// refused; a 0 or a decimal part, which no further digit mends, is
+  /// refused at once (decision tree row 339: 6.5).
+  RuleRefusal? refusalFor(
+    Map<String, Quantity> namedValues, {
+    bool sidesStillTyped = false,
+  }) {
     if (namedValues[DimensionKey.pitch.id] case final value?) {
       if (_pitchAngleOf(value) case final pitch?) {
         if (!_isInRange(pitch)) return RuleRefusal.pitchOutOfRange;
@@ -293,8 +309,19 @@ class DeterministicRules extends Equatable {
     ) when value <= 0) {
       return RuleRefusal.slopeOutOfRange;
     }
+    if (namedValues.containsKey(DimensionKey.sides.id) &&
+        _sidesOf(namedValues) == null &&
+        !(sidesStillTyped && _isTheStartOfACount(namedValues))) {
+      return RuleRefusal.sidesNotWhole;
+    }
     return null;
   }
+
+  bool _isTheStartOfACount(Map<String, Quantity> namedValues) =>
+      switch (namedValues[DimensionKey.sides.id]) {
+        Scalar(:final value) => value >= 1 && value == value.roundToDouble(),
+        _ => false,
+      };
 
   /// The answers [namedValues] earn, in the order the strip offers them;
   /// empty when no rule matches. [namedValues] maps a chip key to the

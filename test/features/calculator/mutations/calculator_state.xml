@@ -103,6 +103,31 @@
         <regex pattern="for \(final chip in _countsTheTapeEndsOn\) \(chip\.key, chip\.value\)," dotAll="true" id="calculator_state.landed_count.earlier_area_hides">
             <mutation text="for (final chip in tape.chips.whereType&lt;ResultChip&gt;()) (chip.key, chip.value),"/>
         </regex>
+        <!-- CA-1094 (Section 1.8; decision tree rows 339, 375): the Sides
+             note is silent, = on a warning raises no Alert, or the Alert
+             names another warning -->
+        <regex pattern="sidesStillTyped: tape\.beingTyped\?\.key == PlainNumberKeys\.sides," dotAll="true" id="calculator_state.note.sides_while_typed">
+            <mutation text="sidesStillTyped: false,"/>
+            <mutation text="sidesStillTyped: true,"/>
+        </regex>
+        <regex pattern="case RuleRefusal\.sidesNotWhole:\s*return const CalculatorSidesNotWholeNote\(\);" dotAll="true" id="calculator_state.note.sides_silent">
+            <mutation text="case RuleRefusal.sidesNotWhole: return null;"/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.nothingToCompute\), _, _\) =&gt;\s*_rangeWarningOnEquals," dotAll="true" id="calculator_state.toast.equals_on_a_warning_silent">
+            <mutation text="(TapeRefused(reason: TapeRefusal.nothingToCompute), _, _) =&gt; null,"/>
+        </regex>
+        <regex pattern="CalculatorPitchOutOfRangeNote\(isAtLeastARightAngle: true\) =&gt;\s*const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.pitchUnderRightAngle," dotAll="true" id="calculator_state.toast.right_angle_named_wrong">
+            <mutation text="CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true) =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.pitchAtLeastZero,"/>
+        </regex>
+        <regex pattern="CalculatorPitchOutOfRangeNote\(\) =&gt; const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.pitchAtLeastZero," dotAll="true" id="calculator_state.toast.below_zero_named_wrong">
+            <mutation text="CalculatorPitchOutOfRangeNote() =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.pitchUnderRightAngle,"/>
+        </regex>
+        <regex pattern="CalculatorFlatPitchHasNoRunNote\(\) =&gt; const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.flatPitchHasNoRun," dotAll="true" id="calculator_state.toast.flat_pitch_named_wrong">
+            <mutation text="CalculatorFlatPitchHasNoRunNote() =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.slopeAboveZero,"/>
+        </regex>
+        <regex pattern="CalculatorSlopeOutOfRangeNote\(\) =&gt; const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.slopeAboveZero," dotAll="true" id="calculator_state.toast.slope_named_wrong">
+            <mutation text="CalculatorSlopeOutOfRangeNote() =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.flatPitchHasNoRun,"/>
+        </regex>
     </rules>
 
     <commands>

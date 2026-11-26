@@ -78,6 +78,40 @@ void main() {
         expect(tape.chips, hasLength(3), reason: 'one ratio, three spellings');
       });
 
+      test('row 255: a tap on another pitch reading on the strip rewrites the '
+          'pitch answer, as Pitch does, and adds no chip (Section 8)', () {
+        Answer offered(Tape tape, String key) => rules
+            .answersFor(tape.namedValues)
+            .firstWhere((answer) => answer.key == key);
+        Tape landed(Tape tape, String key) {
+          final answer = offered(tape, key);
+          return changed(tape.landAnswer(answer.key, answer.value));
+        }
+
+        final answered = press(const Tape(), '[Rise] 8 ft [Run] 6 ft [Pitch]');
+        var tape = landed(answered, DeterministicRules.pitchDegreesKey);
+        expect(texts(tape), ['Rise8ft', 'Run6ft', 'Pitch-degrees 53.13°']);
+        tape = landed(tape, DeterministicRules.pitchGradeKey);
+        expect(texts(tape), ['Rise8ft', 'Run6ft', 'Pitch-grade 133.3%']);
+
+        final diagonal = landed(tape, 'Diagonal');
+        expect(
+          texts(diagonal),
+          ['Rise8ft', 'Run6ft', 'Pitch-grade 133.3%', 'Diagonal 10ft'],
+          reason: 'only a pitch reading rewrites the pitch answer',
+        );
+        final afterAnArc = landed(
+          landed(press(const Tape(), '[Rise] 8 ft [Run] 6 ft'), 'Arc angle'),
+          DeterministicRules.pitchDegreesKey,
+        );
+        expect(texts(afterAnArc), [
+          'Rise8ft',
+          'Run6ft',
+          'Arc angle 277.78°',
+          'Pitch-degrees 53.13°',
+        ], reason: 'an angle that is no pitch answer is kept');
+      });
+
       test('S42: a slope entry gets the same ask-then-cycle duty', () {
         var tape = press(const Tape(), '[Slope] 7');
         expect(strip(tape), [
@@ -363,6 +397,59 @@ void main() {
           isNull,
         );
         expect(rules.refusalFor(const {}), isNull);
+      });
+
+      test('row 339: a Sides count no regular polygon has is refused, a whole '
+          'number of 3 or more is used (Section 1.8)', () {
+        RuleRefusal? refusalOf(String keys) =>
+            rules.refusalFor(press(const Tape(), keys).namedValues);
+
+        expect(
+          refusalOf('[Diameter] 1 2 ft [Sides] 6 . 5'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          refusalOf('[Diameter] 1 2 ft [Sides] 2'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(refusalOf('[Sides] 6 . 5'), RuleRefusal.sidesNotWhole);
+        expect(refusalOf('[Diameter] 1 2 ft [Sides] 3'), isNull);
+        expect(refusalOf('[Diameter] 1 2 ft [Sides] 6'), isNull);
+        expect(refusalOf('[Diameter] 1 2 ft [Sides] 6 . 0'), isNull);
+        expect(refusalOf('[Diameter] 1 2 ft [Sides]'), isNull);
+      });
+
+      test('the Sides refusal waits for the count to be finished: a 1 or a 2 '
+          'still being typed is the start of 12 or 24, while a 0 or a '
+          'decimal part is refused at once (Section 1.8, "Shown only once '
+          'the entry is finished"; row 339)', () {
+        RuleRefusal? whileTyped(String keys) => rules.refusalFor(
+          press(const Tape(), keys).namedValues,
+          sidesStillTyped: true,
+        );
+
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 1'), isNull);
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 2'), isNull);
+        expect(whileTyped('[Diameter] 1 2 ft [Sides] 1 2'), isNull);
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 0'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 6 . 5'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          whileTyped('[Diameter] 1 2 ft [Sides] 1 . 5'),
+          RuleRefusal.sidesNotWhole,
+        );
+        expect(
+          rules.refusalFor(
+            press(const Tape(), '[Diameter] 1 2 ft [Sides] 1').namedValues,
+          ),
+          RuleRefusal.sidesNotWhole,
+          reason: 'a count of 1 that is finished is refused',
+        );
       });
 
       test('a second dimension on top of it does not bury the reason', () {

@@ -120,6 +120,36 @@
             <mutation text="Angle(math.atan(riseOverRun));"/>
             <mutation text="Angle(math.tan(riseOverRun) * 180 / math.pi);"/>
         </regex>
+        <!-- CA-1094 (decision tree row 255): a tap on another pitch reading
+             appends a chip, any answer rewrites a pitch answer, or a pitch
+             reading rewrites an angle that is no pitch answer -->
+        <regex pattern="\) when DeterministicRules\.isPitchKey\(answered\) &amp;&amp;\s*DeterministicRules\.isPitchKey\(key\)\) \{" dotAll="true" id="pitch_grammar.strip_tap.rewrites_only_a_pitch">
+            <mutation text=") when DeterministicRules.isPitchKey(answered)) {"/>
+            <mutation text=") when DeterministicRules.isPitchKey(key)) {"/>
+        </regex>
+        <regex pattern="return _replaceLastChip\(\s*ResultChip\(key: key, value: value, operator: operator\),\s*\);" dotAll="true" id="pitch_grammar.strip_tap.appends">
+            <mutation text="return TapeChanged(append(ResultChip(key: key, value: value, operator: operator)));"/>
+        </regex>
+
+        <!-- CA-1094 (decision tree row 339): a Sides count no polygon has is
+             used, or a tape with no Sides, or a whole count, is refused -->
+        <regex pattern="if \(namedValues\.containsKey\(DimensionKey\.sides\.id\) &amp;&amp;\s*_sidesOf\(namedValues\) == null &amp;&amp;\s*!\(sidesStillTyped &amp;&amp; _isTheStartOfACount\(namedValues\)\)\) \{" dotAll="true" id="pitch_grammar.sides.not_whole">
+            <mutation text="if (_sidesOf(namedValues) == null &amp;&amp; !(sidesStillTyped &amp;&amp; _isTheStartOfACount(namedValues))) {"/>
+            <mutation text="if (namedValues.containsKey(DimensionKey.sides.id) &amp;&amp; !(sidesStillTyped &amp;&amp; _isTheStartOfACount(namedValues))) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
+        <!-- R1 (Section 1.8, "Shown only once the entry is finished"): a 1
+             or a 2 still being typed is refused, every count still being
+             typed is let through, or a 0 or a decimal part is taken for the
+             start of a count -->
+        <regex pattern="!\(sidesStillTyped &amp;&amp; _isTheStartOfACount\(namedValues\)\)\) \{" dotAll="true" id="pitch_grammar.sides.waits_for_the_count">
+            <mutation text="true) {"/>
+            <mutation text="!sidesStillTyped) {"/>
+        </regex>
+        <regex pattern="Scalar\(:final value\) =&gt; value &gt;= 1 &amp;&amp; value == value\.roundToDouble\(\)," dotAll="true" id="pitch_grammar.sides.start_of_a_count">
+            <mutation text="Scalar(:final value) =&gt; value &gt;= 0 &amp;&amp; value == value.roundToDouble(),"/>
+            <mutation text="Scalar(:final value) =&gt; value &gt;= 1,"/>
+        </regex>
     </rules>
 
     <commands>

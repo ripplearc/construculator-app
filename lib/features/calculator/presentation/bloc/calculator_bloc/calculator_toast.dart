@@ -174,3 +174,33 @@ final class CalculatorAngleThreePartsToast extends CalculatorToast {
   @override
   List<Object?> get props => const [];
 }
+
+/// Which strip warning [CalculatorRangeWarningToast] repeats.
+enum CalculatorRangeWarning {
+  /// "A pitch must be under 90°": Pitch holds 90° or more.
+  pitchUnderRightAngle,
+
+  /// "A pitch must be 0° or more": Pitch holds less than 0°.
+  pitchAtLeastZero,
+
+  /// "A flat pitch has no run": Pitch 0° with a Rise alone.
+  flatPitchHasNoRun,
+
+  /// "Slope must be more than 0%": Slope holds 0% or less.
+  slopeAboveZero,
+}
+
+/// The strip note's words again as a red Alert, title then body, when = is
+/// pressed while a pitch or a slope the rules cannot use holds the strip
+/// ("Pressing = while the note shows gives a red Alert with the words of
+/// the note", UX Design Doc Section 1.8; decision tree row 375). The tape
+/// does not change.
+final class CalculatorRangeWarningToast extends CalculatorToast {
+  /// The warning the strip shows.
+  final CalculatorRangeWarning warning;
+
+  const CalculatorRangeWarningToast(this.warning);
+
+  @override
+  List<Object?> get props => [warning];
+}

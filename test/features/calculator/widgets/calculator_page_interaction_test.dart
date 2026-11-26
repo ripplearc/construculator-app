@@ -621,9 +621,62 @@ void main() {
     await tester.pump();
 
     expect(bloc.state.valueText, '8.45in/12in');
+    final reRead = tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea));
     expect(
-      tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea)).label,
+      reRead.label,
       '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingRisePerFoot}',
+    );
+    expect(
+      reRead.dependentKeys.single.label,
+      l10n.calculatorPillInputAs('8.45in/12in'),
+    );
+    expect(
+      reRead.dependentKeys.single.value,
+      '8.45°',
+      reason: 'the way back, never D:M:S (decision tree row 260)',
+    );
+
+    await tester.tap(find.byKey(CoreDisplayArea.dependentKeyTestKey(0)));
+    await tester.pump();
+
+    expect(bloc.state.valueText, '8.45°', reason: 'the pill toggles (S86)');
+  });
+
+  testWidgets('= while the pitch note holds the strip shows a red Alert in '
+      'the words of the note, and the tape stays (decision tree row 375)', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_nine',
+      'calc_key_five',
+      'calc_key_Run',
+      'calc_key_one',
+      'calc_key_zero',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+    final before = bloc.state.tape;
+
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await settle(tester);
+
+    expect(
+      find.text(l10n.calculatorToastPitchUnderRightAngleTitle),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.calculatorToastEditThePitchChipBody), findsOneWidget);
+    expect(bloc.state.tape, before);
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .suggestionAreaPlaceholder,
+      l10n.calculatorNotePitchUnderRightAngle,
+      reason: 'the note stays while its cause stays',
     );
   });
 

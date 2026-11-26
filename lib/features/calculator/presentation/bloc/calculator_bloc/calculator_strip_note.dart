@@ -39,6 +39,16 @@ final class CalculatorSlopeOutOfRangeNote extends CalculatorStripNote {
   List<Object?> get props => const [];
 }
 
+/// Sides holds a count no regular polygon has: not a whole number, or
+/// fewer than 3 (Section 1.8, "A count that is not whole"; decision tree
+/// row 339). Stays while the cause stays.
+final class CalculatorSidesNotWholeNote extends CalculatorStripNote {
+  const CalculatorSidesNotWholeNote();
+
+  @override
+  List<Object?> get props => const [];
+}
+
 /// The D:M:S key was pressed on a pitch answer, which has no D:M:S
 /// spelling (Section 5.4, "Pitch has no D:M:S"). Closes on the next key.
 final class CalculatorPitchHasNoDmsNote extends CalculatorStripNote {

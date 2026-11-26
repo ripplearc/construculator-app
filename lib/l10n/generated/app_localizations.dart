@@ -3394,12 +3394,6 @@ abstract class AppLocalizations {
   /// **'Density'**
   String get calculatorPillDensity;
 
-  /// Dependent-key pill that respells a pitch as in/12in, degrees or grade
-  ///
-  /// In en, this message translates to:
-  /// **'Shown as'**
-  String get calculatorPillShownAs;
-
   /// Dependent-key pill on a polygon area. Its value is 'corners' or 'flats': whether the diameter was measured corner to corner or flat side to flat side
   ///
   /// In en, this message translates to:
@@ -3853,8 +3847,14 @@ abstract class AppLocalizations {
   /// Strip note shown in place of the calculator suggestions while Slope holds a grade of 0% or less
   ///
   /// In en, this message translates to:
-  /// **'A slope must be above 0%. Edit the Slope chip.'**
+  /// **'Slope must be more than 0%. Edit the Slope chip.'**
   String get calculatorNoteSlopeAboveZero;
+
+  /// Strip note shown in place of the calculator suggestions while Sides holds a count that is not a whole number of 3 or more (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Sides needs a whole number, 3 or more.'**
+  String get calculatorNoteSidesNotWhole;
 
   /// Strip note shown after the D:M:S key is pressed on a calculator pitch answer, until the next key
   ///
@@ -4609,6 +4609,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An angle has three parts'**
   String get calculatorToastAngleThreePartsTitle;
+
+  /// Title of the red Alert when = is pressed while the strip says the pitch must be under 90° (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'A pitch must be under 90°'**
+  String get calculatorToastPitchUnderRightAngleTitle;
+
+  /// Title of the red Alert when = is pressed while the strip says the pitch must be 0° or more (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'A pitch must be 0° or more'**
+  String get calculatorToastPitchAtLeastZeroTitle;
+
+  /// Title of the red Alert when = is pressed while the strip says a flat pitch has no run (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'A flat pitch has no run'**
+  String get calculatorToastFlatPitchHasNoRunTitle;
+
+  /// Title of the red Alert when = is pressed while the strip says the slope must be more than 0% (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Slope must be more than 0%'**
+  String get calculatorToastSlopeAboveZeroTitle;
+
+  /// Body of the red Alert when = is pressed while a strip note says the pitch cannot be used (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the Pitch chip.'**
+  String get calculatorToastEditThePitchChipBody;
+
+  /// Body of the red Alert when = is pressed while the strip note says the slope cannot be used (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit the Slope chip.'**
+  String get calculatorToastEditTheSlopeChipBody;
 
   /// Body shared by the 'Seconds have two digits' and 'An angle has three parts' Alerts (UX Design Doc rule 4.10)
   ///
