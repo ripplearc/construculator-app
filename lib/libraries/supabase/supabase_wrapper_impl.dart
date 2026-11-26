@@ -5,6 +5,7 @@ import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
 import 'package:construculator/libraries/secure_storage/stale_secure_storage_service.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/secure_session_local_storage.dart';
 import 'package:construculator/libraries/supabase/utils/jwt_parser.dart';
@@ -14,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseWrapperImpl implements SupabaseWrapper {
   late supabase.SupabaseClient _supabaseClient;
+  late SecureSessionLocalStorage _sessionStorage;
   final EnvLoader _envLoader;
   final SecureStorageWrapper _secureStorage;
   final http.Client? _httpClient;
@@ -38,17 +40,18 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
       final secureStorageIsClean = await StaleSecureStorageService(
         secureStorage: _secureStorage,
       ).clearIfFreshInstall(earlierVersionKey: persistSessionKey);
+      _sessionStorage = SecureSessionLocalStorage(
+        secureStorage: _secureStorage,
+        persistSessionKey: persistSessionKey,
+        ignoreStoredSession: !secureStorageIsClean,
+      );
       await supabase.Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseAnonKey,
         debug: _envLoader.get('DEBUG_MODE') == 'true',
         httpClient: _httpClient,
         authOptions: supabase.FlutterAuthClientOptions(
-          localStorage: SecureSessionLocalStorage(
-            secureStorage: _secureStorage,
-            persistSessionKey: persistSessionKey,
-            ignoreStoredSession: !secureStorageIsClean,
-          ),
+          localStorage: _sessionStorage,
         ),
       );
       _supabaseClient = supabase.Supabase.instance.client;
@@ -59,6 +62,10 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
       'SUPABASE_URL and SUPABASE_ANON_KEY variables are required',
     );
   }
+
+  @override
+  Future<SavedSessionRead> readSavedSession() =>
+      _sessionStorage.readSavedSession();
 
   @override
   Stream<supabase.AuthState> get onAuthStateChange =>
