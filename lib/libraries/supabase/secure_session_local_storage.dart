@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,8 +13,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// copy stays and the move is tried again on the next launch.
 ///
 /// Supabase calls [hasAccessToken] while starting the app and does not catch
-/// errors from it. A session that cannot be read therefore reads as no
-/// session, which signs the user out.
+/// errors from it, so a throw there would stop the app from starting. These
+/// two reads therefore answer no session when the read fails. [readSavedSession]
+/// is the read that reports the failure, for start-up recovery.
 /// On iOS the read throws, and [SecureStorageWrapper] logs it.
 /// On Android the plugin (resetOnError, on by default) deletes the value
 /// and returns null, so nothing is logged.
@@ -66,12 +68,24 @@ class SecureSessionLocalStorage extends LocalStorage {
   Future<bool> hasAccessToken() async => await accessToken() != null;
 
   @override
-  Future<String?> accessToken() async {
-    if (ignoreStoredSession) return null;
+  Future<String?> accessToken() async => switch (await readSavedSession()) {
+    SavedSessionFound(:final value) => value,
+    SavedSessionAbsent() || SavedSessionUnknown() => null,
+  };
+
+  /// Reads the saved session and says when the read failed.
+  ///
+  /// A failed read returns [SavedSessionUnknown], never [SavedSessionAbsent].
+  /// Honors [ignoreStoredSession] the same way [accessToken] does.
+  Future<SavedSessionRead> readSavedSession() async {
+    if (ignoreStoredSession) return const SavedSessionAbsent();
     try {
-      return await _secureStorage.read(persistSessionKey);
+      final value = await _secureStorage.read(persistSessionKey);
+      return value == null
+          ? const SavedSessionAbsent()
+          : SavedSessionFound(value);
     } on PlatformException {
-      return null;
+      return const SavedSessionUnknown();
     }
   }
 

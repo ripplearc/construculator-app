@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/secure_storage/testing/fake_secure_storage_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
 import 'package:construculator/libraries/supabase/secure_session_local_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,6 +79,40 @@ void main() {
 
         expect(await storage.hasAccessToken(), isFalse);
         expect(await storage.accessToken(), isNull);
+      });
+    });
+
+    group('reporting what the saved session read found', () {
+      test('returns the saved text', () async {
+        secure.seed(_key, _session);
+
+        expect(
+          await storage.readSavedSession(),
+          const SavedSessionFound(_session),
+        );
+      });
+
+      test('says nothing is saved when nothing was saved', () async {
+        expect(await storage.readSavedSession(), isA<SavedSessionAbsent>());
+      });
+
+      test('says it cannot tell when the read throws', () async {
+        secure.seed(_key, _session);
+        secure.shouldThrowOnRead = true;
+
+        expect(await storage.readSavedSession(), isA<SavedSessionUnknown>());
+      });
+
+      test('says nothing is saved when the stored session is ignored', () async {
+        secure.seed(_key, _session);
+        // ignore: no_direct_instantiation, reason: the class under test is built around the fake secure store
+        final ignoring = SecureSessionLocalStorage(
+          secureStorage: secure,
+          persistSessionKey: _key,
+          ignoreStoredSession: true,
+        );
+
+        expect(await ignoring.readSavedSession(), isA<SavedSessionAbsent>());
       });
     });
 

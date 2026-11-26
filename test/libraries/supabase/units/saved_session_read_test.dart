@@ -1,0 +1,60 @@
+import 'dart:convert';
+
+import 'package:construculator/libraries/supabase/data/saved_session_read.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+String _session({
+  Object? user = const {'id': 'u1'},
+  Object? accessToken = 'a1',
+}) => json.encode({
+  'access_token': accessToken,
+  'token_type': 'bearer',
+  'refresh_token': 'r1',
+  'user': user,
+});
+
+void main() {
+  group('SavedSessionFound.isReadableSession', () {
+    test('is true for a value Supabase can load as a session', () {
+      expect(SavedSessionFound(_session()).isReadableSession, isTrue);
+    });
+
+    test('is false for text that is not JSON', () {
+      expect(const SavedSessionFound('{broken').isReadableSession, isFalse);
+    });
+
+    test('is false for JSON that is not an object', () {
+      expect(const SavedSessionFound('[1,2]').isReadableSession, isFalse);
+    });
+
+    test('is false for a session with no access token', () {
+      expect(
+        SavedSessionFound(_session(accessToken: null)).isReadableSession,
+        isFalse,
+      );
+    });
+
+    test('is false for a session whose user is not an object', () {
+      expect(
+        SavedSessionFound(_session(user: 'u1')).isReadableSession,
+        isFalse,
+      );
+    });
+
+    test('is false for a session whose user has no id', () {
+      expect(
+        SavedSessionFound(_session(user: const {})).isReadableSession,
+        isFalse,
+      );
+    });
+
+    test('is false for a session with no token type', () {
+      expect(
+        const SavedSessionFound(
+          '{"access_token":"a1","user":{"id":"u1"}}',
+        ).isReadableSession,
+        isFalse,
+      );
+    });
+  });
+}
