@@ -666,6 +666,8 @@ class CalculatorState extends Equatable {
           },
           value: switch (chip) {
             ErrorChip() => null,
+            BracketChip(isPercent: true, isOpen: false, :final inner) =>
+              '(${inner.map(_valueTextOf).join()})%',
             BracketChip(:final inner) => inner.map(_valueTextOf).join(),
             ResultChip() when openIndex != null && index > openIndex =>
               _staleResultDash,
@@ -681,6 +683,9 @@ class CalculatorState extends Equatable {
             ResultChip() when editedIndex != null && index > editedIndex =>
               CoreCalculatorChipType.dashed,
             BracketChip(isOpen: true) => CoreCalculatorChipType.bracketOpen,
+            // the closed-bracket chip draws its own "(…)" and has no place
+            // for a % after its ")", so a percent bracket is a plain chip
+            BracketChip(isPercent: true) => CoreCalculatorChipType.editable,
             BracketChip() => CoreCalculatorChipType.bracketClosed,
             ResultChip() => CoreCalculatorChipType.result,
             ErrorChip() => CoreCalculatorChipType.error,
@@ -696,15 +701,24 @@ class CalculatorState extends Equatable {
   static const String _staleResultDash = '—';
 
   String _valueTextOf(TapeChip chip) => switch (chip) {
-    final ValueChip chip => '${_lead(chip.operator)}${_entryTextOf(chip)}',
+    final ValueChip chip =>
+      '${_lead(chip.operator)}${_entryTextOf(chip)}${_percentSign(chip.isPercent)}',
     ResultChip(:final operator, :final value) =>
       '${_lead(operator)}${tape.formatter.format(value)}',
-    BracketChip(:final operator, :final inner, :final isOpen) =>
-      '${_lead(operator)}(${inner.map(_valueTextOf).join()}${isOpen ? '' : ')'}',
+    BracketChip(
+      :final operator,
+      :final inner,
+      :final isOpen,
+      :final isPercent,
+    ) =>
+      '${_lead(operator)}(${inner.map(_valueTextOf).join()}${isOpen ? '' : ')'}'
+          '${_percentSign(isPercent && !isOpen)}',
     ErrorChip() => '',
   };
 
   static String _lead(Operator? operator) => operator?.symbol ?? '';
+
+  static String _percentSign(bool isPercent) => isPercent ? '%' : '';
 
   @override
   List<Object?> get props => [
@@ -808,6 +822,27 @@ class CalculatorState extends Equatable {
         const CalculatorAngleThreePartsToast(),
       (TapeRefused(reason: TapeRefusal.nothingToCompute), _, _) =>
         _rangeWarningOnEquals,
+      (TapeRefused(reason: TapeRefusal.percentNeedsANumber), _, _) =>
+        CalculatorPercentNeedsANumberToast(
+          operator: _lead(tape.beingTyped?.operator),
+        ),
+      (TapeRefused(reason: TapeRefusal.percentNeedsAnOperator), _, _) =>
+        CalculatorPercentNeedsAnOperatorToast(
+          insideABracket: tape.openBracket != null,
+        ),
+      (TapeRefused(reason: TapeRefusal.alreadyAPercent), _, _) =>
+        const CalculatorAlreadyAPercentToast(),
+      (TapeRefused(reason: TapeRefusal.percentTakesNoUnit), _, _) =>
+        const CalculatorPercentTakesNoUnitToast(),
+      (TapeRefused(reason: TapeRefusal.percentHasNoUnit), _, _) =>
+        const CalculatorPercentHasNoUnitToast(),
+      (TapeRefused(reason: TapeRefusal.percentDividesByZero), _, _) =>
+        CalculatorPercentDividesByZeroToast(
+          bracket: switch (tape.chips.lastOrNull) {
+            BracketChip(:final inner) => '(${inner.map(_valueTextOf).join()})',
+            _ => '',
+          },
+        ),
       _ => null,
     };
   }

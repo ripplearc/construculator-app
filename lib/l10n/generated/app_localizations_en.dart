@@ -2684,6 +2684,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorToastEditThePitchChipBody => 'Edit the Pitch chip.';
 
   @override
+  String get calculatorToastTypeANumberFirstTitle => 'Type a number first';
+
+  @override
+  String calculatorToastPercentAfterOperatorBody(String operator) {
+    return 'Type the number after $operator, then press %.';
+  }
+
+  @override
+  String get calculatorToastPercentNeedsAnOperatorTitle =>
+      '% needs an operator first';
+
+  @override
+  String get calculatorToastPercentNeedsAnOperatorInBracketBody =>
+      'Press ) and +, −, × or ÷, then the percent.';
+
+  @override
+  String get calculatorToastPercentNeedsAnOperatorBody =>
+      'Press +, −, × or ÷, then the percent.';
+
+  @override
+  String get calculatorToastAlreadyAPercentTitle => 'Already a percent';
+
+  @override
+  String get calculatorToastAlreadyAPercentBody =>
+      'Press +, −, × or ÷ to go on, or ⌫ to remove the %.';
+
+  @override
+  String get calculatorToastPercentTakesNoUnitTitle =>
+      'That number is a percent';
+
+  @override
+  String get calculatorToastPercentTakesNoUnitBody =>
+      'A percent has no unit. Press +, −, × or ÷ to go on.';
+
+  @override
+  String get calculatorToastPercentHasNoUnitTitle => 'A percent has no unit';
+
+  @override
+  String get calculatorToastPercentHasNoUnitBody =>
+      'Press ⌫ to remove the unit, then press %.';
+
+  @override
+  String get calculatorToastCannotDivideByZeroTitle => 'Cannot divide by zero';
+
+  @override
+  String calculatorToastPercentBracketIsZeroBody(String bracket) {
+    return 'The bracket $bracket is 0. Press ⌫ to change the bracket.';
+  }
+
+  @override
   String get calculatorToastEditTheSlopeChipBody => 'Edit the Slope chip.';
 
   @override

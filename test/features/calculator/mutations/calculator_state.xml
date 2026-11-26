@@ -128,6 +128,37 @@
         <regex pattern="CalculatorSlopeOutOfRangeNote\(\) =&gt; const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.slopeAboveZero," dotAll="true" id="calculator_state.toast.slope_named_wrong">
             <mutation text="CalculatorSlopeOutOfRangeNote() =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.flatPitchHasNoRun,"/>
         </regex>
+        <!-- CA-1376: the chip loses its % -->
+        <regex pattern="\$\{_percentSign\(chip\.isPercent\)\}'," dotAll="true" id="calculator_state.chip.no_percent_sign">
+            <mutation text="',"/>
+        </regex>
+        <regex pattern="'\(\$\{inner\.map\(_valueTextOf\)\.join\(\)\}\)%'," dotAll="true" id="calculator_state.chip.bracket_no_percent_sign">
+            <mutation text="'(${inner.map(_valueTextOf).join()})',"/>
+        </regex>
+        <regex pattern="BracketChip\(isPercent: true\) =&gt; CoreCalculatorChipType\.editable," dotAll="true" id="calculator_state.chip.percent_bracket_type">
+            <mutation text="BracketChip(isPercent: true) =&gt; CoreCalculatorChipType.bracketClosed,"/>
+        </regex>
+
+        <!-- CA-1376 (rule 4.12): a percent refusal raises another Alert, or
+             names the wrong operator, place or bracket -->
+        <regex pattern="operator: _lead\(tape\.beingTyped\?\.operator\)," dotAll="true" id="calculator_state.toast.percent_operator">
+            <mutation text="operator: '',"/>
+        </regex>
+        <regex pattern="insideABracket: tape\.openBracket != null," dotAll="true" id="calculator_state.toast.percent_in_a_bracket">
+            <mutation text="insideABracket: false,"/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.alreadyAPercent\), _, _\) =&gt;\s*const CalculatorAlreadyAPercentToast\(\)," dotAll="true" id="calculator_state.toast.already_a_percent">
+            <mutation text="(TapeRefused(reason: TapeRefusal.alreadyAPercent), _, _) =&gt; const CalculatorPercentTakesNoUnitToast(),"/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.percentTakesNoUnit\), _, _\) =&gt;\s*const CalculatorPercentTakesNoUnitToast\(\)," dotAll="true" id="calculator_state.toast.takes_no_unit">
+            <mutation text="(TapeRefused(reason: TapeRefusal.percentTakesNoUnit), _, _) =&gt; const CalculatorPercentHasNoUnitToast(),"/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.percentHasNoUnit\), _, _\) =&gt;\s*const CalculatorPercentHasNoUnitToast\(\)," dotAll="true" id="calculator_state.toast.has_no_unit">
+            <mutation text="(TapeRefused(reason: TapeRefusal.percentHasNoUnit), _, _) =&gt; const CalculatorPercentTakesNoUnitToast(),"/>
+        </regex>
+        <regex pattern="BracketChip\(:final inner\) =&gt; '\(\$\{inner\.map\(_valueTextOf\)\.join\(\)\}\)'," dotAll="true" id="calculator_state.toast.bracket_named">
+            <mutation text="BracketChip(:final inner) =&gt; '',"/>
+        </regex>
     </rules>
 
     <commands>

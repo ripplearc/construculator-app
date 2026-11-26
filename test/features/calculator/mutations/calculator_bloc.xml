@@ -115,8 +115,16 @@
         </regex>
 
         <!-- RULE 10: the open and the closed faces are swapped -->
-        <regex pattern="BracketChip\(isOpen: true\) => CoreCalculatorChipType\.bracketOpen,\s*BracketChip\(\) => CoreCalculatorChipType\.bracketClosed," dotAll="true" id="calculator_state.chips.bracket_faces_swapped">
-            <mutation text="BracketChip(isOpen: true) => CoreCalculatorChipType.bracketClosed, BracketChip() => CoreCalculatorChipType.bracketOpen,"/>
+        <regex pattern="BracketChip\(isOpen: true\) =&gt; CoreCalculatorChipType\.bracketOpen," dotAll="true" id="calculator_state.chips.bracket_faces_swapped">
+            <mutation text="BracketChip(isOpen: true) =&gt; CoreCalculatorChipType.bracketClosed,"/>
+        </regex>
+        <regex pattern="BracketChip\(\) =&gt; CoreCalculatorChipType\.bracketClosed," dotAll="true" id="calculator_state.chips.closed_bracket_drawn_open">
+            <mutation text="BracketChip() =&gt; CoreCalculatorChipType.bracketOpen,"/>
+        </regex>
+        <!-- RULE 10a (CA-1376 2/3 R1): a reopened percent bracket is written
+             closed, with its % and a second bracket inside the open chip -->
+        <regex pattern="BracketChip\(isPercent: true, isOpen: false, :final inner\) =&gt;" dotAll="true" id="calculator_state.chips.open_percent_bracket_written_closed">
+            <mutation text="BracketChip(isPercent: true, :final inner) =&gt;"/>
         </regex>
 
         <!-- RULE 11: a bracket chip holds nothing -->
@@ -374,6 +382,10 @@
         <regex pattern="\(TapeEntryRefused\(reason: EntryRefusal\.angleHasThreeParts\), _, _\) =&gt;\s*const CalculatorAngleThreePartsToast\(\)," dotAll="true" id="calculator_state.toast.three_parts_silent">
             <mutation text=""/>
             <mutation text="(TapeEntryRefused(reason: EntryRefusal.angleHasThreeParts), _, _) =&gt; const CalculatorMinutesTwoDigitsToast(),"/>
+        </regex>
+        <!-- CA-1376: the % key presses nothing -->
+        <regex pattern="\) =&gt; _press\(emit, \(tape\) =&gt; tape\.pressPercent\(\)\);" dotAll="true" id="calculator_bloc.percent.presses_nothing">
+            <mutation text=") =&gt; _press(emit, TapeChanged.new);"/>
         </regex>
     </rules>
 

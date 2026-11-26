@@ -444,6 +444,18 @@ class CalculatorLabelFormatter {
       CalculatorRangeWarning.slopeAboveZero =>
         l10n.calculatorToastSlopeAboveZeroTitle,
     },
+    CalculatorPercentNeedsANumberToast() =>
+      l10n.calculatorToastTypeANumberFirstTitle,
+    CalculatorPercentNeedsAnOperatorToast() =>
+      l10n.calculatorToastPercentNeedsAnOperatorTitle,
+    CalculatorAlreadyAPercentToast() =>
+      l10n.calculatorToastAlreadyAPercentTitle,
+    CalculatorPercentTakesNoUnitToast() =>
+      l10n.calculatorToastPercentTakesNoUnitTitle,
+    CalculatorPercentHasNoUnitToast() =>
+      l10n.calculatorToastPercentHasNoUnitTitle,
+    CalculatorPercentDividesByZeroToast() =>
+      l10n.calculatorToastCannotDivideByZeroTitle,
   };
 
   /// The body of [toast], in the words of UX Design Doc Section 5.
@@ -486,6 +498,19 @@ class CalculatorLabelFormatter {
     ) =>
       l10n.calculatorToastEditTheSlopeChipBody,
     CalculatorRangeWarningToast() => l10n.calculatorToastEditThePitchChipBody,
+    CalculatorPercentNeedsANumberToast(:final operator) =>
+      l10n.calculatorToastPercentAfterOperatorBody(operator),
+    CalculatorPercentNeedsAnOperatorToast(insideABracket: true) =>
+      l10n.calculatorToastPercentNeedsAnOperatorInBracketBody,
+    CalculatorPercentNeedsAnOperatorToast() =>
+      l10n.calculatorToastPercentNeedsAnOperatorBody,
+    CalculatorAlreadyAPercentToast() => l10n.calculatorToastAlreadyAPercentBody,
+    CalculatorPercentTakesNoUnitToast() =>
+      l10n.calculatorToastPercentTakesNoUnitBody,
+    CalculatorPercentHasNoUnitToast() =>
+      l10n.calculatorToastPercentHasNoUnitBody,
+    CalculatorPercentDividesByZeroToast(:final bracket) =>
+      l10n.calculatorToastPercentBracketIsZeroBody(bracket),
   };
 
   String _untranslated(String id) {
