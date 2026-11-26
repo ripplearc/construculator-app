@@ -661,6 +661,27 @@ void main() {
 
       expect(dialogTitle(), findsOneWidget);
     });
+
+    testWidgets('while a Save as my default runs, back waits for it to end '
+        'and only then asks', (tester) async {
+      await openSheet(tester);
+      await typeName(tester, 'Interior paint');
+      final bloc = BlocProvider.of<MaterialCostFormBloc>(
+        tester.element(find.byKey(SheetHeader.backButtonKey)),
+      );
+      bloc.add(const MaterialRateSaveRunningChanged(isRunning: true));
+      await tester.pumpAndSettle();
+
+      await tapBack(tester);
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.text('New material cost'), findsOneWidget);
+
+      bloc.add(const MaterialRateSaveRunningChanged(isRunning: false));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard this line?'), findsOneWidget);
+    });
   });
 
   group('opened from Your recents', () {
