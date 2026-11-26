@@ -139,10 +139,18 @@
         <regex pattern="labels: labels\.keyboardLabels," dotAll="true" id="calculator_page.keyboard.labels_dropped">
             <mutation text=""/>
         </regex>
+        <!-- CA-1195 B: two groups trade their dots -->
+        <regex pattern="CalculatorLabelFormatter\.unitGroupId =&gt; colors\.keyboardGroupUnit," dotAll="true" id="calculator_page.group_dots.unit_takes_shapes">
+            <mutation text="CalculatorLabelFormatter.unitGroupId =&gt; colors.keyboardGroupShapes,"/>
+        </regex>
+        <regex pattern="CalculatorLabelFormatter\.basicGeometryGroupId =&gt;\s*colors\.keyboardGroupGeometry," dotAll="true" id="calculator_page.group_dots.geometry_takes_trig">
+            <mutation text="CalculatorLabelFormatter.basicGeometryGroupId =&gt; colors.keyboardGroupTrigonometry,"/>
+        </regex>
     </rules>
 
     <commands>
         <command group="calculator_page" expected-return="0">flutter test test/features/calculator/widgets/calculator_page_interaction_test.dart</command>
+        <command group="calculator_page" expected-return="0">flutter test test/features/calculator/widgets/calculator_page_test.dart</command>
     </commands>
 
     <threshold failure="85">
