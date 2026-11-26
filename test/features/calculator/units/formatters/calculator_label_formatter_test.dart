@@ -221,6 +221,7 @@ void main() {
       expect(sheetSize.label, l10n.calculatorPillSheetSize);
       expect(sheetSize.value, '48in x 96in');
       expect(sheetSize.kind, CoreDependentKeyKind.editable);
+      expect(sheetSize.semanticsHint, l10n.calculatorPillEditSizeHint);
       expect(taps, 1);
       expect(pieceSize.label, l10n.calculatorPillPieceSize);
       expect(pieceSize.value, '8in x 16in');

@@ -218,6 +218,12 @@
         <regex pattern="Trade\.masonry =&gt; DependentKeyId\.pieceSize," dotAll="true" id="calculator_state.size_pill.piece_named_sheet">
             <mutation text="Trade.masonry =&gt; DependentKeyId.sheetSize,"/>
         </regex>
+
+        <!-- RULE (T2b 3/3, CA-1096): the editor opens on the size turned on
+             its side -->
+        <regex pattern="\[sizeEntryFaces\(size\.width\), sizeEntryFaces\(size\.height\)\]," dotAll="true" id="calculator_state.size_pill.fields_swapped">
+            <mutation text="[sizeEntryFaces(size.height), sizeEntryFaces(size.width)],"/>
+        </regex>
     </rules>
 
     <commands>

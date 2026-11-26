@@ -460,5 +460,39 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the size editor opened from the Sheet size pill of '
+        'an accepted count: Edit size on 48in x 96in with the Update key '
+        '(Section 1.5; walkthrough 19.1, step 11)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      final bloc = blocOf(tester)
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(const CalculatorDigitPressed('8'))
+        ..add(const CalculatorDigitPressed('0'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorUnitSelected(Unit.foot));
+      await tester.pump();
+      await tester.pump();
+      bloc.add(CalculatorSuggestionAccepted(bloc.state.suggestions.first));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.byKey(CoreDisplayArea.dependentKeyTestKey(0)));
+      await tester.pump();
+      await tester.pump();
+      // the sheet slides up over the keypad for a second
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(CoreValueEditorSheet), findsOneWidget);
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_edit_size_editor$suffix.png',
+        ),
+      );
+    });
   });
 }

@@ -238,9 +238,15 @@
             <mutation text="CoreCalculatorChipType.result, final value?,) when value != CalculatorState.staleResultDash =&gt; countText(chip.label, value),"/>
             <mutation text="CoreCalculatorChipType.result || CoreCalculatorChipType.dashed, final value?,) =&gt; countText(chip.label, value),"/>
         </regex>
-        <regex pattern="value: sizeText,\s*kind: id\.kind,\s*onPressed: onPressed," dotAll="true" id="calculator_label_formatter.size_pill.drawn">
-            <mutation text="value: sizeText, kind: CoreDependentKeyKind.offer, onPressed: onPressed,"/>
-            <mutation text="value: sizeText, kind: id.kind,"/>
+        <regex pattern="value: sizeText,\s*kind: id\.kind,\s*semanticsHint: l10n\.calculatorPillEditSizeHint,\s*onPressed: onPressed," dotAll="true" id="calculator_label_formatter.size_pill.drawn">
+            <mutation text="value: sizeText, kind: CoreDependentKeyKind.offer, semanticsHint: l10n.calculatorPillEditSizeHint, onPressed: onPressed,"/>
+            <mutation text="value: sizeText, kind: id.kind, semanticsHint: l10n.calculatorPillEditSizeHint,"/>
+        </regex>
+
+        <!-- RULE (T2b 3/3, CA-1096): the size pill does not say what a tap
+             does -->
+        <regex pattern="kind: id\.kind,\s*semanticsHint: l10n\.calculatorPillEditSizeHint," dotAll="true" id="calculator_label_formatter.size_pill.no_hint">
+            <mutation text="kind: id.kind,"/>
         </regex>
 
     </rules>

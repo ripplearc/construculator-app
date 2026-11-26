@@ -243,9 +243,10 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       [final lengthText, final widthText],
       (:final trade, :final size)?,
     )) {
-      final width = state.sizeEntryLength(lengthText);
-      final height = state.sizeEntryLength(widthText);
+      final width = _editedLength(lengthText, size.width);
+      final height = _editedLength(widthText, size.height);
       if (width == null || height == null) return;
+      if (width == size.width && height == size.height) return;
       final updated = await _updateMaterialSize(
         trade: trade,
         size: size,
@@ -270,6 +271,14 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       );
     }
   }
+
+  // A field left as the editor opened it keeps the stored measure exactly:
+  // the field shows it as the pill does, to two decimals (7-5/8in reads
+  // 7.63in), and reading that back would round the store.
+  Length? _editedLength(String field, Length stored) =>
+      field == state.sizeEntryFaces(stored)
+      ? stored
+      : state.sizeEntryLength(field);
 
   // Nobody signed in is the app's to answer, with the sign-in screen; any
   // other refusal of the store the user is told about here.

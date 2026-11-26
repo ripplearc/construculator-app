@@ -75,13 +75,25 @@
             <mutation text="(length.inches.toDouble())"/>
         </regex>
         <!-- RULE 5 (R1, B2): a size that shows as zero is a size -->
-        <regex pattern="if \(writer\.formatStoredLength\(length\) ==\s*writer\.formatStoredLength\(Length\(0, unit: length\.unit\)\)\) \{" dotAll="true" id="size_entry_parser.zero.shown_zero_is_a_size">
+        <regex pattern="if \(writer\.formatStoredLength\(length\) == shownAsZero\) \{" dotAll="true" id="size_entry_parser.zero.shown_zero_is_a_size">
             <mutation text="if (length.inches.isZero) {"/>
             <mutation text="if (false) {"/>
         </regex>
         <!-- RULE 6: a key face reads as another unit -->
         <regex pattern="UnitType\.centimeter\.label: Unit\.centimetre," dotAll="true" id="size_entry_parser.face.cm_as_mm">
             <mutation text="UnitType.centimeter.label: Unit.millimetre,"/>
+        </regex>
+
+        <!-- RULES (T2b 3/3, CA-1096; term 2.18): a stored size is spelled
+             with another key's face, or with the pill's suffix left in -->
+        <regex pattern="MeasurementSystem\.imperial =&gt; \(Unit\.inch\.suffix, UnitType\.inch\.label\)," dotAll="true" id="size_entry_parser.faces.imperial_face">
+            <mutation text="MeasurementSystem.imperial =&gt; (Unit.inch.suffix, UnitType.feet.label),"/>
+        </regex>
+        <regex pattern="Unit\.millimetre\.suffix,\s*UnitType\.millimeter\.label," dotAll="true" id="size_entry_parser.faces.metric_face">
+            <mutation text="Unit.millimetre.suffix, UnitType.centimeter.label,"/>
+        </regex>
+        <regex pattern="\)\.formatStoredLength\(length\)\.replaceFirst\(suffix, face\);" dotAll="true" id="size_entry_parser.faces.suffix_left_in">
+            <mutation text=").formatStoredLength(length);"/>
         </regex>
     </rules>
 

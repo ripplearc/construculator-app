@@ -2166,6 +2166,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorSizeEditorWidthField => 'Width';
 
   @override
+  String get calculatorSizeEditorEditTitle => 'Edit size';
+
+  @override
+  String get calculatorSizeEditorUpdateButton => 'Update';
+
+  @override
+  String get calculatorPillEditSizeHint => 'Edits the size';
+
+  @override
   String get calculatorSizeEditorAddButton => 'Add';
 
   @override

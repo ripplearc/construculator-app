@@ -46,9 +46,19 @@ final class CalculatorStoredSizePill extends CalculatorDependentKey {
   /// The size as the formatter writes it: 48in x 96in.
   final String sizeText;
 
-  /// The pill [id] over the size written as [sizeText].
-  const CalculatorStoredSizePill({required this.id, required this.sizeText});
+  /// What the value editor opens on from the pill (term 2.18): the size's
+  /// width, then its height, each as the editor's keys type it, "48Inch"
+  /// and "96Inch".
+  final List<String> editorFields;
+
+  /// The pill [id] over the size written as [sizeText], edited from
+  /// [editorFields].
+  const CalculatorStoredSizePill({
+    required this.id,
+    required this.sizeText,
+    this.editorFields = const [],
+  });
 
   @override
-  List<Object?> get props => [id, sizeText];
+  List<Object?> get props => [id, sizeText, editorFields];
 }

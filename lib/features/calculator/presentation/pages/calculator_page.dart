@@ -292,20 +292,53 @@ class _CalculatorPageState extends State<CalculatorPage> {
     CalculatorLabelFormatter labels,
     CalculatorState state,
   ) async {
+    final fields = await _sizeEditorFields(
+      labels,
+      state,
+      resultLabel: labels.l10n.calculatorSizeEditorAddButton,
+    );
+    _bloc.add(CalculatorSizeEditorClosed(fields));
+  }
+
+  Future<void> _editSize(
+    CalculatorLabelFormatter labels,
+    CalculatorState state,
+    CalculatorStoredSizePill pill,
+  ) async {
+    final fields = await _sizeEditorFields(
+      labels,
+      state,
+      resultLabel: labels.l10n.calculatorSizeEditorUpdateButton,
+      startsOn: CoreSizeCardData(id: pill.id.name, values: pill.editorFields),
+    );
+    _bloc.add(CalculatorSizePillEdited(fields));
+  }
+
+  // The value editor over the keyboard (Section 1.5), titled "Edit size"
+  // when it starts on a stored size and "Add size" when it starts empty;
+  // answers the fields as typed, or none when it closed any other way than
+  // by its equals key: a swipe down, a tap above it or the back gesture.
+  Future<List<String>> _sizeEditorFields(
+    CalculatorLabelFormatter labels,
+    CalculatorState state, {
+    required String resultLabel,
+    CoreSizeCardData? startsOn,
+  }) async {
     final entry = await CoreValueEditorSheet.show(
       context: context,
+      initialData: startsOn,
       titles: [
         labels.l10n.calculatorSizeEditorLengthField,
         labels.l10n.calculatorSizeEditorWidthField,
       ],
       addSizeTitle: labels.l10n.calculatorSheetTableAddButton,
-      editSizeTitle: labels.l10n.calculatorSheetTableAddButton,
-      resultLabel: labels.l10n.calculatorSizeEditorAddButton,
+      editSizeTitle: labels.l10n.calculatorSizeEditorEditTitle,
+      resultLabel: resultLabel,
       keyboardSemantics: labels.keyboardSemantics,
       keyboardLabels: labels.keyboardLabels,
       validator: (text) => labels.sizeEntryError(state.sizeEntry(text)),
     );
-    _bloc.add(CalculatorSizeEditorClosed(entry?.values ?? const []));
+    return entry?.values ?? const [];
   }
 
   Widget _detailPanel(CalculatorLabelFormatter labels, CalculatorState state) =>
@@ -432,10 +465,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                             () => bloc.add(
                                               const CalculatorReadAsAccepted(),
                                             ),
-                                          // TODO: [CA-1096] Open the value
-                                          // editor on the stored size.
-                                          // https://ripplearc.youtrack.cloud/issue/CA-1096
-                                          CalculatorStoredSizePill() => () {},
+                                          final CalculatorStoredSizePill pill =>
+                                            () =>
+                                                _editSize(labels, state, pill),
                                         },
                                       ),
                                   ],

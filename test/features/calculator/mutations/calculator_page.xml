@@ -153,8 +153,33 @@
             <mutation text="validator: (text) =&gt; labels.l10n.calculatorSizeEditorSizeError,"/>
             <mutation text="validator: (text) =&gt; null,"/>
         </regex>
-        <regex pattern="CalculatorSizeEditorClosed\(entry\?\.values \?\? const \[\]\)" dotAll="true" id="calculator_page.add_size.fields_dropped">
-            <mutation text="CalculatorSizeEditorClosed(const [])"/>
+        <regex pattern="_bloc\.add\(CalculatorSizeEditorClosed\(fields\)\);" dotAll="true" id="calculator_page.add_size.fields_dropped">
+            <mutation text="_bloc.add(const CalculatorSizeEditorClosed([]));"/>
+        </regex>
+
+        <!-- RULES (T2b 3/3, CA-1096; Section 1.5; rows 220, 222): the pill
+             opens nothing; the editor opens empty, or with the Add title or
+             the Add key; what it answers is dropped on the way to the bloc -->
+        <regex pattern="final CalculatorStoredSizePill pill =&gt;\s*\(\) =&gt;\s*_editSize\(labels, state, pill\)," dotAll="true" id="calculator_page.edit_size.opens_nothing">
+            <mutation text="CalculatorStoredSizePill() =&gt; () {},"/>
+        </regex>
+        <regex pattern="startsOn: CoreSizeCardData\(id: pill\.id\.name, values: pill\.editorFields\)," dotAll="true" id="calculator_page.edit_size.opens_empty">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="initialData: startsOn," dotAll="true" id="calculator_page.edit_size.start_not_passed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="editSizeTitle: labels\.l10n\.calculatorSizeEditorEditTitle," dotAll="true" id="calculator_page.edit_size.titled_add">
+            <mutation text="editSizeTitle: labels.l10n.calculatorSheetTableAddButton,"/>
+        </regex>
+        <regex pattern="resultLabel: labels\.l10n\.calculatorSizeEditorUpdateButton," dotAll="true" id="calculator_page.edit_size.key_reads_add">
+            <mutation text="resultLabel: labels.l10n.calculatorSizeEditorAddButton,"/>
+        </regex>
+        <regex pattern="_bloc\.add\(CalculatorSizePillEdited\(fields\)\);" dotAll="true" id="calculator_page.edit_size.fields_dropped">
+            <mutation text="_bloc.add(const CalculatorSizePillEdited([]));"/>
+        </regex>
+        <regex pattern="return entry\?\.values \?\? const \[\];" dotAll="true" id="calculator_page.size_editor.answer_dropped">
+            <mutation text="return const [];"/>
         </regex>
     </rules>
 
