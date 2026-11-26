@@ -356,6 +356,10 @@ class CalculatorState extends Equatable {
   /// area as much as a computed one, rung 5 and Section 9), the rule
   /// answers behind them (walkthrough 11.1: "the strip moves on to drywall";
   /// walkthrough 19.1 under the fold: the three counts "plus 3 more").
+  /// Once a count is accepted the ladder stops at that rung (rule 4.4, rung
+  /// 2: "was a trade result just accepted? then offer the other stored
+  /// sizes"), so the row holds the other sizes and no rule answer
+  /// (walkthrough 15.2, step 4), and nothing once every size is accepted.
   /// Empty while the chain holds an error chip or a step it
   /// cannot compute ("after an error the area stays empty on purpose";
   /// ÷ 0 before and after its =, doc line 771) and while a bracket is open
@@ -382,7 +386,7 @@ class CalculatorState extends Equatable {
         runningTotal
       else ...[
         ...materialOffers,
-        ...dimensions,
+        if (_countsTheTapeEndsOn.isEmpty) ...dimensions,
       ],
       if (trigAnswer != null && !trigLeads) trigAnswer,
     ];

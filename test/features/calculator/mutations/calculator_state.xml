@@ -47,7 +47,7 @@
             <mutation text="tape.namedValues,)) _answer(answer.key, answer.value),"/>
             <mutation text="tape.namedValues,)) if (_hasLanded(answer.key)) _answer(answer.key, answer.value),"/>
         </regex>
-        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*\.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
             <mutation text="if (runningTotal != null) runningTotal else ...materialOffers,"/>
         </regex>
         <!-- RULE: the tiles give way to Calc as row 1 does -->
@@ -64,9 +64,15 @@
         </regex>
         <!-- RULE: the rule answers lead the counts, or the counts never reach
              row 1 -->
-        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*\.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.suggestions.counts_behind_or_gone">
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.suggestions.counts_behind_or_gone">
             <mutation text="if (runningTotal != null) runningTotal else ...[...dimensions, ...materialOffers],"/>
             <mutation text="if (runningTotal != null) runningTotal else ...dimensions,"/>
+        </regex>
+        <!-- RULE (R2): the rule answers stay on row 1 after a count is
+             accepted, where the ladder stops at the other sizes (rule 4.4,
+             rung 2) -->
+        <regex pattern="if \(_countsTheTapeEndsOn\.isEmpty\) \.\.\.dimensions," dotAll="true" id="calculator_state.suggestions.ladder_runs_past_an_accepted_count">
+            <mutation text="...dimensions,"/>
         </regex>
         <!-- RULE: a Calc that is an area earns sheet counts (rule 4.4 rung 4
              offers its cost and conversions, never a count) -->

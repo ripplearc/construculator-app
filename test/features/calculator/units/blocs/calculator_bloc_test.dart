@@ -3365,8 +3365,6 @@ void main() {
           expect(rowOne(state), [
             'Drywall: 5.00 (48in x 108in)',
             'Drywall: 4.50 (48in x 120in)',
-            'Diagonal: 21.93ft',
-            'Perimeter: 58ft',
           ]);
           expect(state.equalsKeyId, isNull);
         },
@@ -3533,19 +3531,27 @@ void main() {
       }
 
       test('every size not yet accepted stays on offer, after a second count '
-          'and after the last (Section 9, "the other sizes stay on the '
-          'strip")', () {
-        final one = accepting(withCounts('', tape: areaAccepted()), 0);
+          'and after the last, and no rule answer follows them: the ladder '
+          'stops at the other sizes once a count is accepted (rule 4.4, rung '
+          '2; Section 9, "the other sizes stay on the strip")', () {
+        final area = withCounts('', tape: areaAccepted());
+        expect(rowOne(area).skip(3), ['Diagonal: 21.93ft', 'Perimeter: 58ft']);
+        final one = accepting(area, 0);
+        expect(rowOne(one), [
+          'Drywall: 5.00 (48in x 108in)',
+          'Drywall: 4.50 (48in x 120in)',
+        ]);
         final two = accepting(one, 0);
         expect(two.areaForCounts, one.areaForCounts);
-        expect(rowOne(two), [
-          'Drywall: 4.50 (48in x 120in)',
-          'Diagonal: 21.93ft',
-          'Perimeter: 58ft',
-        ]);
+        expect(rowOne(two), ['Drywall: 4.50 (48in x 120in)']);
         final three = accepting(two, 0);
         expect(three.areaForCounts, one.areaForCounts);
-        expect(rowOne(three), ['Diagonal: 21.93ft', 'Perimeter: 58ft']);
+        expect(rowOne(three), isEmpty);
+        expect(
+          three.dimensions.map((tile) => tile.key),
+          ['Diagonal', 'Perimeter'],
+          reason: 'the detail panel keeps its tiles (Section 1.4)',
+        );
       });
 
       test('a count accepted from an earlier area hides no count of the area '
@@ -3587,8 +3593,6 @@ void main() {
         expect(rowOne(accepting(stored, 0)), [
           'Drywall: 5.63 (96in x 48in)',
           'Drywall: 5.00 (48in x 108in)',
-          'Diagonal: 21.93ft',
-          'Perimeter: 58ft',
         ]);
       });
 
