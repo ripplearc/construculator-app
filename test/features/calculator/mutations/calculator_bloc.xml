@@ -359,6 +359,22 @@
         <regex pattern="tape\.landAnswer\(count\.trade\.resultKey, count\.value\)" dotAll="true" id="calculator_bloc.accept.count_lands_under_offer_key">
             <mutation text="tape.landAnswer(count.trade.offerKey, count.value)"/>
         </regex>
+        <!-- RULES (CA-1372 2/2, rule 4.10): each of the four angle-part
+             refusals falls silent, or two of them swap their words -->
+        <regex pattern="\(TapeEntryRefused\(reason: EntryRefusal\.partOfSixtyOrMore\), _, _\) =&gt;\s*const CalculatorPartUnderSixtyToast\(\)," dotAll="true" id="calculator_state.toast.part_under_sixty_silent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\(TapeEntryRefused\(reason: EntryRefusal\.minutesHaveTwoDigits\), _, _\) =&gt;\s*const CalculatorMinutesTwoDigitsToast\(\)," dotAll="true" id="calculator_state.toast.minutes_two_digits_silent">
+            <mutation text=""/>
+            <mutation text="(TapeEntryRefused(reason: EntryRefusal.minutesHaveTwoDigits), _, _) =&gt; const CalculatorSecondsTwoDigitsToast(),"/>
+        </regex>
+        <regex pattern="\(TapeEntryRefused\(reason: EntryRefusal\.secondsHaveTwoDigits\), _, _\) =&gt;\s*const CalculatorSecondsTwoDigitsToast\(\)," dotAll="true" id="calculator_state.toast.seconds_two_digits_silent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\(TapeEntryRefused\(reason: EntryRefusal\.angleHasThreeParts\), _, _\) =&gt;\s*const CalculatorAngleThreePartsToast\(\)," dotAll="true" id="calculator_state.toast.three_parts_silent">
+            <mutation text=""/>
+            <mutation text="(TapeEntryRefused(reason: EntryRefusal.angleHasThreeParts), _, _) =&gt; const CalculatorMinutesTwoDigitsToast(),"/>
+        </regex>
     </rules>
 
     <commands>

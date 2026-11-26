@@ -114,16 +114,17 @@ void main() {
         expect(tape, press(const Tape(), '[Pitch] 8 . 4 5'));
       });
 
-      test('S86: the over-60 carry is previewed, and the way back returns '
-          'the digits untouched', () {
+      test('S86 under rule 4.10 (CA-1372): 8.89 has no D:M:S reading, since '
+          '89 minutes can never be typed, so the pill cycles the two '
+          'readings left (walkthrough 17.4, steps 8 to 10; decision tree '
+          'row 260)', () {
         var tape = press(const Tape(), '[Pitch] 8 . 8 9');
         expect(pill(tape), 'Input 8.89° as 8.89in/12in');
         tape = press(tape, 'pill');
-        expect(pill(tape), 'Input 8.89in/12in as 9°29\'00"');
-        tape = press(tape, 'pill');
-        expect(chipText(tape, 0), '9°29\'00"');
+        expect(pill(tape), 'Input 8.89in/12in as 8.89°');
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '8.89');
+        expect(pill(tape), 'Input 8.89° as 8.89in/12in');
       });
 
       test('a D:M:S typed in full is settled, and so is one with its '
@@ -270,13 +271,14 @@ void main() {
       });
 
       test('term 2.14: a rise the 1/64in rounding leaves at 0 has no answer, '
-          'so its reading is not offered; the D:M:S reading still is', () {
-        final tiny = press(const Tape(), '[Pitch] 0 . 0 0 1');
-        expect(pill(tiny), 'Input 0.001° as 0°01\'00"');
-        expect(pill(press(tiny, 'pill')), 'Input 0°01\'00" as 0.001°');
+          'so its reading is not offered; three decimals are no minutes '
+          'either (rule 4.10, CA-1372), so such a number has no pill', () {
+        expect(press(const Tape(), '[Pitch] 0 . 0 0 1').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 0 . 0 0 7').readAsOffer, isNull);
         expect(
-          pill(press(const Tape(), '[Pitch] 0 . 0 0 7')),
-          'Input 0.007° as 0°07\'00"',
+          pill(press(const Tape(), '[Pitch] 0 . 0 1 pill')),
+          'Input 0.01in/12in as 0°01\'00"',
+          reason: 'two decimals read as minutes',
         );
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 0 0 8')),
@@ -387,14 +389,14 @@ void main() {
     test('rule 4.10: the way back goes with the first ⌫ that takes a digit '
         'off the number; the ⌫ that closes the seal\'s empty seconds field '
         'changes no digit and keeps it', () {
-      var tape = press(const Tape(), '[Pitch] 8 . 7 5 pill pill + ⌫');
-      expect(chipText(tape, 0), '9°15\'00"');
-      expect(pill(tape), 'Input 9°15\'00" as 8.75°');
+      var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill pill + ⌫');
+      expect(chipText(tape, 0), '8°45\'00"');
+      expect(pill(tape), 'Input 8°45\'00" as 8.45°');
       tape = press(tape, '⌫');
-      expect(chipText(tape, 0), '9°15\'00"');
-      expect(pill(tape), 'Input 9°15\'00" as 8.75°');
+      expect(chipText(tape, 0), '8°45\'00"');
+      expect(pill(tape), 'Input 8°45\'00" as 8.45°');
       tape = press(tape, '⌫');
-      expect(chipText(tape, 0), '9°1\'00"');
+      expect(chipText(tape, 0), '8°4\'00"');
       expect(tape.readAsOffer, isNull);
     });
 

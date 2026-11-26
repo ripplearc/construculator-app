@@ -35,12 +35,12 @@
         <!-- RULE 3 (R1): a point on an angle is swallowed or typed into a
              segment, or a digit goes into the minutes once the seconds are
              open -->
-        <regex pattern="if \(digit == '\.'\) return closeDegreesMinutesSeconds\(\);\s*return _replaceLast\(_withSegmentDigit\(last, digit\)\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
-            <mutation text="if (digit == '.') return EntryChanged(this); return _replaceLast(_withSegmentDigit(last, digit));"/>
-            <mutation text="return _replaceLast(_withSegmentDigit(last, digit));"/>
+        <regex pattern="if \(digit == '\.'\) return closeDegreesMinutesSeconds\(\);\s*return _withSegmentDigit\(last, digit\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
+            <mutation text="if (digit == '.') return EntryChanged(this); return _withSegmentDigit(last, digit);"/>
+            <mutation text="return _withSegmentDigit(last, digit);"/>
         </regex>
-        <regex pattern="if \(angle\.seconds case final seconds\?\) \{\s*return angle\.copyWith\(\s*seconds: \(\) =&gt; '\$seconds\$digit',\s*typedAs: \(\) =&gt; null,\s*\);\s*\}" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
-            <mutation text=""/>
+        <regex pattern="final isSeconds = angle\.seconds != null;" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
+            <mutation text="final isSeconds = false;"/>
         </regex>
 
         <!-- RULE 4: the second point promotes where no angle can live, or on
@@ -53,14 +53,16 @@
 
         <!-- RULE 5: the second point leaves the minutes open, so the next
              digit lengthens them -->
-        <regex pattern="return _replaceLast\(\s*_asDegreesMinutesSeconds\(last, closingMinutes: true\)\s*\);" dotAll="true" id="entry_buffer.angle.point_leaves_minutes_open">
-            <mutation text="return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: false));"/>
+        <regex pattern="return _promoted\(last, closingMinutes: true\);" dotAll="true" id="entry_buffer.angle.point_leaves_minutes_open">
+            <mutation text="return _promoted(last, closingMinutes: false);"/>
         </regex>
 
-        <!-- RULE 6: a fourth press of the key re-closes the minutes and
-             drops the seconds, or a fraction is promoted -->
-        <regex pattern="if \(last\.seconds != null\) return EntryChanged\(this\);" dotAll="true" id="entry_buffer.dms_key.fourth_segment">
+        <!-- RULE 6 (CA-1372): a fourth press of the key re-closes the
+             minutes and drops the seconds, or changes nothing in silence,
+             or a fraction is promoted -->
+        <regex pattern="if \(last\.seconds != null\) \{\s*return const EntryRefused\(EntryRefusal\.angleHasThreeParts\);\s*\}" dotAll="true" id="entry_buffer.dms_key.fourth_segment">
             <mutation text=""/>
+            <mutation text="if (last.seconds != null) return EntryChanged(this);"/>
         </regex>
         <regex pattern="if \(last\.denominator != null\) \{\s*return const EntryRefused\(EntryRefusal\.fractionNeedsUnit\);\s*\}" dotAll="true" id="entry_buffer.dms_key.fraction_promoted">
             <mutation text=""/>
@@ -73,16 +75,23 @@
             <mutation text="final closingMinutes = false;"/>
         </regex>
 
-        <!-- RULE 8: the carry is miscounted -->
-        <regex pattern="digits: '\$\{carried ~/ Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.degrees">
-            <mutation text="digits: '${carried ~/ 100}',"/>
+        <!-- RULE 8 (CA-1372, rule 4.10): a part of 60 or more is let in —
+             60 itself, or any value; a third digit is let in, or the two
+             parts swap their words; the minutes close at 60 or more; the
+             seconds seal unpadded -->
+        <regex pattern="if \(\(int\.tryParse\(part\) \?\? 0\) &gt;= Token\.minutesPerDegree\) \{" dotAll="true" id="entry_buffer.part.sixty_let_in">
+            <mutation text="if ((int.tryParse(part) ?? 0) &gt; Token.minutesPerDegree) {"/>
+            <mutation text="if (false) {"/>
         </regex>
-        <regex pattern="minutes: '\$\{carried % Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.minutes">
-            <mutation text="minutes: '${carried % 100}',"/>
+        <regex pattern="if \(part\.length &gt; partDigits\) \{\s*return isSeconds\s*\? EntryRefusal\.secondsHaveTwoDigits\s*: EntryRefusal\.minutesHaveTwoDigits;\s*\}" dotAll="true" id="entry_buffer.part.third_digit">
+            <mutation text="if (part.length &gt; partDigits + 1) { return isSeconds ? EntryRefusal.secondsHaveTwoDigits : EntryRefusal.minutesHaveTwoDigits; }"/>
+            <mutation text="if (part.length &gt; partDigits) { return isSeconds ? EntryRefusal.minutesHaveTwoDigits : EntryRefusal.secondsHaveTwoDigits; }"/>
         </regex>
-        <regex pattern="if \(totalMinutes &gt; _largestWholeNumberADoubleHolds\) \{\s*return Token\(\s*digits: degrees,\s*minutes: minutes,\s*seconds: '',\s*typedAs: typedAs,\s*\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
+        <regex pattern="if \(_partRefusal\(minutes, isSeconds: false\) case final refusal\?\) \{\s*return EntryRefused\(refusal\);\s*\}" dotAll="true" id="entry_buffer.minutes_close.unchecked">
             <mutation text=""/>
-            <mutation text="if (totalMinutes &gt;= _largestWholeNumberADoubleHolds) { return Token(digits: degrees, minutes: minutes, seconds: '', typedAs: typedAs); }"/>
+        </regex>
+        <regex pattern="seconds: _twoDigits\(seconds\),\s*\);\s*\}" dotAll="true" id="entry_buffer.seal.seconds_unpadded">
+            <mutation text="seconds: seconds, ); }"/>
         </regex>
 
         <!-- RULE 9 (CA-1070 2/2): the three fields — whole degrees alone
@@ -101,26 +110,10 @@
             <mutation text="static String _twoDigits(String segment) =&gt; segment;"/>
         </regex>
 
-        <!-- RULE 9b (CA-1070 2/2): the seal — a plain buffer is sealed as
-             an angle, the carry is miscounted, the minus is dropped, or the
-             limit past 2⁵³ is lost or leaves the seconds unpadded -->
+        <!-- RULE 9b (CA-1070 2/2; CA-1372): the seal — a plain buffer is
+             sealed as an angle; the seconds are left unpadded (RULE 8) -->
         <regex pattern="if \(!isDegreesMinutesSeconds\) return this;\s*final angle = tokens\.single;\s*final closed = _withFieldsClosed\(" dotAll="true" id="entry_buffer.seal.plain_buffer">
             <mutation text="final angle = tokens.single; final closed = _withFieldsClosed("/>
-        </regex>
-        <regex pattern="degrees: '\$sign\$\{total ~/ Token\.secondsPerDegree\}'," dotAll="true" id="entry_buffer.seal.degrees_carry">
-            <mutation text="degrees: '$sign${total ~/ Token.minutesPerDegree}',"/>
-            <mutation text="degrees: '${total ~/ Token.secondsPerDegree}',"/>
-        </regex>
-        <regex pattern="minutes: '\$\{rest ~/ Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.seal.minutes_carry">
-            <mutation text="minutes: '${rest ~/ 100}',"/>
-        </regex>
-        <regex pattern="seconds: _twoDigits\('\$\{rest % Token\.minutesPerDegree\}'\)," dotAll="true" id="entry_buffer.seal.seconds_carry">
-            <mutation text="seconds: _twoDigits('${rest % 100}'),"/>
-            <mutation text="seconds: '${rest % Token.minutesPerDegree}',"/>
-        </regex>
-        <regex pattern="if \(totalSeconds &gt; _largestWholeNumberADoubleHolds\) \{\s*return \(degrees: degrees, minutes: minutes, seconds: _twoDigits\(seconds\)\);\s*\}" dotAll="true" id="entry_buffer.seal.no_limit">
-            <mutation text=""/>
-            <mutation text="if (totalSeconds &gt; _largestWholeNumberADoubleHolds) { return (degrees: degrees, minutes: minutes, seconds: seconds); }"/>
         </regex>
 
         <!-- RULE 9c (CA-1070 2/2): the tape seals the chip without closing

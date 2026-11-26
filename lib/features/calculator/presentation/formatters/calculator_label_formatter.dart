@@ -427,6 +427,13 @@ class CalculatorLabelFormatter {
     ),
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
+    CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyTitle,
+    CalculatorMinutesTwoDigitsToast() =>
+      l10n.calculatorToastMinutesTwoDigitsTitle,
+    CalculatorSecondsTwoDigitsToast() =>
+      l10n.calculatorToastSecondsTwoDigitsTitle,
+    CalculatorAngleThreePartsToast() =>
+      l10n.calculatorToastAngleThreePartsTitle,
   };
 
   /// The body of [toast], in the words of UX Design Doc Section 5.
@@ -459,6 +466,11 @@ class CalculatorLabelFormatter {
         value,
         displayLabel(key),
       ),
+    CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyBody,
+    CalculatorMinutesTwoDigitsToast() =>
+      l10n.calculatorToastMinutesTwoDigitsBody,
+    CalculatorSecondsTwoDigitsToast() ||
+    CalculatorAngleThreePartsToast() => l10n.calculatorToastFinishTheAngleBody,
   };
 
   String _untranslated(String id) {

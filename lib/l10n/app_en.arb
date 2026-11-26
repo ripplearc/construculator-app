@@ -3897,6 +3897,34 @@
   "@calculatorToastEditingGroup": {
     "description": "Toast when a closed bracket is reopened on the calculator tape, shown the first three times only (UX Design Doc Section 5.6, 'Editing this group')"
   },
+  "calculatorToastPartUnderSixtyTitle": "Minutes must be under 60",
+  "@calculatorToastPartUnderSixtyTitle": {
+    "description": "Title of the red Alert when a digit, or the point closing the minutes, would make the minutes or seconds of an angle 60 or more (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastPartUnderSixtyBody": "Press ⌫ and type the minutes again.",
+  "@calculatorToastPartUnderSixtyBody": {
+    "description": "Body of the 'Minutes must be under 60' Alert (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastMinutesTwoDigitsTitle": "Minutes have two digits",
+  "@calculatorToastMinutesTwoDigitsTitle": {
+    "description": "Title of the red Alert when a third digit is typed into the minutes of an angle (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastMinutesTwoDigitsBody": "Press . to type the seconds, or = to finish the angle.",
+  "@calculatorToastMinutesTwoDigitsBody": {
+    "description": "Body of the 'Minutes have two digits' Alert (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastSecondsTwoDigitsTitle": "Seconds have two digits",
+  "@calculatorToastSecondsTwoDigitsTitle": {
+    "description": "Title of the red Alert when a third digit is typed into the seconds of an angle (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastAngleThreePartsTitle": "An angle has three parts",
+  "@calculatorToastAngleThreePartsTitle": {
+    "description": "Title of the red Alert when a point or the D:M:S key is pressed once the seconds of an angle are open (UX Design Doc rule 4.10)"
+  },
+  "calculatorToastFinishTheAngleBody": "Press = or an operator to finish the angle.",
+  "@calculatorToastFinishTheAngleBody": {
+    "description": "Body shared by the 'Seconds have two digits' and 'An angle has three parts' Alerts (UX Design Doc rule 4.10)"
+  },
   "calculatorToastKeepsLengthBody": "Pressing {unit} again would make this {value}² — {key} can't hold an area or volume.",
   "@calculatorToastKeepsLengthBody": {
     "description": "Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)",
