@@ -600,20 +600,17 @@ void main() {
       },
     );
 
-    testWidgets(
-      'an abbreviated key is read by its full name',
-      (tester) async {
-        final l10n = AppLocalizationsEn();
-        await tester.pumpWidget(makeTestableWidget());
+    testWidgets('an abbreviated key is read by its full name', (tester) async {
+      final l10n = AppLocalizationsEn();
+      await tester.pumpWidget(makeTestableWidget());
 
-        final diag = tester.getSemantics(
-          find.byKey(const ValueKey('calc_key_Diag')),
-        );
+      final diag = tester.getSemantics(
+        find.byKey(const ValueKey('calc_key_Diag')),
+      );
 
-        expect(diag.label, equals(l10n.calculatorKeyDiagFullName));
-        expect(diag.hint, isEmpty);
-      },
-    );
+      expect(diag.label, equals(l10n.calculatorKeyDiagFullName));
+      expect(diag.hint, isEmpty);
+    });
 
     testWidgets(
       'the detail panel under the folded keypad: its Expand button is read '
