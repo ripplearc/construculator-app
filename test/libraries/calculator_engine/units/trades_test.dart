@@ -853,6 +853,305 @@ void main() {
       });
     });
 
+    group('E2: weight through a named density (CA-1068)', () {
+      const concrete = NamedDensity(name: 'concrete', poundsPerCubicYard: 4050);
+      const gravel = NamedDensity(name: 'gravel', poundsPerCubicYard: 3000);
+      const sand = NamedDensity(name: 'sand', poundsPerCubicYard: 2700);
+      const densities = [concrete, gravel, sand];
+      const elevenCubicYards = Volume(11.0 * 27, unit: Unit.yard);
+
+      List<String> texts(List<MaterialWeight> weights) => [
+        for (final weight in weights)
+          '${formatter.format(weight.weight)} (${weight.density.name})',
+      ];
+
+      List<MaterialWeight> imperial(Volume volume) => trades.weightsFor(
+        volume,
+        densities,
+        system: MeasurementSystem.imperial,
+      );
+
+      double writtenNumber(Volume volume) => double.parse(
+        formatter
+            .format(volume)
+            .replaceAll(',', '')
+            .replaceAll(RegExp(r'[^0-9.]+$'), ''),
+      );
+
+      double inTheUnitOf(Volume volume, double cubicYards) {
+        final cubicFeet = cubicYards * 27;
+        if (volume.unit == Unit.boardFoot) {
+          return cubicFeet * Volume.boardFeetPerCubicFoot;
+        }
+        final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+        return cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+      }
+
+      test('S48, row 243: 11yd³ is 22.28 ton of concrete, 16.5 ton of '
+          'gravel and 14.85 ton of sand, in the store\'s order', () {
+        expect(texts(imperial(elevenCubicYards)), [
+          '22.28 ton (concrete)',
+          '16.5 ton (gravel)',
+          '14.85 ton (sand)',
+        ]);
+        expect(MaterialWeight.key, 'Weight');
+      });
+
+      test('the weight is kept exact in hundredths of a pound and rounded '
+          'only at display', () {
+        final weight = imperial(elevenCubicYards).first.weight;
+        expect(weight.hundredthsOfPound, closeTo(11 * 4050 * 100, 1e-6));
+        expect(weight.unit, Unit.ton);
+      });
+
+      test('S50: the footing\'s 0.72yd³ on screen weighs 1.46 ton of '
+          'concrete, 1.08 of gravel and 0.97 of sand — the shown volume, '
+          'not the exact 0.7243yd³, which would weigh 1.47', () {
+        final footing = trades
+            .footingVolumesFor(
+              const Length(22 * Length.ticksPerFoot, unit: Unit.foot),
+              [inches(16, 8)],
+              system: MeasurementSystem.imperial,
+            )
+            .single
+            .volume;
+        expect(formatter.format(footing), '0.72yd³');
+        expect(footing.cubicFeet / 27, closeTo(0.724279, 1e-6));
+        expect(texts(imperial(footing)), [
+          '1.46 ton (concrete)',
+          '1.08 ton (gravel)',
+          '0.97 ton (sand)',
+        ]);
+        expect(imperial(footing).first.shownCubicYards, closeTo(0.72, 1e-12));
+      });
+
+      test('row 231: 20ft³ is 1.5 ton of concrete and 1,750.7yd³ is '
+          '3,545.17 ton', () {
+        expect(texts(imperial(const Volume(20))).first, '1.5 ton (concrete)');
+        expect(
+          texts(imperial(const Volume(1750.7 * 27, unit: Unit.yard))).first,
+          '3,545.17 ton (concrete)',
+        );
+      });
+
+      test('row 232: board feet are weighed as shown too — 50.1751bf, '
+          'which shows 50.18bf, is 0.31 ton of concrete', () {
+        const boardFeet = Volume(50.1751 / 12, unit: Unit.boardFoot);
+        expect(formatter.format(boardFeet), '50.18bf');
+        final weight = imperial(boardFeet).first;
+        expect(weight.shownCubicYards, closeTo(50.18 / 12 / 27, 1e-12));
+        expect(texts([weight]).single, '0.31 ton (concrete)');
+      });
+
+      test('a volume written in cubic inches or metres is weighed as it '
+          'shows: 1,728in³ is one cubic foot, 1m³ shows 1m³', () {
+        expect(
+          imperial(const Volume(1, unit: Unit.inch)).first.shownCubicYards,
+          closeTo(1 / 27, 1e-12),
+        );
+        const cubicMetre = Volume(35.31466672148859, unit: Unit.metre);
+        expect(formatter.format(cubicMetre), '1m³');
+        expect(
+          imperial(cubicMetre).first.shownCubicYards,
+          closeTo(35.31466672148859 / 27, 1e-9),
+        );
+      });
+
+      test('under the metric system the weight is written in metric tons: '
+          '11yd³ of concrete is 20.21 m tons', () {
+        final weights = trades.weightsFor(
+          elevenCubicYards,
+          densities,
+          system: MeasurementSystem.metric,
+        );
+        expect(texts(weights).first, '20.21 m tons (concrete)');
+        expect(weights.first.weight.unit, Unit.metricTon);
+      });
+
+      test('row 244: the Density pill recomputes the same volume — gravel '
+          'edited to 3,200 weighs 11yd³ as 17.6 ton — and a density that '
+          'weighs nothing is refused', () {
+        final weight = imperial(elevenCubicYards).first;
+        const heavier = NamedDensity(name: 'gravel', poundsPerCubicYard: 3200);
+        final recounted = weight.recount(heavier)!;
+        expect(texts([recounted]).single, '17.6 ton (gravel)');
+        expect(recounted.volume, elevenCubicYards);
+        expect(recounted.system, MeasurementSystem.imperial);
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'air', poundsPerCubicYard: 0),
+          ),
+          isNull,
+        );
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'void', poundsPerCubicYard: -1),
+          ),
+          isNull,
+        );
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'nan', poundsPerCubicYard: double.nan),
+          ),
+          isNull,
+        );
+      });
+
+      test('a volume of zero or less, or one that is not finite, weighs '
+          'nothing; a density of zero or less is left out; no densities is '
+          'no weight', () {
+        expect(imperial(const Volume(0)), isEmpty);
+        expect(imperial(const Volume(-20)), isEmpty);
+        expect(imperial(const Volume(double.nan)), isEmpty);
+        expect(imperial(const Volume(double.infinity)), isEmpty);
+        expect(
+          trades
+              .weightsFor(elevenCubicYards, const [
+                NamedDensity(name: 'air', poundsPerCubicYard: 0),
+                concrete,
+                NamedDensity(name: 'void', poundsPerCubicYard: -1),
+              ], system: MeasurementSystem.imperial)
+              .map((weight) => weight.density),
+          [concrete],
+        );
+        expect(
+          trades.weightsFor(
+            elevenCubicYards,
+            const [],
+            system: MeasurementSystem.imperial,
+          ),
+          isEmpty,
+        );
+      });
+
+      test('the smallest volume that shows weighs as shown, and 0.004yd³, '
+          'which shows as 0.00, is weighed at its stored value: 16.2lbs of '
+          'concrete, never 0', () {
+        const oneHundredth = Volume(0.01 * 27, unit: Unit.yard);
+        expect(texts(imperial(oneHundredth)).first, '0.02 ton (concrete)');
+        const underADisplayStep = Volume(0.004 * 27, unit: Unit.yard);
+        final weights = imperial(underADisplayStep);
+        expect(weights, hasLength(3));
+        expect(weights.first.shownCubicYards, closeTo(0.004, 1e-12));
+        expect(weights.first.weight.hundredthsOfPound, closeTo(1620, 1e-6));
+        expect(weights.last.weight.hundredthsOfPound, closeTo(1080, 1e-6));
+      });
+
+      test('a volume below the display step weighs its stored value in '
+          'every unit: 0.001ft³ is 0.15lbs of concrete, 1/8in x 1/8in x '
+          '1/8in is 0.00017lbs and 0.004bf is 0.05lbs', () {
+        final cubicFoot = imperial(const Volume(0.001)).first.weight;
+        expect(cubicFoot.hundredthsOfPound, closeTo(15, 1e-9));
+        const eighthInchCube = Volume(0.125 * 0.125 * 0.125 / 1728);
+        final cubicInch = imperial(eighthInchCube.spelledIn(Unit.inch)).first;
+        expect(cubicInch.weight.hundredthsOfPound, closeTo(0.016954, 1e-6));
+        const boardFeet = Volume(0.004 / 12, unit: Unit.boardFoot);
+        expect(
+          imperial(boardFeet).first.weight.hundredthsOfPound,
+          closeTo(5, 1e-9),
+        );
+      });
+
+      test('a volume that rounds up to the display step is weighed as '
+          'shown: 0.006yd³ shows 0.01yd³ and weighs 40.5lbs of concrete, '
+          'not the 24.3lbs of its stored value', () {
+        const roundsUp = Volume(0.006 * 27, unit: Unit.yard);
+        expect(formatter.format(roundsUp), '0.01yd³');
+        final weight = imperial(roundsUp).first;
+        expect(weight.shownCubicYards, closeTo(0.01, 1e-12));
+        expect(weight.weight.hundredthsOfPound, closeTo(4050, 1e-6));
+      });
+
+      test('the shown volume is the number the formatter writes, in every '
+          'unit and at the half-way values 0.725yd³ and 1.005yd³', () {
+        const volumes = [
+          Volume(0.725 * 27, unit: Unit.yard),
+          Volume(1.005 * 27, unit: Unit.yard),
+          Volume(2.675 * 27, unit: Unit.yard),
+          Volume(0.7243 * 27, unit: Unit.yard),
+          Volume(1750.7 * 27, unit: Unit.yard),
+          Volume(19999999.99 * 27, unit: Unit.yard),
+          Volume(20.005),
+          Volume(0.125),
+          Volume(1.005 / 1728, unit: Unit.inch),
+          Volume(123.455 / 1728, unit: Unit.inch),
+          Volume(0.725 / 12, unit: Unit.boardFoot),
+          Volume(50.1751 / 12, unit: Unit.boardFoot),
+          Volume(35.31466672148859 * 1.005, unit: Unit.metre),
+          Volume(35.31466672148859 * 0.725, unit: Unit.metre),
+        ];
+        for (final volume in volumes) {
+          expect(
+            inTheUnitOf(volume, imperial(volume).first.shownCubicYards),
+            closeTo(writtenNumber(volume), 1e-6),
+            reason: 'the display writes ${formatter.format(volume)}',
+          );
+        }
+      });
+
+      // The engine returns the weight as it is. This one is above the
+      // limit of 19,999,999.99 in the largest weight unit, so the user never
+      // reads this text: the strip step that offers and lands a weight
+      // (CA-1072) puts it through the Too large check of CA-1236
+      // (`QuantityFormatter.isTooLarge`), and the answer reads "Over
+      // 19,999,999.99" (Section 5.3).
+      test('the largest volume the parser accepts, 19,999,999.99yd³ of '
+          'concrete, comes out of the engine as the raw weight '
+          '40,499,999.98 ton, above the Too large limit', () {
+        const largest = Volume(19999999.99 * 27, unit: Unit.yard);
+        expect(texts(imperial(largest)).first, '40,499,999.98 ton (concrete)');
+      });
+
+      test('a density is usable when it is a finite number above zero', () {
+        expect(concrete.isUsable, isTrue);
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: 0.01).isUsable,
+          isTrue,
+        );
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: 0).isUsable,
+          isFalse,
+        );
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: -4050).isUsable,
+          isFalse,
+        );
+        expect(
+          const NamedDensity(
+            name: 'x',
+            poundsPerCubicYard: double.infinity,
+          ).isUsable,
+          isFalse,
+        );
+      });
+
+      test('weights and densities compare by what they carry', () {
+        const weight = MaterialWeight(
+          volume: elevenCubicYards,
+          density: concrete,
+          system: MeasurementSystem.imperial,
+        );
+        expect(
+          const MaterialWeight(
+            volume: elevenCubicYards,
+            density: NamedDensity(name: 'concrete', poundsPerCubicYard: 4050),
+            system: MeasurementSystem.imperial,
+          ),
+          weight,
+        );
+        expect(weight.recount(gravel), isNot(weight));
+        expect(weight.recount(concrete), weight);
+        expect(
+          const MaterialWeight(
+            volume: elevenCubicYards,
+            density: concrete,
+            system: MeasurementSystem.metric,
+          ),
+          isNot(weight),
+        );
+      });
+    });
+
     test('counts and sizes compare by what they carry', () {
       final size = inches(48, 96);
       const count = TradeCount(

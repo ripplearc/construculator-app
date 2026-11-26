@@ -4,6 +4,7 @@ import 'package:construculator/libraries/calculator_engine/models/calculator_pre
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:equatable/equatable.dart';
 
 /// The two trades that count pieces over an area (UX Design Doc Section 9,
@@ -292,6 +293,101 @@ final class SpacingCount extends Equatable {
   List<Object?> get props => [span, spacing];
 }
 
+/// A stored material and its density, as the densities store holds it (UX
+/// Design Doc Section 9, "Weight": concrete 4,050, gravel 3,000, sand
+/// 2,700 lb/yd³; + Add material extends the list).
+final class NamedDensity extends Equatable {
+  /// The material's name as the user typed it.
+  final String name;
+
+  /// The density in pounds per cubic yard, the stored unit whatever the
+  /// display setting (Appendix C).
+  final double poundsPerCubicYard;
+
+  /// The material [name] at [poundsPerCubicYard].
+  const NamedDensity({required this.name, required this.poundsPerCubicYard});
+
+  /// Whether the density can weigh anything: a finite number above zero.
+  bool get isUsable => poundsPerCubicYard.isFinite && poundsPerCubicYard > 0;
+
+  @override
+  List<Object?> get props => [name, poundsPerCubicYard];
+}
+
+/// The weight of a volume of one named material (Section 9, "Weight":
+/// weight = volume (yd³) × density (lb/yd³), rendered in tons, or metric
+/// tons under the metric system; requirement R11). The first stored
+/// material is the offer the strip proposes; once accepted, every other
+/// stored material answers the same volume, and the chosen one is the
+/// Density pill. A recount after the pill is edited goes through
+/// [recount], which keeps the volume the weight was made from.
+///
+/// The volume is weighed as the display shows it, at two decimals in its
+/// own unit (Section 6, "Rounding at display": weight uses the quantity
+/// shown on screen): 22ft of footing shows 0.72yd³ and weighs 1.46 ton of
+/// concrete, not the 1.47 ton its exact 0.7243yd³ would come to (S50). A
+/// volume too small to show as a number is weighed at its stored value
+/// (same section: "a result shown in words uses the stored value"), so
+/// 0.004yd³ of concrete weighs 16.2lbs and never exactly 0.
+final class MaterialWeight extends Equatable {
+  /// The key the strip labels the offer and the accepted weight by.
+  static const String key = 'Weight';
+
+  /// The volume weighed.
+  final Volume volume;
+
+  /// The material it is made of.
+  final NamedDensity density;
+
+  /// The system of units the weight is written in: tons under Imperial,
+  /// metric tons under Metric.
+  final MeasurementSystem system;
+
+  /// A [volume] of [density]'s material, weighed in the tons of [system].
+  const MaterialWeight({
+    required this.volume,
+    required this.density,
+    required this.system,
+  });
+
+  /// The cubic yards the display shows for [volume]: its amount in its
+  /// own unit — board feet, or the cube of a length unit — rounded as a
+  /// result is, half up to two decimals, and read back. An amount that
+  /// rounds to 0.00 is shown in words, not as a number, so it is read
+  /// back as stored.
+  double get shownCubicYards {
+    final stored = _amountInItsUnit(volume);
+    final shown = _roundedAsAResult(stored);
+    final weighed = shown == 0 ? stored : shown;
+    return weighed / _unitsPerCubicFoot(volume.unit) / _cubicFeetPerCubicYard;
+  }
+
+  /// The weight, kept exact in hundredths of a pound and rounded at
+  /// display.
+  Weight get weight => Weight(
+    shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound,
+    unit: switch (system) {
+      MeasurementSystem.imperial => Unit.ton,
+      MeasurementSystem.metric => Unit.metricTon,
+    },
+  );
+
+  /// The same volume of another material, as the pill recomputes it, or
+  /// `null` for a density that can weigh nothing ([NamedDensity.isUsable]),
+  /// which is refused so that the caller keeps the last good one.
+  MaterialWeight? recount(NamedDensity density) {
+    if (!density.isUsable) return null;
+    return MaterialWeight(volume: volume, density: density, system: system);
+  }
+
+  @override
+  List<Object?> get props => [volume, density, system];
+}
+
+const int _cubicFeetPerCubicYard = 27;
+
+const int _hundredthsPerPound = 100;
+
 const int _squareTicksPerSquareFoot =
     Area.squareTicksPerSquareInch * Area.squareInchesPerSquareFoot;
 
@@ -311,16 +407,34 @@ int _spacingsIn(Length length, Length spacing) {
   }
 }
 
+double _unitsPerCubicFoot(Unit unit) {
+  if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble();
+  final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit;
+  return feetPerUnit * feetPerUnit * feetPerUnit;
+}
+
+double _amountInItsUnit(Volume volume) {
+  if (volume.unit == Unit.boardFoot) return volume.boardFeet;
+  final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+  return volume.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+}
+
+double _roundedAsAResult(double amount) {
+  const scale = 100;
+  assert(QuantityFormatter.resultDecimals == 2, 'the scale is 10^decimals');
+  return (amount * scale + 0.5).floorToDouble() / scale;
+}
+
 /// The material rules of UX Design Doc Section 9: an area on the tape
 /// becomes a sheet count for every stored drywall size, or a piece count
 /// for every stored masonry size, one offer per size in the store's order;
 /// a length becomes concrete for every stored footing cross-section, posts
 /// and rails at the stored fence spacing, or members at every stored
-/// on-centre spacing. The port of the prototype's `materials`,
-/// `footingChips`, `fenceCalc` and `qtyOcChips`, over what the trade-stores
-/// repository holds; which value earns the offers, and when, is the
-/// arbiter's, and so are the follow-on offers after a trade result (Cost,
-/// Weight), which are rules of their own.
+/// on-centre spacing; a volume becomes a weight for every stored material.
+/// The port of the prototype's `materials`, `footingChips`, `fenceCalc`,
+/// `qtyOcChips` and `weightChip`, over what the trade-stores repository
+/// holds; which value earns the offers, and when, is the arbiter's, and so
+/// is the Cost follow-on after a trade result, which is a rule of its own.
 class Trades extends Equatable {
   const Trades();
 
@@ -393,6 +507,25 @@ class Trades extends Equatable {
     return [
       for (final spacing in spacings)
         if (_isAboveZero(spacing)) SpacingCount(span: span, spacing: spacing),
+    ];
+  }
+
+  /// The weight of [volume] in each of [densities], in their order, the
+  /// first being the material the strip proposes and the rest the ones
+  /// that answer behind it, written in the tons of [system]. A volume of
+  /// zero or less, or one that is not a finite number, weighs nothing at
+  /// all; a density that can weigh nothing is left out.
+  List<MaterialWeight> weightsFor(
+    Volume volume,
+    List<NamedDensity> densities, {
+    required MeasurementSystem system,
+  }) {
+    final cubicFeet = volume.cubicFeet;
+    if (!cubicFeet.isFinite || cubicFeet <= 0) return const [];
+    return [
+      for (final density in densities)
+        if (density.isUsable)
+          MaterialWeight(volume: volume, density: density, system: system),
     ];
   }
 
