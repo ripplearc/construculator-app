@@ -218,6 +218,31 @@ final class CalculatorPercentNeedsANumberToast extends CalculatorToast {
   List<Object?> get props => [operator];
 }
 
+/// "Type a number first" / "Type the number after ×, or press ⌫.": a strip
+/// chip tapped while an operator waits for its number; the chip stays in
+/// the strip and the operator stays (Section 5.1, row "Type a number
+/// first"; CA-1515).
+final class CalculatorTypeANumberFirstToast extends CalculatorToast {
+  /// The operator waiting for its number, as the key shows it: "×".
+  final String operator;
+
+  const CalculatorTypeANumberFirstToast({required this.operator});
+
+  @override
+  List<Object?> get props => [operator];
+}
+
+/// "Finish the edit first" / "Tap the chip again to finish the edit, then
+/// press ( ).": the bracket key inside a chip edit, also when the value is
+/// complete; the edit stays open (Section 5.5, row "Edit cannot be
+/// abandoned"; CA-1514).
+final class CalculatorFinishTheEditToast extends CalculatorToast {
+  const CalculatorFinishTheEditToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
 /// "% needs an operator first": % on a number no operator leads, inside an
 /// open bracket (( 12 then %, rule 4.12) or on its own (CA-1376).
 final class CalculatorPercentNeedsAnOperatorToast extends CalculatorToast {

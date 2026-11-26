@@ -2902,6 +2902,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String calculatorToastTypeANumberOrBackspaceBody(String operator) {
+    return 'Type the number after $operator, or press ⌫.';
+  }
+
+  @override
+  String get calculatorToastFinishTheEditTitle => 'Finish the edit first';
+
+  @override
+  String get calculatorToastFinishTheEditBody =>
+      'Tap the chip again to finish the edit, then press ( ).';
+
+  @override
   String get calculatorToastPercentNeedsAnOperatorTitle =>
       '% needs an operator first';
 

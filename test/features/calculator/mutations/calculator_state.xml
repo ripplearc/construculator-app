@@ -173,8 +173,8 @@
 
         <!-- CA-1376 (rule 4.12): a percent refusal raises another Alert, or
              names the wrong operator, place or bracket -->
-        <regex pattern="operator: _lead\(tape\.beingTyped\?\.operator\)," dotAll="true" id="calculator_state.toast.percent_operator">
-            <mutation text="operator: '',"/>
+        <regex pattern="CalculatorPercentNeedsANumberToast\(\s*operator: _lead\(tape\.beingTyped\?\.operator\)," dotAll="true" id="calculator_state.toast.percent_operator">
+            <mutation text="CalculatorPercentNeedsANumberToast( operator: '',"/>
         </regex>
         <regex pattern="insideABracket: tape\.openBracket != null," dotAll="true" id="calculator_state.toast.percent_in_a_bracket">
             <mutation text="insideABracket: false,"/>
@@ -190,6 +190,19 @@
         </regex>
         <regex pattern="BracketChip\(:final inner\) =&gt; '\(\$\{inner\.map\(_valueTextOf\)\.join\(\)\}\)'," dotAll="true" id="calculator_state.toast.bracket_named">
             <mutation text="BracketChip(:final inner) =&gt; '',"/>
+        </regex>
+        <!-- CA-1515 (Section 5.1): a strip chip on a waiting operator raises
+             no Alert, names no operator, or raises the percent one -->
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.answerNeedsANumber\), _, _\) =&gt;\s*CalculatorTypeANumberFirstToast\(\s*operator: _lead\(tape\.beingTyped\?\.operator\),\s*\)," dotAll="true" id="calculator_state.toast.answer_needs_a_number">
+            <mutation text="(TapeRefused(reason: TapeRefusal.answerNeedsANumber), _, _) =&gt; null,"/>
+            <mutation text="(TapeRefused(reason: TapeRefusal.answerNeedsANumber), _, _) =&gt; const CalculatorTypeANumberFirstToast(operator: ''),"/>
+            <mutation text="(TapeRefused(reason: TapeRefusal.answerNeedsANumber), _, _) =&gt; CalculatorPercentNeedsANumberToast(operator: _lead(tape.beingTyped?.operator)),"/>
+        </regex>
+        <!-- CA-1514 (Section 5.5): the bracket key inside an edit raises no
+             Alert, or the "Finish this value first" one -->
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.noBracketInsideAnEdit\), _, _\) =&gt;\s*const CalculatorFinishTheEditToast\(\)," dotAll="true" id="calculator_state.toast.no_bracket_inside_an_edit">
+            <mutation text="(TapeRefused(reason: TapeRefusal.noBracketInsideAnEdit), _, _) =&gt; null,"/>
+            <mutation text="(TapeRefused(reason: TapeRefusal.noBracketInsideAnEdit), _, _) =&gt; CalculatorFinishValueToast(value: valueText),"/>
         </regex>
         <!-- T2a 2/3 (CA-1095): the sheet table of the detail panel -->
         <regex pattern="if \(area == null\) return null;\s*final seenSizes" dotAll="true" id="calculator_state.size_table.without_an_area">

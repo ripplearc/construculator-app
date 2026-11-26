@@ -1314,7 +1314,7 @@ void main() {
       expect(waiting.endsWithOperator, isTrue);
       expect(
         waiting.landAnswer('Area', area),
-        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+        const TapeRefused(TapeRefusal.answerNeedsANumber),
       );
       expect(texts(waiting), ['Length12ft', 'Width10ft', '']);
     });

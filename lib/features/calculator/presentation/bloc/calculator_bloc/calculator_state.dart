@@ -951,6 +951,12 @@ class CalculatorState extends Equatable {
         CalculatorPercentNeedsANumberToast(
           operator: _lead(tape.beingTyped?.operator),
         ),
+      (TapeRefused(reason: TapeRefusal.answerNeedsANumber), _, _) =>
+        CalculatorTypeANumberFirstToast(
+          operator: _lead(tape.beingTyped?.operator),
+        ),
+      (TapeRefused(reason: TapeRefusal.noBracketInsideAnEdit), _, _) =>
+        const CalculatorFinishTheEditToast(),
       (TapeRefused(reason: TapeRefusal.percentNeedsAnOperator), _, _) =>
         CalculatorPercentNeedsAnOperatorToast(
           insideABracket: tape.openBracket != null,

@@ -4935,6 +4935,24 @@ abstract class AppLocalizations {
   /// **'Type the number after {operator}, then press %.'**
   String calculatorToastPercentAfterOperatorBody(String operator);
 
+  /// Red Alert body when a strip chip is tapped while an operator still waits for its number (UX Design Doc Section 5.1, row "Type a number first"; rule 4.12)
+  ///
+  /// In en, this message translates to:
+  /// **'Type the number after {operator}, or press ⌫.'**
+  String calculatorToastTypeANumberOrBackspaceBody(String operator);
+
+  /// Red Alert title when the bracket key is pressed while a chip is being edited (UX Design Doc Section 5.5, row "Edit cannot be abandoned")
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the edit first'**
+  String get calculatorToastFinishTheEditTitle;
+
+  /// Red Alert body when the bracket key is pressed while a chip is being edited (UX Design Doc Section 5.5, row "Edit cannot be abandoned")
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the chip again to finish the edit, then press ( ).'**
+  String get calculatorToastFinishTheEditBody;
+
   /// Red Alert title when % is pressed on a number no operator leads (UX Design Doc rule 4.12; Section 7, "Percent")
   ///
   /// In en, this message translates to:

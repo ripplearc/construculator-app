@@ -306,8 +306,9 @@
 
         <!-- RULE CA-1088f (R3): a strip chip tapped while an operator waits
              lands over the operator -->
-        <regex pattern="if \(tape\.endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.land_answer.on_trailing_operator">
+        <regex pattern="if \(tape\.endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.answerNeedsANumber\);\s*\}" dotAll="true" id="tape.land_answer.on_trailing_operator">
             <mutation text=""/>
+            <mutation text="if (tape.endsWithOperator) { return const TapeRefused(TapeRefusal.operatorNeedsANumber); }"/>
         </regex>
         <regex pattern="ValueChip\(operator: _\?, :final entry\) =&gt; entry\.isEmpty," dotAll="true" id="tape.ends_with_operator.any_operator_chip">
             <mutation text="ValueChip(operator: _?) =&gt; true,"/>

@@ -1020,6 +1020,94 @@ void main() {
     expect(faceOf(2), CoreCalculatorChipType.result);
   });
 
+  testWidgets('the bracket key while a chip is being edited shows the '
+      '"Finish the edit first" Alert and leaves the edit open; tapping the '
+      'chip again closes the edit and the key opens a bracket (Section 5.5, '
+      '"Edit cannot be abandoned"; CA-1514)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_three',
+      'calc_key_multiply',
+      'calc_key_four',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('calc_chip_1')));
+    await tester.pump();
+    expect(bloc.state.tape.editing, isNotNull);
+
+    await press(tester, 'calc_key_paren');
+    await settle(tester);
+
+    expect(bloc.state.toast, const CalculatorFinishTheEditToast());
+    expect(find.text(l10n.calculatorToastFinishTheEditTitle), findsOneWidget);
+    expect(find.text(l10n.calculatorToastFinishTheEditBody), findsOneWidget);
+    expect(bloc.state.tape.editing, isNotNull);
+    expect(bloc.state.tape.openBracket, isNull);
+    expect(
+      [for (final chip in bloc.state.chipsList) chip.value],
+      ['2', '+3', '×4', '20'],
+    );
+
+    await tester.tap(find.byKey(const ValueKey('calc_chip_1')));
+    await tester.pump();
+    await press(tester, 'calc_key_paren');
+    await settle(tester);
+    expect(bloc.state.tape.editing, isNull);
+    expect(bloc.state.tape.openBracket, isNotNull);
+    expect(bloc.state.toast, isNull);
+  });
+
+  testWidgets('a strip chip tapped while an operator waits for its number '
+      'shows the "Type a number first" Alert, and the chip and the operator '
+      'stay (Section 5.1, "Type a number first"; CA-1515)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_two',
+      'calc_key_feet',
+      'calc_key_Width',
+      'calc_key_one',
+      'calc_key_zero',
+      'calc_key_feet',
+      'calc_key_multiply',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.pump(CoreSuggestionArea.animationDuration);
+    expect(bloc.state.suggestions.first.key, DeterministicRules.areaKey);
+
+    await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+    await settle(tester);
+
+    expect(
+      bloc.state.toast,
+      const CalculatorTypeANumberFirstToast(operator: '×'),
+    );
+    expect(
+      find.text(l10n.calculatorToastTypeANumberFirstTitle),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.calculatorToastTypeANumberOrBackspaceBody('×')),
+      findsOneWidget,
+    );
+    expect(
+      [for (final chip in bloc.state.chipsList) chip.value],
+      ['12ft', '10ft', '×'],
+    );
+    expect(bloc.state.suggestions.first.key, DeterministicRules.areaKey);
+  });
+
   testWidgets('a key that would leave the chip being typed or edited '
       'incomplete shows the "Finish this value first" Alert with the number '
       '(Section 5.5)', (tester) async {
