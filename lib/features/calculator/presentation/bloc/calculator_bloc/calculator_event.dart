@@ -276,3 +276,20 @@ class CalculatorSizeEditorClosed extends CalculatorEvent {
   @override
   List<Object?> get props => [fields];
 }
+
+/// The size editor opened from the pill of the count on the display closed
+/// (rule 4.7; term 2.18). Closed with Update, [fields] holds the Length
+/// and Width fields as typed: the stored row the count was made from is
+/// rewritten to that size, width first, and the count is made again at it
+/// in place. Closed any other way, [fields] is empty and nothing changes.
+/// Not a key: what the last key said stays.
+class CalculatorSizePillEdited extends CalculatorEvent {
+  /// The editor's fields: Length (the size's width), then Width (its
+  /// height); empty when the editor closed without Update.
+  final List<String> fields;
+
+  const CalculatorSizePillEdited(this.fields);
+
+  @override
+  List<Object?> get props => [fields];
+}

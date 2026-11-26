@@ -7,6 +7,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/update_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
@@ -49,6 +50,9 @@ class _CalculatorBlocTestModule extends Module {
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: stores),
     );
+    i.add<UpdateMaterialSizeUseCase>(
+      () => UpdateMaterialSizeUseCase(repository: stores),
+    );
     i.add<BankCalculationSessionUseCase>(
       () => BankCalculationSessionUseCase(repository: history),
     );
@@ -60,6 +64,7 @@ class _CalculatorBlocTestModule extends Module {
         tradeStores: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        updateMaterialSize: i(),
         bankSession: i(),
         deleteSession: i(),
       ),
@@ -6428,6 +6433,225 @@ void main() {
           );
         },
       );
+
+      group('T2b 2/3 (CA-1096): Update in the editor of a count\'s pill '
+          'rewrites the stored size and makes the count again in place '
+          '(rule 4.7; walkthrough 19.1; rows 220, 409)', () {
+        const sheetSize = DependentKeyId.sheetSize;
+
+        /// Types 180ft² and accepts the first sheet count, 5.63 at 48in x
+        /// 96in, so the display reads the count with its pill.
+        Future<void> acceptFirstCount(CalculatorBloc bloc) async {
+          type180SquareFeet(bloc);
+          final offered = await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          final counted = bloc.stream.firstWhere(
+            (state) => state.countOnDisplay != null,
+          );
+          bloc.add(CalculatorSuggestionAccepted(offered.suggestions.first));
+          await counted;
+        }
+
+        bool saysTheSize(CalculatorState state, String sizeText) =>
+            state.dependentKeys.contains(
+              CalculatorStoredSizePill(id: sheetSize, sizeText: sizeText),
+            );
+
+        Future<List<String>> storedSheets() async => [
+          for (final size
+              in await stores
+                  .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                  .first)
+            const QuantityFormatter().formatPieceSize(size.piece),
+        ];
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          '48 [Inch] by 100 [Inch]: the count reads 5.40 where it stood, '
+          'its pill says 48in x 100in, the first stored row is rewritten '
+          'and the other sizes stay on the strip',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            final updated = bloc.stream.firstWhere(
+              (state) =>
+                  saysTheSize(state, '48in x 100in') &&
+                  rows(state).first == '48in x 100in 5.40',
+            );
+            bloc.add(const CalculatorSizePillEdited(['48Inch', '100Inch']));
+            await updated;
+          },
+          verify: (bloc) async {
+            expect(bloc.state.valueText, '5.40');
+            expect(
+              [for (final chip in bloc.state.chipsList) chip.value],
+              ['180ft²', '5.40'],
+            );
+            expect(bloc.state.labelKeyId, Trade.drywall.resultKey);
+            expect(rows(bloc.state), [
+              '48in x 100in 5.40',
+              '48in x 108in 5.00',
+              '48in x 120in 4.50',
+            ]);
+            expect(stripSizes(bloc.state), ['48in x 108in', '48in x 120in']);
+            expect(await storedSheets(), [
+              '48in x 100in',
+              '48in x 108in',
+              '48in x 120in',
+            ]);
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the editor closed without Update, a field that spells no size, '
+          'and an Update with no count on the display change nothing',
+          build: () => bloc,
+          act: (bloc) async {
+            type180SquareFeet(bloc);
+            await bloc.stream.firstWhere(
+              (state) => state.materialCounts.isNotEmpty,
+            );
+            bloc.add(const CalculatorSizePillEdited(['48Inch', '100Inch']));
+            await acceptFirstCount(bloc);
+            bloc
+              ..add(const CalculatorSizePillEdited([]))
+              ..add(const CalculatorSizePillEdited(['48', '100Inch']))
+              ..add(const CalculatorSizePillEdited(['48Inch', '100']))
+              ..add(const CalculatorGroupSelected(1));
+            await bloc.stream.firstWhere(
+              (state) => state.currentGroupIndex == 1,
+            );
+          },
+          verify: (bloc) async {
+            expect(saysTheSize(bloc.state, '48in x 96in'), isTrue);
+            expect(bloc.state.valueText, '5.63');
+            expect((await storedSheets()).first, '48in x 96in');
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a size deleted from the table while its count stayed is added '
+          'back as a new row by Update, and the count is made again at it '
+          '(row 409)',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            final deleted = bloc.stream.firstWhere(
+              (state) => state.materialCounts.length == 2,
+            );
+            bloc.add(
+              CalculatorSizeRowDeleted(bloc.state.sizeTable!.rows.first.id),
+            );
+            await deleted;
+            final updated = bloc.stream.firstWhere(
+              (state) =>
+                  saysTheSize(state, '48in x 100in') && rows(state).length == 3,
+            );
+            bloc.add(const CalculatorSizePillEdited(['48Inch', '100Inch']));
+            await updated;
+          },
+          verify: (bloc) async {
+            expect(bloc.state.valueText, '5.40');
+            // where the new row goes is the repository's to say, and its
+            // own test says after the last one
+            expect(
+              await storedSheets(),
+              unorderedEquals(['48in x 108in', '48in x 120in', '48in x 100in']),
+            );
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a key pressed while the store answers keeps the tape it made: '
+          'the store has the new size and the new tape is left alone',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            final typed = bloc.stream.firstWhere(
+              (state) => state.valueText == '7',
+            );
+            bloc
+              ..add(const CalculatorSizePillEdited(['48Inch', '100Inch']))
+              ..add(const CalculatorDigitPressed('7'));
+            await typed;
+            await bloc.stream.firstWhere((state) => state.bankedTape != null);
+          },
+          verify: (bloc) async {
+            expect(bloc.state.tape, pressed('7'));
+            expect((await storedSheets()).first, '48in x 100in');
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'an Update the store refuses raises the same red Alert as Add, '
+          '"Size not added", which the next key clears; the count, its pill '
+          'and the store stay (decision tree rows 505 and 525)',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            stores.writeFailure = const CalculatorFailure(
+              errorType: CalculatorErrorType.storageError,
+            );
+            final refused = bloc.stream.firstWhere(
+              (state) => state.sizeNotAdded,
+            );
+            bloc.add(const CalculatorSizePillEdited(['48Inch', '100Inch']));
+            final told = await refused;
+            expect(told.toast, const CalculatorSizeNotAddedToast());
+            expect(told.valueText, '5.63');
+            expect(saysTheSize(told, '48in x 96in'), isTrue);
+            final cleared = bloc.stream.firstWhere(
+              (state) => !state.sizeNotAdded,
+            );
+            bloc.add(const CalculatorKeySelected('Length'));
+            expect((await cleared).toast, isNull);
+          },
+          verify: (bloc) async =>
+              expect((await storedSheets()).first, '48in x 96in'),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a key the tape refuses clears that Alert too, after an Update',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            stores.writeFailure = const CalculatorFailure(
+              errorType: CalculatorErrorType.storageError,
+            );
+            final refused = bloc.stream.firstWhere(
+              (state) => state.sizeNotAdded,
+            );
+            bloc.add(const CalculatorSizePillEdited(['48Inch', '100Inch']));
+            await refused;
+            final cleared = bloc.stream.firstWhere(
+              (state) => !state.sizeNotAdded,
+            );
+            bloc.add(const CalculatorFractionPressed());
+            expect((await cleared).refusal, isNotNull);
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'with nobody signed in the Update says nothing of its own: the '
+          'app answers that with the sign-in screen',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            stores.signedIn = false;
+            bloc
+              ..add(const CalculatorSizePillEdited(['48Inch', '100Inch']))
+              ..add(const CalculatorGroupSelected(1));
+            await bloc.stream.firstWhere(
+              (state) => state.currentGroupIndex == 1,
+            );
+          },
+          verify: (bloc) {
+            expect(bloc.state.sizeNotAdded, isFalse);
+            expect(bloc.state.toast, isNull);
+            expect(bloc.state.valueText, '5.63');
+          },
+        );
+      });
 
       test('the editor reads a field under the unit system in force: 0.4mm '
           'is a size under Imperial and rounds to 0mm under Metric, and a '
