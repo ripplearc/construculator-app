@@ -2174,6 +2174,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorSizeEditorSizeError => 'Size must be more than zero.';
 
   @override
+  String calculatorSizeEditorNoUnitError(String number) {
+    return '$number has no unit yet. Press a unit key.';
+  }
+
+  @override
+  String calculatorSizeEditorUnitUsedTwiceError(String unit, String face) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'inch': '$face is already used. Press ⌫ to remove it.',
+      'millimetre': '$face is already used. Press ⌫ to remove it.',
+      'yard': '$face is already used. Type feet next.',
+      'metre': '$face is already used. Type cm next.',
+      'centimetre': '$face is already used. Type mm next.',
+      'other': '$face is already used. Type inches next.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get calculatorSizeEditorOtherSystemError =>
+      'Use feet and inches, or m and cm.';
+
+  @override
+  String calculatorSizeEditorLargerUnitFirstError(
+    String larger,
+    String smaller,
+  ) {
+    return 'Type $larger first, then $smaller.';
+  }
+
+  @override
+  String calculatorSizeEditorUnitWord(String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'foot': 'feet',
+      'inch': 'inches',
+      'yard': 'yards',
+      'metre': 'm',
+      'centimetre': 'cm',
+      'millimetre': 'mm',
+      'other': '$unit',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calculatorSizeEditorRoundsToZeroError(String typed, String shown) {
+    return '$typed rounds to $shown. Type a bigger size.';
+  }
+
+  @override
+  String get calculatorSizeEditorTooLargeError =>
+      'Over 19,999,999.99. Type a smaller size.';
+
+  @override
   String get calculatorLabelValue => 'Value';
 
   @override

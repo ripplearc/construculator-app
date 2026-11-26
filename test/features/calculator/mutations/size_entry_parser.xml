@@ -13,25 +13,51 @@
         </regex>
         <!-- RULE 2 (R1, B1): a unit that cannot continue the value is not
              named, or an empty field is not a size of zero -->
-        <regex pattern="unit == null\s*\? SizeEntryRefusal\.unfinished\s*: SizeEntryRefusal\.cannotAppendUnit," dotAll="true" id="size_entry_parser.refusal.unit_not_named">
-            <mutation text="SizeEntryRefusal.unfinished,"/>
+        <regex pattern="return unit == null\s*\? const SizeEntryRefused\(SizeEntryRefusal\.unfinished\)\s*: _refusedUnit\(buffer, unit, face\);" dotAll="true" id="size_entry_parser.refusal.unit_not_named">
+            <mutation text="return const SizeEntryRefused(SizeEntryRefusal.unfinished);"/>
         </regex>
         <regex pattern="if \(buffer\.isEmpty\) return const SizeEntryRefused\(SizeEntryRefusal\.zero\);" dotAll="true" id="size_entry_parser.empty.not_zero">
             <mutation text="if (buffer.isEmpty) return const SizeEntryRefused(SizeEntryRefusal.unfinished);"/>
         </regex>
         <!-- RULE 3 (R1, B1): Add does not close as the equals key does: a
              number after feet, a fraction after whole inches, a bare number -->
-        <regex pattern="\[\.\.\., Token\(unit: Unit\.foot\), _\] =&gt; Unit\.inch," dotAll="true" id="size_entry_parser.equals.inches_after_feet">
-            <mutation text="[..., Token(unit: Unit.foot), _] =&gt; null,"/>
+        <regex pattern="if \(finished\.tokens case \[\.\.\., Token\(unit: Unit\.foot\), _\]\) \{" dotAll="true" id="size_entry_parser.equals.inches_after_feet">
+            <mutation text="if (false) {"/>
         </regex>
         <regex pattern="final finished = buffer\.withFractionClosedAsInches;" dotAll="true" id="size_entry_parser.equals.fraction_after_inches">
             <mutation text="final finished = buffer;"/>
         </regex>
-        <regex pattern="\[_\] =&gt; _bareNumberUnit\(system\)," dotAll="true" id="size_entry_parser.bare_number.refused">
-            <mutation text="[_] =&gt; null,"/>
+        <!-- RULE 3a (R2, B3): a number with no unit is not named, a
+             fraction with nothing under its line is named as one, or a
+             bare 0 is -->
+        <regex pattern="if \(finished\.tokens case \[final number\] when finished\.isOpen\) \{" dotAll="true" id="size_entry_parser.bare_number.not_named">
+            <mutation text="if (false) {"/>
         </regex>
-        <regex pattern="MeasurementSystem\.metric =&gt; Unit\.millimetre," dotAll="true" id="size_entry_parser.bare_number.inches_under_metric">
-            <mutation text="MeasurementSystem.metric =&gt; Unit.inch,"/>
+        <regex pattern="if \(number\.denominator == ''\) \{" dotAll="true" id="size_entry_parser.bare_number.open_fraction_named">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="return number\.value == 0" dotAll="true" id="size_entry_parser.bare_number.zero_named">
+            <mutation text="return false"/>
+        </regex>
+        <!-- RULE 3b (R2, B4): a size that rounds to zero reads as a size of
+             zero, or a size of zero as one that rounds to it -->
+        <regex pattern="return length\.inches\.toDouble\(\) == 0" dotAll="true" id="size_entry_parser.zero.rounding_not_told_apart">
+            <mutation text="return true"/>
+            <mutation text="return false"/>
+        </regex>
+        <!-- RULE 3c (R2, B4): the three mistakes of a unit key share one
+             reason, or a unit key on an empty field names one -->
+        <regex pattern="if \(before == null\) \{" dotAll="true" id="size_entry_parser.unit.nothing_before_named">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(before == unit\) \{" dotAll="true" id="size_entry_parser.unit.used_twice_not_named">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(!system\.contains\(unit\)\) \{" dotAll="true" id="size_entry_parser.unit.other_system_not_named">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(system\.indexOf\(unit\) &lt; system\.indexOf\(before\)\) \{" dotAll="true" id="size_entry_parser.unit.larger_after_smaller_reversed">
+            <mutation text="if (system.indexOf(unit) &gt; system.indexOf(before)) {"/>
         </regex>
         <!-- RULE 4 (R1, B2): a number above the limit is a size, by what was
              typed or by what the row would show; the limit moves; or the

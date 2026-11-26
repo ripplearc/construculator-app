@@ -495,22 +495,45 @@ class CalculatorLabelFormatter {
   );
 
   /// The words under a field of the size editor that spells no size, or
-  /// `null` for one that does: "Size must be more than zero." (term 2.16),
-  /// "Finish this value first" for a value the calculator would not take
-  /// as finished either, "Can't append `<unit>` here" (Section 5.2) and
-  /// "Too large" (Section 5.3).
+  /// `null` for one that does, each saying what to do next (term 2.16):
+  /// "Size must be more than zero." for an empty field or a size of zero,
+  /// "0.0001in rounds to 0in. Type a bigger size.", "48 has no unit yet.
+  /// Press a unit key.", "Feet is already used. Type inches next.", "Use
+  /// feet and inches, or m and cm.", "Type feet first, then inches." and
+  /// "Over 19,999,999.99. Type a smaller size."; "Finish this value first"
+  /// for any other value the calculator would not take as finished.
   String? sizeEntryError(SizeEntry entry) => switch (entry) {
     SizeEntryLength() => null,
     SizeEntryRefused(reason: SizeEntryRefusal.zero) =>
       l10n.calculatorSizeEditorSizeError,
-    SizeEntryRefused(reason: SizeEntryRefusal.unfinished) =>
-      l10n.calculatorToastFinishValueTitle,
-    SizeEntryRefused(reason: SizeEntryRefusal.cannotAppendUnit, :final unit?) =>
-      l10n.calculatorToastCannotAppendTitle(unitName(unit)),
-    SizeEntryRefused(reason: SizeEntryRefusal.cannotAppendUnit) =>
-      l10n.calculatorToastFinishValueTitle,
+    SizeEntryRefused(
+      reason: SizeEntryRefusal.roundsToZero,
+      :final typed,
+      :final shownAs,
+    ) =>
+      l10n.calculatorSizeEditorRoundsToZeroError(typed, shownAs),
+    SizeEntryRefused(reason: SizeEntryRefusal.noUnit, :final typed) =>
+      l10n.calculatorSizeEditorNoUnitError(typed),
+    SizeEntryRefused(
+      reason: SizeEntryRefusal.unitUsedTwice,
+      :final unit?,
+      :final unitFace,
+    ) =>
+      l10n.calculatorSizeEditorUnitUsedTwiceError(unit.name, unitFace),
+    SizeEntryRefused(reason: SizeEntryRefusal.otherSystem) =>
+      l10n.calculatorSizeEditorOtherSystemError,
+    SizeEntryRefused(
+      reason: SizeEntryRefusal.largerUnitAfterSmaller,
+      :final unit?,
+      :final after?,
+    ) =>
+      l10n.calculatorSizeEditorLargerUnitFirstError(
+        l10n.calculatorSizeEditorUnitWord(unit.name),
+        l10n.calculatorSizeEditorUnitWord(after.name),
+      ),
     SizeEntryRefused(reason: SizeEntryRefusal.tooLarge) =>
-      l10n.calculatorErrorTooLarge,
+      l10n.calculatorSizeEditorTooLargeError,
+    SizeEntryRefused() => l10n.calculatorToastFinishValueTitle,
   };
 
   /// The title of [toast], or `null` for a toast that is one sentence.

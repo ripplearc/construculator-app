@@ -282,25 +282,51 @@ void main() {
       );
       expect(
         labels.sizeEntryError(
-          const SizeEntryRefused(
-            SizeEntryRefusal.cannotAppendUnit,
-            unit: Unit.centimetre,
-          ),
-        ),
-        "Can't append centimeters here",
-      );
-      expect(
-        labels.sizeEntryError(
-          const SizeEntryRefused(SizeEntryRefusal.cannotAppendUnit),
+          const SizeEntryRefused(SizeEntryRefusal.unitUsedTwice),
         ),
         'Finish this value first',
+        reason: 'a refusal that names no unit has no words of its own',
+      );
+    });
+
+    test('each refusal of a size field says what to do next, in the words '
+        'of term 2.16 (B3, B4)', () {
+      const parser = SizeEntryParser();
+      String? error(String field) =>
+          labels.sizeEntryError(parser.read(field, MeasurementSystem.imperial));
+
+      expect(error('4Feet4Feet'), 'Feet is already used. Type inches next.');
+      expect(error('4Feet20CM'), 'Use feet and inches, or m and cm.');
+      expect(error('6Inch4Feet'), 'Type feet first, then inches.');
+      expect(
+        error('0.0001Inch'),
+        '0.0001in rounds to 0in. Type a bigger size.',
       );
       expect(
-        labels.sizeEntryError(
-          const SizeEntryRefused(SizeEntryRefusal.tooLarge),
-        ),
-        'Too large',
+        error('99999999999999Inch'),
+        'Over 19,999,999.99. Type a smaller size.',
       );
+      expect(error('8'), '8 has no unit yet. Press a unit key.');
+      expect(error('0Feet'), 'Size must be more than zero.');
+      expect(error(''), 'Size must be more than zero.');
+    });
+
+    test('the same mistakes in the other units are named for those units', () {
+      const parser = SizeEntryParser();
+      String? error(String field) =>
+          labels.sizeEntryError(parser.read(field, MeasurementSystem.metric));
+
+      expect(error('1M1M'), 'M is already used. Type cm next.');
+      expect(error('5CM5CM'), 'CM is already used. Type mm next.');
+      expect(error('2Yards2Yards'), 'Yards is already used. Type feet next.');
+      expect(
+        error('4Inch4Inch'),
+        'Inch is already used. Press ⌫ to remove it.',
+      );
+      expect(error('4MM4MM'), 'MM is already used. Press ⌫ to remove it.');
+      expect(error('20CM1M'), 'Type m first, then cm.');
+      expect(error('4Feet4Yards'), 'Type yards first, then feet.');
+      expect(error('0.4MM'), '0.4mm rounds to 0mm. Type a bigger size.');
     });
 
     test('"Size not added" tells the user the store refused the size (N2)', () {

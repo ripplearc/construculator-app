@@ -4820,16 +4820,27 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'a number with no unit is a size in inches under Imperial',
+        'a number with no unit adds no size, in either field: nothing says '
+        'whether 8 is inches or feet (B3; term 2.16)',
         build: () => bloc,
         act: (bloc) async {
           type180SquareFeet(bloc);
           await bloc.stream.firstWhere(
             (state) => state.materialCounts.isNotEmpty,
           );
-          bloc.add(const CalculatorSizeEditorClosed(['48', '144']));
+          final added = bloc.stream.firstWhere(
+            (state) => state.materialCounts.length == 4,
+          );
+          bloc
+            ..add(const CalculatorSizeEditorClosed(['4Feet', '8']))
+            ..add(const CalculatorSizeEditorClosed(['48', '8Feet']))
+            ..add(const CalculatorSizeEditorClosed(['4Feet', '12Feet']));
+          await added;
         },
-        verify: (bloc) => expect(rows(bloc.state).last, '48in x 144in 3.75'),
+        verify: (bloc) {
+          expect(bloc.state.materialCounts, hasLength(4));
+          expect(rows(bloc.state).last, '48in x 144in 3.75');
+        },
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -5009,8 +5020,9 @@ void main() {
         },
       );
 
-      test('the editor reads a field under the unit system in force: 1200 is '
-          'inches under Imperial and millimetres under Metric', () {
+      test('the editor reads a field under the unit system in force: 0.4mm '
+          'is a size under Imperial and rounds to 0mm under Metric, and a '
+          'number with no unit is a size under neither', () {
         final imperial = CalculatorState.initial();
         final metric = tapeState(
           const Tape(
@@ -5019,8 +5031,22 @@ void main() {
             ),
           ),
         );
-        expect(imperial.sizeEntryLength('1200')!.unit, Unit.inch);
-        expect(metric.sizeEntryLength('1200')!.unit, Unit.millimetre);
+        expect(imperial.sizeEntryLength('0.4MM'), isNotNull);
+        expect(
+          metric.sizeEntry('0.4MM'),
+          const SizeEntryRefused(
+            SizeEntryRefusal.roundsToZero,
+            typed: '0.4mm',
+            shownAs: '0mm',
+          ),
+        );
+        for (final state in [imperial, metric]) {
+          expect(state.sizeEntryLength('1200'), isNull);
+          expect(
+            state.sizeEntry('1200'),
+            const SizeEntryRefused(SizeEntryRefusal.noUnit, typed: '1200'),
+          );
+        }
         expect(metric.sizeEntryLength('0'), isNull);
         expect(
           metric.sizeEntry('0'),
@@ -5028,10 +5054,7 @@ void main() {
         );
         expect(
           imperial.sizeEntry('4Feet20CM'),
-          const SizeEntryRefused(
-            SizeEntryRefusal.cannotAppendUnit,
-            unit: Unit.centimetre,
-          ),
+          const SizeEntryRefused(SizeEntryRefusal.otherSystem),
         );
       });
     });
