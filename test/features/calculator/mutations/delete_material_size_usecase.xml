@@ -2,11 +2,10 @@
 <mutations version="1.0">
     <!-- DELETE MATERIAL SIZE USE CASE MUTATION TESTING (CA-1095, T2a 2/3) -->
     <!-- Targets: which stored size a deleted row of the sheet table removes,
-         and the name the watch gives the size of each count. -->
+         by its measure or by the name of its stored row. -->
 
     <files>
         <file>lib/features/calculator/domain/usecases/delete_material_size_usecase.dart</file>
-        <file>lib/features/calculator/domain/usecases/watch_material_counts_usecase.dart</file>
     </files>
 
     <rules>
@@ -26,19 +25,13 @@
             <mutation text=": stored.width == size.width &amp;&amp; stored.height == size.height;"/>
             <mutation text=": (stored.id ?? stored.seed) != size.id;"/>
         </regex>
-        <!-- R1 (B1): a count's size carries no name for a default, or none
-             for a size the user added -->
-        <regex pattern="id: size\.id \?\? size\.seed," dotAll="true" id="watch_material_counts.size.unnamed">
-            <mutation text="id: size.id,"/>
-            <mutation text="id: size.seed,"/>
-        </regex>
         <regex pattern="return _repository\.deleteSize\(stored\);" dotAll="true" id="delete_material_size.match.not_deleted">
             <mutation text="continue;"/>
         </regex>
     </rules>
 
     <commands>
-        <command group="delete_material_size" expected-return="0">flutter test test/features/calculator/units/domain/usecases/delete_material_size_usecase_test.dart test/features/calculator/units/domain/usecases/watch_material_counts_usecase_test.dart</command>
+        <command group="delete_material_size" expected-return="0">flutter test test/features/calculator/units/domain/usecases/delete_material_size_usecase_test.dart</command>
     </commands>
 
     <threshold failure="85">

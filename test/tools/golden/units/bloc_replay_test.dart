@@ -208,6 +208,10 @@ class BlocScenarioDriver implements ScenarioDriver {
         _ => null,
       },
       historyCount: _history.sessions.length,
+      ladder: [
+        for (final step in state.ladderTrace)
+          '${step.rung.name}: ${step.applies ? 'yes' : 'no'}',
+      ].join(', '),
       hint: switch (state.stripNote) {
         final note? => _labels.noteText(note),
         null =>
@@ -450,6 +454,11 @@ void main() {
         diff,
         contains("source:   r=>r.depKey==='Sheet size: 47.24in x 94.49in'"),
       );
+      expect(
+        diff,
+        contains('ladder=[error: no, tradeFollowOn: yes]'),
+        reason: 'the diff says which rung chose the strip (G1, CA-1072)',
+      );
     });
 
     test('the driver reads the "Saved to history" card as the action toast, '
@@ -687,6 +696,36 @@ void main() {
       expect(await driver.perform(const AcceptStep('45.63yd²')), isTrue);
       expect(driver.snapshot().tape.last, 'Area45.63yd²');
       expect(driver.snapshot().strip2, isNot(contains('45.63yd²')));
+    });
+
+    test('the driver reads the ladder\'s trace into the snapshot: silent '
+        'after an error, the rules for two named sides, nothing on an '
+        'empty tape', () async {
+      expect(
+        driver.snapshot().ladder,
+        'error: no, tradeFollowOn: no, rules: no',
+      );
+
+      for (final key in const [
+        'fk:Length',
+        'd:2',
+        'unit:ft',
+        'fk:Width',
+        'd:3',
+        'unit:ft',
+      ]) {
+        await driver.perform(KeyStep(key));
+      }
+      expect(
+        driver.snapshot().ladder,
+        'error: no, tradeFollowOn: no, rules: yes',
+      );
+
+      await driver.perform(const KeyStep('clear'));
+      for (final key in const ['d:5', 'op:÷', 'd:0', 'equals']) {
+        await driver.perform(KeyStep(key));
+      }
+      expect(driver.snapshot().ladder, 'error: yes');
     });
 
     test('the driver reads the bloc state back as a snapshot', () async {

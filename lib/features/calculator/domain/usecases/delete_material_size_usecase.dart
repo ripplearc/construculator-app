@@ -11,7 +11,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// uses the sizes that remain.
 ///
 /// The size removed is the stored row the count was made from
-/// ([PieceSize.id], as [WatchMaterialCountsUseCase] names it), so that of
+/// ([PieceSize.id], as [WatchTradeStoresUseCase] names it), so that of
 /// two rows with one size the swiped one goes and the other stays. A size
 /// with no name is matched by its width and height, the first one of the
 /// store under the unit system in force. A size no longer in the store,

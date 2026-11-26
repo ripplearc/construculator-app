@@ -319,6 +319,19 @@ void main() {
     );
   });
 
+  test('describeSnapshot ends with the ladder\'s trace when the driver has '
+      'one, and says nothing of it otherwise', () {
+    expect(
+      describeSnapshot(const Snapshot(ladder: 'error: no, rules: yes')),
+      endsWith('bracketOpen=false ladder=[error: no, rules: yes]'),
+    );
+    expect(describeSnapshot(const Snapshot()), isNot(contains('ladder')));
+    expect(
+      const Snapshot(ladder: 'error: yes'),
+      isNot(const Snapshot(ladder: 'error: no')),
+    );
+  });
+
   group('intended differences', () {
     const listed = IntendedDifference(
       scenario: 'S01',

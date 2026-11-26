@@ -4,7 +4,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
-import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/errors/calculator_error_type.dart';
@@ -43,21 +43,21 @@ part 'calculator_toast.dart';
 /// the tape's own preferences, so the tape and the keyboard agree on one
 /// value.
 ///
-/// The one store it reads is the sheet-size store, through
-/// [WatchMaterialCountsUseCase] (S2a, CA-1090; requirement R9): whenever
-/// the state's [CalculatorState.areaForCounts] or the unit system changes
-/// the bloc watches the counts of that area, and every answer — the first,
-/// and each change to the store after it — arrives as
-/// [CalculatorMaterialCountsArrived] and is kept in the state for the
-/// strip. The watch ends with the bloc. Which area is counted, and what
-/// the strip makes of the counts, is the state's reading; the counting is
-/// the engine's.
+/// The stores it reads are the trade stores, through
+/// [WatchTradeStoresUseCase] (S2a, CA-1090; G1, CA-1072; requirement R9):
+/// while the state's [CalculatorState.areaForCounts] names an area the bloc
+/// watches the stores under the unit system in force, and every answer —
+/// the first, and each change to a store after it — arrives as
+/// [CalculatorTradeStoresArrived] and is kept in the state for the ladder.
+/// The watch ends when the area leaves the display, and with the bloc.
+/// Which area is counted and what the strip offers for it is the engine's
+/// [Arbiter], which the state asks.
 ///
-/// The strip is the state's reading of the same tape (CA-1088, S1b):
+/// The strip is the ladder's reading of the same tape (CA-1088, S1b; G1):
 /// accepting a chip lands the answer the engine had already computed, so
 /// nothing is recalculated on tap (Section 1.2). An answer lands through
-/// [Tape.landAnswer], as does a sheet count the store answered for the area
-/// on the display ([CalculatorState.materialCounts]; S2a, CA-1090), under
+/// [Tape.landAnswer], as does a sheet count of the area on the display
+/// ([CalculatorState.materialCounts]; S2a, CA-1090), under
 /// the trade's result key, Number of sheets; the running total through =, a conversion through
 /// [Tape.acceptConversion], the unit key of its spelling (rule 4.3) with a
 /// ft-in chip read as the strip wrote it (3ft 3-3/8in; decision tree row
@@ -83,7 +83,7 @@ part 'calculator_toast.dart';
 /// history again behind the tape it brings back (walkthrough 13.2). Leaving
 /// banks once, however often the bloc is closed.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
-  final WatchMaterialCountsUseCase _materialCounts;
+  final WatchTradeStoresUseCase _tradeStores;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
   final AddMaterialSizeUseCase _addMaterialSize;
   final BankCalculationSessionUseCase _bankSession;
@@ -91,22 +91,21 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   static final _logger = AppLogger().tag('CalculatorBloc');
 
-  StreamSubscription<List<TradeCount>>? _countsSubscription;
+  StreamSubscription<TradeStores>? _storesSubscription;
 
-  Area? _watchedArea;
   MeasurementSystem? _watchedSystem;
 
-  /// Creates the bloc over the use cases that count the stored sheet sizes
-  /// for an area, add a size to the store or remove one, and bank a tape
-  /// to history or take it out again.
+  /// Creates the bloc over the use cases that read the trade stores, add a
+  /// size to a store or remove one, and bank a tape to history or take it
+  /// out again.
   CalculatorBloc({
-    required this._materialCounts,
+    required this._tradeStores,
     required this._deleteMaterialSize,
     required this._addMaterialSize,
     required this._bankSession,
     required this._deleteSession,
   }) : super(CalculatorState.initial()) {
-    on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
+    on<CalculatorTradeStoresArrived>(_onTradeStoresArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
     on<CalculatorSizeEditorClosed>(_onSizeEditorClosed);
     on<CalculatorKeySelected>(_onKeySelected);
@@ -142,47 +141,40 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   @override
   Future<void> close() async {
     if (!isClosed && state.holdsWorkToBank) await _bankSession(state.tape);
-    await _countsSubscription?.cancel();
+    await _storesSubscription?.cancel();
     return super.close();
   }
 
   void _followTheAreaOnScreen(CalculatorState next) {
-    final area = next.areaForCounts;
-    final system = next.tape.preferences.system;
-    if (area == _watchedArea && system == _watchedSystem) return;
-    unawaited(_countsSubscription?.cancel());
-    _countsSubscription = null;
-    _watchedArea = area;
+    final system = next.areaForCounts == null
+        ? null
+        : next.tape.preferences.system;
+    if (system == _watchedSystem) return;
+    unawaited(_storesSubscription?.cancel());
+    _storesSubscription = null;
     _watchedSystem = system;
-    if (area == null) {
-      if (next.materialCounts.isNotEmpty) {
-        add(const CalculatorMaterialCountsArrived([]));
+    if (system == null) {
+      if (next.stores != const TradeStores()) {
+        add(const CalculatorTradeStoresArrived(TradeStores()));
       }
       return;
     }
-    _countsSubscription =
-        _materialCounts(
-          trade: Trade.drywall,
-          area: area,
-          system: system,
-        ).listen(
-          (counts) => add(CalculatorMaterialCountsArrived(counts)),
-          // The strip keeps what it showed. Warning level: the error-level
-          // log belongs to the store's own boundary, not to a bloc.
-          onError: (Object error, StackTrace stackTrace) => _logger.warning(
-            'The sheet counts watch failed',
-            error,
-            stackTrace,
-          ),
-        );
+    _storesSubscription = _tradeStores(system: system).listen(
+      (stores) => add(CalculatorTradeStoresArrived(stores)),
+      // The strip keeps what it showed. Warning level: the error-level
+      // log belongs to the store's own boundary, not to a bloc.
+      onError: (Object error, StackTrace stackTrace) =>
+          _logger.warning('The trade stores watch failed', error, stackTrace),
+    );
   }
 
-  void _onMaterialCountsArrived(
-    CalculatorMaterialCountsArrived event,
+  void _onTradeStoresArrived(
+    CalculatorTradeStoresArrived event,
     Emitter<CalculatorState> emit,
   ) {
-    if (event.counts.any((count) => count.area != _watchedArea)) return;
-    emit(state.copyWith(materialCounts: event.counts));
+    // stores that answered for an area no longer on the display
+    if (_watchedSystem == null && event.stores != const TradeStores()) return;
+    emit(state.copyWith(stores: event.stores));
   }
 
   Future<void> _onSizeRowDeleted(
@@ -193,18 +185,24 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         .where((row) => row.id == event.rowId)
         .firstOrNull;
     if (row == null) return;
-    final counts = state.materialCounts;
-    final remaining = [...counts]..remove(row.count);
+    final stores = state.stores;
+    final remaining = TradeStores(
+      sheetSizes: [
+        for (final size in stores.sheetSizes)
+          if (!identical(size, row.count.size)) size,
+      ],
+      masonrySizes: stores.masonrySizes,
+    );
     // A swiped row must be gone by the next frame, so it leaves before the
     // store answers.
-    emit(state.copyWith(materialCounts: remaining));
+    emit(state.copyWith(stores: remaining));
     final deleted = await _deleteMaterialSize(
       trade: row.count.trade,
       size: row.count.size,
       system: state.tape.preferences.system,
     );
-    if (deleted.isLeft() && identical(state.materialCounts, remaining)) {
-      emit(state.copyWith(materialCounts: counts));
+    if (deleted.isLeft() && identical(state.stores, remaining)) {
+      emit(state.copyWith(stores: stores));
     }
   }
 

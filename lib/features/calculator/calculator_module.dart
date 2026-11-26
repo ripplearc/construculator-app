@@ -15,7 +15,6 @@ import 'package:construculator/features/calculator/domain/usecases/delete_calcul
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_fence_count_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_footing_volumes_usecase.dart';
-import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_weights_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_spacing_counts_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
@@ -77,9 +76,6 @@ class CalculatorModule extends Module {
       ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
-    i.add<WatchMaterialCountsUseCase>(
-      () => WatchMaterialCountsUseCase(repository: i()),
-    );
     i.add<WatchTradeStoresUseCase>(
       () => WatchTradeStoresUseCase(repository: i()),
     );
@@ -119,7 +115,7 @@ class CalculatorModule extends Module {
     );
     i.add<CalculatorBloc>(
       () => CalculatorBloc(
-        materialCounts: i(),
+        tradeStores: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
         bankSession: i(),

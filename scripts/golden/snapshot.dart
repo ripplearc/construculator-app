@@ -110,6 +110,12 @@ class Snapshot extends Equatable {
   /// Whether the strip's ✨/📏 toggle shows.
   final bool stripToggleShown;
 
+  /// The rungs the ladder asked on the way to this strip and whether each
+  /// answered ("error: no, tradeFollowOn: yes"), as the arbiter's trace
+  /// records them (UX doc rule 4.4); `null` from a driver with no ladder.
+  /// No checkpoint reads it: it is there for the diff of a failed one.
+  final String? ladder;
+
   const Snapshot({
     this.label = '',
     this.value = '',
@@ -143,6 +149,7 @@ class Snapshot extends Equatable {
     this.historyBlocks = const [],
     this.sheetHidden = false,
     this.stripToggleShown = false,
+    this.ladder,
   });
 
   @override
@@ -179,5 +186,6 @@ class Snapshot extends Equatable {
     historyBlocks,
     sheetHidden,
     stripToggleShown,
+    ladder,
   ];
 }
