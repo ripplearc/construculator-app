@@ -122,7 +122,7 @@ void main() {
             ),
           );
           await tester.pump();
-          await tester.tap(find.text(l10n.viewAllButton));
+          await tester.tap(find.text(l10n.calculatorViewAllButton));
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
 
