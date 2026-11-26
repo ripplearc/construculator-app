@@ -67,7 +67,10 @@ void main() {
     database.reset();
   });
 
-  Future<void> openDialog(WidgetTester tester) async {
+  Future<void> openDialog(
+    WidgetTester tester, {
+    CostItemType category = CostItemType.equipment,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),
@@ -88,10 +91,12 @@ void main() {
                         id: '',
                         companyId: '',
                         itemName: 'Scissor lift',
-                        category: CostItemType.equipment,
+                        category: category,
                         rate: const Money(amount: 135),
                         savedAt: clock.now(),
-                        equipmentMethod: EquipmentPricingMethod.day,
+                        equipmentMethod: category == CostItemType.equipment
+                            ? EquipmentPricingMethod.day
+                            : null,
                       ),
                     ),
                   ),
@@ -106,6 +111,32 @@ void main() {
     await tester.tap(find.byKey(const Key('open_dialog')));
     await tester.pumpAndSettle();
   }
+
+  group('body text', () {
+    testWidgets('names equipment on the equipment form', (tester) async {
+      await openDialog(tester);
+
+      expect(find.text(l10n.yourRatesEntryLabelDialogBody), findsOneWidget);
+    });
+
+    testWidgets('names a material on the material form', (tester) async {
+      await openDialog(tester, category: CostItemType.material);
+
+      expect(
+        find.text(l10n.yourRatesMaterialEntryLabelDialogBody),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.yourRatesEntryLabelDialogBody), findsNothing);
+    });
+
+    testWidgets('refuses a labor rate, which has no wording yet', (
+      tester,
+    ) async {
+      await openDialog(tester, category: CostItemType.labor);
+
+      expect(tester.takeException(), isA<UnsupportedError>());
+    });
+  });
 
   testWidgets('saves the rate under the typed label and closes', (
     tester,
