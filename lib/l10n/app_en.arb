@@ -3226,6 +3226,98 @@
   "@calculatorNoteSidesNotWhole": {
     "description": "Strip note shown in place of the calculator suggestions while Sides holds a count that is not a whole number of 3 or more (UX Design Doc Section 1.8)"
   },
+  "calculatorNotePercentAddsOfTheTotal": "Adds {percent} of the total {total} = {amount}.",
+  "@calculatorNotePercentAddsOfTheTotal": {
+    "description": "Strip note after a percent pressed on + (UX Design Doc Section 1.8, \"A percent tip after + or −\"; Section 7, \"Percent\")",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      },
+      "total": {
+        "type": "String",
+        "example": "1,500"
+      },
+      "amount": {
+        "type": "String",
+        "example": "150"
+      }
+    }
+  },
+  "calculatorNotePercentAddsOfTheBracket": "Adds {percent} of the bracket {total} = {amount}.",
+  "@calculatorNotePercentAddsOfTheBracket": {
+    "description": "Strip note after a percent pressed on + inside an open bracket (UX Design Doc Section 1.8, \"A percent tip after + or −\"; Section 7, \"Percent\")",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      },
+      "total": {
+        "type": "String",
+        "example": "1,500"
+      },
+      "amount": {
+        "type": "String",
+        "example": "150"
+      }
+    }
+  },
+  "calculatorNotePercentTakesOffOfTheTotal": "Takes off {percent} of the total {total} = {amount}.",
+  "@calculatorNotePercentTakesOffOfTheTotal": {
+    "description": "Strip note after a percent pressed on − (UX Design Doc Section 1.8, \"A percent tip after + or −\"; Section 7, \"Percent\")",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      },
+      "total": {
+        "type": "String",
+        "example": "1,500"
+      },
+      "amount": {
+        "type": "String",
+        "example": "150"
+      }
+    }
+  },
+  "calculatorNotePercentTakesOffOfTheBracket": "Takes off {percent} of the bracket {total} = {amount}.",
+  "@calculatorNotePercentTakesOffOfTheBracket": {
+    "description": "Strip note after a percent pressed on − inside an open bracket (UX Design Doc Section 1.8, \"A percent tip after + or −\"; Section 7, \"Percent\")",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      },
+      "total": {
+        "type": "String",
+        "example": "1,500"
+      },
+      "amount": {
+        "type": "String",
+        "example": "150"
+      }
+    }
+  },
+  "calculatorNotePercentAddsSoFar": "Adds {percent} of the total so far.",
+  "@calculatorNotePercentAddsSoFar": {
+    "description": "Short form of the percent tip after +, shown when the full tip is over 52 characters (UX Design Doc Section 1.8)",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      }
+    }
+  },
+  "calculatorNotePercentTakesOffSoFar": "Takes off {percent} of the total so far.",
+  "@calculatorNotePercentTakesOffSoFar": {
+    "description": "Short form of the percent tip after −, shown when the full tip is over 52 characters (UX Design Doc Section 1.8)",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      }
+    }
+  },
   "calculatorNotePitchHasNoDms": "Pitch has no D:M:S. Press Pitch for other readings.",
   "@calculatorNotePitchHasNoDms": {
     "description": "Strip note shown after the D:M:S key is pressed on a calculator pitch answer, until the next key"

@@ -129,10 +129,14 @@ void main() {
     );
   });
 
-  testWidgets('the % key marks a percent on the tape, "+10%", and = lands '
-      'the total (CA-1376; decision tree row 386)', (tester) async {
+  testWidgets('the % key marks a percent on the tape, "+10%", the strip says '
+      'what it adds, and = lands the total (CA-1376; decision tree row '
+      '386)', (tester) async {
     await pumpPage(tester);
     final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
     for (final key in const [
       'calc_key_one',
       'calc_key_zero',
@@ -154,10 +158,23 @@ void main() {
       [for (final chip in bloc.state.chipsList) chip.value],
       ['1000', '+500', '+10%'],
     );
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .suggestionAreaPlaceholder,
+      l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150'),
+    );
 
     await tester.tap(find.byKey(CoreResultButton.testKey));
     await tester.pump();
     expect(bloc.state.valueText, '1,650');
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .suggestionAreaPlaceholder,
+      isNot(l10n.calculatorNotePercentAddsOfTheTotal('10%', '1,500', '150')),
+      reason: 'the tip closes on the next key',
+    );
   });
 
   testWidgets('a swipe on the function-key strip selects the next group', (

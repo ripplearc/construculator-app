@@ -569,11 +569,15 @@ class CalculatorState extends Equatable {
   /// `null`: a warning first — a pitch, a slope or a Sides count the rules
   /// cannot use (Sections 5.4 and 1.8; the Sides note only once the count
   /// is finished, or holds a 0 or a decimal part), a prefix trig chip its
-  /// function cannot answer — then
-  /// the D:M:S key that changed nothing on a pitch answer, which the next
-  /// key closes.
+  /// function cannot answer — then the D:M:S key that changed nothing on a
+  /// pitch answer, which the next key closes, then the tip of a percent just
+  /// pressed on + or − (CA-1376). An open bracket silences the suggestions
+  /// but not that tip, which is of the bracket's own total (decision tree
+  /// row 393).
   CalculatorStripNote? get stripNote {
-    if (_stripIsSilent) return null;
+    if (_stripIsSilent) {
+      return tape.openBracket != null ? _percentTip : null;
+    }
     switch (const DeterministicRules().refusalFor(
       tape.namedValues,
       sidesStillTyped: tape.beingTyped?.key == PlainNumberKeys.sides,
@@ -599,6 +603,55 @@ class CalculatorState extends Equatable {
     }
     if (refusal == const TapeRefused(TapeRefusal.pitchHasNoDms)) {
       return const CalculatorPitchHasNoDmsNote();
+    }
+    return _percentTip;
+  }
+
+  /// The tip of a percent just pressed on + or −, or `null`: the chain the
+  /// percent sits in (the open bracket's, or the tape's) ends on it, and no
+  /// key has been refused since (Section 1.8: it closes on the next key).
+  CalculatorPercentTipNote? get _percentTip {
+    if (refusal != null) return null;
+    final openIndex = tape.openBracketIndex;
+    final chain = switch (openIndex) {
+      final index? => switch (tape.chips[index]) {
+        BracketChip(:final inner) => inner,
+        _ => const <TapeChip>[],
+      },
+      null => tape.chips,
+    };
+    final (operator, percent) = switch (chain.lastOrNull) {
+      ValueChip(:final operator, isPercent: true, :final entry) => (
+        operator,
+        '${entry.text}%',
+      ),
+      final BracketChip bracket when bracket.isPercent => (
+        bracket.operator,
+        _valueTextOf(bracket).substring(_lead(bracket.operator).length),
+      ),
+      _ => (null, ''),
+    };
+    if (operator != Operator.add && operator != Operator.subtract) return null;
+    final evaluator = tape.evaluator;
+    final before = evaluator.fold(chain.sublist(0, chain.length - 1));
+    final after = evaluator.fold(chain);
+    if ((before, after) case (
+      ChainValue(value: final total),
+      ChainValue(value: final withPercent),
+    )) {
+      final adds = operator == Operator.add;
+      final amount = adds
+          ? evaluator.arithmetic.combine(withPercent, Operator.subtract, total)
+          : evaluator.arithmetic.combine(total, Operator.subtract, withPercent);
+      if (amount case ArithmeticValue(:final value)) {
+        return CalculatorPercentTipNote(
+          addsToTheTotal: adds,
+          percent: percent,
+          total: tape.formatter.format(total),
+          amount: tape.formatter.format(_tipAmount(value, total)),
+          ofTheBracket: openIndex != null,
+        );
+      }
     }
     return null;
   }
@@ -719,6 +772,21 @@ class CalculatorState extends Equatable {
   static String _lead(Operator? operator) => operator?.symbol ?? '';
 
   static String _percentSign(bool isPercent) => isPercent ? '%' : '';
+
+  // What a percent of a length total is worth, as the percent tip writes
+  // it: in inches under a foot of a total in feet (decision tree row 390:
+  // 5ft + 10 % "Adds 10% of the total 5ft = 6in"), else in the total's
+  // own unit (10ft + 10 % adds 1ft).
+  static Quantity _tipAmount(Quantity amount, Quantity total) => switch ((
+    amount,
+    total,
+  )) {
+    (Length(:final ticks), Length(unit: Unit.foot || Unit.footInch))
+        when ticks.abs() < Length.ticksPerFoot =>
+      Length(ticks, unit: Unit.inch),
+    (Length(:final ticks), Length(:final unit)) => Length(ticks, unit: unit),
+    _ => amount,
+  };
 
   @override
   List<Object?> get props => [

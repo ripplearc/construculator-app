@@ -128,7 +128,39 @@
         <regex pattern="CalculatorSlopeOutOfRangeNote\(\) =&gt; const CalculatorRangeWarningToast\(\s*CalculatorRangeWarning\.slopeAboveZero," dotAll="true" id="calculator_state.toast.slope_named_wrong">
             <mutation text="CalculatorSlopeOutOfRangeNote() =&gt; const CalculatorRangeWarningToast(CalculatorRangeWarning.flatPitchHasNoRun,"/>
         </regex>
-        <!-- CA-1376: the chip loses its % -->
+        <!-- CA-1376 (Section 1.8, "A percent tip"; Section 7, "Percent"):
+             the tip is silent, outlives the next key, shows after × or ÷,
+             names the wrong sign, side or amount, or the chip loses its % -->
+        <regex pattern="return _percentTip;\s*\}" dotAll="true" id="calculator_state.tip.silent">
+            <mutation text="return null; }"/>
+        </regex>
+        <regex pattern="return tape\.openBracket != null \? _percentTip : null;" dotAll="true" id="calculator_state.tip.silent_in_a_bracket">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="if \(refusal != null\) return null;\s*final openIndex = tape\.openBracketIndex;" dotAll="true" id="calculator_state.tip.outlives_a_refusal">
+            <mutation text="final openIndex = tape.openBracketIndex;"/>
+        </regex>
+        <regex pattern="if \(operator != Operator\.add &amp;&amp; operator != Operator\.subtract\) return null;" dotAll="true" id="calculator_state.tip.after_times_or_divide">
+            <mutation text="if (operator != Operator.add) return null;"/>
+            <mutation text="if (operator != Operator.subtract) return null;"/>
+            <mutation text="if (false) return null;"/>
+        </regex>
+        <regex pattern="final adds = operator == Operator\.add;" dotAll="true" id="calculator_state.tip.sign">
+            <mutation text="final adds = true;"/>
+        </regex>
+        <regex pattern="\? evaluator\.arithmetic\.combine\(withPercent, Operator\.subtract, total\)" dotAll="true" id="calculator_state.tip.amount_negated">
+            <mutation text="? evaluator.arithmetic.combine(total, Operator.subtract, withPercent)"/>
+        </regex>
+        <regex pattern="ofTheBracket: openIndex != null," dotAll="true" id="calculator_state.tip.of_the_total_in_a_bracket">
+            <mutation text="ofTheBracket: false,"/>
+        </regex>
+        <regex pattern="when ticks\.abs\(\) &lt; Length\.ticksPerFoot =&gt;" dotAll="true" id="calculator_state.tip.inches_boundary">
+            <mutation text="when ticks.abs() &lt;= Length.ticksPerFoot =&gt;"/>
+            <mutation text="when true =&gt;"/>
+        </regex>
+        <regex pattern="\(Length\(:final ticks\), Length\(:final unit\)\) =&gt; Length\(ticks, unit: unit\)," dotAll="true" id="calculator_state.tip.amount_in_its_own_unit">
+            <mutation text="(Length(:final ticks), Length(:final unit)) =&gt; amount,"/>
+        </regex>
         <regex pattern="\$\{_percentSign\(chip\.isPercent\)\}'," dotAll="true" id="calculator_state.chip.no_percent_sign">
             <mutation text="',"/>
         </regex>

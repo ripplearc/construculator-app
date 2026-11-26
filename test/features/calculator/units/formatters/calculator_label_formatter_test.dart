@@ -296,6 +296,50 @@ void main() {
       expect(labels.toastBody(three), contains('and 2 more removed'));
     });
 
+    test('CA-1376: the percent tip says what it adds or takes off, of the '
+        'total or of the bracket, in full up to 52 characters and in its '
+        'short form past them (Section 1.8)', () {
+      CalculatorPercentTipNote tip({
+        bool adds = true,
+        bool bracket = false,
+        String total = '1,500',
+        String amount = '150',
+      }) => CalculatorPercentTipNote(
+        addsToTheTotal: adds,
+        percent: '10%',
+        total: total,
+        amount: amount,
+        ofTheBracket: bracket,
+      );
+
+      expect(labels.stripText(tip()), 'Adds 10% of the total 1,500 = 150.');
+      expect(
+        labels.stripText(tip(bracket: true)),
+        'Adds 10% of the bracket 1,500 = 150.',
+      );
+      expect(
+        labels.stripText(tip(adds: false)),
+        'Takes off 10% of the total 1,500 = 150.',
+      );
+      expect(
+        labels.stripText(tip(adds: false, bracket: true)),
+        'Takes off 10% of the bracket 1,500 = 150.',
+      );
+      final atTheLimit = tip(total: '12345678901234', amount: '123456789012');
+      expect(labels.stripText(atTheLimit), hasLength(52));
+      expect(labels.stripText(atTheLimit), startsWith('Adds 10% of the total'));
+      expect(
+        labels.stripText(tip(total: '123456789012345', amount: '123456789012')),
+        'Adds 10% of the total so far.',
+      );
+      expect(
+        labels.stripText(
+          tip(adds: false, total: '1234567890', amount: '123456789012'),
+        ),
+        'Takes off 10% of the total so far.',
+      );
+    });
+
     test('CA-1376: each percent Alert reads in the words of rule 4.12', () {
       final words = {
         const CalculatorPercentNeedsANumberToast(operator: '−'): (
