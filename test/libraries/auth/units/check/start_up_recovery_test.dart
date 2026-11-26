@@ -1,19 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:construculator/libraries/auth/check/start_up_recovery.dart';
 import 'package:construculator/libraries/auth/queue/auth_event_queue.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/testing/fake_synced_data_service.dart';
 import 'package:construculator/libraries/storage/local_data_delete_service.dart';
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _savedSessionOf(String userId) => json.encode({
-  'access_token': 'a-$userId',
+  'access_token': 'fake-access-token-$userId',
   'token_type': 'bearer',
   'refresh_token': 'r-$userId',
   'user': {'id': userId},
@@ -26,13 +29,13 @@ void main() {
   late AuthEventQueue queue;
   late StartUpRecovery recovery;
 
-  Future<void> runRecovery() async {
+  Future<void> runRecovery({bool isFirstAttempt = true}) async {
     Object? error;
     await queue.enqueue(
       eventNumber: queue.numberNextEvent(),
       item: (run) async {
         try {
-          await recovery.run(run);
+          await recovery.run(run, isFirstAttempt: isFirstAttempt);
         } catch (e) {
           error = e;
           rethrow;
@@ -47,6 +50,7 @@ void main() {
     ownerRecords = FakeOwnerRecordStorageService();
     syncedData = FakeSyncedDataService();
     wrapper = FakeSupabaseWrapper(clock: FakeClockImpl());
+    wrapper.setCurrentUser(FakeUser(id: 'user-a', createdAt: '2026-01-01'));
     // ignore: no_direct_instantiation, reason: unit test builds the queue from its settings
     queue = AuthEventQueue(
       actionTimeout: const Duration(milliseconds: 50),
@@ -64,6 +68,7 @@ void main() {
         registrations: const [],
       ),
       wrapper: wrapper,
+      removalPollInterval: Duration.zero,
     );
   });
 
@@ -115,14 +120,173 @@ void main() {
         expect(ownerRecords.record, isNull);
       });
 
-      test('with a saved session it deletes nothing', () async {
+      test('with the current session saved it signs out, then deletes and '
+          'removes the record', () async {
         wrapper.seedSavedSession(_savedSessionOf('user-a'));
 
         await runRecovery();
 
+        expect(wrapper.getMethodCallsFor('signOut'), hasLength(1));
+        expect(wrapper.currentSession, isNull);
+        expect(syncedData.deleteCallCount, 1);
+        expect(ownerRecords.record, isNull);
+      });
+
+      test('waits until Supabase has removed the saved session before it '
+          'deletes', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.savedSessionReadsAfterSignOutBeforeRemoval = 3;
+        var readsWhenDeleteStarted = 0;
+        ownerRecords.afterWrite = (_) {
+          ownerRecords.afterWrite = null;
+          readsWhenDeleteStarted = wrapper
+              .getMethodCallsFor('readSavedSession')
+              .length;
+        };
+
+        await runRecovery();
+
+        expect(readsWhenDeleteStarted, 1 + 3 + 1);
+        expect(syncedData.deleteCallCount, 1);
+      });
+
+      test('with a saved session that is not the current one it signs out '
+          'nobody and deletes nothing', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.setCurrentUser(FakeUser(id: 'user-b', createdAt: '2026-01-01'));
+
+        await runRecovery();
+
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
         expect(syncedData.deleteCallCount, 0);
         expect(ownerRecords.writes, isEmpty);
       });
+
+      test('with a saved session and no current session it signs out nobody '
+          'and deletes nothing', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.setCurrentUser(null);
+
+        await runRecovery();
+
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test('with a saved value that is not a session it deletes without a '
+          'sign-out, because that value is no session', () async {
+        wrapper.seedSavedSession('{broken');
+
+        await runRecovery();
+
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+        expect(syncedData.deleteCallCount, 1);
+        expect(ownerRecords.record, isNull);
+      });
+
+      test('with a saved value that is not a session and no current session '
+          'it deletes without a sign-out', () async {
+        wrapper.seedSavedSession('{broken');
+        wrapper.setCurrentUser(null);
+
+        await runRecovery();
+
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+        expect(syncedData.deleteCallCount, 1);
+      });
+
+      test('a retry signs out nobody and deletes nothing, even when the saved '
+          'session is the current one', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+
+        await runRecovery(isFirstAttempt: false);
+
+        expect(wrapper.getMethodCallsFor('signOut'), isEmpty);
+        expect(syncedData.deleteCallCount, 0);
+        expect(
+          ownerRecords.record?.pendingDelete,
+          const PendingDelete.logoutOrNoOwnerRecord(),
+        );
+      });
+
+      test('finishes the delete when the sign-out call fails after the '
+          'session ended', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.shouldThrowAfterSignOutEndedSession = true;
+
+        await runRecovery();
+
+        expect(wrapper.getMethodCallsFor('signOut'), hasLength(1));
+        expect(syncedData.deleteCallCount, 1);
+        expect(ownerRecords.record, isNull);
+      });
+
+      test('a sign-out that runs past the timeout fails the run instead of '
+          'being taken for a finished one', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.signOutGate = Completer<void>();
+
+        await expectLater(runRecovery(), throwsA(isA<QueueTimeoutException>()));
+
+        expect(syncedData.deleteCallCount, 0);
+        wrapper.signOutGate?.complete();
+      });
+
+      test(
+        'a retry finishes the delete that its own sign-out left behind',
+        () async {
+          wrapper.seedSavedSession(_savedSessionOf('user-a'));
+          wrapper.savedSessionReadsAfterSignOutBeforeRemoval = 5;
+          wrapper.afterReadSavedSession = () {
+            wrapper.afterReadSavedSession = null;
+            wrapper.shouldFailReadSavedSession = true;
+          };
+          await expectLater(
+            runRecovery(),
+            throwsA(isA<SavedSessionUnreadableException>()),
+          );
+          wrapper.shouldFailReadSavedSession = false;
+
+          await runRecovery(isFirstAttempt: false);
+
+          expect(wrapper.getMethodCallsFor('signOut'), hasLength(1));
+          expect(syncedData.deleteCallCount, 1);
+          expect(ownerRecords.record, isNull);
+        },
+      );
+
+      test('stops waiting for the removal and fails when the saved session '
+          'cannot be read', () async {
+        wrapper.seedSavedSession(_savedSessionOf('user-a'));
+        wrapper.savedSessionReadsAfterSignOutBeforeRemoval = 5;
+        wrapper.afterReadSavedSession = () {
+          wrapper.afterReadSavedSession = null;
+          wrapper.shouldFailReadSavedSession = true;
+        };
+
+        await expectLater(
+          runRecovery(),
+          throwsA(isA<SavedSessionUnreadableException>()),
+        );
+
+        expect(syncedData.deleteCallCount, 0);
+      });
+
+      test(
+        'keeps the flag and deletes nothing when the sign-out fails',
+        () async {
+          wrapper.seedSavedSession(_savedSessionOf('user-a'));
+          wrapper.shouldThrowOnSignOut = true;
+
+          await expectLater(runRecovery(), throwsA(isA<ServerException>()));
+
+          expect(syncedData.deleteCallCount, 0);
+          expect(
+            ownerRecords.record?.pendingDelete,
+            const PendingDelete.logoutOrNoOwnerRecord(),
+          );
+        },
+      );
 
       test('with a failed session read it deletes nothing and fails', () async {
         wrapper.shouldFailReadSavedSession = true;

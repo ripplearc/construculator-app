@@ -19,23 +19,30 @@ final class SavedSessionFound extends SavedSessionRead with Equatable {
   @override
   List<Object?> get props => [value];
 
-  /// Whether Supabase can load [value] as a session.
+  @override
+  bool? get stringify => false;
+
+  /// Whether Supabase can load [value] as a session. Any error while parsing
+  /// counts as "not a session", because Supabase keeps a value that throws
+  /// anything while loading.
   ///
   /// This is Supabase's own test: the text is JSON and holds an access token.
   /// A value that fails it gives a first auth event with no session, and
   /// Supabase leaves the value saved.
-  bool get isReadableSession => userId != null;
+  bool get isReadableSession => _session != null;
 
   /// The user the saved session belongs to, or null when [isReadableSession]
   /// is false.
-  String? get userId {
+  String? get userId => _session?.user.id;
+
+  /// The access token of the saved session, or null when [isReadableSession]
+  /// is false.
+  String? get accessToken => _session?.accessToken;
+
+  supabase.Session? get _session {
     try {
-      final decoded = json.decode(value);
-      if (decoded is! Map<String, dynamic>) return null;
-      return supabase.Session.fromJson(decoded)?.user.id;
-    } on FormatException {
-      return null;
-    } on TypeError {
+      return supabase.Session.fromJson(json.decode(value));
+    } on Object {
       return null;
     }
   }

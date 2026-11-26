@@ -403,6 +403,72 @@ void main() {
           );
         });
 
+        test('keeps returning the old session for the configured number of '
+            'reads after a sign-out', () async {
+          fakeWrapper.seedSavedSession('{"access_token":"a"}');
+          fakeWrapper.savedSessionReadsAfterSignOutBeforeRemoval = 2;
+
+          await fakeWrapper.signOut();
+
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionFound>(),
+          );
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionFound>(),
+          );
+          expect(
+            await fakeWrapper.readSavedSession(),
+            isA<SavedSessionAbsent>(),
+          );
+        });
+
+        test('calls afterReadSavedSession after every read', () async {
+          var calls = 0;
+          fakeWrapper.afterReadSavedSession = () => calls++;
+
+          await fakeWrapper.readSavedSession();
+          await fakeWrapper.readSavedSession();
+
+          expect(calls, 2);
+        });
+
+        test('a sign-out set to fail after ending the session removes the '
+            'session and then throws', () async {
+          fakeWrapper.setCurrentUser(
+            FakeUser(id: 'u1', createdAt: '2026-01-01'),
+          );
+          fakeWrapper.shouldThrowAfterSignOutEndedSession = true;
+
+          await expectLater(fakeWrapper.signOut(), throwsA(anything));
+
+          expect(fakeWrapper.currentSession, isNull);
+        });
+
+        test(
+          'a sign-out with a gate ends the session at once and finishes only '
+          'when the gate completes',
+          () async {
+            fakeWrapper.setCurrentUser(
+              FakeUser(id: 'u1', createdAt: '2026-01-01'),
+            );
+            final gate = Completer<void>();
+            fakeWrapper.signOutGate = gate;
+            var finished = false;
+
+            final signingOut = fakeWrapper.signOut().then(
+              (_) => finished = true,
+            );
+
+            expect(fakeWrapper.currentSession, isNull);
+            expect(finished, isFalse);
+            gate.complete();
+            await signingOut;
+            expect(finished, isTrue);
+          },
+        );
+
         test('reset removes the saved session and the failure', () async {
           fakeWrapper.seedSavedSession('{"access_token":"a"}');
           fakeWrapper.shouldFailReadSavedSession = true;

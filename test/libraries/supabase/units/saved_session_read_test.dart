@@ -58,6 +58,33 @@ void main() {
     });
   });
 
+  group('SavedSessionFound with a value Supabase also fails to load', () {
+    test('is not readable when the user holds a field of the wrong type', () {
+      const value =
+          '{"access_token":"a","token_type":"bearer",'
+          '"user":{"id":"u","identities":"abc"}}';
+
+      expect(const SavedSessionFound(value).isReadableSession, isFalse);
+    });
+
+    test('does not print the saved text, which holds the tokens', () {
+      expect(
+        '${const SavedSessionFound('secret-token')}',
+        isNot(contains('secret')),
+      );
+    });
+  });
+
+  group('SavedSessionFound.accessToken', () {
+    test('is the access token of the saved session', () {
+      expect(SavedSessionFound(_session()).accessToken, 'a1');
+    });
+
+    test('is null when the value is not a readable session', () {
+      expect(const SavedSessionFound('{broken').accessToken, isNull);
+    });
+  });
+
   group('SavedSessionFound.userId', () {
     test('is the id of the user in the session', () {
       expect(SavedSessionFound(_session()).userId, 'u1');
