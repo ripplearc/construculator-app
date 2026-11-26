@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- AUTH EVENT SERVICE RECOVERY WIRING MUTATION TESTING (when recovery runs, retries and settles) -->
+
+    <files>
+        <file>lib/libraries/auth/check/auth_event_service.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*///.*$" dotAll="false"/>
+        <regex pattern="^\s*//.*$" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="bool _isRecoveryPending = true;" dotAll="true" id="recovery.pending_initial_false">
+            <mutation text="bool _isRecoveryPending = false;"/>
+        </regex>
+        <regex pattern="_isRecoveryPending = false;" dotAll="true" id="recovery.pending_never_cleared">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isRecoveryPending\) \{" dotAll="true" id="recovery.retry_guard_inverted">
+            <mutation text="if (!_isRecoveryPending) {"/>
+        </regex>
+        <regex pattern="final isFirstAttempt = !_hasAttemptedRecovery;" dotAll="true" id="recovery.every_attempt_is_first">
+            <mutation text="final isFirstAttempt = true;"/>
+        </regex>
+        <regex pattern="_hasAttemptedRecovery = true;" dotAll="true" id="recovery.attempt_not_recorded">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_recoveryFoundOwnerRecordUnreadable = true;" dotAll="true" id="recovery.owner_unreadable_not_recorded">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="signedInUserId == null &amp;&amp; !_recoveryFoundOwnerRecordUnreadable" dotAll="true" id="recovery.owner_unreadable_ignored_in_settle">
+            <mutation text="signedInUserId == null"/>
+        </regex>
+        <regex pattern="if \(outcome == QueueOutcome\.completed\) return;" dotAll="true" id="recovery.settles_on_success">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="isNewestEvent: _queue\.newestEventNumber == 0," dotAll="true" id="recovery.settle_ignores_waiting_event">
+            <mutation text="isNewestEvent: true,"/>
+        </regex>
+        <regex pattern="isNewestEvent: _queue\.newestEventNumber == 0," dotAll="true" id="recovery.settle_only_with_waiting_event">
+            <mutation text="isNewestEvent: _queue.newestEventNumber != 0,"/>
+        </regex>
+        <regex pattern="if \(event != supabase\.AuthChangeEvent\.initialSession\) return false;" dotAll="true" id="first_event.any_event_counts">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(_isFirstEventWithoutSession\(event\)\) \{" dotAll="true" id="first_event.retry_block_guard_inverted">
+            <mutation text="if (!_isFirstEventWithoutSession(event)) {"/>
+        </regex>
+        <regex pattern="event\.session == null &amp;&amp;" dotAll="true" id="first_event.needs_a_session">
+            <mutation text="event.session != null &amp;&amp;"/>
+        </regex>
+        <regex pattern="if \(_isBlockedBySavedSessionWithoutSession\) \{" dotAll="true" id="first_event.block_check_inverted">
+            <mutation text="if (!_isBlockedBySavedSessionWithoutSession) {"/>
+        </regex>
+        <regex pattern="(?&lt;!bool )_isBlockedBySavedSessionWithoutSession = false;" dotAll="true" id="first_event.block_never_cleared">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(await _removeUnreadableSavedSessionOnFirstEvent\(run, event\.event\)\) \{" dotAll="true" id="first_event.removal_result_ignored">
+            <mutation text="if (!await _removeUnreadableSavedSessionOnFirstEvent(run, event.event)) {"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="auth_event_service" expected-return="0">flutter test test/libraries/auth/units/check/auth_event_service_test.dart</command>
+    </commands>
+</mutations>
