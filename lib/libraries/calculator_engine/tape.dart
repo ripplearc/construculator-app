@@ -298,6 +298,21 @@ enum TapeRefusal {
   /// result chip to see where it came from"), an error chip is repaired
   /// with ⌫ (rule 4.12), and a tap off the tape names no chip.
   chipCannotBeEdited,
+
+  /// The Drywal or Msnry key on an area of zero or less ("Area must be
+  /// more than zero" / "This area has no count…"; Section 21.3, "Keys that
+  /// must also answer"; decision tree rows 457, 458 and 460): the display
+  /// keeps the area and the chip keeps its name.
+  areaMustBeMoreThanZero,
+
+  /// The Drywal key on an area while the sheet-size store holds no size
+  /// ("No sheet sizes" / "Drag the keypad down and tap + Add size.";
+  /// Section 1.4: "A store may be empty"; decision tree row 411).
+  noSheetSizes,
+
+  /// The Msnry key on an area while the masonry store holds no size ("No
+  /// piece sizes", the same pattern; Section 1.4).
+  noPieceSizes,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -659,15 +674,31 @@ class Tape extends Equatable {
   /// - with no area yet, the one Area the named values make lands under
   ///   the name, no = needed (walkthrough 19.2, step 10).
   ///
+  /// An area of zero or less has no count, and the key is refused with
+  /// [TapeRefusal.areaMustBeMoreThanZero]; with [storeIsEmpty] an area the
+  /// trade has no size to count by is refused with
+  /// [TapeRefusal.noSheetSizes] or [TapeRefusal.noPieceSizes]. Refused, the
+  /// tape stays as it was.
+  ///
   /// `null` when the key has nothing to name: no area, more than one the
   /// named values could mean (a room has a floor and walls), a chip
   /// reopened or a bracket open. The caller answers those.
-  TapeOutcome? pressTradeKey(Trade trade) {
+  TapeOutcome? pressTradeKey(Trade trade, {bool storeIsEmpty = false}) {
     if (editing != null || openBracket != null) return null;
+    final area = _areaATradeKeyNames;
+    if (area == null) return null;
+    if (!area.squareTicks.isFinite || area.squareTicks <= 0) {
+      return const TapeRefused(TapeRefusal.areaMustBeMoreThanZero);
+    }
+    if (storeIsEmpty) {
+      return TapeRefused(switch (trade) {
+        Trade.drywall => TapeRefusal.noSheetSizes,
+        Trade.masonry => TapeRefusal.noPieceSizes,
+      });
+    }
     final named = trade.coveredAreaKey;
-    final shown = beingTyped ?? chips.lastOrNull;
-    if (shown case ResultChip(value: Area())) {
-      return _replaceLastChip(
+    return switch (beingTyped ?? chips.lastOrNull) {
+      final ResultChip shown => _replaceLastChip(
         ResultChip(
           key: named,
           value: shown.value,
@@ -675,18 +706,30 @@ class Tape extends Equatable {
           readIn: shown.readIn,
           namedFrom: shown.namedFrom ?? shown.key,
         ),
-      );
-    }
+      ),
+      ValueChip(:final value) when value(parser) is Area => landAnswer(
+        named,
+        area,
+      ),
+      _ => _landedNaming(named, area, DeterministicRules.areaKey),
+    };
+  }
+
+  // The area a trade key would name: any area result the tape ends on, a
+  // typed area no operator leads, or the one Area the named values make.
+  Area? get _areaATradeKeyNames {
+    final shown = beingTyped ?? chips.lastOrNull;
+    if (shown case ResultChip(value: final Area area)) return area;
     if (shown case ValueChip(operator: null)) {
-      if (shown.value(parser) case final Area area) {
-        return landAnswer(named, area);
-      }
+      if (shown.value(parser) case final Area area) return area;
       final areas = [
         for (final answer in const DeterministicRules().answersFor(namedValues))
           if (answer.value is Area) answer,
       ];
-      if (areas case [Answer(key: DeterministicRules.areaKey, :final value)]) {
-        return _landedNaming(named, value, DeterministicRules.areaKey);
+      if (areas case [
+        Answer(key: DeterministicRules.areaKey, value: final Area area),
+      ]) {
+        return area;
       }
     }
     return null;

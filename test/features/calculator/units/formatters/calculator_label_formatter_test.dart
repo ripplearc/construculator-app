@@ -454,6 +454,28 @@ void main() {
       expect(labels.toastBody(toast), 'This size was not added. Try again.');
     });
 
+    test('a trade key that cannot count says why, in the doc\'s words: '
+        '"Area must be more than zero", "No sheet sizes" and "No piece '
+        'sizes" (CA-1478; Sections 21.3 and 1.4)', () {
+      const zero = CalculatorAreaMoreThanZeroToast();
+      const noSheets = CalculatorNoSizesToast(Trade.drywall);
+      const noPieces = CalculatorNoSizesToast(Trade.masonry);
+
+      expect(labels.toastTitle(zero), 'Area must be more than zero');
+      expect(
+        labels.toastBody(zero),
+        'This area has no count. Tap a chip to change a number, or press C '
+        'to start a new entry.',
+      );
+      expect(labels.toastTitle(noSheets), 'No sheet sizes');
+      expect(labels.toastTitle(noPieces), 'No piece sizes');
+      expect(
+        labels.toastBody(noSheets),
+        'Drag the keypad down and tap + Add size.',
+      );
+      expect(labels.toastBody(noPieces), labels.toastBody(noSheets));
+    });
+
     test('"<Key> takes a length, not <kind>" names the key and the kind of '
         'the unit pressed, and its body the key to remove, then Feet or Inch '
         '(B2; product decision of 13 November 2026)', () {

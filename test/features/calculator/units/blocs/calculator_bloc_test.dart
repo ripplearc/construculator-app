@@ -5622,6 +5622,180 @@ void main() {
         },
       );
 
+      group('CA-1478: the Drywal key says why it cannot count (Section '
+          '21.3, "Keys that must also answer"; Section 1.4, "A store may be '
+          'empty")', () {
+        const wallThenEquals = [
+          CalculatorKeySelected('Length'),
+          CalculatorDigitPressed('2'),
+          CalculatorDigitPressed('0'),
+          CalculatorUnitSelected(Unit.foot),
+          CalculatorKeySelected('Height'),
+          CalculatorDigitPressed('9'),
+          CalculatorUnitSelected(Unit.foot),
+          CalculatorEqualsPressed(),
+        ];
+
+        Future<void> deleteEverySheetSize() async {
+          final sheets = await stores
+              .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+              .first;
+          for (final sheet in sheets) {
+            await stores.deleteSize(sheet);
+          }
+        }
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'Length 20 Feet, Height 9 Feet, =, then Drywal with no sheet size '
+          'saved shows "No sheet sizes", and the Area keeps its name '
+          '(acceptance criterion 2; row 411)',
+          build: () => bloc,
+          act: (bloc) async {
+            await deleteEverySheetSize();
+            wallThenEquals.forEach(bloc.add);
+            await bloc.stream.firstWhere(
+              (state) => state.stores.masonrySizes.isNotEmpty,
+            );
+            final told = bloc.stream.firstWhere((state) => state.toast != null);
+            bloc.add(const CalculatorKeySelected('Drywal'));
+            await told;
+          },
+          verify: (bloc) {
+            expect(
+              bloc.state.toast,
+              const CalculatorNoSizesToast(Trade.drywall),
+            );
+            expect(bloc.state.toastsRaised, 1);
+            expect(
+              [
+                for (final chip in bloc.state.chipsList)
+                  '${chip.label}${chip.value}',
+              ],
+              ['Length20ft', 'Height9ft', 'Area180ft²'],
+              reason: 'the tape is as = left it',
+            );
+            expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a store that holds sizes raises no Alert: Drywal on a typed area '
+          'names it, pressed straight after the area too',
+          build: () => bloc,
+          act: (bloc) async {
+            final named = bloc.stream.firstWhere(
+              (state) => state.labelKeyId == Trade.drywall.coveredAreaKey,
+            );
+            bloc
+              ..add(const CalculatorDigitPressed('1'))
+              ..add(const CalculatorDigitPressed('0'))
+              ..add(const CalculatorDigitPressed('0'))
+              ..add(const CalculatorUnitSelected(Unit.foot))
+              ..add(const CalculatorUnitSelected(Unit.foot))
+              ..add(const CalculatorKeySelected('Drywal'));
+            await named;
+          },
+          verify: (bloc) {
+            expect(bloc.state.toast, isNull);
+            expect(bloc.state.tape, pressed('1 0 0 ft ft [Drywal]'));
+          },
+        );
+
+        for (final (how, keys) in const [
+          ('two sides', '[Length] 2 0 ft [Height] 9 ft'),
+          ('a Calc that is an area', '1 2 ft × 1 5 ft ='),
+          ('a typed area, before the store answered', '1 0 0 ft ft'),
+        ]) {
+          blocTest<CalculatorBloc, CalculatorState>(
+            'with every sheet size deleted, Drywal on $how is refused with '
+            '"No sheet sizes", watch or no watch: the store is read once '
+            'for it, and the tape does not change',
+            build: () => bloc,
+            act: (bloc) async {
+              await deleteEverySheetSize();
+              final told = bloc.stream.firstWhere(
+                (state) => state.toast != null,
+              );
+              for (final key in '$keys [Drywal]'.split(' ')) {
+                bloc.add(switch (key) {
+                  'ft' => const CalculatorUnitSelected(Unit.foot),
+                  '×' => const CalculatorOperatorPressed(Operator.multiply),
+                  '=' => const CalculatorEqualsPressed(),
+                  _ when key.startsWith('[') => CalculatorKeySelected(
+                    key.substring(1, key.length - 1),
+                  ),
+                  _ => CalculatorDigitPressed(key),
+                });
+              }
+              await told;
+            },
+            verify: (bloc) {
+              expect(
+                bloc.state.toast,
+                const CalculatorNoSizesToast(Trade.drywall),
+              );
+              expect(bloc.state.tape, pressed(keys));
+            },
+          );
+        }
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          '( 0 Feet − 12 Feet ) × 10 Feet = then Drywal is refused with '
+          '"Area must be more than zero": the display keeps the area and '
+          'the chip stays Calc (row 457)',
+          build: () => bloc,
+          act: (bloc) async {
+            final told = bloc.stream.firstWhere((state) => state.toast != null);
+            bloc
+              ..add(const CalculatorControlActioned(ControlAction.paren))
+              ..add(const CalculatorDigitPressed('0'))
+              ..add(const CalculatorUnitSelected(Unit.foot))
+              ..add(const CalculatorOperatorPressed(Operator.subtract))
+              ..add(const CalculatorDigitPressed('1'))
+              ..add(const CalculatorDigitPressed('2'))
+              ..add(const CalculatorUnitSelected(Unit.foot))
+              ..add(const CalculatorControlActioned(ControlAction.paren))
+              ..add(const CalculatorOperatorPressed(Operator.multiply))
+              ..add(const CalculatorDigitPressed('1'))
+              ..add(const CalculatorDigitPressed('0'))
+              ..add(const CalculatorUnitSelected(Unit.foot))
+              ..add(const CalculatorEqualsPressed())
+              ..add(const CalculatorKeySelected('Drywal'));
+            await told;
+          },
+          verify: (bloc) {
+            expect(bloc.state.toast, const CalculatorAreaMoreThanZeroToast());
+            expect(bloc.state.labelKeyId, Tape.calcKey);
+            expect(bloc.state.tape, pressed('( 0 ft − 1 2 ft ( × 1 0 ft ='));
+          },
+        );
+
+        test('each refusal of a trade key has its own Alert, the empty '
+            'store named for the trade', () {
+          CalculatorToast? toastOf(TapeRefusal reason) =>
+              const CalculatorState()
+                  .copyWith(refusal: () => TapeRefused(reason))
+                  .toast;
+
+          expect(
+            toastOf(TapeRefusal.areaMustBeMoreThanZero),
+            const CalculatorAreaMoreThanZeroToast(),
+          );
+          expect(
+            toastOf(TapeRefusal.noSheetSizes),
+            const CalculatorNoSizesToast(Trade.drywall),
+          );
+          expect(
+            toastOf(TapeRefusal.noPieceSizes),
+            const CalculatorNoSizesToast(Trade.masonry),
+          );
+          expect(
+            const CalculatorNoSizesToast(Trade.drywall),
+            isNot(const CalculatorNoSizesToast(Trade.masonry)),
+          );
+        });
+      });
+
       for (final keys in [
         '[Length] 3 ft',
         '× 2 =',

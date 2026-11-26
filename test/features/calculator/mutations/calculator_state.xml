@@ -224,6 +224,20 @@
         <regex pattern="\[sizeEntryFaces\(size\.width\), sizeEntryFaces\(size\.height\)\]," dotAll="true" id="calculator_state.size_pill.fields_swapped">
             <mutation text="[sizeEntryFaces(size.height), sizeEntryFaces(size.width)],"/>
         </regex>
+
+        <!-- RULES (CA-1478): a trade key's refusal raises no Alert, or the
+             empty store is named for the other trade -->
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.areaMustBeMoreThanZero\), _, _\) =&gt;\s*const CalculatorAreaMoreThanZeroToast\(\)," dotAll="true" id="calculator_state.toast.area_of_zero_silent">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.noSheetSizes\), _, _\) =&gt;\s*const CalculatorNoSizesToast\(Trade\.drywall\)," dotAll="true" id="calculator_state.toast.no_sheet_sizes">
+            <mutation text=""/>
+            <mutation text="(TapeRefused(reason: TapeRefusal.noSheetSizes), _, _) =&gt; const CalculatorNoSizesToast(Trade.masonry),"/>
+        </regex>
+        <regex pattern="\(TapeRefused\(reason: TapeRefusal\.noPieceSizes\), _, _\) =&gt;\s*const CalculatorNoSizesToast\(Trade\.masonry\)," dotAll="true" id="calculator_state.toast.no_piece_sizes">
+            <mutation text=""/>
+            <mutation text="(TapeRefused(reason: TapeRefusal.noPieceSizes), _, _) =&gt; const CalculatorNoSizesToast(Trade.drywall),"/>
+        </regex>
     </rules>
 
     <commands>

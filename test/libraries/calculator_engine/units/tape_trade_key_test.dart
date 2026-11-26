@@ -37,6 +37,7 @@ void main() {
         ),
         '×' => current.pressOperator(Operator.multiply),
         '+' => current.pressOperator(Operator.add),
+        '−' => current.pressOperator(Operator.subtract),
         '=' => current.pressEquals(),
         '(' => current.pressBracket(),
         '✕' => current.clearActive(),
@@ -233,6 +234,63 @@ void main() {
         expect(tape.pressTradeKey(Trade.drywall), isNull, reason: why);
         expect(tape.pressTradeKey(Trade.masonry), isNull, reason: why);
       }
+    });
+  });
+
+  group('Tape.pressTradeKey says why it cannot count (CA-1478; Section '
+      '21.3, "Keys that must also answer"; Section 1.4, "A store may be '
+      'empty")', () {
+    test('an area of zero or less is refused with "Area must be more than '
+        'zero" by either key: a negative Calc, a zero Calc and a typed 0ft² '
+        '(rows 457, 458, 460)', () {
+      for (final keys in [
+        '( 0 ft − 1 2 ft ( × 1 0 ft =',
+        '0 ft × 1 0 ft =',
+        '0 ft ft',
+      ]) {
+        final tape = pressed(keys);
+
+        for (final trade in Trade.values) {
+          expect(
+            tape.pressTradeKey(trade),
+            const TapeRefused(TapeRefusal.areaMustBeMoreThanZero),
+            reason: '$keys, $trade',
+          );
+        }
+      }
+    });
+
+    test('with its store empty the key is refused on an area it would '
+        'name: "No sheet sizes" for Drywal and "No piece sizes" for Msnry, '
+        'on an accepted Area, a typed area and two sides alike (row 411)', () {
+      for (final keys in ['$wall accept:Area', '1 0 0 ft ft', wall]) {
+        final tape = pressed(keys);
+
+        expect(
+          tape.pressTradeKey(Trade.drywall, storeIsEmpty: true),
+          const TapeRefused(TapeRefusal.noSheetSizes),
+          reason: keys,
+        );
+        expect(
+          tape.pressTradeKey(Trade.masonry, storeIsEmpty: true),
+          const TapeRefused(TapeRefusal.noPieceSizes),
+          reason: keys,
+        );
+      }
+    });
+
+    test('an area of zero or less is told first, and a tape with nothing '
+        'to name is still not the key\'s to answer, store empty or not', () {
+      expect(
+        pressed('0 ft ft').pressTradeKey(Trade.drywall, storeIsEmpty: true),
+        const TapeRefused(TapeRefusal.areaMustBeMoreThanZero),
+      );
+      expect(
+        pressed(
+          '[Length] 2 0 ft',
+        ).pressTradeKey(Trade.drywall, storeIsEmpty: true),
+        isNull,
+      );
     });
   });
 

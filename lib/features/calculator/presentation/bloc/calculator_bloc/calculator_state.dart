@@ -952,6 +952,12 @@ class CalculatorState extends Equatable {
         const CalculatorAngleThreePartsToast(),
       (TapeRefused(reason: TapeRefusal.nothingToCompute), _, _) =>
         _rangeWarningOnEquals,
+      (TapeRefused(reason: TapeRefusal.areaMustBeMoreThanZero), _, _) =>
+        const CalculatorAreaMoreThanZeroToast(),
+      (TapeRefused(reason: TapeRefusal.noSheetSizes), _, _) =>
+        const CalculatorNoSizesToast(Trade.drywall),
+      (TapeRefused(reason: TapeRefusal.noPieceSizes), _, _) =>
+        const CalculatorNoSizesToast(Trade.masonry),
       (TapeRefused(reason: TapeRefusal.percentNeedsANumber), _, _) =>
         CalculatorPercentNeedsANumberToast(
           operator: _lead(tape.beingTyped?.operator),

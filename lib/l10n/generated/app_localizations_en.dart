@@ -2188,6 +2188,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'This size was not added. Try again.';
 
   @override
+  String get calculatorToastAreaMoreThanZeroTitle =>
+      'Area must be more than zero';
+
+  @override
+  String get calculatorToastAreaMoreThanZeroBody =>
+      'This area has no count. Tap a chip to change a number, or press C to start a new entry.';
+
+  @override
+  String get calculatorToastNoSheetSizesTitle => 'No sheet sizes';
+
+  @override
+  String get calculatorToastNoPieceSizesTitle => 'No piece sizes';
+
+  @override
+  String get calculatorToastNoSizesBody =>
+      'Drag the keypad down and tap + Add size.';
+
+  @override
   String get calculatorSizeEditorSizeError => 'Size must be more than zero.';
 
   @override

@@ -582,6 +582,12 @@ class CalculatorLabelFormatter {
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
     CalculatorSizeNotAddedToast() => l10n.calculatorToastSizeNotAddedTitle,
+    CalculatorAreaMoreThanZeroToast() =>
+      l10n.calculatorToastAreaMoreThanZeroTitle,
+    CalculatorNoSizesToast(trade: Trade.drywall) =>
+      l10n.calculatorToastNoSheetSizesTitle,
+    CalculatorNoSizesToast(trade: Trade.masonry) =>
+      l10n.calculatorToastNoPieceSizesTitle,
     CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyTitle,
     CalculatorMinutesTwoDigitsToast() =>
       l10n.calculatorToastMinutesTwoDigitsTitle,
@@ -662,6 +668,9 @@ class CalculatorLabelFormatter {
         displayLabel(key),
       ),
     CalculatorSizeNotAddedToast() => l10n.calculatorToastSizeNotAddedBody,
+    CalculatorAreaMoreThanZeroToast() =>
+      l10n.calculatorToastAreaMoreThanZeroBody,
+    CalculatorNoSizesToast() => l10n.calculatorToastNoSizesBody,
     CalculatorPartUnderSixtyToast() => l10n.calculatorToastPartUnderSixtyBody,
     CalculatorMinutesTwoDigitsToast() =>
       l10n.calculatorToastMinutesTwoDigitsBody,
