@@ -131,6 +131,29 @@ class CalculatorGroupSelected extends CalculatorEvent {
 
 /// A group was dragged to a new place in the "View all" sheet (Section 1.5:
 /// "The ⠿ handle drags a group into a new order").
+/// The display was pulled down or pushed back to [stage] (Section 1.6).
+class CalculatorHistoryStageChanged extends CalculatorEvent {
+  /// The stage the display settled on.
+  final DisplayAreaStage stage;
+
+  const CalculatorHistoryStageChanged(this.stage);
+
+  @override
+  List<Object?> get props => [stage];
+}
+
+/// The keypad was folded away under its handle, or brought back
+/// (Section 1.4).
+class CalculatorKeypadFoldChanged extends CalculatorEvent {
+  /// Whether the keypad is folded away.
+  final bool isFolded;
+
+  const CalculatorKeypadFoldChanged(this.isFolded);
+
+  @override
+  List<Object?> get props => [isFolded];
+}
+
 class CalculatorGroupsReordered extends CalculatorEvent {
   /// Where the group was in the order the keyboard showed.
   final int oldIndex;

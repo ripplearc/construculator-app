@@ -74,20 +74,6 @@
             <mutation text="when identical(_orderedFor, order)) {"/>
         </regex>
 
-        <!-- RULE 6 (T2a 1/2, CA-1095): the detail panel never shows, shows
-             with the keys up, or keeps the display's room while the display
-             is pulled open -->
-        <regex pattern="_isKeypadFolded &amp;&amp; _currentStage == DisplayAreaStage\.collapsed;" dotAll="true" id="calculator_page.detail_panel.when_shown">
-            <mutation text="false;"/>
-            <mutation text="_currentStage == DisplayAreaStage.collapsed;"/>
-            <mutation text="_isKeypadFolded;"/>
-        </regex>
-
-        <!-- RULE 7: the page never hears the keypad unfold, or fold -->
-        <regex pattern="setState\(\(\) =&gt; _isKeypadFolded = isFolded\)," dotAll="true" id="calculator_page.detail_panel.fold_unheard">
-            <mutation text="setState(() =&gt; _isKeypadFolded = true),"/>
-            <mutation text="setState(() =&gt; _isKeypadFolded = false),"/>
-        </regex>
 
         <!-- RULE 8: a tape with nothing to work out draws an empty panel -->
         <regex pattern="child: state\.hasDetails\s*\? _detailPanel\(labels, state\)\s*: const SizedBox\.shrink\(\)," dotAll="true" id="calculator_page.detail_panel.drawn_empty">

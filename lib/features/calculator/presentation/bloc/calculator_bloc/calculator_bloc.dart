@@ -100,6 +100,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorChipTapped>(_onChipTapped);
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorGroupsReordered>(_onGroupsReordered);
+    on<CalculatorHistoryStageChanged>(_onHistoryStageChanged);
+    on<CalculatorKeypadFoldChanged>(_onKeypadFoldChanged);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
     on<CalculatorToastClosed>(_onToastClosed);
@@ -403,6 +405,16 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
   ) => emit(state.copyWith(currentGroupIndex: event.groupIndex));
 
+  void _onHistoryStageChanged(
+    CalculatorHistoryStageChanged event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(historyStage: event.stage));
+
+  void _onKeypadFoldChanged(
+    CalculatorKeypadFoldChanged event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(isKeypadFolded: event.isFolded));
+
   void _onGroupsReordered(
     CalculatorGroupsReordered event,
     Emitter<CalculatorState> emit,
@@ -507,6 +519,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     tape: Tape(preferences: state.tape.preferences),
     currentGroupIndex: state.currentGroupIndex,
     groupOrder: state.groupOrder,
+    historyStage: state.historyStage,
+    isKeypadFolded: state.isKeypadFolded,
     toastsRaised: state.toastsRaised,
     groupEditsNoticed: state.groupEditsNoticed,
   );

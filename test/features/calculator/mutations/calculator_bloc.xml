@@ -194,6 +194,19 @@
             <mutation text="order.removeAt(oldIndex);"/>
         </regex>
 
+        <!-- S2b (CA-1091): the stage or the fold is not heard, or C forgets
+             them -->
+        <regex pattern="\) =&gt; emit\(state\.copyWith\(historyStage: event\.stage\)\);" dotAll="true" id="calculator_bloc.history_stage.unheard">
+            <mutation text=") =&gt; emit(state.copyWith(historyStage: DisplayAreaStage.collapsed));"/>
+        </regex>
+        <regex pattern="\) =&gt; emit\(state\.copyWith\(isKeypadFolded: event\.isFolded\)\);" dotAll="true" id="calculator_bloc.keypad_fold.unheard">
+            <mutation text=") =&gt; emit(state.copyWith(isKeypadFolded: true));"/>
+            <mutation text=") =&gt; emit(state.copyWith(isKeypadFolded: false));"/>
+        </regex>
+        <regex pattern="historyStage: state\.historyStage,\s*isKeypadFolded: state\.isKeypadFolded,\s*toastsRaised: state\.toastsRaised," dotAll="true" id="calculator_bloc.cleared.stage_and_fold_forgotten">
+            <mutation text="toastsRaised: state.toastsRaised,"/>
+        </regex>
+
         <!-- RULE 20: C and a reset forget the order -->
         <regex pattern="currentGroupIndex: state\.currentGroupIndex,\s*groupOrder: state\.groupOrder," dotAll="true" id="calculator_bloc.cleared.order_forgotten">
             <mutation text="currentGroupIndex: state.currentGroupIndex, groupOrder: CalculatorGroupId.defaultOrder,"/>

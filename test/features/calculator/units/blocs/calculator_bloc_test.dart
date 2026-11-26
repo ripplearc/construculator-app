@@ -2303,6 +2303,174 @@ void main() {
       });
     });
 
+    group('S2b: the history stage and the keypad fold live in the bloc '
+        '(Sections 1.4 and 1.6; CA-1091)', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the display pulled down and pushed back, and the keypad folded and '
+        'unfolded, are states; the panel shows only with the keypad folded '
+        'under a collapsed display',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeypadFoldChanged(true))
+          ..add(
+            const CalculatorHistoryStageChanged(
+              DisplayAreaStage.expandedCurrent,
+            ),
+          )
+          ..add(const CalculatorHistoryStageChanged(DisplayAreaStage.collapsed))
+          ..add(const CalculatorKeypadFoldChanged(false)),
+        expect: () => [
+          const CalculatorState(isKeypadFolded: true),
+          const CalculatorState(
+            isKeypadFolded: true,
+            historyStage: DisplayAreaStage.expandedCurrent,
+          ),
+          const CalculatorState(isKeypadFolded: true),
+          const CalculatorState(),
+        ],
+        verify: (bloc) => expect(bloc.state.showsDetailPanel, isFalse),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the display settling on the same stage twice, and the keypad folded '
+        'twice over, are one state each: the next key is the next state',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const CalculatorHistoryStageChanged(
+              DisplayAreaStage.expandedCurrent,
+            ),
+          )
+          ..add(
+            const CalculatorHistoryStageChanged(
+              DisplayAreaStage.expandedCurrent,
+            ),
+          )
+          ..add(const CalculatorKeypadFoldChanged(true))
+          ..add(const CalculatorKeypadFoldChanged(true))
+          ..add(const CalculatorDigitPressed('9')),
+        expect: () => [
+          const CalculatorState(historyStage: DisplayAreaStage.expandedCurrent),
+          const CalculatorState(
+            historyStage: DisplayAreaStage.expandedCurrent,
+            isKeypadFolded: true,
+          ),
+          tapeState(pressed('9')).copyWith(
+            historyStage: DisplayAreaStage.expandedCurrent,
+            isKeypadFolded: true,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the keypad folded under a full-screen display shows no panel; the '
+        'panel comes when the display is pushed back',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const CalculatorHistoryStageChanged(DisplayAreaStage.fullScreen),
+          )
+          ..add(const CalculatorKeypadFoldChanged(true)),
+        expect: () => [
+          const CalculatorState(historyStage: DisplayAreaStage.fullScreen),
+          const CalculatorState(
+            historyStage: DisplayAreaStage.fullScreen,
+            isKeypadFolded: true,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.showsDetailPanel, isFalse);
+          expect(
+            bloc.state
+                .copyWith(historyStage: DisplayAreaStage.collapsed)
+                .showsDetailPanel,
+            isTrue,
+          );
+        },
+      );
+
+      test('the panel shows under no pulled-down display, full screen '
+          'included, however the keypad stands', () {
+        for (final stage in const [
+          DisplayAreaStage.expandedCurrent,
+          DisplayAreaStage.expandedPrevious,
+          DisplayAreaStage.fullScreen,
+        ]) {
+          expect(
+            CalculatorState(
+              isKeypadFolded: true,
+              historyStage: stage,
+            ).showsDetailPanel,
+            isFalse,
+            reason: '$stage, folded',
+          );
+          expect(
+            CalculatorState(historyStage: stage).showsDetailPanel,
+            isFalse,
+            reason: '$stage, unfolded',
+          );
+        }
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a reset keeps the stage and the fold, as C does',
+        build: () => bloc,
+        seed: () => tapeState(pressed('2 + 3 =')).copyWith(
+          isKeypadFolded: true,
+          historyStage: DisplayAreaStage.expandedCurrent,
+        ),
+        act: (bloc) => bloc.add(const CalculatorResetRequested()),
+        expect: () => [
+          const CalculatorState(
+            isKeypadFolded: true,
+            historyStage: DisplayAreaStage.expandedCurrent,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.tape.chips, isEmpty);
+          expect(bloc.state.showsDetailPanel, isFalse);
+        },
+      );
+
+      test('the panel shows under a collapsed display with the keypad '
+          'folded, and not otherwise', () {
+        expect(
+          const CalculatorState(isKeypadFolded: true).showsDetailPanel,
+          isTrue,
+        );
+        expect(const CalculatorState().showsDetailPanel, isFalse);
+        expect(
+          const CalculatorState(
+            isKeypadFolded: true,
+            historyStage: DisplayAreaStage.expandedPrevious,
+          ).showsDetailPanel,
+          isFalse,
+        );
+        expect(
+          const CalculatorState(
+            historyStage: DisplayAreaStage.collapsed,
+          ).showsDetailPanel,
+          isFalse,
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C keeps the stage and the fold, as it keeps the group order',
+        build: () => bloc,
+        seed: () => tapeState(pressed('2 + 3 =')).copyWith(
+          isKeypadFolded: true,
+          historyStage: DisplayAreaStage.expandedCurrent,
+        ),
+        act: (bloc) =>
+            bloc.add(const CalculatorControlActioned(ControlAction.clearAll)),
+        verify: (bloc) {
+          expect(bloc.state.tape.chips, isEmpty);
+          expect(bloc.state.isKeypadFolded, isTrue);
+          expect(bloc.state.historyStage, DisplayAreaStage.expandedCurrent);
+        },
+      );
+    });
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,

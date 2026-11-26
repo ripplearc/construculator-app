@@ -1453,6 +1453,38 @@ void main() {
       expect(find.byKey(firstDigit).hitTestable(), findsNothing);
     });
 
+    testWidgets('the display settling on a stage reaches the bloc through '
+        'the page callback: pulled down it takes the panel\'s room back, '
+        'pushed back it gives it up again (Sections 1.4 and 1.6; CA-1091)', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final bloc = blocOf(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      await tester.tap(handle());
+      await settle(tester);
+      expect(find.byKey(panel), findsOneWidget);
+
+      void settleOn(DisplayAreaStage stage) {
+        final onStageChanged = tester
+            .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
+            .onStageChanged;
+        expect(onStageChanged, isNotNull);
+        onStageChanged!(stage);
+      }
+
+      settleOn(DisplayAreaStage.expandedCurrent);
+      await settle(tester);
+      expect(bloc.state.historyStage, DisplayAreaStage.expandedCurrent);
+      expect(bloc.state.isKeypadFolded, isTrue);
+      expect(find.byKey(panel), findsNothing);
+
+      settleOn(DisplayAreaStage.collapsed);
+      await settle(tester);
+      expect(bloc.state.historyStage, DisplayAreaStage.collapsed);
+      expect(find.byKey(panel), findsOneWidget);
+    });
+
     testWidgets('under the fold the strip sits right below the display and '
         'the panel right below the strip', (tester) async {
       await pumpPage(tester);
@@ -1483,7 +1515,8 @@ void main() {
 
       await tester.tap(handle());
       await settle(tester);
-      expect(bloc.state, equals(accepted));
+      expect(bloc.state.isKeypadFolded, isTrue);
+      expect(bloc.state.copyWith(isKeypadFolded: false), equals(accepted));
       expect(find.text(l10n.calculatorAnswerArea), findsWidgets);
       expect(find.text('180ft²'), findsWidgets);
 
@@ -1528,7 +1561,8 @@ void main() {
       await tester.tap(handle());
       await settle(tester);
 
-      expect(bloc.state, equals(typed));
+      expect(bloc.state.isKeypadFolded, isTrue);
+      expect(bloc.state.copyWith(isKeypadFolded: false), equals(typed));
       expect(bloc.state.labelKeyId, 'Radius');
       expect(bloc.state.valueText, '6ft');
       expect(inPanel(l10n.calculatorKeyDiameter), findsOneWidget);

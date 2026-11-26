@@ -191,6 +191,12 @@
         <regex pattern="BracketChip\(:final inner\) =&gt; '\(\$\{inner\.map\(_valueTextOf\)\.join\(\)\}\)'," dotAll="true" id="calculator_state.toast.bracket_named">
             <mutation text="BracketChip(:final inner) =&gt; '',"/>
         </regex>
+        <!-- S2b (CA-1091): the detail panel shows under a pulled-down display,
+             or shows while the keypad is up -->
+        <regex pattern="bool get showsDetailPanel =&gt;\s*isKeypadFolded &amp;&amp; historyStage == DisplayAreaStage\.collapsed;" dotAll="true" id="calculator_state.detail_panel.when_shown">
+            <mutation text="bool get showsDetailPanel =&gt; historyStage == DisplayAreaStage.collapsed;"/>
+            <mutation text="bool get showsDetailPanel =&gt; isKeypadFolded;"/>
+        </regex>
         <!-- T2a 2/3 (CA-1095): the sheet table of the detail panel -->
         <regex pattern="if \(area == null\) return null;\s*final seenSizes" dotAll="true" id="calculator_state.size_table.without_an_area">
             <mutation text="if (area == null) return const CalculatorSizeTable(areaText: '', rows: []); final seenSizes"/>
