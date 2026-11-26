@@ -11,6 +11,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../helpers/calculator_bloc_factory.dart';
 
 // TODO: [CA-1474] The Width, Rise and Slope function keys draw their text
 // below 4.5:1 in the light theme (coreui 0.99.0 and later), and the page-wide
@@ -51,7 +52,10 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: CalculatorPage(router: FakeAppRouter()),
+      home: CalculatorPage(
+        router: FakeAppRouter(),
+        calculatorBlocFactory: calculatorBlocForTests,
+      ),
     );
   }
 

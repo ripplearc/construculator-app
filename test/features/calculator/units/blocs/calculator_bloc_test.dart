@@ -1,34 +1,47 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Test module that provides [CalculatorBloc] as a factory (`i.add`) so
-/// each test resolves a fresh instance via `Modular.get`. The production
-/// [CalculatorModule] does not bind [CalculatorBloc] — the page owns its
-/// lifecycle through `BlocProvider` — so this test-only binding keeps the
-/// unit tests on dependency injection instead of direct instantiation.
+/// Test module that provides [CalculatorBloc] as a factory (`i.add`) over
+/// the real [WatchMaterialCountsUseCase] and a fake trade-stores repository
+/// showing Appendix B's defaults, as the production module wires it, so
+/// each test resolves a fresh instance via `Modular.get`.
 class _CalculatorBlocTestModule extends Module {
+  final FakeTradeStoresRepository stores;
+
+  _CalculatorBlocTestModule(this.stores);
+
   @override
   void binds(Injector i) {
-    i.add<CalculatorBloc>(() => CalculatorBloc());
+    i.add<WatchMaterialCountsUseCase>(
+      () => WatchMaterialCountsUseCase(repository: stores),
+    );
+    i.add<CalculatorBloc>(() => CalculatorBloc(materialCounts: i()));
   }
 }
 
 void main() {
+  late FakeTradeStoresRepository stores;
   late CalculatorBloc bloc;
 
   setUp(() {
-    Modular.init(_CalculatorBlocTestModule());
+    stores = FakeTradeStoresRepository();
+    Modular.init(_CalculatorBlocTestModule(stores));
     bloc = Modular.get<CalculatorBloc>();
   });
 
   tearDown(() {
     bloc.close();
+    stores.dispose();
     Modular.destroy();
   });
 
@@ -1050,12 +1063,18 @@ void main() {
         build: () => bloc,
         seed: () => CalculatorState(tape: lengthWidthArea()),
         act: (bloc) => bloc.add(const CalculatorChipTapped(2)),
-        expect: () => [
-          CalculatorState(
+        // the Area stays on the display, so the store's answer for it
+        // follows the refusal (S2a 2/2)
+        expect: () {
+          final refused = CalculatorState(
             tape: lengthWidthArea(),
             refusal: const TapeRefused(TapeRefusal.chipCannotBeEdited),
-          ),
-        ],
+          );
+          return [
+            refused,
+            refused.copyWith(materialCounts: sheetCountsOf(refused)),
+          ];
+        },
       );
 
       test('while a chip is edited the results after it are drawn dashed, '
@@ -2219,16 +2238,21 @@ void main() {
             ),
           ),
         skip: 10,
-        expect: () => [
-          tapeState(
+        expect: () {
+          final landed = tapeState(
             pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in').append(
               ResultChip(
                 key: DeterministicRules.areaKey,
                 value: leadingOf('[Length] 2 2 ft [Width] 1 8 ft 8 in').value,
               ),
             ),
-          ),
-        ],
+          );
+          // the store's answer for the new area follows the key (S2a 2/2)
+          return [
+            landed,
+            landed.copyWith(materialCounts: sheetCountsOf(landed)),
+          ];
+        },
         verify: (bloc) {
           expect(
             [
@@ -2239,7 +2263,13 @@ void main() {
           );
           expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
           expect(bloc.state.valueText, '410.67ft²');
-          expect(row1(bloc.state), ['Diagonal: 28.85ft', 'Perimeter: 81.33ft']);
+          expect(row1(bloc.state), [
+            'Drywall: 12.83',
+            'Drywall: 11.41',
+            'Drywall: 10.27',
+            'Diagonal: 28.85ft',
+            'Perimeter: 81.33ft',
+          ]);
           expect(row2(bloc.state), [
             '45.63yd²',
             '59,136in²',
@@ -2255,16 +2285,20 @@ void main() {
         build: () => bloc,
         act: (bloc) => type(bloc, '[Length] 2 0 ft [Width] 1 0 ft ='),
         skip: 8,
-        expect: () => [
-          tapeState(
+        expect: () {
+          final landed = tapeState(
             pressed('[Length] 2 0 ft [Width] 1 0 ft').append(
               ResultChip(
                 key: DeterministicRules.areaKey,
                 value: leadingOf('[Length] 2 0 ft [Width] 1 0 ft').value,
               ),
             ),
-          ),
-        ],
+          );
+          return [
+            landed,
+            landed.copyWith(materialCounts: sheetCountsOf(landed)),
+          ];
+        },
         verify: (bloc) => expect(bloc.state.valueText, '200ft²'),
       );
 
@@ -2407,16 +2441,20 @@ void main() {
           );
         },
         skip: 9,
-        expect: () => [
-          tapeState(
+        expect: () {
+          final landed = tapeState(
             pressed('[Length] 2 0 ft [Width] 1 0 ft').append(
               ResultChip(
                 key: DeterministicRules.areaKey,
                 value: leadingOf('[Length] 2 0 ft [Width] 1 0 ft').value,
               ),
             ),
-          ),
-        ],
+          );
+          return [
+            landed,
+            landed.copyWith(materialCounts: sheetCountsOf(landed)),
+          ];
+        },
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -2477,7 +2515,19 @@ void main() {
             ..add(CalculatorSuggestionAccepted(area));
         },
         skip: 11,
-        expect: () => <CalculatorState>[],
+        // the second tap changes nothing; the one state left is the store's
+        // answer for the Area the first tap landed (S2a 2/2)
+        expect: () {
+          final landed = tapeState(
+            pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in').append(
+              ResultChip(
+                key: DeterministicRules.areaKey,
+                value: leadingOf('[Length] 2 2 ft [Width] 1 8 ft 8 in').value,
+              ),
+            ),
+          );
+          return [landed.copyWith(materialCounts: sheetCountsOf(landed))];
+        },
         verify: (bloc) => expect(
           [for (final chip in bloc.state.chipsList) chip.label],
           ['Length', 'Width', DeterministicRules.areaKey],
@@ -2637,6 +2687,9 @@ void main() {
         skip: 8,
         expect: () {
           final area = landedOn(pressed('[Length] 2 0 ft [Width] 1 0 ft'), 0);
+          // the store's answer for Area 200ft² is queued behind the three
+          // keys and arrives once Diagonal is on the display: no longer
+          // watched, it is dropped (S2a 2/2)
           return [
             tapeState(area),
             tapeState(area).copyWith(
@@ -3619,6 +3672,262 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.materialCounts, isEmpty);
           expect(bloc.state.areaForCounts, isNull);
+          expect(bloc.state.suggestions, isEmpty);
+        },
+      );
+    });
+
+    group('S2a 2/2 (CA-1090): the bloc watches the store for the area on the '
+        'display (requirement R9)', () {
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'ft' => const CalculatorUnitSelected(Unit.foot),
+            '=' => const CalculatorEqualsPressed(),
+            'C' => const CalculatorControlActioned(ControlAction.clearAll),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      List<String> rowOne(CalculatorState state) => [
+        for (final chip in state.suggestions)
+          '${chip.key}: ${chip.text}'
+              '${chip.basis == null ? '' : ' (${chip.basis})'}',
+      ];
+
+      const appendixB = [
+        'Drywall: 5.63 (48in x 96in)',
+        'Drywall: 5.00 (48in x 108in)',
+        'Drywall: 4.50 (48in x 120in)',
+      ];
+
+      StoredSize sheet(int widthInches, int heightInches) => StoredSize(
+        store: SizeStore.sheet,
+        width: Length(widthInches * Length.ticksPerInch, unit: Unit.inch),
+        height: Length(heightInches * Length.ticksPerInch, unit: Unit.inch),
+        position: 0,
+      );
+
+      /// Runs [act] and waits for the first state after it that [holds],
+      /// listening before the act so that no state is missed.
+      Future<void> until(
+        CalculatorBloc bloc,
+        bool Function(CalculatorState state) holds,
+        FutureOr<void> Function() act,
+      ) async {
+        final arrived = bloc.stream.firstWhere(holds);
+        await act();
+        await arrived;
+      }
+
+      bool offersThreeCounts(CalculatorState state) =>
+          state.materialOffers.length == 3;
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the store answers behind the key that puts an area on the display: '
+        'Area accepted from the strip, and a typed 180 ft ft',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, '[Length] 2 0 ft [Height] 9 ft ='),
+          );
+          expect(rowOne(bloc.state), [
+            ...appendixB,
+            'Diagonal: 21.93ft',
+            'Perimeter: 58ft',
+          ]);
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, 'C 1 8 0 ft ft'),
+          );
+        },
+        verify: (bloc) {
+          expect(rowOne(bloc.state), appendixB);
+          expect(bloc.state.materialCounts, sheetCountsOf(bloc.state));
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a size added to the store shows as one more chip with no key '
+        'pressed (requirement R9; row 224 case 2)',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, '[Length] 2 0 ft [Height] 9 ft ='),
+          );
+          await until(
+            bloc,
+            (state) => state.materialOffers.length == 4,
+            () => stores.addSize(sheet(48, 100)),
+          );
+        },
+        verify: (bloc) {
+          expect(rowOne(bloc.state), [
+            ...appendixB,
+            'Drywall: 5.40 (48in x 100in)',
+            'Diagonal: 21.93ft',
+            'Perimeter: 58ft',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the watch asks under the unit system in force: with Metric chosen '
+        'on the empty tape the store answers with the metric seeds (row 214; '
+        'S24)',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(const CalculatorUnitSystemChanged(UnitSystem.metric));
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, '[Length] 2 0 ft [Height] 9 ft ='),
+          );
+        },
+        verify: (bloc) {
+          expect(rowOne(bloc.state).take(3), [
+            'Drywall: 5.81 (1200mm x 2400mm)',
+            'Drywall: 5.16 (1200mm x 2700mm)',
+            'Drywall: 4.64 (1200mm x 3000mm)',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the watch follows the area: after C a new area is answered with its '
+        'own counts',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(bloc, offersThreeCounts, () => type(bloc, '1 8 0 ft ft'));
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, 'C 4 1 0 ft ft'),
+          );
+        },
+        verify: (bloc) {
+          expect(rowOne(bloc.state), [
+            'Drywall: 12.81 (48in x 96in)',
+            'Drywall: 11.39 (48in x 108in)',
+            'Drywall: 10.25 (48in x 120in)',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the other sizes stay on offer while a chip before the count is '
+        'reopened: the count on the tape keeps the watch on its area (row '
+        '219)',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(
+            bloc,
+            offersThreeCounts,
+            () => type(bloc, '[Length] 2 0 ft [Height] 9 ft ='),
+          );
+          await until(
+            bloc,
+            (state) =>
+                state.labelKeyId == Trade.drywall.resultKey &&
+                state.materialOffers.length == 2,
+            () => bloc.add(
+              CalculatorSuggestionAccepted(bloc.state.suggestions.first),
+            ),
+          );
+          await until(
+            bloc,
+            (state) => state.tape.editing != null,
+            () => bloc.add(const CalculatorChipTapped(0)),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.tape.editing!.index, 0);
+          expect(rowOne(bloc.state).take(2), [
+            'Drywall: 5.00 (48in x 108in)',
+            'Drywall: 4.50 (48in x 120in)',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a new value after an accepted count ends the watch: the counts '
+        'leave the state and the strip, and a size added afterwards brings '
+        'none back (F3; rule 4.4)',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(bloc, offersThreeCounts, () => type(bloc, '1 8 0 ft ft'));
+          await until(
+            bloc,
+            (state) =>
+                state.labelKeyId == Trade.drywall.resultKey &&
+                state.materialOffers.length == 2,
+            () => bloc.add(
+              CalculatorSuggestionAccepted(bloc.state.suggestions.first),
+            ),
+          );
+          await until(
+            bloc,
+            (state) => state.valueText == '3ft' && state.materialCounts.isEmpty,
+            () => type(bloc, '[Length] 3 ft'),
+          );
+          await stores.addSize(sheet(48, 100));
+        },
+        verify: (bloc) {
+          expect(bloc.state.areaForCounts, isNull);
+          expect(bloc.state.materialCounts, isEmpty);
+          expect(
+            rowOne(bloc.state),
+            isNot(contains(startsWith(Trade.drywall.offerKey))),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a store error on the watch is not thrown, and the strip keeps the '
+        'counts it showed (F2)',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(bloc, offersThreeCounts, () => type(bloc, '1 8 0 ft ft'));
+          stores.failWatches(StateError('the store could not be read'));
+          await until(
+            bloc,
+            (state) => state.materialOffers.length == 4,
+            () => stores.addSize(sheet(48, 100)),
+          );
+        },
+        errors: () => isEmpty,
+        verify: (bloc) {
+          expect(rowOne(bloc.state), [
+            ...appendixB,
+            'Drywall: 5.40 (48in x 100in)',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C ends the watch with the tape: a size added afterwards changes '
+        'nothing',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(bloc, offersThreeCounts, () => type(bloc, '1 8 0 ft ft'));
+          await until(
+            bloc,
+            (state) => state.areaForCounts == null,
+            () => type(bloc, 'C'),
+          );
+          await stores.addSize(sheet(48, 100));
+        },
+        verify: (bloc) {
+          expect(bloc.state.materialCounts, isEmpty);
           expect(bloc.state.suggestions, isEmpty);
         },
       );

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/calculator_bloc_factory.dart';
 
 void main() {
   const size = Size(390, 844);
@@ -27,7 +28,10 @@ void main() {
         debugShowCheckedModeBanner: false,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
     await tester.pump();
@@ -285,6 +289,41 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/calculator_page/${size.width}x${size.height}/calculator_page_detail_panel$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders an accepted sheet count on the tape: Area 180ft² '
+        'followed by Number of sheets 5.63, with the other sizes left on '
+        'the strip (Section 9; walkthrough 15.2)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      final bloc = blocOf(tester)
+        ..add(const CalculatorKeySelected('Length'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorDigitPressed('0'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorKeySelected('Height'))
+        ..add(const CalculatorDigitPressed('9'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorEqualsPressed());
+      await tester.pump();
+      await tester.pump();
+      final count = bloc.state.suggestions.first;
+      expect(count.kind, CalculatorSuggestionKind.materialCount);
+      bloc.add(CalculatorSuggestionAccepted(count));
+      await tester.pump();
+      await tester.pump();
+
+      expect(bloc.state.labelKeyId, Trade.drywall.resultKey);
+      expect(bloc.state.valueText, '5.63');
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_sheet_count_accepted$suffix.png',
         ),
       );
     });

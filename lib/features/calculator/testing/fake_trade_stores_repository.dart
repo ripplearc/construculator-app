@@ -49,6 +49,12 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
     _seed();
   }
 
+  /// Raises [error] on every open watch, as the real store passes on a read
+  /// that failed.
+  void failWatches(Object error) {
+    if (!_changes.isClosed) _changes.addError(error);
+  }
+
   @override
   Stream<List<StoredSize>> watchSizes(
     SizeStore store,
@@ -212,6 +218,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
       controller.add(read());
       final subscription = _changes.stream.listen(
         (_) => controller.add(read()),
+        onError: controller.addError,
         onDone: controller.close,
       );
       controller.onCancel = subscription.cancel;
