@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- WATCH TRADE STORES USE CASE MUTATION TESTING (G1, CA-1072) -->
+    <!-- Targets: which store fills which side of the snapshot, the unit
+         system each store is read under, the name a piece carries from its
+         stored row. -->
+
+    <files>
+        <file>lib/features/calculator/domain/usecases/watch_trade_stores_usecase.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the sheet sizes are read from the masonry store -->
+        <regex pattern="_repository\.watchSizes\(SizeStore\.sheet, system\)," dotAll="true" id="watch_trade_stores.sheets.from_the_masonry_store">
+            <mutation text="_repository.watchSizes(SizeStore.masonry, system),"/>
+            <mutation text="_repository.watchSizes(SizeStore.sheet, MeasurementSystem.imperial),"/>
+        </regex>
+
+        <!-- RULE 2: the masonry sizes are read from the sheet store -->
+        <regex pattern="_repository\.watchSizes\(SizeStore\.masonry, system\)," dotAll="true" id="watch_trade_stores.masonry.from_the_sheet_store">
+            <mutation text="_repository.watchSizes(SizeStore.sheet, system),"/>
+        </regex>
+
+        <!-- RULE 3: the two stores swap sides in the snapshot -->
+        <regex pattern="sheetSizes: sheets\.map\(_pieceOf\)\.toList\(\),\s*masonrySizes: pieces\.map\(_pieceOf\)\.toList\(\)," dotAll="true" id="watch_trade_stores.snapshot.sides_swapped">
+            <mutation text="sheetSizes: pieces.map(_pieceOf).toList(), masonrySizes: sheets.map(_pieceOf).toList(),"/>
+        </regex>
+
+        <!-- No rule for .distinct(): the data source's watch drops a
+             repeat itself, so the mutant without it is equivalent over the
+             real chain; "a write that changes neither store emits no second
+             snapshot" pins the behaviour either way. -->
+
+        <!-- RULE 4: a piece carries no name for a default, or none for a
+             size the user added -->
+        <regex pattern="id: size\.id \?\? size\.seed," dotAll="true" id="watch_trade_stores.piece.unnamed">
+            <mutation text="id: size.id,"/>
+            <mutation text="id: size.seed,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="watch_trade_stores" expected-return="0">flutter test test/features/calculator/units/domain/usecases/watch_trade_stores_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
