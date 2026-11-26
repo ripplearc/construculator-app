@@ -250,6 +250,85 @@
             <mutation text="bankedTape, bankedCarriedForward,"/>
         </regex>
 
+        <!-- U1 2/2 (CA-1097): which key starts a new session — a key that
+             only shortens the tape, a dimension key (row 32), a key after
+             an error, the bracket key —
+             what the new tape opens on, and what the card says of it -->
+        <regex pattern="if \(after\.chips\.length != before\.chips\.length \+ 1\) return null;" dotAll="true" id="calculator_bloc.session.any_length_opens_one">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\(ResultChip\(\) \|\| ErrorChip\(\), ValueChip\(\) \|\| BracketChip\(isOpen: true\)\) =&gt;\s*true," dotAll="true" id="calculator_bloc.session.fresh_chip">
+            <mutation text="(ResultChip() || ErrorChip(), ValueChip() || BracketChip(isOpen: true)) =&gt; false,"/>
+            <mutation text="(ResultChip(), ValueChip() || BracketChip(isOpen: true)) =&gt; true,"/>
+            <mutation text="(ResultChip() || ErrorChip(), ValueChip()) =&gt; true,"/>
+        </regex>
+        <regex pattern="\(ResultChip\(:final value\), ValueChip\(operator: _\?\)\) =&gt; ResultChip\(" dotAll="true" id="calculator_bloc.session.every_key_carries">
+            <mutation text="(ResultChip(:final value), ValueChip()) =&gt; ResultChip("/>
+        </regex>
+        <regex pattern="fresh: Tape\(chips: \[\?carried, opened\]," dotAll="true" id="calculator_bloc.session.result_not_carried">
+            <mutation text="fresh: Tape(chips: [opened],"/>
+        </regex>
+        <regex pattern="finished: Tape\(chips: finished," dotAll="true" id="calculator_bloc.session.banks_the_new_chip_too">
+            <mutation text="finished: Tape(chips: after.chips,"/>
+        </regex>
+        <regex pattern="carriedForward: carried != null," dotAll="true" id="calculator_bloc.session.card_carried">
+            <mutation text="carriedForward: false,"/>
+            <mutation text="carriedForward: true,"/>
+        </regex>
+        <regex pattern="_bank\(session\.finished, carriedForward: session\.carriedForward\)," dotAll="true" id="calculator_bloc.session.card_forgets_carried">
+            <mutation text="_bank(session.finished),"/>
+        </regex>
+
+        <!-- U1 2/2: a Materials key banks like any function key; a card for
+             a bank that came back after the calculator was left; C banks a
+             tape with no result, or only one that ends on it; leaving banks
+             nothing, an empty tape, or a lone number still being typed -->
+        <regex pattern="\}, goesOnWithTheTape: _materialsKeys\.contains\(id\)\);" dotAll="true" id="calculator_bloc.session.materials_key_banks">
+            <mutation text="});"/>
+        </regex>
+        <regex pattern="if \(isClosed\) return;" dotAll="true" id="calculator_bloc.bank.card_after_the_bloc_closed">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(cleared\.chips\.any\(\(chip\) =&gt; chip is ResultChip\)\) \{" dotAll="true" id="calculator_bloc.clear.banks">
+            <mutation text="if (cleared.chips.isNotEmpty) {"/>
+            <mutation text="if (cleared.endsWithResult) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(!isClosed &amp;&amp; state\.holdsWorkToBank\) await _bankSession\(state\.tape\);" dotAll="true" id="calculator_bloc.close.banks">
+            <mutation text=""/>
+            <mutation text="await _bankSession(state.tape);"/>
+            <mutation text="if (!isClosed) await _bankSession(state.tape);"/>
+        </regex>
+        <!-- a second close banks the tape again -->
+        <regex pattern="if \(!isClosed &amp;&amp; state\.holdsWorkToBank\) await _bankSession\(state\.tape\);" dotAll="true" id="calculator_bloc.close.banks_on_every_close">
+            <mutation text="if (state.holdsWorkToBank) await _bankSession(state.tape);"/>
+        </regex>
+        <regex pattern="final beingTyped = tape\.beingTyped == null \? 0 : 1;" dotAll="true" id="calculator_state.work_to_bank">
+            <mutation text="final beingTyped = 0;"/>
+            <mutation text="final beingTyped = 1;"/>
+        </regex>
+        <regex pattern="return tape\.chips\.length &gt; beingTyped;" dotAll="true" id="calculator_state.work_to_bank.empty_tape">
+            <mutation text="return tape.chips.length &gt;= beingTyped;"/>
+        </regex>
+        <!-- a bracket alone and open is banked whatever it holds, or a
+             bracket after other chips is judged by its inside alone -->
+        <regex pattern="if \(bracket != null &amp;&amp; tape\.chips\.length == 1\) \{\s*return bracket\.inner\.length &gt; beingTyped;\s*\}" dotAll="true" id="calculator_state.work_to_bank.lone_bracket">
+            <mutation text=""/>
+            <mutation text="if (bracket != null &amp;&amp; tape.chips.length == 1) { return bracket.inner.length &gt;= beingTyped; }"/>
+            <mutation text="if (bracket != null) { return bracket.inner.length &gt; beingTyped; }"/>
+        </regex>
+        <!-- U1 2/2: a key that opens a session leaves the whole tape on
+             screen, or banks nothing; the card forgets the session's id -->
+        <regex pattern="tape: session\?\.fresh \?\? tape," dotAll="true" id="calculator_bloc.session.finished_tape_stays">
+            <mutation text="tape: tape,"/>
+        </regex>
+        <regex pattern="if \(session != null\) \{\s*unawaited\(\s*_bank\(session\.finished, carriedForward: session\.carriedForward\),\s*\);\s*\}" dotAll="true" id="calculator_bloc.session.not_banked">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="sessionId: session\.id,\s*carriedForward: carriedForward," dotAll="true" id="calculator_bloc.bank.card_without_session_id">
+            <mutation text="carriedForward: carriedForward,"/>
+        </regex>
+
         <!-- RULE 20: C and a reset forget the order -->
         <regex pattern="currentGroupIndex: state\.currentGroupIndex,\s*groupOrder: state\.groupOrder," dotAll="true" id="calculator_bloc.cleared.order_forgotten">
             <mutation text="currentGroupIndex: state.currentGroupIndex, groupOrder: CalculatorGroupId.defaultOrder,"/>

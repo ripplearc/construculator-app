@@ -155,7 +155,8 @@ class CalculatorKeypadFoldChanged extends CalculatorEvent {
 }
 
 /// A tape was banked to history and a clean tape started (rule 4.9); the
-/// card shows with Undo and View until the next key press.
+/// card shows with Undo and View until the next key press. The bloc raises
+/// it when the store has taken the tape (U1, CA-1097).
 class CalculatorSessionBanked extends CalculatorEvent {
   /// The tape that went to history, as it was.
   final Tape tape;

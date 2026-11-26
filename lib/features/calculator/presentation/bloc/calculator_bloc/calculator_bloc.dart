@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
@@ -66,14 +67,26 @@ part 'calculator_toast.dart';
 /// has one (term 2.15: "= still lands that suggestion"), else the tape's
 /// own equals.
 ///
-/// The "Saved to history" card names the session history keeps its tape
-/// under ([CalculatorSessionBanked]), and Undo takes that session out of
-/// history again behind the tape it brings back (U1, CA-1097; walkthrough
-/// 13.2).
+/// A finished tape is banked to history without being asked (U1, CA-1097;
+/// rule 4.9, term 2.19): when a key opens a fresh chip straight after an
+/// answer or an error — a digit, a function key, a trig key that cannot use
+/// the answer, the bracket key, or an operator, which carries the answer
+/// forward as the Calc chip of the new tape — when C clears a tape that
+/// holds a result, and when the calculator is left with more on the tape
+/// than a value still being typed. A dimension key after an answer banks
+/// too, whatever the tape holds (decision tree row 32: "Rise 6 in Run 12 in
+/// = then Width: Pitch tape goes to history"). A Materials key goes on with
+/// the tape and banks nothing: it asks for a calculation on what the tape
+/// holds (term 2.7; rows 457 and 460). The key does its job at
+/// once; the "Saved to history" card shows when the store has taken the
+/// tape ([CalculatorSessionBanked]), and Undo takes the session out of
+/// history again behind the tape it brings back (walkthrough 13.2). Leaving
+/// banks once, however often the bloc is closed.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchMaterialCountsUseCase _materialCounts;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
   final AddMaterialSizeUseCase _addMaterialSize;
+  final BankCalculationSessionUseCase _bankSession;
   final DeleteCalculationSessionUseCase _deleteSession;
 
   static final _logger = AppLogger().tag('CalculatorBloc');
@@ -84,12 +97,13 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   MeasurementSystem? _watchedSystem;
 
   /// Creates the bloc over the use cases that count the stored sheet sizes
-  /// for an area, add a size to the store or remove one, and take a
-  /// banked tape out of history again.
+  /// for an area, add a size to the store or remove one, and bank a tape
+  /// to history or take it out again.
   CalculatorBloc({
     required this._materialCounts,
     required this._deleteMaterialSize,
     required this._addMaterialSize,
+    required this._bankSession,
     required this._deleteSession,
   }) : super(CalculatorState.initial()) {
     on<CalculatorMaterialCountsArrived>(_onMaterialCountsArrived);
@@ -127,6 +141,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   @override
   Future<void> close() async {
+    if (!isClosed && state.holdsWorkToBank) await _bankSession(state.tape);
     await _countsSubscription?.cancel();
     return super.close();
   }
@@ -247,6 +262,16 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   static const String _dmsKey = 'DMS';
 
+  static const Set<String> _materialsKeys = {
+    'Msnry',
+    'Drywal',
+    'Footng',
+    'Fence',
+    'Qty@OC',
+    'Cost',
+    'Weight',
+  };
+
   void _onKeySelected(
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
@@ -265,7 +290,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         keyWantsUnit: !PlainNumberKeys.all.contains(id),
         readsDegrees: id == PlainNumberKeys.pitch,
       );
-    });
+    }, goesOnWithTheTape: _materialsKeys.contains(id));
   }
 
   void _onDigitPressed(
@@ -402,7 +427,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       case ControlAction.delete:
         _press(emit, (tape) => tape.backspace());
       case ControlAction.clearAll:
+        final cleared = state.tape;
         emit(_cleared());
+        if (cleared.chips.any((chip) => chip is ResultChip)) {
+          unawaited(_bank(cleared));
+        }
       case ControlAction.paren:
         _press(emit, (tape) => tape.pressBracket());
       // TODO: [CA-1195] Delete this arm when coreui removes moreOptions.
@@ -515,15 +544,29 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
     TapeOutcome Function(Tape tape) press, {
     Unit? unit,
-  }) => _fold(emit, press(state.tape), unit: unit);
+    bool goesOnWithTheTape = false,
+  }) => _fold(
+    emit,
+    press(state.tape),
+    unit: unit,
+    goesOnWithTheTape: goesOnWithTheTape,
+  );
 
-  void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome, {Unit? unit}) {
+  void _fold(
+    Emitter<CalculatorState> emit,
+    TapeOutcome outcome, {
+    Unit? unit,
+    bool goesOnWithTheTape = false,
+  }) {
     switch (outcome) {
       case TapeChanged(:final tape, :final notice, :final removed):
+        final session = goesOnWithTheTape
+            ? null
+            : _newSessionOpenedBy(state.tape, tape);
         _emitCountingToast(
           emit,
           state.copyWith(
-            tape: tape,
+            tape: session?.fresh ?? tape,
             notice: () => notice,
             refusal: () => null,
             closesCalculator: false,
@@ -538,6 +581,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
                 : null,
           ),
         );
+        if (session != null) {
+          unawaited(
+            _bank(session.finished, carriedForward: session.carriedForward),
+          );
+        }
       case final TapeOutcome refusal:
         _emitCountingToast(
           emit,
@@ -554,6 +602,56 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
           ),
         );
     }
+  }
+
+  // A fresh chip opened straight after an answer or an error starts a new
+  // session (rules 4.9 and 4.12): what stood before the chip goes to
+  // history and the chip opens a clean tape, behind the answer as a Calc
+  // chip when an operator carried it forward. A dimension key after an
+  // answer starts one only when the tape holds no named value to build on.
+  // `null` for any other key.
+  ({Tape finished, Tape fresh, bool carriedForward})? _newSessionOpenedBy(
+    Tape before,
+    Tape after,
+  ) {
+    if (after.chips.length != before.chips.length + 1) return null;
+    final opened = after.chips.last;
+    final finished = after.chips.sublist(0, before.chips.length);
+    final opensAfresh = switch ((before.chips.lastOrNull, opened)) {
+      (ResultChip() || ErrorChip(), ValueChip() || BracketChip(isOpen: true)) =>
+        true,
+      _ => false,
+    };
+    if (!opensAfresh) return null;
+    final carried = switch ((finished.last, opened)) {
+      (ResultChip(:final value), ValueChip(operator: _?)) => ResultChip(
+        key: Tape.calcKey,
+        value: value,
+      ),
+      _ => null,
+    };
+    return (
+      finished: Tape(chips: finished, preferences: after.preferences),
+      fresh: Tape(chips: [?carried, opened], preferences: after.preferences),
+      carriedForward: carried != null,
+    );
+  }
+
+  // The card says "Saved to history", so it shows only once the store has
+  // taken the tape; a tape the store refused shows none.
+  Future<void> _bank(Tape tape, {bool carriedForward = false}) async {
+    final banked = await _bankSession(tape);
+    if (isClosed) return;
+    banked.fold(
+      (_) {},
+      (session) => add(
+        CalculatorSessionBanked(
+          tape,
+          sessionId: session.id,
+          carriedForward: carriedForward,
+        ),
+      ),
+    );
   }
 
   void _emitCountingToast(

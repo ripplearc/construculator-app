@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
 import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
@@ -12,8 +13,10 @@ import 'package:construculator/features/calculator/presentation/formatters/calcu
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculation/domain/entities/calculation_session.dart';
 import 'package:construculator/libraries/calculation/testing/fake_calculation_session_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/calculator_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -46,6 +49,9 @@ class _CalculatorBlocTestModule extends Module {
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: stores),
     );
+    i.add<BankCalculationSessionUseCase>(
+      () => BankCalculationSessionUseCase(repository: history),
+    );
     i.add<DeleteCalculationSessionUseCase>(
       () => DeleteCalculationSessionUseCase(repository: history),
     );
@@ -54,25 +60,43 @@ class _CalculatorBlocTestModule extends Module {
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        bankSession: i(),
         deleteSession: i(),
       ),
     );
   }
 }
 
+/// The calculation library's fake history with a gate on its writes: while
+/// [gate] is set, a bank waits for it, so a test can press keys, or leave
+/// the calculator, before the store has answered.
+class _GatedHistory extends FakeCalculationSessionRepository {
+  Completer<void>? gate;
+
+  @override
+  Future<Either<Failure, CalculationSession>> bankSession(
+    Tape tape, {
+    String? title,
+  }) async {
+    await gate?.future;
+    return super.bankSession(tape, title: title);
+  }
+}
+
 void main() {
   late FakeTradeStoresRepository stores;
-  late FakeCalculationSessionRepository history;
+  late _GatedHistory history;
   late CalculatorBloc bloc;
 
   setUp(() {
     stores = FakeTradeStoresRepository();
-    history = FakeCalculationSessionRepository();
+    history = _GatedHistory();
     Modular.init(_CalculatorBlocTestModule(stores, history));
     bloc = Modular.get<CalculatorBloc>();
   });
 
   tearDown(() async {
+    // leaving banks the open tape, so history outlives the bloc
     await bloc.close();
     stores.dispose();
     history.dispose();
@@ -128,6 +152,23 @@ void main() {
 
   CalculatorState tapeState(Tape tape, {TapeNotice? notice}) =>
       CalculatorState(tape: tape, notice: notice);
+
+  /// The tape an operator opens after the result [finished] ends on (rule
+  /// 4.9): the result carried forward as a Calc chip, then [keys].
+  Tape carriedForward(String finished, String keys) => pressed(
+    keys,
+    tape: Tape(
+      chips: [
+        switch (pressed(finished).chips.last) {
+          ResultChip(:final value) => ResultChip(
+            key: Tape.calcKey,
+            value: value,
+          ),
+          final chip => chip,
+        },
+      ],
+    ),
+  );
 
   /// Appendix B's sheet sizes under [system], as the engine counts them.
   List<PieceSize> appendixBSheets([
@@ -567,6 +608,13 @@ void main() {
           tapeState(pressed('[ATAN]')),
           tapeState(pressed('[ATAN] 1')),
           tapeState(pressed('[ATAN] 1 6')),
+          // C banked the sine tape, and its card follows the keys typed
+          // while the store took it (U1)
+          tapeState(pressed('[ATAN] 1 6')).copyWith(
+            bankedTape: () => pressed('3 8 [SIN]'),
+            bankedSessionId: () => 'session-1',
+            toastsRaised: 1,
+          ),
         ],
         verify: (bloc) {
           expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
@@ -2895,6 +2943,632 @@ void main() {
       });
     });
 
+    group(
+      'U1 2/2 (CA-1097): a finished tape banks itself (rule 4.9, term 2.19; '
+      'decision tree rows 5, 32, 317 to 319)',
+      () {
+        void type(CalculatorBloc bloc, String keys) {
+          for (final key in keys.split(' ')) {
+            bloc.add(switch (key) {
+              'ft' => const CalculatorUnitSelected(Unit.foot),
+              'in' => const CalculatorUnitSelected(Unit.inch),
+              'yd' => const CalculatorUnitSelected(Unit.yard),
+              'lbs' => const CalculatorKeySelected('lbs'),
+              '×' => const CalculatorOperatorPressed(Operator.multiply),
+              '÷' => const CalculatorOperatorPressed(Operator.divide),
+              '+' => const CalculatorOperatorPressed(Operator.add),
+              '−' => const CalculatorOperatorPressed(Operator.subtract),
+              '=' => const CalculatorEqualsPressed(),
+              '(' => const CalculatorControlActioned(ControlAction.paren),
+              '⌫' => const CalculatorControlActioned(ControlAction.delete),
+              'C' => const CalculatorControlActioned(ControlAction.clearAll),
+              'SIN' || 'COS' || 'ATAN' => CalculatorKeySelected(key),
+              _ when key.startsWith('tap:') => CalculatorChipTapped(
+                int.parse(key.substring(4)),
+              ),
+              _ when key.startsWith('[') => CalculatorKeySelected(
+                key.substring(1, key.length - 1),
+              ),
+              _ => CalculatorDigitPressed(key),
+            });
+          }
+        }
+
+        /// [fresh] with the card of [banked] over it, as the state reads once
+        /// the store has taken the tape.
+        CalculatorState carded(
+          Tape fresh,
+          Tape banked, {
+          String sessionId = 'session-1',
+          bool carried = false,
+        }) => CalculatorState(
+          tape: fresh,
+          bankedTape: banked,
+          bankedSessionId: sessionId,
+          bankedCarriedForward: carried,
+          toastsRaised: 1,
+        );
+
+        Future<void> cardShows(CalculatorBloc bloc) =>
+            bloc.stream.firstWhere((state) => state.bankedTape != null);
+
+        /// [keys] with the leading suggestion landed, as = lands it.
+        Tape landedLeading(String keys) {
+          final tape = pressed(keys);
+          final leading = CalculatorState(tape: tape).suggestions.first;
+          return switch (tape.landAnswer(leading.key!, leading.value)) {
+            TapeChanged(:final tape) => tape,
+            _ => tape,
+          };
+        }
+
+        /// The clean tape the last key of [keys] opened its chip on.
+        Tape opened(String keys) => Tape(chips: [pressed(keys).chips.last]);
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a digit after a result starts a clean tape at once, the finished '
+          'tape goes to history whole, and the card names its result once the '
+          'store has taken it (rows 5 and 317; S62)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '1 2 ft × 5 ft = 9'),
+          skip: 7,
+          expect: () => [
+            tapeState(pressed('9')),
+            carded(pressed('9'), pressed('1 2 ft × 5 ft =')),
+          ],
+          verify: (bloc) {
+            expect(
+              bloc.state.toast,
+              const CalculatorSavedToHistoryToast(
+                resultKey: 'Calc',
+                resultText: '60ft²',
+                carriedForward: false,
+              ),
+            );
+            expect(history.sessions.single.resultText, '60ft²');
+            expect(history.tapes['session-1'], pressed('1 2 ft × 5 ft ='));
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'Undo brings the banked tape back, drops the tape typed since and '
+          'takes the session out of history; the tape it brought back is '
+          'banked again when the calculator is left (row 317; walkthrough '
+          '13.2)',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '2 + 3 = 9');
+            await cardShows(bloc);
+            bloc.add(const CalculatorUndoPressed());
+          },
+          skip: 6,
+          expect: () => [
+            tapeState(pressed('2 + 3 =')).copyWith(toastsRaised: 1),
+          ],
+          verify: (bloc) {
+            expect(bloc.state.bankedSessionId, isNull);
+            expect(bloc.state.toast, isNull);
+            expect(
+              [for (final session in history.sessions) session.id],
+              ['session-2'],
+            );
+            expect(history.tapes['session-2'], pressed('2 + 3 ='));
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'typing after Undo banks the tape again, so the fresh-digit path has '
+          'no hole (S78), and the second card replaces the first',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '2 + 3 = 9');
+            await cardShows(bloc);
+            bloc.add(const CalculatorUndoPressed());
+            await bloc.stream.firstWhere((state) => state.bankedTape == null);
+            type(bloc, '8');
+          },
+          skip: 7,
+          expect: () => [
+            tapeState(pressed('8')).copyWith(toastsRaised: 1),
+            carded(
+              pressed('8'),
+              pressed('2 + 3 ='),
+              sessionId: 'session-2',
+            ).copyWith(toastsRaised: 2),
+          ],
+          verify: (bloc) => expect(history.sessions, hasLength(1)),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'an operator after a result banks the tape and carries the result '
+          'forward as the Calc chip of the new one; the card says so and the '
+          'equals key reads Ans (row 318; S17, S22)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '3 6 ft ÷ 1 2 ft = × 8 9'),
+          skip: 9,
+          expect: () => [
+            tapeState(carriedForward('3 6 ft ÷ 1 2 ft =', '× 8')),
+            tapeState(carriedForward('3 6 ft ÷ 1 2 ft =', '× 8 9')),
+            carded(
+              carriedForward('3 6 ft ÷ 1 2 ft =', '× 8 9'),
+              pressed('3 6 ft ÷ 1 2 ft ='),
+              carried: true,
+            ),
+          ],
+          verify: (bloc) {
+            expect(
+              bloc.state.toast,
+              const CalculatorSavedToHistoryToast(
+                resultKey: 'Calc',
+                resultText: '3',
+                carriedForward: true,
+              ),
+            );
+            expect(bloc.state.equalsKeyId, CalculatorState.ansKey);
+            expect(bloc.state.suggestions.single.text, '267');
+            expect(history.tapes['session-1'], pressed('3 6 ft ÷ 1 2 ft ='));
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a named answer is carried forward as a Calc chip too: Area 180ft² '
+          'then × opens the new tape on Calc 180ft² (rule 4.9: "the result '
+          'opens the new tape as a Calc chip")',
+          build: () => bloc,
+          seed: () => tapeState(landedLeading('[Length] 2 0 ft [Height] 9 ft')),
+          act: (bloc) => type(bloc, '×'),
+          verify: (bloc) {
+            expect(
+              [
+                for (final chip in bloc.state.chipsList)
+                  '${chip.label} ${chip.value}',
+              ],
+              ['Calc 180ft²', 'null ×'],
+            );
+            expect(
+              history.tapes['session-1'],
+              landedLeading('[Length] 2 0 ft [Height] 9 ft'),
+            );
+            expect(history.sessions.last.resultText, '180ft²');
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a function key after a result banks the tape and opens its chip on '
+          'a clean one when the tape holds no named value: 38 SIN then Pitch '
+          '(walkthrough 23.1, "Saved to history · Sine"; row 262)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '3 8 SIN [Pitch]'),
+          skip: 3,
+          expect: () => [
+            tapeState(opened('3 8 [SIN] [Pitch]')),
+            carded(opened('3 8 [SIN] [Pitch]'), pressed('3 8 [SIN]')),
+          ],
+          verify: (bloc) =>
+              expect(history.sessions.single.resultText, '0.615661'),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a dimension key after an answer banks the tape whatever it holds '
+          'and opens its chip on a clean one: Rise 6in Run 12in = then Width '
+          'sends the pitch tape to history (decision tree row 32)',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '[Rise] 6 in [Run] 1 2 in =');
+            final answered = await bloc.stream.firstWhere(
+              (state) => state.tape.endsWithResult,
+            );
+            final carded = bloc.stream.firstWhere(
+              (state) => state.bankedTape != null,
+            );
+            type(bloc, '[Width]');
+            final banked = await carded;
+            expect(banked.bankedTape, answered.tape);
+            expect(answered.tape.chips.last, isA<ResultChip>());
+            expect(history.tapes.values.single, answered.tape);
+          },
+          verify: (bloc) {
+            expect(bloc.state.tape, pressed('[Width]'));
+            expect(history.sessions, hasLength(1));
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'an accepted answer counts as a result too: Diagonal accepted, then '
+          'Height banks the room and opens Height alone (row 32; the doc\'s '
+          'walkthrough 15.1 goes on with the tape, and the tree wins)',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '[Length] 2 2 ft [Width] 1 8 ft 8 in');
+            final offered = await bloc.stream.firstWhere(
+              (state) => state.valueText == '18ft 8in',
+            );
+            final carded = bloc.stream.firstWhere(
+              (state) => state.bankedTape != null,
+            );
+            bloc.add(CalculatorSuggestionAccepted(offered.suggestions[1]));
+            type(bloc, '[Height] 9 ft');
+            await carded;
+          },
+          verify: (bloc) {
+            expect(bloc.state.tape, pressed('[Height] 9 ft'));
+            expect(
+              [
+                for (final chip in bloc.state.bankedTape!.chips)
+                  if (chip case ResultChip(:final key)) key,
+              ],
+              [DeterministicRules.diagonalKey],
+            );
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'after an error a dimension key starts a clean tape whatever the '
+          'tape held: Length 22ft ÷ 2lbs = then Width banks the error tape '
+          '(rule 4.12)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '[Length] 2 2 ft ÷ 2 lbs = [Width]'),
+          skip: 8,
+          expect: () => [
+            tapeState(pressed('[Width]')),
+            carded(pressed('[Width]'), pressed('[Length] 2 2 ft ÷ 2 lbs =')),
+          ],
+          verify: (bloc) =>
+              expect(history.tapes['session-1']!.endsWithError, isTrue),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the bracket key after a result banks the tape, and the new tape '
+          'starts with the open bracket (row 319, case 2)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '5 + 5 = ('),
+          skip: 4,
+          expect: () => [
+            tapeState(pressed('(')),
+            carded(pressed('('), pressed('5 + 5 =')),
+          ],
+          verify: (bloc) => expect(bloc.state.tape.openBracket, isNotNull),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a trig key that can use the result works on it and starts no new '
+          'tape: 12 + 0 = then ATAN (rule 4.9; row 1)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '1 2 + 0 = ATAN'),
+          skip: 5,
+          expect: () => [tapeState(pressed('1 2 + 0 = [ATAN]'))],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a trig key that cannot use the answer opens its chip on a clean '
+          'tape, and the tape before it is banked: 38 SIN then COS (S96)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '3 8 SIN COS'),
+          skip: 3,
+          expect: () => [
+            tapeState(opened('3 8 [SIN] [COS]')),
+            carded(opened('3 8 [SIN] [COS]'), pressed('3 8 [SIN]')),
+          ],
+          verify: (bloc) =>
+              expect(bloc.state.labelKeyId, TrigFunction.cosine.key),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a key that works on the answer starts no session: a unit key '
+          'converts it, an accepted chip lands beside it, and = says the '
+          'result is shown',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '1 2 ft × 5 ft = yd =');
+            await bloc.stream.firstWhere((state) => state.refusal != null);
+            bloc.add(
+              CalculatorSuggestionAccepted(bloc.state.conversions.first),
+            );
+          },
+          skip: 7,
+          verify: (bloc) {
+            expect(bloc.state.bankedTape, isNull);
+            expect(bloc.state.tape.chips, hasLength(3));
+            expect(
+              history.tapes.values.single.chips,
+              bloc.state.tape.chips,
+              reason: 'banked once, whole, when the calculator is left',
+            );
+          },
+        );
+
+        for (final key in const [
+          'Msnry',
+          'Drywal',
+          'Footng',
+          'Fence',
+          'Qty@OC',
+          'Cost',
+          'Weight',
+        ]) {
+          blocTest<CalculatorBloc, CalculatorState>(
+            'the Materials key $key asks about the tape it is pressed on, so '
+            'after a result it goes on with that tape and banks nothing '
+            '(term 2.7)',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '1 2 ft × 5 ft = [$key]'),
+            skip: 7,
+            expect: () => [tapeState(pressed('1 2 ft × 5 ft = [$key]'))],
+          );
+        }
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'after an error a function key or a digit starts a clean tape and '
+          'the error tape goes to history, its card naming no result (rule '
+          '4.12; S71)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '7 8 lbs ÷ 1 2 ft = [Length]'),
+          skip: 8,
+          expect: () => [
+            tapeState(pressed('[Length]')),
+            carded(pressed('[Length]'), pressed('7 8 lbs ÷ 1 2 ft =')),
+          ],
+          verify: (bloc) {
+            expect(
+              bloc.state.toast,
+              const CalculatorSavedToHistoryToast(
+                resultKey: null,
+                resultText: null,
+                carriedForward: false,
+              ),
+            );
+            expect(history.sessions.single.resultText, isNull);
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'after ÷ 0 = the next digit goes into the reopened divisor: no new '
+          'tape and nothing banked by the key (rows 80 and 453)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '5 ÷ 0 = 7'),
+          skip: 4,
+          expect: () => [tapeState(pressed('5 ÷ 0 = 7'))],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a key that leaves an edit and opens a chip after the result banks '
+          'the tape as the edit left it, its result worked out again',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '2 + 3 = tap:0 ⌫ 7 [Width]'),
+          skip: 7,
+          expect: () => [
+            tapeState(pressed('[Width]')),
+            carded(
+              pressed('[Width]'),
+              Tape(
+                chips: pressed('2 + 3 = tap:0 ⌫ 7 [Width]').chips.sublist(0, 3),
+              ),
+            ),
+          ],
+          verify: (bloc) => expect(history.sessions.single.resultText, '10'),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'C on a tape that holds a result clears it, banks it and shows the '
+          'card, and Undo brings it back (row 319, case 1)',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '5 + 5 = C');
+            await cardShows(bloc);
+            bloc.add(const CalculatorUndoPressed());
+          },
+          skip: 4,
+          expect: () => [
+            CalculatorState.initial(),
+            carded(const Tape(), pressed('5 + 5 =')),
+            tapeState(pressed('5 + 5 =')).copyWith(toastsRaised: 1),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'C on a tape with no result banks nothing, and C on a chain that '
+          'went on from a carried result banks that chain too, since the tape '
+          'holds a result',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '5 + C 5 + 5 = × 2 C'),
+          verify: (bloc) {
+            expect(bloc.state.tape.chips, isEmpty);
+            expect(
+              [for (final session in history.sessions) session.resultText],
+              [null, '10'],
+              reason:
+                  '5 + 5 = when × carried it forward, then Calc 10 × 2 when C '
+                  'cleared it; never the 5 +',
+            );
+            expect(
+              history.tapes['session-2'],
+              carriedForward('5 + 5 =', '× 2'),
+            );
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a tape the store refuses shows no card: the key still does its job '
+          'and nothing claims to be saved',
+          build: () => bloc,
+          setUp: () => history.writeFailure = const CalculatorFailure(
+            errorType: CalculatorErrorType.storageError,
+          ),
+          act: (bloc) => type(bloc, '2 + 3 = 9 C'),
+          skip: 4,
+          expect: () => [tapeState(pressed('9')), CalculatorState.initial()],
+          verify: (bloc) {
+            expect(history.bankCallCount, 1);
+            expect(history.sessions, isEmpty);
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'with nobody signed in a bank is refused and Undo has nothing to '
+          'bring back',
+          build: () => bloc,
+          setUp: () => history.signedIn = false,
+          act: (bloc) {
+            type(bloc, '2 + 3 = 9');
+            bloc.add(const CalculatorUndoPressed());
+          },
+          skip: 4,
+          expect: () => [tapeState(pressed('9'))],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'View after a bank opens history, closes the card and forgets the '
+          'pending Undo',
+          build: () => bloc,
+          act: (bloc) async {
+            type(bloc, '2 + 3 = 9');
+            await cardShows(bloc);
+            bloc
+              ..add(const CalculatorHistoryViewPressed())
+              ..add(const CalculatorUndoPressed());
+          },
+          skip: 6,
+          expect: () => [
+            tapeState(pressed('9')).copyWith(
+              toastsRaised: 1,
+              historyStage: DisplayAreaStage.fullScreen,
+            ),
+          ],
+          verify: (bloc) => expect(history.sessions, hasLength(1)),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          '⌫ on a result takes the result off and reopens the value before '
+          'it: one chip fewer is no new tape, and nothing is banked (row 117)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, '2 + 3 = ⌫'),
+          skip: 4,
+          expect: () => [tapeState(pressed('2 + 3 = ⌫'))],
+          verify: (bloc) => expect(bloc.state.tape.chips, hasLength(2)),
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the key does its job before the store answers, and the card shows '
+          'when it has: keys typed meanwhile are kept, and Undo then brings '
+          'the banked tape back over them',
+          build: () => bloc,
+          setUp: () => history.gate = Completer<void>(),
+          act: (bloc) async {
+            type(bloc, '2 + 3 = 9 4');
+            await bloc.stream.firstWhere((state) => state.valueText == '94');
+            history.gate!.complete();
+            await cardShows(bloc);
+            bloc.add(const CalculatorUndoPressed());
+          },
+          skip: 4,
+          expect: () => [
+            tapeState(pressed('9')),
+            tapeState(pressed('9 4')),
+            carded(pressed('9 4'), pressed('2 + 3 =')),
+            tapeState(pressed('2 + 3 =')).copyWith(toastsRaised: 1),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a bank still on its way when the calculator is left shows no card '
+          'and raises nothing: the tape is in history all the same',
+          build: () => bloc,
+          setUp: () => history.gate = Completer<void>(),
+          act: (bloc) async {
+            type(bloc, '2 + 3 = 9');
+            await bloc.stream.firstWhere((state) => state.valueText == '9');
+            final left = bloc.close();
+            history.gate!.complete();
+            await left;
+          },
+          skip: 4,
+          expect: () => [tapeState(pressed('9'))],
+          verify: (bloc) =>
+              expect(history.tapes.values.single, pressed('2 + 3 =')),
+        );
+
+        group('leaving the calculator (term 2.19; Section 5.1, "Closes the '
+            'calculator"; rows 421 and 422)', () {
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks the open tape, finished or not: 5 + is kept with no result',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '5 +'),
+            verify: (bloc) {
+              expect(history.tapes.values.single, pressed('5 +'));
+              expect(history.sessions.single.resultText, isNull);
+            },
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks a finished tape once, with its result',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '5 + 5 ='),
+            verify: (bloc) => expect(history.sessions.single.resultText, '10'),
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks nothing from an empty tape (row 422, case 2)',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '5 + C'),
+            verify: (bloc) => expect(history.sessions, isEmpty),
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks nothing from a lone number that never sealed (rule 4.13)',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '[Length] 5'),
+            verify: (bloc) => expect(history.sessions, isEmpty),
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks nothing from the bracket a key opened after a result: 5 + '
+            '5 = then ( leaves the one session the key banked',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '5 + 5 = ('),
+            verify: (bloc) =>
+                expect(history.tapes.values.single, pressed('5 + 5 =')),
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks once, however often the bloc is closed',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '5 +'),
+            verify: (bloc) async {
+              await bloc.close();
+
+              expect(history.tapes.values.single, pressed('5 +'));
+            },
+          );
+
+          blocTest<CalculatorBloc, CalculatorState>(
+            'banks nothing more after a key already banked the tape: 2 + 3 = '
+            'then 9 leaves one session',
+            build: () => bloc,
+            act: (bloc) => type(bloc, '2 + 3 = 9'),
+            verify: (bloc) => expect(history.sessions, hasLength(1)),
+          );
+
+          test('the state says whether there is work to bank', () {
+            expect(const CalculatorState().holdsWorkToBank, isFalse);
+            expect(tapeState(pressed('5')).holdsWorkToBank, isFalse);
+            expect(tapeState(pressed('[Length]')).holdsWorkToBank, isFalse);
+            expect(tapeState(pressed('5 +')).holdsWorkToBank, isTrue);
+            expect(tapeState(pressed('5 + 5 =')).holdsWorkToBank, isTrue);
+            expect(tapeState(pressed('5 ft [Width]')).holdsWorkToBank, isTrue);
+            expect(
+              tapeState(carriedForward('5 + 5 =', '')).holdsWorkToBank,
+              isTrue,
+              reason: 'one finished chip and nothing being typed',
+            );
+            expect(tapeState(pressed('(')).holdsWorkToBank, isFalse);
+            expect(tapeState(pressed('( 5')).holdsWorkToBank, isFalse);
+            expect(tapeState(pressed('( 5 +')).holdsWorkToBank, isTrue);
+            expect(tapeState(pressed('5 + (')).holdsWorkToBank, isTrue);
+          });
+        });
+      },
+    );
+
     group('T1b: the order of the function-key groups (Section 1.5)', () {
       const reorderedUnitFirst = [
         CalculatorGroupId.unit,
@@ -3296,7 +3970,15 @@ void main() {
         build: () => bloc,
         act: (bloc) => type(bloc, '3 6 ft ÷ 1 2 ft = × 4'),
         skip: 9,
-        expect: () => [tapeState(pressed('3 6 ft ÷ 1 2 ft = × 4'))],
+        expect: () => [
+          tapeState(carriedForward('3 6 ft ÷ 1 2 ft =', '× 4')),
+          tapeState(carriedForward('3 6 ft ÷ 1 2 ft =', '× 4')).copyWith(
+            bankedTape: () => pressed('3 6 ft ÷ 1 2 ft ='),
+            bankedSessionId: () => 'session-1',
+            bankedCarriedForward: true,
+            toastsRaised: 1,
+          ),
+        ],
         verify: (bloc) {
           expect(row1(bloc.state), ['Calc: 12']);
           expect(bloc.state.equalsKeyId, CalculatorState.ansKey);
@@ -3309,7 +3991,12 @@ void main() {
         act: (bloc) => type(bloc, '3 6 ft ÷ 1 2 ft = [Length] 2 ft × 4'),
         skip: 12,
         expect: () => [
-          tapeState(pressed('3 6 ft ÷ 1 2 ft = [Length] 2 ft × 4')),
+          tapeState(pressed('[Length] 2 ft × 4')),
+          tapeState(pressed('[Length] 2 ft × 4')).copyWith(
+            bankedTape: () => pressed('3 6 ft ÷ 1 2 ft ='),
+            bankedSessionId: () => 'session-1',
+            toastsRaised: 1,
+          ),
         ],
         verify: (bloc) {
           expect(row1(bloc.state), ['Calc: 8ft 0in']);

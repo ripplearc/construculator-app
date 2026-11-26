@@ -10,6 +10,7 @@ import 'package:construculator/features/calculator/domain/repositories/calculato
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/add_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
@@ -28,7 +29,7 @@ import 'package:powersync/powersync.dart';
 /// lifetime, the settings repository, which follows the signed-in profile
 /// through the auth library, and the trade stores repository over the
 /// synced `user_calculator_stores` rows, which the bloc reads the sheet
-/// counts through. The history a banked tape is taken out of again is the
+/// counts through. The history a finished tape is banked to is the
 /// calculation library's, imported here.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
@@ -90,6 +91,9 @@ class CalculatorModule extends Module {
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: i()),
     );
+    i.add<BankCalculationSessionUseCase>(
+      () => BankCalculationSessionUseCase(repository: i()),
+    );
     i.add<DeleteCalculationSessionUseCase>(
       () => DeleteCalculationSessionUseCase(repository: i()),
     );
@@ -98,6 +102,7 @@ class CalculatorModule extends Module {
         materialCounts: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        bankSession: i(),
         deleteSession: i(),
       ),
     );

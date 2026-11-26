@@ -62,16 +62,15 @@ void main() {
       );
     });
 
-    testWidgets('renders a tape with an input chip, a result chip, a closed '
-        'bracket chip and an error chip (Section 1.1, term 2.22)', (
-      tester,
-    ) async {
+    testWidgets('renders a tape with a result chip carried forward, a closed '
+        'bracket chip, an input chip and an error chip (Section 1.1, term '
+        '2.22; rule 4.9)', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
       await pumpCalculatorPage(tester: tester, theme: theme);
 
-      blocOf(tester)
+      final bloc = blocOf(tester)
         ..add(const CalculatorKeySelected('Length'))
         ..add(const CalculatorDigitPressed('2'))
         ..add(const CalculatorUnitSelected(Unit.foot))
@@ -79,7 +78,14 @@ void main() {
         ..add(const CalculatorDigitPressed('3'))
         ..add(const CalculatorUnitSelected(Unit.foot))
         ..add(const CalculatorEqualsPressed())
-        ..add(const CalculatorOperatorPressed(Operator.add))
+        ..add(const CalculatorOperatorPressed(Operator.add));
+      // The + after a result banks the tape and carries Calc 6ft² forward
+      // (rule 4.9). The card shows once history has the tape and the next
+      // key closes it, so the tape is drawn without the card over it.
+      await tester.pump();
+      await tester.pump();
+      expect(bloc.state.bankedTape, isNotNull);
+      bloc
         ..add(const CalculatorControlActioned(ControlAction.paren))
         ..add(const CalculatorDigitPressed('2'))
         ..add(const CalculatorOperatorPressed(Operator.multiply))
@@ -92,6 +98,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
+      expect(bloc.state.bankedTape, isNull);
       expect(
         [for (final chip in blocOf(tester).state.chipsList) chip.type],
         containsAll([

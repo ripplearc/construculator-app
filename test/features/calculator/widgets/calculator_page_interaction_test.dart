@@ -5,6 +5,7 @@ import 'package:construculator/features/calculator/presentation/pages/calculator
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculation/testing/fake_calculation_session_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ void main() {
     FakeAppRouter? router,
     ThemeData? theme,
     FakeTradeStoresRepository? stores,
+    FakeCalculationSessionRepository? history,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -36,7 +38,8 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: CalculatorPage(
           router: router ?? FakeAppRouter(),
-          calculatorBlocFactory: () => calculatorBlocForTests(stores: stores),
+          calculatorBlocFactory: () =>
+              calculatorBlocForTests(stores: stores, history: history),
         ),
       ),
     );
@@ -103,7 +106,12 @@ void main() {
     expect(bloc.state.refusal, isNotNull);
 
     await press(tester, 'calc_key_clearAll');
-    expect(bloc.state, equals(CalculatorState.initial()));
+    expect(bloc.state.tape, CalculatorState.initial().tape);
+    expect(
+      bloc.state.bankedTape,
+      isNotNull,
+      reason: 'C banked the tape with its result (rule 4.9; U1)',
+    );
   });
 
   testWidgets('the keyboard is read in the app\'s words: the bracket key by '
@@ -1090,6 +1098,146 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  testWidgets('typing 9 after 12ft × 5ft = starts a new tape and shows '
+      '"Saved to history" with Calc 60ft², Undo and View; Undo brings Calc '
+      '60ft² back, drops the 9 and takes the session out of history '
+      '(walkthrough 13.2; S62; decision tree row 317; U1, CA-1097)', (
+    tester,
+  ) async {
+    final history = FakeCalculationSessionRepository();
+    addTearDown(history.dispose);
+    await pumpPage(tester, history: history);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_one',
+      'calc_key_two',
+      'calc_key_feet',
+      'calc_key_multiply',
+      'calc_key_five',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    final finished = bloc.state.tape;
+    expect(bloc.state.valueText, '60ft²');
+
+    await press(tester, 'calc_key_nine');
+    await settle(tester);
+
+    expect(bloc.state.tape.chips, hasLength(1));
+    expect(bloc.state.valueText, '9');
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Calc 60ft²', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.calculatorViewHistoryButton, findRichText: true),
+      findsOneWidget,
+    );
+    expect(history.sessions.single.resultText, '60ft²');
+
+    await tester.tap(find.text(l10n.calculatorUndoButton, findRichText: true));
+    await settle(tester);
+
+    expect(bloc.state.tape, finished);
+    expect(bloc.state.valueText, '60ft²');
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsNothing,
+    );
+    expect(history.sessions, isEmpty);
+  });
+
+  testWidgets('an operator after a result carries it forward: the card says '
+      'so, the new tape opens on the Calc chip and the equals key reads Ans '
+      '(rule 4.9; decision tree row 318)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_one',
+      'calc_key_two',
+      'calc_key_feet',
+      'calc_key_multiply',
+      'calc_key_five',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+
+    await press(tester, 'calc_key_multiply');
+    await settle(tester);
+
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistoryCarriedForward('Calc 60ft²'),
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+
+    await press(tester, 'calc_key_four');
+    await settle(tester);
+
+    expect(
+      find.textContaining(
+        l10n.calculatorToastSavedToHistory,
+        findRichText: true,
+      ),
+      findsNothing,
+      reason: 'the next key closes the card and still does its job',
+    );
+    expect(bloc.state.tape.chips, hasLength(2));
+    expect(bloc.state.equalsKeyId, CalculatorState.ansKey);
+  });
+
+  testWidgets('leaving the calculator banks the open tape: ✕ on a finished '
+      'tape asks the router to close the page, and history holds the tape '
+      'once the page is gone (Section 5.1, "Closes the calculator"; decision '
+      'tree row 422, case 1)', (tester) async {
+    final history = FakeCalculationSessionRepository();
+    addTearDown(history.dispose);
+    final router = FakeAppRouter();
+    await pumpPage(tester, router: router, history: history);
+    final bloc = blocOf(tester);
+    for (final key in const [
+      'calc_key_five',
+      'calc_key_add',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    final finished = bloc.state.tape;
+
+    await tester.tap(find.bySemanticsLabel(l10nOf(tester).closeButton));
+    await tester.pump();
+    expect(router.popCalls, 1);
+    expect(history.sessions, isEmpty, reason: 'banked when the page goes');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    expect(history.sessions.single.resultText, '10');
+    expect(history.tapes.values.single, finished);
   });
 
   testWidgets('a key that would leave the chip being typed or edited '
