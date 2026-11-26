@@ -100,7 +100,7 @@ void main() {
         '(rule 4.8; doc lines 726 and 3552)', () {
       final width = press(
         const Tape(),
-        '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 tap:1',
+        '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 tap:1 tap:1',
       );
       expect(
         width.editing,
@@ -144,7 +144,8 @@ void main() {
         'open (Section 5.5)', () {
       for (final keys in [
         '2 ft + 3 ft + 4 ft = tap:1 ✕',
-        '2 ft + 3 ft + 4 ft tap:2 tap:2 ✕',
+        '2 ft + 3 ft + 4 ft tap:2 tap:2 tap:2 ✕',
+        '2 ft + 3 ft + 4 ft tap:2 ✕',
       ]) {
         final emptied = press(const Tape(), keys);
         expect(emptied.editing, isNotNull, reason: keys);
@@ -159,13 +160,13 @@ void main() {
     test('⌫ after a tap sealed the last value reopens it and removes one '
         'step, never the whole value (B5; "⌫ removes the last token")', () {
       for (final (keys, chips) in [
-        ('1 2 ft + 5 ft tap:1 ⌫', ['12ft', '+5']),
+        ('1 2 ft + 5 ft tap:1 tap:1 ⌫', ['12ft', '+5']),
         ('1 2 ft + 5 ft tap:0 tap:0 ⌫', ['12ft', '+5']),
         (
-          '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 ⌫',
+          '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 tap:1 ⌫',
           ['Length22ft', 'Width18ft 8'],
         ),
-        ('1 2 ft tap:0 ⌫', ['12']),
+        ('1 2 ft tap:0 tap:0 ⌫', ['12']),
       ]) {
         final sealed = press(const Tape(), keys.substring(0, keys.length - 2));
         expect(sealed.active, isNull, reason: keys);
@@ -175,16 +176,19 @@ void main() {
         expect(tape.active, same(tape.chips.last), reason: keys);
       }
       expect(
-        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 ⌫ in')),
+        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 ⌫ in')),
         ['12ft', '+5in'],
         reason: 'the keys type into the value ⌫ reopened',
       );
       expect(
-        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 ⌫ ⌫ ⌫')),
+        texts(press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 ⌫ ⌫ ⌫')),
         ['12ft'],
         reason: 'with nothing left in it the chip goes, as an active one does',
       );
-      final resealed = press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 tap:1 ⌫');
+      final resealed = press(
+        const Tape(),
+        '1 2 ft + 5 ft tap:1 tap:1 tap:1 tap:1 ⌫',
+      );
       expect(texts(resealed), ['12ft', '+5']);
       expect(
         resealed.editing,
@@ -193,13 +197,13 @@ void main() {
             'the seal of an edit clears its mark, so the chip ⌫ reopens '
             'after it is entry again',
       );
-      final edited = press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 ⌫');
+      final edited = press(const Tape(), '1 2 ft + 5 ft tap:1 tap:1 tap:1 ⌫');
       expect(texts(edited), ['12ft', '+5']);
       expect(
         edited.editing,
         isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 1),
         reason:
-            'a second tap reopens the sealed chip as an edit, and ⌫ '
+            'a tap on the sealed chip reopens it as an edit, and ⌫ '
             'removes one step there too',
       );
     });
@@ -258,8 +262,24 @@ void main() {
             'Width follows with no operator, so the emptied Length goes '
             '(N5)',
       );
-      final alone = press(const Tape(), '1 2 ft tap:0 tap:0 ✕ ⌫');
+      final alone = press(const Tape(), '1 2 ft tap:0 ✕ ⌫');
       expect(alone.isEmpty, isTrue, reason: 'nothing follows, so it goes');
+    });
+
+    test('⌫ on the emptied first chip in front of the error chip of a ÷ 0 '
+        'is refused too, so the error chip and the Calc after it are never '
+        'left on their own; a value typed into it fills it (rule 4.8 '
+        '"Deleting the first value of a chain")', () {
+      final chain = press(const Tape(), '5 ÷ 0 = 4 × 2 =');
+      expect(texts(chain), ['5', 'divisionByZero', '÷4', '×2', 'Calc2.5']);
+
+      final emptied = press(chain, 'tap:0 ⌫');
+      expect(texts(emptied), ['', 'divisionByZero', '÷4', '×2', 'Calc2.5']);
+      expect(
+        emptied.backspace(),
+        const TapeRefused(TapeRefusal.typeANewFirstValue),
+      );
+      expect(texts(press(emptied, '8')).first, '8');
     });
 
     test('= during an edit finishes the edit and lands the Calc when the '
@@ -530,11 +550,49 @@ void main() {
       );
     });
 
-    test('a tap on the chip being typed at the end seals it', () {
-      final tape = press(const Tape(), '[Length] 2 2 ft tap:0');
+    test('a tap on the chip being typed opens it for edit with its value '
+        'in the buffer, so the next digit goes on with it and never starts '
+        'a chip of its own; a second tap finishes the edit (rule 4.8)', () {
+      final tapped = press(const Tape(), '5 + 3 tap:1');
+      expect(texts(tapped), ['5', '+3']);
+      expect(tapped.editing!.index, 1);
+      expect(tapped.active, same(tapped.chips[1]));
+      expect(texts(press(tapped, '4')), ['5', '+34']);
+      expect(texts(press(tapped, '4 =')), ['5', '+34', 'Calc39']);
 
-      expect(tape.active, isNull);
-      expect(texts(tape), ['Length22ft']);
+      final cleared = press(const Tape(), '1 2 ft + 5 ft tap:1 ✕');
+      expect(texts(cleared), ['12ft', '+']);
+      expect(cleared.editing!.index, 1, reason: '✕ clears it and it stays');
+
+      final named = press(const Tape(), '[Length] 2 2 ft tap:0');
+      expect(texts(named), ['Length22ft']);
+      expect(named.editing!.index, 0);
+      final sealed = press(named, 'tap:0');
+      expect(texts(sealed), ['Length22ft']);
+      expect(sealed.active, isNull);
+      expect(sealed.editing, isNull);
+
+      final compound = press(const Tape(), '1 8 ft 8 in tap:0 5');
+      expect(texts(compound), ['18ft 8in 5']);
+      expect(
+        unit(compound, Unit.inch),
+        const TapeEntryRefused(EntryRefusal.cannotAppendUnit),
+        reason:
+            'the digit goes on with the value and a unit that cannot '
+            'continue it is refused in place, so 18ft 8in never drops out '
+            'of the Calc behind a chip of its own',
+      );
+    });
+
+    test('a tap on an empty chip a key opened is refused, since it has no '
+        'value to edit', () {
+      final opened = press(const Tape(), '[Length]');
+
+      expect(
+        opened.tapChip(0),
+        const TapeRefused(TapeRefusal.finishThisValueFirst),
+      );
+      expect(opened.editing, isNull);
     });
 
     test('a result, an error chip, a closed bracket and a place off the tape '

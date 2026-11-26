@@ -83,11 +83,12 @@ enum TapeRefusal {
   nothingToDelete,
 
   /// ⌫ on the first chip of a chain after it was emptied, while a chip an
-  /// operator leads follows it (rule 4.8, "Deleting the first value of a
-  /// chain"): the empty chip "…" stays, since a tape never starts with an
-  /// operator, and the red Alert says "Type a new first value, or press C
-  /// to start again." A named value that follows with no operator (Length
-  /// then Width) lets ⌫ remove the emptied chip as anywhere else.
+  /// operator leads, or the error chip of a ÷ 0, follows it (rule 4.8,
+  /// "Deleting the first value of a chain"): the empty chip "…" stays,
+  /// since a tape never starts with an operator or with an error, and the
+  /// red Alert says "Type a new first value, or press C to start again."
+  /// A named value that follows with no operator (Length then Width) lets
+  /// ⌫ remove the emptied chip as anywhere else.
   typeANewFirstValue,
 
   /// A chip tapped while ÷ still waits for its divisor (5 ÷ 0 =, then a tap
@@ -1903,7 +1904,7 @@ class Tape extends Equatable {
       :final index,
       chip: ValueChip(entry: EntryBuffer(isEmpty: true)),
     )) {
-      if (index == 0 && chips.length > 1 && _leadsWithAnOperator(chips[1])) {
+      if (index == 0 && chips.length > 1 && _needsAValueBefore(chips[1])) {
         return const TapeRefused(TapeRefusal.typeANewFirstValue);
       }
       return _withChipRemoved(index);
@@ -2028,10 +2029,13 @@ class Tape extends Equatable {
   /// A tap on the chip at [index] (Section 1.1, "Tap an input chip to edit
   /// it"; rule 4.8). On a finished value it reopens the chip in place with
   /// its old value still in the buffer, so ✕ clears it and the keys retype
-  /// it. On the chip being edited, or the one being typed, it finishes the
-  /// edit as = does: the chip seals. On another chip while an edit is open
-  /// it finishes that edit first; an edit that leaves its value broken
-  /// cannot be left this way either
+  /// it. The chip being typed is opened the same way, value and all, so the
+  /// next digit goes on with it and never starts a chip of its own
+  /// (5 + 3, a tap on +3, then 4 reads +34). On the chip being edited it
+  /// finishes the edit as = does: the chip seals. An empty chip a key opened
+  /// has no value to edit, so the tap is refused as an unfinished value is.
+  /// On another chip while an edit is open it finishes that edit first; an
+  /// edit that leaves its value broken cannot be left this way either
   /// ([TapeRefusal.finishThisValueFirst], Section 5.5: "another chip is
   /// tapped while an edited chip holds a dangling number"). A chip a key
   /// opened and nothing was typed into is dropped by the tap, as the strip's
@@ -2053,7 +2057,15 @@ class Tape extends Equatable {
       return const TapeRefused(TapeRefusal.chipCannotBeEdited);
     }
     final activeIndex = _activeIndex;
-    if (activeIndex == index) return _leavingEdit(TapeChanged.new);
+    if (activeIndex == index) {
+      final current = chips[index] as ValueChip;
+      if (!current.isEditing && !current.entry.isEmpty) {
+        return TapeChanged(
+          _replaceChipAt(index, current.copyWith(isEditing: true)),
+        );
+      }
+      return _leavingEdit(TapeChanged.new);
+    }
     var tape = this;
     if (activeIndex != null) {
       final current = chips[activeIndex] as ValueChip;
@@ -2083,8 +2095,8 @@ class Tape extends Equatable {
   static bool _waitsForItsDivisor(ValueChip chip) =>
       chip.operator == Operator.divide && chip.entry.isEmpty;
 
-  static bool _leadsWithAnOperator(TapeChip chip) => switch (chip) {
-    ValueChip(operator: _?) || BracketChip(operator: _?) => true,
+  static bool _needsAValueBefore(TapeChip chip) => switch (chip) {
+    ValueChip(operator: _?) || BracketChip(operator: _?) || ErrorChip() => true,
     _ => false,
   };
 

@@ -49,8 +49,18 @@
 
         <!-- RULE 4: a second tap on the edited chip reopens it instead of
              finishing the edit -->
-        <regex pattern="if \(activeIndex == index\) return _leavingEdit\(TapeChanged\.new\);" dotAll="true" id="tape_edit.tap.second_tap_not_a_close">
-            <mutation text=""/>
+        <regex pattern="\}\s*return _leavingEdit\(TapeChanged\.new\);\s*\}\s*var tape = this;" dotAll="true" id="tape_edit.tap.second_tap_not_a_close">
+            <mutation text="} } var tape = this;"/>
+        </regex>
+
+        <!-- RULE 4a (R4): a tap on the chip being typed seals it instead of
+             opening it for edit, a second tap on the edited chip marks it
+             again instead of sealing it, or an empty chip a key opened is
+             opened as an edit -->
+        <regex pattern="if \(!current\.isEditing &amp;&amp; !current\.entry\.isEmpty\) \{" dotAll="true" id="tape_edit.tap.typed_chip_opened">
+            <mutation text="if (false) {"/>
+            <mutation text="if (!current.entry.isEmpty) {"/>
+            <mutation text="if (!current.isEditing) {"/>
         </regex>
 
         <!-- RULE 5b: a tap on another chip drops an emptied edit at the end
@@ -108,11 +118,17 @@
         <!-- RULE 12: ⌫ on an emptied edit keeps the chip, removes the
              emptied first chip of a chain, or keeps an emptied first chip
              that nothing follows (R1, N1) -->
-        <regex pattern="if \(index == 0 &amp;&amp; chips\.length &gt; 1 &amp;&amp; _leadsWithAnOperator\(chips\[1\]\)\) \{\s*return const TapeRefused\(TapeRefusal\.typeANewFirstValue\);\s*\}\s*return _withChipRemoved\(index\);" dotAll="true" id="tape_edit.backspace.empty_edit_kept">
+        <regex pattern="if \(index == 0 &amp;&amp; chips\.length &gt; 1 &amp;&amp; _needsAValueBefore\(chips\[1\]\)\) \{\s*return const TapeRefused\(TapeRefusal\.typeANewFirstValue\);\s*\}\s*return _withChipRemoved\(index\);" dotAll="true" id="tape_edit.backspace.empty_edit_kept">
             <mutation text="return TapeChanged(this);"/>
             <mutation text="return _withChipRemoved(index);"/>
             <mutation text="if (index == 0) { return const TapeRefused(TapeRefusal.typeANewFirstValue); } return _withChipRemoved(index);"/>
             <mutation text="if (index == 0 &amp;&amp; chips.length &gt; 1) { return const TapeRefused(TapeRefusal.typeANewFirstValue); } return _withChipRemoved(index);"/>
+        </regex>
+
+        <!-- RULE 12a (R4): ⌫ removes the emptied first chip in front of the
+             error chip of a ÷ 0, so the tape starts with an error -->
+        <regex pattern="ValueChip\(operator: _\?\) \|\| BracketChip\(operator: _\?\) \|\| ErrorChip\(\) =&gt; true," dotAll="true" id="tape_edit.backspace.first_chip_before_an_error">
+            <mutation text="ValueChip(operator: _?) || BracketChip(operator: _?) =&gt; true,"/>
         </regex>
 
         <!-- RULE 19 (R2, B3): ( inside a chip edit leaves the edit and opens a
