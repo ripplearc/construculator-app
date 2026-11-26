@@ -160,14 +160,22 @@ class CalculatorSessionBanked extends CalculatorEvent {
   /// The tape that went to history, as it was.
   final Tape tape;
 
+  /// The id history keeps the session under, which Undo removes it by;
+  /// `null` when nothing was stored.
+  final String? sessionId;
+
   /// Whether its result opened the new tape as a Calc chip (an operator
   /// after a result), so the card reads "carried forward".
   final bool carriedForward;
 
-  const CalculatorSessionBanked(this.tape, {this.carriedForward = false});
+  const CalculatorSessionBanked(
+    this.tape, {
+    this.sessionId,
+    this.carriedForward = false,
+  });
 
   @override
-  List<Object?> get props => [tape, carriedForward];
+  List<Object?> get props => [tape, sessionId, carriedForward];
 }
 
 /// Undo on the "Saved to history" card: the banked tape comes back exactly

@@ -249,4 +249,42 @@ class DatabaseConstants {
 
   /// A remembered value's magnitude in its dimension's canonical unit.
   static const String magnitudeColumn = 'magnitude';
+
+  /// Local-only PowerSync table of the calculator's history: one row per
+  /// banked tape, what its history card shows.
+  static const String calculatorSessionsTable = 'calculator_sessions';
+
+  /// Local-only PowerSync table of the banked tapes themselves: one row
+  /// per session, the chip list as JSON.
+  static const String calculatorTapesTable = 'calculator_tapes';
+
+  /// A session's name on its history card; `null` until the user or the
+  /// bank gives it one.
+  static const String titleColumn = 'title';
+
+  /// A session's last result as it read when banked; `null` for a tape
+  /// banked without one.
+  static const String resultTextColumn = 'result_text';
+
+  /// A session's last result in its dimension's canonical unit.
+  static const String resultValueColumn = 'result_value';
+
+  /// A session's last result's dimension: a `Dimension` name.
+  static const String resultDimensionColumn = 'result_dimension';
+
+  /// The unit a session's last result was spelled in: a `Unit` name, or
+  /// `null` for an angle or a bare number.
+  static const String resultUnitColumn = 'result_unit';
+
+  /// When a tape was last banked into its session.
+  static const String lastCalculationAtColumn = 'last_calculation_at';
+
+  /// The session a tape row belongs to.
+  static const String sessionIdColumn = 'session_id';
+
+  /// A tape's chip list as JSON text.
+  static const String computationColumn = 'computation';
+
+  /// The version of the JSON format a tape was written in.
+  static const String schemaVersionColumn = 'schema_version';
 }

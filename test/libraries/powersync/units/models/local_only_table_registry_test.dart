@@ -79,6 +79,20 @@ void main() {
       expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
     });
 
+    test('registers calculator_sessions and calculator_tapes to clear when '
+        'the user changes, as the remembered values are (UX Design Doc '
+        'Appendix E; K1, CA-1081)', () {
+      for (final table in [
+        DatabaseConstants.calculatorSessionsTable,
+        DatabaseConstants.calculatorTapesTable,
+      ]) {
+        final entry = LocalOnlyTableRegistry.registrations.singleWhere(
+          (entry) => entry.tableName == table,
+        );
+        expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
+      }
+    });
+
     test('reports a local-only table that is not registered', () {
       final problems = problemsOf(schemaOf(localOnly: ['notes', 'drafts']), [
         clearedNote,
@@ -169,6 +183,8 @@ void main() {
             'DELETE FROM current_company',
             'DELETE FROM your_rate_refusals',
             'DELETE FROM calculator_recents',
+            'DELETE FROM calculator_sessions',
+            'DELETE FROM calculator_tapes',
           ]),
         );
       });
