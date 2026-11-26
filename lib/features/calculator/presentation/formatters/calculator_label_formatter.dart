@@ -369,9 +369,10 @@ class CalculatorLabelFormatter {
   /// The kind of [unit] for "`<Key>` takes a length, not `<kind>`": weight,
   /// an area, a volume, or board feet for the lumber unit (Section 5.2;
   /// product decision of 13 November 2026).
-  String unitKind(Unit unit) => l10n.calculatorUnitKind(
-    unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name,
-  );
+  String unitKind(Unit unit) => l10n.calculatorUnitKind(_kindName(unit));
+
+  static String _kindName(Unit unit) =>
+      unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name;
 
   /// The face of the key that presses [unit], for a toast that points at
   /// the key ("Press ⌫ to remove Lbs"; Section 5.2): the Unit group's keys
@@ -399,7 +400,7 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastNeedsLengthTitle(displayLabel(key), unitKind(unit)),
     CalculatorPitchUnitToast(:final unit) => l10n.calculatorToastPitchUnitTitle(
       displayLabel(PlainNumberKeys.pitch),
-      unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name,
+      _kindName(unit),
     ),
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),

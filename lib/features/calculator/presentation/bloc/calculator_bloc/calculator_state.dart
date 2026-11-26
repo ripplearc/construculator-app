@@ -598,7 +598,10 @@ class CalculatorState extends Equatable {
   /// and on a reopened chip alike, "Can't append" on a reopened compound.
   /// Pitch is no length: a weight or the lumber unit under it reads "Pitch
   /// cannot use a weight" (rule 4.10), and a unit refused after a rise
-  /// already typed there has no words in the doc and none here. The
+  /// already typed there has no words in the doc and none here. Neither
+  /// has a fraction under Pitch: the body would name what Inch and = give
+  /// for a bare number, and = on Pitch 1/4 is refused while on Pitch 6/12
+  /// it gives 26.57°, the angle of that rise in 12. The
   /// key-named guards speak only while a chip under a key is being typed:
   /// the tape refuses a unit key on a result the same way (Section 5.2 has
   /// no message for that), and that refusal stays silent here. Any other
@@ -624,10 +627,13 @@ class CalculatorState extends Equatable {
         TapeEntryRefused(reason: EntryRefusal.needsLength),
         final unit?,
         PlainNumberKeys.pitch,
-      ) =>
+      )
+          when _isABareNumber(typed) =>
         CalculatorPitchUnitToast(unit: unit, value: typed?.entry.text ?? ''),
       (
-        TapeEntryRefused(reason: EntryRefusal.tailNeedsLength),
+        TapeEntryRefused(
+          reason: EntryRefusal.needsLength || EntryRefusal.tailNeedsLength,
+        ),
         _,
         PlainNumberKeys.pitch,
       ) =>
@@ -655,4 +661,8 @@ class CalculatorState extends Equatable {
       _ => null,
     };
   }
+
+  static bool _isABareNumber(ValueChip? typed) =>
+      typed != null &&
+      typed.entry.tokens.every((token) => token.denominator == null);
 }

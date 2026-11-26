@@ -281,11 +281,17 @@
 
         <!-- RULE (S1c 5/5 R3, B3): Pitch gets the length words for a weight
              or board feet, or for a unit after a rise already typed -->
-        <regex pattern="\(\s*TapeEntryRefused\(reason: EntryRefusal\.needsLength\),\s*final unit\?,\s*PlainNumberKeys\.pitch,\s*\) =&gt;\s*CalculatorPitchUnitToast\(unit: unit, value: typed\?\.entry\.text \?\? ''\)," dotAll="true" id="calculator_state.toast.pitch_reads_as_a_length">
+        <regex pattern="\(\s*TapeEntryRefused\(reason: EntryRefusal\.needsLength\),\s*final unit\?,\s*PlainNumberKeys\.pitch,\s*\)\s*when _isABareNumber\(typed\) =&gt;\s*CalculatorPitchUnitToast\(unit: unit, value: typed\?\.entry\.text \?\? ''\)," dotAll="true" id="calculator_state.toast.pitch_reads_as_a_length">
             <mutation text=""/>
         </regex>
-        <regex pattern="\(\s*TapeEntryRefused\(reason: EntryRefusal\.tailNeedsLength\),\s*_,\s*PlainNumberKeys\.pitch,\s*\) =&gt;\s*null," dotAll="true" id="calculator_state.toast.pitch_tail_reads_as_a_length">
+        <regex pattern="\(\s*TapeEntryRefused\(\s*reason: EntryRefusal\.needsLength \|\| EntryRefusal\.tailNeedsLength,\s*\),\s*_,\s*PlainNumberKeys\.pitch,\s*\) =&gt;\s*null," dotAll="true" id="calculator_state.toast.pitch_tail_reads_as_a_length">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE (S1c 5/5 R4, B4): a fraction under Pitch gets the Pitch
+             words, whose body names what Inch and = give for a bare number -->
+        <regex pattern="PlainNumberKeys\.pitch,\s*\)\s*when _isABareNumber\(typed\) =&gt;" dotAll="true" id="calculator_state.toast.pitch_fraction_gets_the_words">
+            <mutation text="PlainNumberKeys.pitch,) =&gt;"/>
         </regex>
 
         <!-- RULE 35 (R2, B2): the second key order, a unit after a finished

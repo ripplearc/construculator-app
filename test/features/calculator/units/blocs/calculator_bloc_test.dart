@@ -1321,6 +1321,38 @@ void main() {
         );
       }
 
+      for (final (name, digits) in const [
+        ('1/4, where = is refused', ['1', '4']),
+        ('6/12, where = gives 26.57°', ['6', '1', '2']),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a weight under a fraction typed under Pitch is refused with no '
+          'words, since the Pitch body would name a = that is not true: '
+          'Pitch $name (B4; rule 4.10)',
+          build: () => bloc,
+          act: (bloc) {
+            bloc
+              ..add(const CalculatorKeySelected('Pitch'))
+              ..add(CalculatorDigitPressed(digits.first))
+              ..add(const CalculatorFractionPressed());
+            for (final digit in digits.skip(1)) {
+              bloc.add(CalculatorDigitPressed(digit));
+            }
+            bloc.add(const CalculatorKeySelected('lbs'));
+          },
+          skip: digits.length + 2,
+          expect: () => [
+            isA<CalculatorState>()
+                .having(
+                  (s) => s.refusal,
+                  'refusal',
+                  const TapeEntryRefused(EntryRefusal.needsLength),
+                )
+                .having((s) => s.toast, 'toast', isNull),
+          ],
+        );
+      }
+
       blocTest<CalculatorBloc, CalculatorState>(
         'a weight after a rise already typed under Pitch is refused with no '
         'words, since the doc has none for it and the length words would '
