@@ -12,6 +12,7 @@ import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
@@ -610,6 +611,38 @@ class Tape extends Equatable {
         :final key?,
       ) when chip.isReadable && chip.trigFunction == null)
         key: ?chip.value(parser),
+  };
+
+  /// The counts the tape ends on: the trade results accepted one after
+  /// another from the area before them, last first (Section 9: "the other
+  /// sizes stay on the strip").
+  List<ResultChip> get acceptedCounts => [
+    for (final chip in chips.reversed.takeWhile(_isACount)) chip as ResultChip,
+  ];
+
+  static bool _isACount(TapeChip chip) =>
+      chip is ResultChip &&
+      Trade.values.any((trade) => trade.resultKey == chip.key);
+
+  /// The area the trade follow-ons count (rule 4.4): the finished area on
+  /// the display — an accepted Area or a typed 180ft², never a Calc — or,
+  /// while the tape ends on counts accepted from it, the area before them.
+  /// A key after the counts puts something else on the display, and the
+  /// area leaves with it; `null` when nothing on the display is an area.
+  Area? get countedArea {
+    final counts = acceptedCounts.length;
+    if (counts == 0) return _finishedAreaIn(beingTyped ?? chips.lastOrNull);
+    final before = chips.length - counts - 1;
+    return before < 0 ? null : _finishedAreaIn(chips[before]);
+  }
+
+  Area? _finishedAreaIn(TapeChip? chip) => switch (chip) {
+    final ValueChip chip => switch (chip.value(parser)) {
+      final Area area => area,
+      _ => null,
+    },
+    ResultChip(value: final Area area, :final key) when key != calcKey => area,
+    _ => null,
   };
 
   /// The answer a trig chip still being typed offers ([SIN] 38 offers Sine
