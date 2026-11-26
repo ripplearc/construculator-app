@@ -88,6 +88,11 @@ class CalculatorState extends Equatable {
   /// never by a timer), so the page draws [toast] while this is false.
   final bool toastClosed;
 
+  /// The unit the last key stood for while the tape refused it, so that the
+  /// toast can spell it out ("Can't append yards here", Section 5.2);
+  /// `null` when the tape took the key or the key was not a unit.
+  final Unit? refusedUnit;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
@@ -99,6 +104,7 @@ class CalculatorState extends Equatable {
     this.removedResults = const [],
     this.toastsRaised = 0,
     this.toastClosed = false,
+    this.refusedUnit,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -117,6 +123,7 @@ class CalculatorState extends Equatable {
     List<String>? removedResults,
     int? toastsRaised,
     bool? toastClosed,
+    Unit? Function()? refusedUnit,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -127,6 +134,7 @@ class CalculatorState extends Equatable {
     removedResults: removedResults ?? this.removedResults,
     toastsRaised: toastsRaised ?? this.toastsRaised,
     toastClosed: toastClosed ?? this.toastClosed,
+    refusedUnit: refusedUnit != null ? refusedUnit() : this.refusedUnit,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -576,24 +584,85 @@ class CalculatorState extends Equatable {
     refusal,
     closesCalculator,
     removedResults,
+    refusedUnit,
     toastsRaised,
     toastClosed,
   ];
 
-  /// What the last key left to say in a toast (Section 5), or `null`: the
-  /// result an edit removed; the editing guard, with the incomplete number
-  /// as the value row shows it, which is nothing for an empty chip. Any
-  /// other refusal has no toast here yet; a result, an error and a bracket
-  /// chip take no tap on the page, so the tape's refusal of one never
-  /// reaches a toast.
+  /// What the last key left to say in a red Alert (Section 5), or `null`:
+  /// the results an edit removed; the editing guard, with the incomplete
+  /// number as the value row shows it, which is nothing for an empty chip;
+  /// and the unit guards, named for the unit the key stood for — "takes a
+  /// length, not `<kind>`" (one message whether the unit came first or after
+  /// a finished length) and "keeps" under a dimension key on fresh entry
+  /// and on a reopened chip alike, "Can't append" on a reopened compound.
+  /// Pitch is no length: a weight or the lumber unit under it reads "Pitch
+  /// cannot use a weight" (rule 4.10), and a unit refused after a rise
+  /// already typed there has no words in the doc and none here. Neither
+  /// has a fraction under Pitch: the body would name what Inch and = give
+  /// for a bare number, and = on Pitch 1/4 is refused while on Pitch 6/12
+  /// it gives 26.57°, the angle of that rise in 12. The
+  /// key-named guards speak only while a chip under a key is being typed:
+  /// the tape refuses a unit key on a result the same way (Section 5.2 has
+  /// no message for that), and that refusal stays silent here. Any other
+  /// refusal has no message here yet; a result, an error and a bracket chip
+  /// take no tap on the page, so the tape's refusal of one never reaches a
+  /// message.
   CalculatorToast? get toast {
     if (removedResults.isNotEmpty) {
       return CalculatorResultRemovedToast(keys: removedResults);
     }
-    return switch (refusal) {
-      TapeRefused(reason: TapeRefusal.finishThisValueFirst) =>
+    final typed = tape.beingTyped;
+    final key = typed?.key;
+    return switch ((refusal, refusedUnit, key)) {
+      (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _, _) =>
         CalculatorFinishValueToast(value: valueText),
+      (
+        TapeEntryRefused(reason: EntryRefusal.cannotAppendUnit),
+        final unit?,
+        _,
+      ) =>
+        CalculatorCannotAppendUnitToast(value: valueText, unit: unit),
+      (
+        TapeEntryRefused(reason: EntryRefusal.needsLength),
+        final unit?,
+        PlainNumberKeys.pitch,
+      )
+          when _isABareNumber(typed) =>
+        CalculatorPitchUnitToast(unit: unit, value: typed?.entry.text ?? ''),
+      (
+        TapeEntryRefused(
+          reason: EntryRefusal.needsLength || EntryRefusal.tailNeedsLength,
+        ),
+        _,
+        PlainNumberKeys.pitch,
+      ) =>
+        null,
+      (
+        TapeEntryRefused(reason: EntryRefusal.needsLength),
+        final unit?,
+        final key?,
+      ) =>
+        CalculatorNeedsLengthToast(key: key, unit: unit),
+      (
+        TapeEntryRefused(reason: EntryRefusal.tailNeedsLength),
+        final unit?,
+        final key?,
+      ) =>
+        CalculatorNeedsLengthToast(key: key, unit: unit),
+      (
+        TapeUnitRefused(
+          refusal: UnitKeyRefused(reason: UnitKeyRefusal.keepsLength),
+        ),
+        final unit?,
+        final key?,
+      ) =>
+        CalculatorKeepsLengthToast(key: key, unit: unit, value: valueText),
       _ => null,
     };
   }
+
+  static bool _isABareNumber(ValueChip? typed) =>
+      typed != null &&
+      typed.entry.tokens.every((token) => token.denominator == null);
 }

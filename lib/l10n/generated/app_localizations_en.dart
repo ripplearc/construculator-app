@@ -2516,6 +2516,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorChipTapToFinish => 'Finish editing';
 
   @override
+  String calculatorUnitName(String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'inch': 'inches',
+      'foot': 'feet',
+      'footInch': 'feet and inches',
+      'yard': 'yards',
+      'metre': 'meters',
+      'centimetre': 'centimeters',
+      'millimetre': 'millimeters',
+      'acre': 'acres',
+      'pound': 'pounds',
+      'kilogram': 'kilograms',
+      'ton': 'tons',
+      'metricTon': 'metric tons',
+      'boardFoot': 'board feet',
+      'other': '$unit',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get calculatorToastFinishValueTitle => 'Finish this value first';
 
   @override
@@ -2540,6 +2561,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String calculatorToastResultsRemovedMore(String first, int count) {
     return '$first and $count more removed — can\'t recompute from the new value.';
+  }
+
+  @override
+  String calculatorToastCannotAppendTitle(String unit) {
+    return 'Can\'t append $unit here';
+  }
+
+  @override
+  String calculatorToastCannotAppendBody(String value, String unit) {
+    return 'A compound value steps down within one system — 18ft 8in, 1m 20cm. $value can\'t continue with $unit. Use a smaller unit, backspace, or ✕ to retype.';
+  }
+
+  @override
+  String calculatorToastNeedsLengthTitle(String key, String kind) {
+    return '$key takes a length, not $kind';
+  }
+
+  @override
+  String calculatorUnitKind(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'weight': 'weight',
+      'area': 'an area',
+      'volume': 'a volume',
+      'boardFeet': 'board feet',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calculatorToastNeedsLengthBody(String unit) {
+    return 'Press ⌫ to remove $unit, then press Feet or Inch.';
+  }
+
+  @override
+  String calculatorToastPitchUnitTitle(String key, String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'boardFeet': '$key cannot use board feet',
+      'other': '$key cannot use a weight',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String calculatorToastPitchUnitBody(String value) {
+    return 'Press Inch for ${value}in/12in. Press = for $value degrees.';
+  }
+
+  @override
+  String calculatorToastKeepsLengthTitle(String key, String value) {
+    return '$key keeps $value';
+  }
+
+  @override
+  String calculatorToastKeepsLengthBody(String unit, String value, String key) {
+    return 'Pressing $unit again would make this $value² — $key can\'t hold an area or volume.';
   }
 
   @override

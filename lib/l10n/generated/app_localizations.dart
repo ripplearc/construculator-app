@@ -4430,6 +4430,12 @@ abstract class AppLocalizations {
   /// **'Finish editing'**
   String get calculatorChipTapToFinish;
 
+  /// A calculator unit spelled out in a toast, by the engine's unit id (UX Design Doc Section 5.2: 'titled with the unit spelled out')
+  ///
+  /// In en, this message translates to:
+  /// **'{unit, select, inch{inches} foot{feet} footInch{feet and inches} yard{yards} metre{meters} centimetre{centimeters} millimetre{millimeters} acre{acres} pound{pounds} kilogram{kilograms} ton{tons} metricTon{metric tons} boardFoot{board feet} other{{unit}}}'**
+  String calculatorUnitName(String unit);
+
   /// Title of the red Alert when a key would leave the chip being typed or edited incomplete (UX Design Doc Section 5, 'Finish this value first'; the guard applies on fresh entry as well)
   ///
   /// In en, this message translates to:
@@ -4465,6 +4471,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{first} and {count} more removed — can\'t recompute from the new value.'**
   String calculatorToastResultsRemovedMore(String first, int count);
+
+  /// Title of the toast when a unit cannot continue a reopened compound value (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t append {unit} here'**
+  String calculatorToastCannotAppendTitle(String unit);
+
+  /// Body of the 'Can't append <unit> here' toast (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'A compound value steps down within one system — 18ft 8in, 1m 20cm. {value} can\'t continue with {unit}. Use a smaller unit, backspace, or ✕ to retype.'**
+  String calculatorToastCannotAppendBody(String value, String unit);
+
+  /// Title of the red Alert when a unit that is not a length is pressed under a dimension key, in either key order (UX Design Doc Section 5.2; product decision of 13 November 2026: the title names the kind of the unit pressed — weight, area, volume or board feet)
+  ///
+  /// In en, this message translates to:
+  /// **'{key} takes a length, not {kind}'**
+  String calculatorToastNeedsLengthTitle(String key, String kind);
+
+  /// The kind of a calculator unit named in the '<Key> takes a length, not <kind>' Alert: weight, an area, a volume or board feet
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, weight{weight} area{an area} volume{a volume} boardFeet{board feet} other{{kind}}}'**
+  String calculatorUnitKind(String kind);
+
+  /// Body of the '<Key> takes a length' Alert, one text for both key orders (UX Design Doc Section 5.2; product decision of 13 November 2026); unit is the face of the key that was pressed
+  ///
+  /// In en, this message translates to:
+  /// **'Press ⌫ to remove {unit}, then press Feet or Inch.'**
+  String calculatorToastNeedsLengthBody(String unit);
+
+  /// Title of the red Alert when a weight or the lumber unit is pressed under the Pitch key (UX Design Doc rule 4.10: 'Pitch cannot use a weight', 'Pitch cannot use board feet'); kind is boardFeet for the lumber unit and weight otherwise
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, boardFeet{{key} cannot use board feet} other{{key} cannot use a weight}}'**
+  String calculatorToastPitchUnitTitle(String key, String kind);
+
+  /// Body of the 'Pitch cannot use a weight' Alert (UX Design Doc rule 4.10); value is the number typed under Pitch, which Inch reads as a rise per 12in of run and = as degrees
+  ///
+  /// In en, this message translates to:
+  /// **'Press Inch for {value}in/12in. Press = for {value} degrees.'**
+  String calculatorToastPitchUnitBody(String value);
+
+  /// Title of the toast when a unit is pressed again under a dimension key that holds lengths only (UX Design Doc Section 5.2, '<Key> keeps <value>')
+  ///
+  /// In en, this message translates to:
+  /// **'{key} keeps {value}'**
+  String calculatorToastKeepsLengthTitle(String key, String value);
+
+  /// Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Pressing {unit} again would make this {value}² — {key} can\'t hold an area or volume.'**
+  String calculatorToastKeepsLengthBody(String unit, String value, String key);
 
   /// Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit
   ///
