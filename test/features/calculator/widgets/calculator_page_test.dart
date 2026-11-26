@@ -856,10 +856,16 @@ void main() {
       )!;
       final keyboard = tester.widget<CoreKeyboard>(find.byType(CoreKeyboard));
 
-      expect(keyboard.parenSemanticLabel, l10n.calculatorBracketKeySemantics);
-      expect(keyboard.parenSemanticHint, l10n.calculatorBracketKeyHint);
       expect(
-        keyboard.reorderSemanticsLabelBuilder!(l10n.calculatorGroupShapes),
+        keyboard.semantics.controlLabel(ControlAction.paren),
+        l10n.calculatorBracketKeySemantics,
+      );
+      expect(
+        keyboard.semantics.controlHint(ControlAction.paren),
+        l10n.calculatorBracketKeyHint,
+      );
+      expect(
+        keyboard.semantics.reorderHandle(l10n.calculatorGroupShapes),
         l10n.calculatorReorderGroupSemantics(l10n.calculatorGroupShapes),
       );
     },

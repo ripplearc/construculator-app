@@ -2577,6 +2577,59 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String calculatorKeyDigitSemantics(String digit) {
+    return '$digit button';
+  }
+
+  @override
+  String calculatorKeyOperatorSemantics(String operator) {
+    return '$operator operator button';
+  }
+
+  @override
+  String calculatorKeyUnitSemantics(String unit) {
+    return '$unit unit button';
+  }
+
+  @override
+  String get calculatorKeyDeleteSemantics => 'Delete button';
+
+  @override
+  String get calculatorKeyDeleteHint => 'Deletes the last entered character';
+
+  @override
+  String get calculatorKeyClearAllSemantics => 'Clear all button';
+
+  @override
+  String get calculatorKeyClearAllHint => 'Clears all input';
+
+  @override
+  String calculatorKeyResultSemantics(String face) {
+    return '$face button';
+  }
+
+  @override
+  String get calculatorKeyResultHint => 'Calculates and displays the result';
+
+  @override
+  String get calculatorKeyboardHandleSemantics => 'Keyboard drag handle';
+
+  @override
+  String get calculatorViewAllSemantics => 'View all function keys';
+
+  @override
+  String get calculatorViewAllHint =>
+      'Opens a bottom sheet with all available function keys';
+
+  @override
+  String get calculatorUnitSystemSwitchSemantics => 'Unit system switch';
+
+  @override
+  String calculatorGroupHeaderSemantics(String group) {
+    return 'Function group header for $group';
+  }
+
+  @override
   String get calculatorChipTapToEdit => 'Edit';
 
   @override

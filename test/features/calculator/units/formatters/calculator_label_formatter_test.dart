@@ -99,6 +99,68 @@ void main() {
     });
   });
 
+  group('CalculatorLabelFormatter keyboard semantics (CA-1198)', () {
+    final l10n = AppLocalizationsEn();
+    final semantics = CalculatorLabelFormatter(l10n).keyboardSemantics;
+
+    test('each key is read in the app\'s words, built from what it shows', () {
+      expect(
+        semantics.digitLabel(DigitType.seven),
+        l10n.calculatorKeyDigitSemantics(DigitType.seven.label),
+      );
+      expect(
+        semantics.operatorLabel(OperatorType.add),
+        l10n.calculatorKeyOperatorSemantics(OperatorType.add.symbol),
+      );
+      expect(
+        semantics.unitLabel(UnitType.feet),
+        l10n.calculatorKeyUnitSemantics(UnitType.feet.label),
+      );
+      expect(
+        semantics.resultLabel('='),
+        l10n.calculatorKeyResultSemantics('='),
+      );
+      expect(semantics.resultHint, l10n.calculatorKeyResultHint);
+    });
+
+    test('each control key has its own label and hint', () {
+      expect(
+        [
+          for (final action in const [
+            ControlAction.delete,
+            ControlAction.clearAll,
+            ControlAction.paren,
+          ])
+            (semantics.controlLabel(action), semantics.controlHint(action)),
+        ],
+        [
+          (l10n.calculatorKeyDeleteSemantics, l10n.calculatorKeyDeleteHint),
+          (l10n.calculatorKeyClearAllSemantics, l10n.calculatorKeyClearAllHint),
+          (l10n.calculatorBracketKeySemantics, l10n.calculatorBracketKeyHint),
+        ],
+      );
+    });
+
+    test('the handle, View all, the unit switch and a group are read in the '
+        'app\'s words', () {
+      expect(semantics.dragHandle, l10n.calculatorKeyboardHandleSemantics);
+      expect(semantics.viewAllLabel, l10n.calculatorViewAllSemantics);
+      expect(semantics.viewAllHint, l10n.calculatorViewAllHint);
+      expect(
+        semantics.unitSystemSwitch,
+        l10n.calculatorUnitSystemSwitchSemantics,
+      );
+      expect(
+        semantics.groupHeader('Shapes'),
+        l10n.calculatorGroupHeaderSemantics('Shapes'),
+      );
+      expect(
+        semantics.reorderHandle('Shapes'),
+        l10n.calculatorReorderGroupSemantics('Shapes'),
+      );
+    });
+  });
+
   group('CalculatorLabelFormatter toasts (Section 5)', () {
     final l10n = AppLocalizationsEn();
     final labels = CalculatorLabelFormatter(l10n);

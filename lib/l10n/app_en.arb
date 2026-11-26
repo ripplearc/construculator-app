@@ -3807,6 +3807,92 @@
       }
     }
   },
+  "calculatorKeyDigitSemantics": "{digit} button",
+  "@calculatorKeyDigitSemantics": {
+    "description": "Screen reader label of a digit key on the calculator keyboard (UX Design Doc Section 1.3; CA-1198)",
+    "placeholders": {
+      "digit": {
+        "type": "String",
+        "example": "7"
+      }
+    }
+  },
+  "calculatorKeyOperatorSemantics": "{operator} operator button",
+  "@calculatorKeyOperatorSemantics": {
+    "description": "Screen reader label of an operator key on the calculator keyboard (UX Design Doc Section 1.3; CA-1198)",
+    "placeholders": {
+      "operator": {
+        "type": "String",
+        "example": "+"
+      }
+    }
+  },
+  "calculatorKeyUnitSemantics": "{unit} unit button",
+  "@calculatorKeyUnitSemantics": {
+    "description": "Screen reader label of a unit key on the calculator keyboard, by the face the key shows (UX Design Doc Section 1.3; CA-1198)",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "Feet"
+      }
+    }
+  },
+  "calculatorKeyDeleteSemantics": "Delete button",
+  "@calculatorKeyDeleteSemantics": {
+    "description": "Screen reader label of the calculator keyboard's ⌫ key (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorKeyDeleteHint": "Deletes the last entered character",
+  "@calculatorKeyDeleteHint": {
+    "description": "Screen reader hint of the calculator keyboard's ⌫ key; withheld while the key is disabled (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorKeyClearAllSemantics": "Clear all button",
+  "@calculatorKeyClearAllSemantics": {
+    "description": "Screen reader label of the calculator keyboard's C key (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorKeyClearAllHint": "Clears all input",
+  "@calculatorKeyClearAllHint": {
+    "description": "Screen reader hint of the calculator keyboard's C key; withheld while the key is disabled (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorKeyResultSemantics": "{face} button",
+  "@calculatorKeyResultSemantics": {
+    "description": "Screen reader label of the calculator keyboard's result key, by the face it shows (=, AREA, Update) (UX Design Doc Section 1.3; CA-1198)",
+    "placeholders": {
+      "face": {
+        "type": "String",
+        "example": "="
+      }
+    }
+  },
+  "calculatorKeyResultHint": "Calculates and displays the result",
+  "@calculatorKeyResultHint": {
+    "description": "Screen reader hint of the calculator keyboard's result key while it shows its default face (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorKeyboardHandleSemantics": "Keyboard drag handle",
+  "@calculatorKeyboardHandleSemantics": {
+    "description": "Screen reader label of the handle that folds and unfolds the calculator keypad (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorViewAllSemantics": "View all function keys",
+  "@calculatorViewAllSemantics": {
+    "description": "Screen reader label of the View all button on the calculator's function-key strip; keep the visible \"View all\" inside it (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorViewAllHint": "Opens a bottom sheet with all available function keys",
+  "@calculatorViewAllHint": {
+    "description": "Screen reader hint of the View all button on the calculator's function-key strip (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorUnitSystemSwitchSemantics": "Unit system switch",
+  "@calculatorUnitSystemSwitchSemantics": {
+    "description": "Screen reader label of the Imperial/Metric switch in the calculator's View all sheet (UX Design Doc Section 1.3; CA-1198)"
+  },
+  "calculatorGroupHeaderSemantics": "Function group header for {group}",
+  "@calculatorGroupHeaderSemantics": {
+    "description": "Screen reader label of a group header in the calculator's View all sheet (UX Design Doc Section 1.3; CA-1198)",
+    "placeholders": {
+      "group": {
+        "type": "String",
+        "example": "Materials"
+      }
+    }
+  },
   "calculatorChipTapToEdit": "Edit",
   "@calculatorChipTapToEdit": {
     "description": "Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)"
