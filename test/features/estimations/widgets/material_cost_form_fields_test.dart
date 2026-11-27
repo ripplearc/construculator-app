@@ -721,7 +721,7 @@ void main() {
       });
       final boldSpan = spans.singleWhere((span) => span.text == searchIcon);
       expect(
-        boldSpan.style?.fontWeight,
+        boldSpan.style!.fontWeight,
         tester.element(hint).textTheme.bodySmallSemiBold.fontWeight,
       );
     });
