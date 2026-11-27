@@ -35,13 +35,10 @@ class Arbiter extends Equatable {
   /// The strip [tape] earns over [stores].
   Arbitration arbitrate(Tape tape, TradeStores stores) {
     final area = tape.countedArea;
+    final trade = tape.countedAreaTrade;
     final counts = area == null
         ? const <TradeCount>[]
-        : _trades.countsFor(
-            Trade.drywall,
-            area,
-            stores.sizesFor(Trade.drywall),
-          );
+        : _trades.countsFor(trade, area, stores.sizesFor(trade));
     final silence = _silenceOf(tape);
     if (silence != null) {
       return Arbitration(
@@ -103,10 +100,14 @@ class Arbiter extends Equatable {
   List<StripOffer> ruleAnswersFor(Tape tape) => [
     for (final answer in _rules.answersFor(tape.namedValues))
       if (!tape.chips.any(
-        (chip) => chip is ResultChip && chip.key == answer.key,
+        (chip) => chip is ResultChip && _lands(chip, answer.key),
       ))
         _answer(answer),
   ];
+
+  // An area a trade key named is the answer it named, landed.
+  static bool _lands(ResultChip chip, String key) =>
+      chip.key == key || chip.namedFrom == key;
 
   static StripOffer _answer(Answer answer) => StripOffer(
     key: answer.key,

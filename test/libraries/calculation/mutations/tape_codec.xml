@@ -144,6 +144,15 @@
         <regex pattern="final Length length =&gt; length,\s*_ =&gt; throw FormatException\('Unreadable tape: \$where'\)," dotAll="true" id="tape_chip_codec.size.any_quantity_a_side">
             <mutation text="final Length length =&gt; length, _ =&gt; const Length(0, unit: Unit.inch),"/>
         </regex>
+
+        <!-- RULE 14 (G1, CA-1072): the answer a covered area named is not
+             written, or not read back -->
+        <regex pattern="_namedFromKey: \?chip\.namedFrom," dotAll="true" id="tape_chip_codec.named_from.not_written">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="namedFrom: TapeValueCodec\.optionalText\(json, _namedFromKey, where\)," dotAll="true" id="tape_chip_codec.named_from.not_read">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

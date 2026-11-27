@@ -629,12 +629,87 @@ class Tape extends Equatable {
   /// while the tape ends on counts accepted from it, the area before them.
   /// A key after the counts puts something else on the display, and the
   /// area leaves with it; `null` when nothing on the display is an area.
-  Area? get countedArea {
+  Area? get countedArea => _finishedAreaIn(_countedChip);
+
+  /// The trade [countedArea] is counted for: masonry for an area the Msnry
+  /// key named ([Trade.coveredAreaKey]), drywall for any other (Section 9:
+  /// a finished area gets its sheet counts).
+  Trade get countedAreaTrade => switch (_countedChip) {
+    ResultChip(:final key) when key == Trade.masonry.coveredAreaKey =>
+      Trade.masonry,
+    _ => Trade.drywall,
+  };
+
+  TapeChip? get _countedChip {
     final counts = acceptedCounts.length;
-    if (counts == 0) return _finishedAreaIn(beingTyped ?? chips.lastOrNull);
+    if (counts == 0) return beingTyped ?? chips.lastOrNull;
     final before = chips.length - counts - 1;
-    return before < 0 ? null : _finishedAreaIn(chips[before]);
+    return before < 0 ? null : chips[before];
   }
+
+  /// The Drywal or Msnry key on a tape that holds an area (Section 3.3:
+  /// "Takes: An area on the tape"), which names the area for [trade] so
+  /// that the strip counts it in that trade's pieces:
+  ///
+  /// - an Area or a Calc that is an area takes the name in place, "Drywall
+  ///   covered area 180ft²" (walkthrough 19.1, step 9), and a covered area
+  ///   takes the other trade's name;
+  /// - a typed area lands as the covered area after it (Section 9: "A
+  ///   typed area is as good as a computed one");
+  /// - with no area yet, the one Area the named values make lands under
+  ///   the name, no = needed (walkthrough 19.2, step 10).
+  ///
+  /// `null` when the key has nothing to name: no area, more than one the
+  /// named values could mean (a room has a floor and walls), a chip
+  /// reopened or a bracket open. The caller answers those.
+  TapeOutcome? pressTradeKey(Trade trade) {
+    if (editing != null || openBracket != null) return null;
+    final named = trade.coveredAreaKey;
+    final shown = beingTyped ?? chips.lastOrNull;
+    if (shown case ResultChip(value: Area())) {
+      return _replaceLastChip(
+        ResultChip(
+          key: named,
+          value: shown.value,
+          operator: shown.operator,
+          readIn: shown.readIn,
+          namedFrom: shown.namedFrom ?? shown.key,
+        ),
+      );
+    }
+    if (shown case ValueChip(operator: null)) {
+      if (shown.value(parser) case final Area area) {
+        return landAnswer(named, area);
+      }
+      final areas = [
+        for (final answer in const DeterministicRules().answersFor(namedValues))
+          if (answer.value is Area) answer,
+      ];
+      if (areas case [Answer(key: DeterministicRules.areaKey, :final value)]) {
+        return _landedNaming(named, value, DeterministicRules.areaKey);
+      }
+    }
+    return null;
+  }
+
+  // [named] landed as the answer [from] of the named values, which it
+  // keeps so that an edit before it finds that answer again.
+  TapeOutcome _landedNaming(String named, Quantity value, String from) =>
+      switch (landAnswer(named, value)) {
+        TapeChanged(:final tape, :final notice, :final removed) => TapeChanged(
+          tape._replaceLastWith(
+            ResultChip(key: named, value: value, namedFrom: from),
+          ),
+          notice: notice,
+          removed: removed,
+        ),
+        final refused => refused,
+      };
+
+  /// Whether [key] is the name a trade key gave an area
+  /// ([Trade.coveredAreaKey]).
+  static bool isACoveredAreaKey(String key) =>
+      Trade.values.any((trade) => trade.coveredAreaKey == key);
 
   Area? _finishedAreaIn(TapeChip? chip) => switch (chip) {
     final ValueChip chip => switch (chip.value(parser)) {
@@ -2676,6 +2751,7 @@ class Tape extends Equatable {
       return rebuiltTrigAnswer(result);
     }
     if (result.size case final size?) return _recounted(result, size);
+    if (isACoveredAreaKey(result.key)) return _coveredAgain(result);
     if (result.key == calcKey) {
       return switch (_lastChainTotal) {
         ChainValue(:final value, :final isCalculation)
@@ -2723,6 +2799,33 @@ class Tape extends Equatable {
       }
     }
     return null;
+  }
+
+  // A covered area is made again from what it named: the answer of the
+  // named values it was ([ResultChip.namedFrom]: Area, Wall area…), or for
+  // a Calc and a typed area the area the chain before it comes to; with
+  // nothing left to name, the chip goes.
+  ResultChip? _coveredAgain(ResultChip covered) {
+    final from = covered.namedFrom;
+    final area = from == null || from == calcKey
+        ? switch (_lastChainTotal) {
+            ChainValue(value: final Area area) => area,
+            _ => null,
+          }
+        : const DeterministicRules()
+              .answersFor(namedValues)
+              .where((answer) => answer.key == from)
+              .map((answer) => answer.value)
+              .whereType<Area>()
+              .firstOrNull;
+    if (area == null) return null;
+    return ResultChip(
+      key: covered.key,
+      value: _inTheReadingOf(covered, area),
+      operator: covered.operator,
+      readIn: covered.readIn,
+      namedFrom: from,
+    );
   }
 
   // A count is made again from the area before it at the size it was made

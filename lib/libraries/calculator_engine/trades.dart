@@ -12,10 +12,10 @@ import 'package:equatable/equatable.dart';
 /// what the accepted result is called.
 enum Trade {
   /// Sheets of drywall from the sheet-size store.
-  drywall('Drywall', 'Number of sheets'),
+  drywall('Drywall', 'Number of sheets', 'Drywall covered area'),
 
   /// Blocks, bricks or tiles from the masonry-size store.
-  masonry('Masonry', 'Number of pieces');
+  masonry('Masonry', 'Number of pieces', 'Masonry covered area');
 
   /// The key the strip labels the offer by.
   final String offerKey;
@@ -23,7 +23,12 @@ enum Trade {
   /// The key the accepted count is labelled by.
   final String resultKey;
 
-  const Trade(this.offerKey, this.resultKey);
+  /// The key an area is labelled by once the trade's key was pressed on it
+  /// (walkthroughs 19.1 and 19.2: "[Drywal] relabels it Drywall covered
+  /// area 180ft²").
+  final String coveredAreaKey;
+
+  const Trade(this.offerKey, this.resultKey, this.coveredAreaKey);
 }
 
 /// One stored piece: a sheet, a block, a brick or a tile, as the trade
