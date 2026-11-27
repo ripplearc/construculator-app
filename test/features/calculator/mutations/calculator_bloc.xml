@@ -569,6 +569,26 @@
         <regex pattern="await _addMaterialSize\(\s*trade: Trade\.drywall," dotAll="true" id="calculator_bloc.size_added.to_masonry">
             <mutation text="await _addMaterialSize(trade: Trade.masonry,"/>
         </regex>
+        <!-- T2b 2/3 (CA-1096; rule 4.7): Update on the pill is not handled;
+             its fields are swapped; the store is asked for the size turned
+             on its side; a refused Update says nothing (it raises the Alert
+             of Add, rows 505 and 525); the count is made again over a tape a
+             key put there meanwhile -->
+        <regex pattern="on&lt;CalculatorSizePillEdited&gt;\(_onSizePillEdited\);" dotAll="true" id="calculator_bloc.size_updated.unhandled">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="\[final lengthText, final widthText\],\s*\(:final trade, :final size\)\?," dotAll="true" id="calculator_bloc.size_updated.fields_swapped">
+            <mutation text="[final widthText, final lengthText], (:final trade, :final size)?,"/>
+        </regex>
+        <regex pattern="width: width,\s*height: height,\s*system: counted\.preferences\.system," dotAll="true" id="calculator_bloc.size_updated.on_its_side">
+            <mutation text="width: height, height: width, system: counted.preferences.system,"/>
+        </regex>
+        <regex pattern="\(failure\) =&gt; _tellUnlessSignedOut\(\s*emit,\s*failure,\s*state\.copyWith\(sizeNotAdded: true, toastClosed: false\),\s*\),\s*\(stored\) \{" dotAll="true" id="calculator_bloc.size_updated.refusal_silent">
+            <mutation text="(failure) =&gt; _tellUnlessSignedOut(emit, failure, state.copyWith(toastClosed: false),), (stored) {"/>
+        </regex>
+        <regex pattern="if \(state\.tape != counted\) return;" dotAll="true" id="calculator_bloc.size_updated.over_another_tape">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

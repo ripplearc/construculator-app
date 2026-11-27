@@ -242,6 +242,7 @@
             <mutation text="value: sizeText, kind: CoreDependentKeyKind.offer, onPressed: onPressed,"/>
             <mutation text="value: sizeText, kind: id.kind,"/>
         </regex>
+
     </rules>
 
     <commands>

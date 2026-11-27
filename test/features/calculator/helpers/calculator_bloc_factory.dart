@@ -2,6 +2,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/update_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
@@ -27,6 +28,8 @@ CalculatorBloc calculatorBlocForTests({
     deleteMaterialSize: DeleteMaterialSizeUseCase(repository: repository),
     // ignore: no_direct_instantiation
     addMaterialSize: AddMaterialSizeUseCase(repository: repository),
+    // ignore: no_direct_instantiation
+    updateMaterialSize: UpdateMaterialSizeUseCase(repository: repository),
     // ignore: no_direct_instantiation
     bankSession: BankCalculationSessionUseCase(repository: sessions),
     // ignore: no_direct_instantiation

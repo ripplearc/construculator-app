@@ -4,6 +4,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/update_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -86,6 +87,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final WatchTradeStoresUseCase _tradeStores;
   final DeleteMaterialSizeUseCase _deleteMaterialSize;
   final AddMaterialSizeUseCase _addMaterialSize;
+  final UpdateMaterialSizeUseCase _updateMaterialSize;
   final BankCalculationSessionUseCase _bankSession;
   final DeleteCalculationSessionUseCase _deleteSession;
 
@@ -96,18 +98,20 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   MeasurementSystem? _watchedSystem;
 
   /// Creates the bloc over the use cases that read the trade stores, add a
-  /// size to a store or remove one, and bank a tape to history or take it
-  /// out again.
+  /// size to a store, rewrite one or remove one, and bank a tape to history
+  /// or take it out again.
   CalculatorBloc({
     required this._tradeStores,
     required this._deleteMaterialSize,
     required this._addMaterialSize,
+    required this._updateMaterialSize,
     required this._bankSession,
     required this._deleteSession,
   }) : super(CalculatorState.initial()) {
     on<CalculatorTradeStoresArrived>(_onTradeStoresArrived);
     on<CalculatorSizeRowDeleted>(_onSizeRowDeleted);
     on<CalculatorSizeEditorClosed>(_onSizeEditorClosed);
+    on<CalculatorSizePillEdited>(_onSizePillEdited);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -219,23 +223,71 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         width: width,
         height: height,
       );
-      added.fold((failure) {
-        // Nobody signed in is the app's to answer, with the sign-in
-        // screen; any other refusal the user is told about here.
-        // TODO: [CA-1538] Keep the editor open with both values instead,
-        // once CoreUI lets the app answer Add before the sheet closes.
-        // https://ripplearc.youtrack.cloud/issue/CA-1538
-        if (failure case CalculatorFailure(
-          errorType: CalculatorErrorType.notSignedIn,
-        )) {
-          return;
-        }
-        _emitCountingToast(
+      added.fold(
+        (failure) => _tellUnlessSignedOut(
           emit,
+          failure,
           state.copyWith(sizeNotAdded: true, toastClosed: false),
-        );
-      }, (_) {});
+        ),
+        (_) {},
+      );
     }
+  }
+
+  Future<void> _onSizePillEdited(
+    CalculatorSizePillEdited event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    final counted = state.tape;
+    if ((event.fields, state.countOnDisplay) case (
+      [final lengthText, final widthText],
+      (:final trade, :final size)?,
+    )) {
+      final width = state.sizeEntryLength(lengthText);
+      final height = state.sizeEntryLength(widthText);
+      if (width == null || height == null) return;
+      final updated = await _updateMaterialSize(
+        trade: trade,
+        size: size,
+        width: width,
+        height: height,
+        system: counted.preferences.system,
+      );
+      updated.fold(
+        (failure) => _tellUnlessSignedOut(
+          emit,
+          failure,
+          state.copyWith(sizeNotAdded: true, toastClosed: false),
+        ),
+        (stored) {
+          // A key pressed while the store answered put another tape on the
+          // display: the store keeps the new size and that tape is left
+          // as it is.
+          if (state.tape != counted) return;
+          final recounted = counted.withLastCountAt(stored.piece);
+          if (recounted != null) emit(state.copyWith(tape: recounted));
+        },
+      );
+    }
+  }
+
+  // Nobody signed in is the app's to answer, with the sign-in screen; any
+  // other refusal of the store the user is told about here.
+  // TODO: [CA-1538] Keep the editor open with both values instead, once
+  // CoreUI lets the app answer Add or Update before the sheet closes
+  // (decision tree rows 505 and 525).
+  // https://ripplearc.youtrack.cloud/issue/CA-1538
+  void _tellUnlessSignedOut(
+    Emitter<CalculatorState> emit,
+    Failure failure,
+    CalculatorState told,
+  ) {
+    if (failure case CalculatorFailure(
+      errorType: CalculatorErrorType.notSignedIn,
+    )) {
+      return;
+    }
+    _emitCountingToast(emit, told);
   }
 
   static const Map<String, Unit> _unitKeys = {

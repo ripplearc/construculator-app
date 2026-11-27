@@ -122,6 +122,7 @@ class CalculatorModule extends Module {
         tradeStores: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
+        updateMaterialSize: i(),
         bankSession: i(),
         deleteSession: i(),
       ),
