@@ -14,6 +14,7 @@ export 'models/quantity.dart';
 export 'models/rational.dart';
 export 'models/read_as_offer.dart';
 export 'models/token.dart';
+export 'models/trade_stores.dart';
 export 'models/unit.dart';
 export 'quantity_formatter.dart';
 export 'quantity_parser.dart';

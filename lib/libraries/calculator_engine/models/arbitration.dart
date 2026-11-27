@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 import 'package:equatable/equatable.dart';
 
 /// The questions the ladder asks, in order, to choose the strip (UX Design
@@ -55,9 +56,13 @@ enum StripOfferKind {
 
   /// The running total of the chain, which = lands as Calc.
   runningTotal,
+
+  /// A count of the area on the display at one stored size.
+  materialCount,
 }
 
-/// One chip of the strip's row 1: what it is called and what it is worth.
+/// One chip of the strip's row 1: what it is called, what it is worth, and
+/// for a count the stored size it was counted at.
 final class StripOffer extends Equatable {
   /// The key the offer is labelled by.
   final String key;
@@ -68,15 +73,19 @@ final class StripOffer extends Equatable {
   /// What kind of offer it is.
   final StripOfferKind kind;
 
+  /// The count behind a [StripOfferKind.materialCount]; `null` otherwise.
+  final TradeCount? count;
+
   /// An offer of [value] under [key], drawn as [kind].
   const StripOffer({
     required this.key,
     required this.value,
     required this.kind,
+    this.count,
   });
 
   @override
-  List<Object?> get props => [key, value, kind];
+  List<Object?> get props => [key, value, kind, count];
 }
 
 /// What the ladder chose for a tape: the rung it stopped at, row 1 of the
@@ -92,6 +101,15 @@ final class Arbitration extends Equatable {
   /// rung.
   final StripSilence? silence;
 
+  /// The area the trade rung counts, or `null` when nothing on the display
+  /// is one. A silent strip names it too: the detail panel's table lists
+  /// its counts while row 1 shows nothing.
+  final Area? countedArea;
+
+  /// Every count of [countedArea], the accepted ones included: what the
+  /// detail panel's table lists.
+  final List<TradeCount> counts;
+
   /// The questions asked, in order, up to the rung that answered.
   final List<LadderStep> trace;
 
@@ -102,8 +120,17 @@ final class Arbitration extends Equatable {
     required this.trace,
     this.offers = const [],
     this.silence,
+    this.countedArea,
+    this.counts = const [],
   });
 
   @override
-  List<Object?> get props => [rung, offers, silence, trace];
+  List<Object?> get props => [
+    rung,
+    offers,
+    silence,
+    countedArea,
+    counts,
+    trace,
+  ];
 }
