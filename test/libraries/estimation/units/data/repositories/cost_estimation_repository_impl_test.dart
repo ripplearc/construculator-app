@@ -28,7 +28,7 @@ void main() {
   const String testProjectId = 'project-123';
   const String otherProjectId = 'other-project-456';
   const String estimateIdDefault = 'estimate-1';
-  const String estimateId2 = 'estimate-2';
+  const String estimateId2 = '5f1c0a9e-3b2d-4c8f-8a47-1d9e6b2c7f30';
   const String estimateId3 = 'estimate-3';
   const String userIdDefault = 'user-123';
   const String userId2 = 'user-456';
