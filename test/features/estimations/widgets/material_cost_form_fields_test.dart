@@ -728,7 +728,7 @@ void main() {
         tester.element(hint).textTheme.bodySmallSemiBold.fontWeight,
       );
       expect(
-        boldSpan.style?.color,
+        boldSpan.style!.color,
         tester.element(hint).colorTheme.textHeadline,
       );
     });
