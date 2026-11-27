@@ -1048,4 +1048,167 @@ void main() {
       );
     });
   });
+
+  group('Tape — a count is made again at the size it was made at (rule '
+      '4.7, "recomputes in place"; requirement R8; G1, CA-1072)', () {
+    PieceSize sheet(int width, int height) => PieceSize(
+      width: Length(width * Length.ticksPerInch, unit: Unit.inch),
+      height: Length(height * Length.ticksPerInch, unit: Unit.inch),
+    );
+
+    /// [tape] with the count of its counted area at [size] accepted, as a
+    /// tap on the strip's chip lands it.
+    Tape count(Tape tape, PieceSize size, {Trade trade = Trade.drywall}) {
+      final made = const Trades().countsFor(trade, tape.countedArea!, [size]);
+      return changed(
+        tape.landAnswer(trade.resultKey, made.single.value, size: size),
+      );
+    }
+
+    test('an accepted count carries the size it was made at, and a count '
+        'with another size is another chip', () {
+      final counted = count(lengthWidthArea(), sheet(48, 96));
+
+      expect(texts(counted).last, 'Number of sheets12.83');
+      expect((counted.chips.last as ResultChip).size, sheet(48, 96));
+      expect(
+        counted.chips.last,
+        isNot(count(lengthWidthArea(), sheet(96, 48)).chips.last),
+        reason: 'the same count at another size',
+      );
+    });
+
+    test('editing Length from 22ft to 30ft recounts the accepted sheets at '
+        '48in x 96in for the new area, in place (walkthrough 11.2)', () {
+      final counted = count(lengthWidthArea(), sheet(48, 96));
+
+      final edited = press(counted, 'tap:0 ✕ 3 0 ft tap:0');
+
+      expect(texts(edited), [
+        'Length30ft',
+        'Width18ft 8in',
+        'Area560ft²',
+        'Number of sheets17.50',
+      ]);
+      expect((edited.chips.last as ResultChip).size, sheet(48, 96));
+      expect(edited.editing, isNull);
+    });
+
+    test('two counts accepted from one area are each made again at their '
+        'own size', () {
+      final both = count(
+        count(lengthWidthArea(), sheet(48, 96)),
+        sheet(48, 120),
+      );
+
+      final edited = press(both, 'tap:0 ✕ 3 0 ft tap:0');
+
+      expect(texts(edited).sublist(2), [
+        'Area560ft²',
+        'Number of sheets17.50',
+        'Number of sheets14.00',
+      ]);
+    });
+
+    test('a count follows the area as it is typed while the edit is open, '
+        'and stands while the area cannot be read', () {
+      final counted = count(lengthWidthArea(), sheet(48, 96));
+
+      final cleared = press(counted, 'tap:0 ✕');
+      expect(texts(cleared).last, 'Number of sheets12.83');
+
+      final retyped = press(cleared, '3 0 ft');
+      expect(retyped.editing, isNotNull);
+      expect(texts(retyped).last, 'Number of sheets17.50');
+    });
+
+    test('a count of a typed area is made again when the area is retyped', () {
+      final counted = count(press(const Tape(), '1 8 0 ft ft'), sheet(48, 96));
+      expect(texts(counted), ['180ft²', 'Number of sheets5.63']);
+
+      final edited = press(counted, 'tap:0 ✕ 3 6 0 ft ft tap:0');
+
+      expect(texts(edited), ['360ft²', 'Number of sheets11.25']);
+    });
+
+    test('a count whose area is gone, or is not an area any more, goes with '
+        'the seal and is named for its message', () {
+      final counted = count(press(const Tape(), '1 8 0 ft ft'), sheet(48, 96));
+
+      final sealed = pressOnce(press(counted, 'tap:0 ✕ 3 ft'), 'tap:0');
+
+      expect(
+        sealed,
+        isA<TapeChanged>()
+            .having((c) => texts(c.tape), 'tape', ['3ft'])
+            .having((c) => c.removed, 'removed', ['Number of sheets'])
+            .having((c) => c.notice, 'notice', TapeNotice.resultRemoved),
+      );
+    });
+
+    test('an area brought to zero has no count: the count goes with the '
+        'seal', () {
+      final counted = count(press(const Tape(), '1 8 0 ft ft'), sheet(48, 96));
+
+      final sealed = pressOnce(press(counted, 'tap:0 ✕ 0 ft ft'), 'tap:0');
+
+      expect(
+        sealed,
+        isA<TapeChanged>()
+            .having((c) => texts(c.tape), 'tape', ['0ft²'])
+            .having((c) => c.removed, 'removed', ['Number of sheets']),
+      );
+    });
+
+    test('a count accepted while a chip is being edited lands with its '
+        'size too, behind the edit it closes', () {
+      final area = lengthWidthArea();
+      final open = press(area, 'tap:0');
+      final made = const Trades().countsFor(Trade.drywall, area.countedArea!, [
+        sheet(48, 96),
+      ]).single;
+
+      final landed = changed(
+        open.landAnswer(
+          Trade.drywall.resultKey,
+          made.value,
+          size: sheet(48, 96),
+        ),
+      );
+
+      expect(landed.editing, isNull);
+      expect((landed.chips.last as ResultChip).size, sheet(48, 96));
+    });
+
+    test('a masonry count is made again as a masonry count', () {
+      final counted = count(
+        lengthWidthArea(),
+        sheet(8, 16),
+        trade: Trade.masonry,
+      );
+      expect(texts(counted).last, 'Number of pieces462.00');
+
+      final edited = press(counted, 'tap:0 ✕ 3 0 ft tap:0');
+
+      expect(texts(edited).last, 'Number of pieces630.00');
+    });
+
+    test('a result with a size under a key no trade counts by is not made '
+        'again as a count: it goes with the seal', () {
+      final odd = changed(
+        lengthWidthArea().landAnswer(
+          'Sheets',
+          const Scalar(1),
+          size: sheet(48, 96),
+        ),
+      );
+
+      final sealed = pressOnce(press(odd, 'tap:0 ✕ 3 0 ft'), 'tap:0');
+
+      expect(
+        sealed,
+        isA<TapeChanged>().having((c) => c.removed, 'removed', ['Sheets']),
+      );
+    });
+  });
 }

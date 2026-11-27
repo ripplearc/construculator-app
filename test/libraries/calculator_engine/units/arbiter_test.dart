@@ -356,6 +356,31 @@ void main() {
         }
       });
 
+      test('a count that carries its size hides the offer of that size, not '
+          'the first offer of its value: with 48in x 96in and 96in x 48in '
+          'stored, accepting the second leaves the first (rule 4.7)', () {
+        final twins = TradeStores(
+          sheetSizes: [
+            sheet(48, 96, id: 'a'),
+            sheet(96, 48, id: 'b'),
+          ],
+        );
+        final typed = pressed('1 8 0 ft ft');
+        final second = arbiter.arbitrate(typed, twins).offers[1].count!;
+        final landed = switch (typed.landAnswer(
+          second.trade.resultKey,
+          second.value,
+          size: second.size,
+        )) {
+          TapeChanged(:final tape) => tape,
+          _ => typed,
+        };
+
+        expect(row(arbiter.arbitrate(landed, twins)), [
+          'Drywall: 5.63 (48in x 96in)',
+        ]);
+      });
+
       test('a Calc that is an area earns no count, and neither does a '
           'length, a key with nothing typed under it or a value after the '
           'counts', () {

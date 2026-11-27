@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:construculator/libraries/calculation/data/models/tape_value_codec.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
+import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 
 /// Writes a tape's chip list as the `computation` JSON of a
 /// `calculator_tapes` row and reads it back (Design Appendices D).
@@ -12,7 +14,9 @@ import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 /// fields that chip kind holds, so that a decoded list is equal to the one
 /// encoded: a value chip keeps its tokens as typed, the exact quantity a
 /// conversion re-spelled it from, the ton it was typed under and its key's
-/// flags; a result keeps its key and value at full precision; a bracket
+/// flags; a result keeps its key and value at full precision, and a count
+/// the stored size it was made at (`size`, written only for a result that
+/// carries one, so a tape with none reads and writes as before); a bracket
 /// keeps what was typed inside it, whether it is open, and the list a
 /// reopened bracket can be restored to. The operator that leads a chip is
 /// its `op`; the values are written by `TapeValueCodec`.
@@ -46,6 +50,10 @@ abstract final class TapeChipCodec {
   static const String _isOpenKey = 'open';
   static const String _originalKey = 'original';
   static const String _errorKey = 'error';
+  static const String _sizeKey = 'size';
+  static const String _widthKey = 'width';
+  static const String _heightKey = 'height';
+  static const String _idKey = 'id';
 
   /// The JSON text of [chips]; [text] renders a chip for its `text`.
   static String encode(
@@ -98,6 +106,12 @@ abstract final class TapeChipCodec {
         _keyKey: chip.key,
         _operatorKey: chip.operator?.name,
         _valueKey: TapeValueCodec.quantity(chip.value),
+        if (chip.size case final size?)
+          _sizeKey: {
+            _widthKey: TapeValueCodec.quantity(size.width),
+            _heightKey: TapeValueCodec.quantity(size.height),
+            _idKey: size.id,
+          },
       },
       BracketChip() => {
         _typeKey: 'bracket',
@@ -150,6 +164,13 @@ abstract final class TapeChipCodec {
       key: TapeValueCodec.text(json, _keyKey, where),
       operator: _operator(json, where),
       value: TapeValueCodec.quantityFrom(json[_valueKey], '$where.$_valueKey'),
+      size: switch (json[_sizeKey]) {
+        null => null,
+        final size => _size(
+          TapeValueCodec.object(size, '$where.$_sizeKey'),
+          '$where.$_sizeKey',
+        ),
+      },
     ),
     'bracket' => BracketChip(
       operator: _operator(json, where),
@@ -166,6 +187,18 @@ abstract final class TapeChipCodec {
     ),
     _ => throw FormatException('Unreadable tape: $where.$_typeKey'),
   };
+
+  static PieceSize _size(Map<String, Object?> json, String where) => PieceSize(
+    width: _length(json[_widthKey], '$where.$_widthKey'),
+    height: _length(json[_heightKey], '$where.$_heightKey'),
+    id: TapeValueCodec.optionalText(json, _idKey, where),
+  );
+
+  static Length _length(Object? json, String where) =>
+      switch (TapeValueCodec.quantityFrom(json, where)) {
+        final Length length => length,
+        _ => throw FormatException('Unreadable tape: $where'),
+      };
 
   static ExactSpelling _exact(Map<String, Object?> json, String where) => (
     value: TapeValueCodec.quantityFrom(json[_valueKey], '$where.$_valueKey'),

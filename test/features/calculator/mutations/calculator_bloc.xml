@@ -492,8 +492,13 @@
         </regex>
         <!-- RULE: an accepted count lands under the offer's name (Drywall)
              instead of the trade's result key (Number of sheets) -->
-        <regex pattern="tape\.landAnswer\(count\.trade\.resultKey, count\.value\)" dotAll="true" id="calculator_bloc.accept.count_lands_under_offer_key">
-            <mutation text="tape.landAnswer(count.trade.offerKey, count.value)"/>
+        <regex pattern="tape\.landAnswer\(\s*count\.trade\.resultKey,\s*count\.value,\s*size: count\.size,\s*\)" dotAll="true" id="calculator_bloc.accept.count_lands_under_offer_key">
+            <mutation text="tape.landAnswer(count.trade.offerKey, count.value, size: count.size)"/>
+        </regex>
+        <!-- RULE (G1, CA-1072; rule 4.7): an accepted count lands without
+             the stored size it was made at -->
+        <regex pattern="tape\.landAnswer\(\s*count\.trade\.resultKey,\s*count\.value,\s*size: count\.size,\s*\)" dotAll="true" id="calculator_bloc.accept.count_lands_without_its_size">
+            <mutation text="tape.landAnswer(count.trade.resultKey, count.value)"/>
         </regex>
         <!-- RULES (CA-1372 2/2, rule 4.10): each of the four angle-part
              refusals falls silent, or two of them swap their words -->

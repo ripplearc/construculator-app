@@ -138,16 +138,20 @@ class Arbiter extends Equatable {
     return false;
   }
 
-  // An accepted count hides one offer of its value and no more, so two
+  // An accepted count hides the offer of the size it was made at, or, for
+  // a count that names no size, one offer of its value and no more, so two
   // stored sizes that count the same do not leave together.
   static List<StripOffer> _notYetAccepted(
     List<TradeCount> counts,
     List<ResultChip> accepted,
   ) {
-    final landed = [for (final chip in accepted) (chip.key, chip.value)];
+    final landed = [
+      for (final chip in accepted) (chip.key, chip.size ?? chip.value),
+    ];
     return [
       for (final count in counts)
-        if (!landed.remove((count.trade.resultKey, count.value)))
+        if (!landed.remove((count.trade.resultKey, count.size)) &&
+            !landed.remove((count.trade.resultKey, count.value)))
           StripOffer(
             key: count.trade.offerKey,
             value: count.value,

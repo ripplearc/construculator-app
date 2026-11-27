@@ -395,11 +395,15 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       case (CalculatorSuggestionKind.conversion, _, _):
         _press(emit, (tape) => _converted(tape, suggestion.value));
       // the count lands under the trade's result key (Number of sheets), not
-      // under the offer's name (Drywall)
+      // under the offer's name (Drywall), with the size it was made at
       case (CalculatorSuggestionKind.materialCount, _, final count?):
         _press(
           emit,
-          (tape) => tape.landAnswer(count.trade.resultKey, count.value),
+          (tape) => tape.landAnswer(
+            count.trade.resultKey,
+            count.value,
+            size: count.size,
+          ),
         );
       case (CalculatorSuggestionKind.answer, null, _) ||
           (CalculatorSuggestionKind.materialCount, _, null):

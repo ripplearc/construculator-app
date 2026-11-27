@@ -7,7 +7,8 @@
          (RULES 6-12); which area the trade rung counts, which counts it
          still offers, and the rung and trace it leaves (RULES 13-22); the
          area a silent strip still names and the order of row 1 (RULES 18a
-         to 18d). -->
+         to 18d); how an accepted count hides its offer, by size or by value
+         (RULES 17, 17a, 17b). -->
 
     <files>
         <file>lib/libraries/calculator_engine/arbiter.dart</file>
@@ -120,9 +121,20 @@
         </regex>
 
         <!-- RULE 17: an accepted count stays on offer -->
-        <regex pattern="if \(!landed\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="arbiter.counts.accepted_stays_on_offer">
+        <regex pattern="if \(!landed\.remove\(\(count\.trade\.resultKey, count\.size\)\) &amp;&amp;\s*!landed\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="arbiter.counts.accepted_stays_on_offer">
             <mutation text="if (true)"/>
-            <mutation text="if (landed.remove((count.trade.resultKey, count.value)))"/>
+            <mutation text="if (landed.remove((count.trade.resultKey, count.size)) || landed.remove((count.trade.resultKey, count.value)))"/>
+        </regex>
+
+        <!-- RULE 17a: a count that names no size hides no offer -->
+        <regex pattern="if \(!landed\.remove\(\(count\.trade\.resultKey, count\.size\)\) &amp;&amp;\s*!landed\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="arbiter.counts.sizeless_count_stays_on_offer">
+            <mutation text="if (!landed.remove((count.trade.resultKey, count.size)))"/>
+        </regex>
+
+        <!-- RULE 17b: a count that carries its size hides the first offer
+             of its value instead of the offer of its size -->
+        <regex pattern="\(chip\.key, chip\.size \?\? chip\.value\)," dotAll="true" id="arbiter.counts.sized_count_hides_by_value">
+            <mutation text="(chip.key, chip.value),"/>
         </regex>
 
         <!-- RULE 18: an area is counted in masonry pieces -->
@@ -153,8 +165,8 @@
         </regex>
 
         <!-- RULE 18d: one accepted count hides every offer of its value -->
-        <regex pattern="if \(!landed\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="arbiter.counts.hides_every_offer_of_its_value">
-            <mutation text="if (!landed.contains((count.trade.resultKey, count.value)))"/>
+        <regex pattern="if \(!landed\.remove\(\(count\.trade\.resultKey, count\.size\)\) &amp;&amp;\s*!landed\.remove\(\(count\.trade\.resultKey, count\.value\)\)\)" dotAll="true" id="arbiter.counts.hides_every_offer_of_its_value">
+            <mutation text="if (!landed.remove((count.trade.resultKey, count.size)) &amp;&amp; !landed.contains((count.trade.resultKey, count.value)))"/>
         </regex>
 
         <!-- RULE 19: the counts stay beside the running total -->
