@@ -497,9 +497,11 @@ String describeCheck(Check check) {
   };
 }
 
-/// The surfaces a failure is usually about, on one line.
+/// The surfaces a failure is usually about, on one line, with the ladder's
+/// trace after them when the driver has one.
 String describeSnapshot(Snapshot r) =>
     "label='${r.label}' value='${r.value}' tape=${r.tape} strip=${r.strip} "
     'strip2=${r.strip2} depKey=${r.depKey == null ? 'null' : "'${r.depKey}'"} '
     'toast=${r.toast == null ? 'null' : "'${r.toast}'"} '
-    "equalsLabel='${r.equalsLabel}' bracketOpen=${r.bracketOpen}";
+    "equalsLabel='${r.equalsLabel}' bracketOpen=${r.bracketOpen}"
+    '${r.ladder == null ? '' : ' ladder=[${r.ladder}]'}';

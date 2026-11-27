@@ -7,7 +7,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
-import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/formatters/size_entry_parser.dart';
@@ -27,7 +27,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 // a fake database, as the use case tests do.
 // https://ripplearc.youtrack.cloud/issue/CA-1536
 /// Test module that provides [CalculatorBloc] as a factory (`i.add`) over
-/// the real [WatchMaterialCountsUseCase] and [DeleteMaterialSizeUseCase]
+/// the real [WatchTradeStoresUseCase] and [DeleteMaterialSizeUseCase]
 /// and a fake trade-stores repository
 /// showing Appendix B's defaults, as the production module wires it, so
 /// each test resolves a fresh instance via `Modular.get`. History is the
@@ -40,8 +40,8 @@ class _CalculatorBlocTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.add<WatchMaterialCountsUseCase>(
-      () => WatchMaterialCountsUseCase(repository: stores),
+    i.add<WatchTradeStoresUseCase>(
+      () => WatchTradeStoresUseCase(repository: stores),
     );
     i.add<DeleteMaterialSizeUseCase>(
       () => DeleteMaterialSizeUseCase(repository: stores),
@@ -57,7 +57,7 @@ class _CalculatorBlocTestModule extends Module {
     );
     i.add<CalculatorBloc>(
       () => CalculatorBloc(
-        materialCounts: i(),
+        tradeStores: i(),
         deleteMaterialSize: i(),
         addMaterialSize: i(),
         bankSession: i(),
@@ -82,6 +82,13 @@ class _GatedHistory extends FakeCalculationSessionRepository {
     return super.bankSession(tape, title: title);
   }
 }
+
+/// The sheet counts row 1 of [state] still offers, each with its size
+/// inside the chip (term 2.10; Section 9, "One chip per stored size").
+List<CalculatorSuggestion> countOffers(CalculatorState state) => [
+  for (final suggestion in state.suggestions)
+    if (suggestion.kind == CalculatorSuggestionKind.materialCount) suggestion,
+];
 
 void main() {
   late FakeTradeStoresRepository stores;
@@ -178,8 +185,21 @@ void main() {
       PieceSize(width: size.width, height: size.height, id: size.seed),
   ];
 
-  /// The counts the store answers for the area [state] has on screen: what
-  /// the bloc's watch (S2a 2/2) brings in behind the key that put it there.
+  /// Appendix B's stores under the system [state] renders by: what the
+  /// bloc's watch brings in behind the key that put an area on the display.
+  TradeStores storesOf(CalculatorState state) {
+    final system = state.tape.preferences.system;
+    return TradeStores(
+      sheetSizes: appendixBSheets(system),
+      masonrySizes: [
+        for (final size in TradeStoreSeeds.sizes(SizeStore.masonry, system))
+          PieceSize(width: size.width, height: size.height, id: size.seed),
+      ],
+    );
+  }
+
+  /// The counts of the area [state] has on screen over Appendix B's sheet
+  /// sizes: what the ladder counts once the stores have answered.
   List<TradeCount> sheetCountsOf(CalculatorState state) =>
       const Trades().countsFor(
         Trade.drywall,
@@ -1153,10 +1173,7 @@ void main() {
             tape: lengthWidthArea(),
             refusal: const TapeRefused(TapeRefusal.chipCannotBeEdited),
           );
-          return [
-            refused,
-            refused.copyWith(materialCounts: sheetCountsOf(refused)),
-          ];
+          return [refused, refused.copyWith(stores: storesOf(refused))];
         },
       );
 
@@ -4104,10 +4121,7 @@ void main() {
             ),
           );
           // the store's answer for the new area follows the key (S2a 2/2)
-          return [
-            landed,
-            landed.copyWith(materialCounts: sheetCountsOf(landed)),
-          ];
+          return [landed, landed.copyWith(stores: storesOf(landed))];
         },
         verify: (bloc) {
           expect(
@@ -4150,10 +4164,7 @@ void main() {
               ),
             ),
           );
-          return [
-            landed,
-            landed.copyWith(materialCounts: sheetCountsOf(landed)),
-          ];
+          return [landed, landed.copyWith(stores: storesOf(landed))];
         },
         verify: (bloc) => expect(bloc.state.valueText, '200ft²'),
       );
@@ -4306,10 +4317,7 @@ void main() {
               ),
             ),
           );
-          return [
-            landed,
-            landed.copyWith(materialCounts: sheetCountsOf(landed)),
-          ];
+          return [landed, landed.copyWith(stores: storesOf(landed))];
         },
       );
 
@@ -4382,7 +4390,7 @@ void main() {
               ),
             ),
           );
-          return [landed.copyWith(materialCounts: sheetCountsOf(landed))];
+          return [landed.copyWith(stores: storesOf(landed))];
         },
         verify: (bloc) => expect(
           [for (final chip in bloc.state.chipsList) chip.label],
@@ -5213,7 +5221,7 @@ void main() {
       /// the display, as the watch of 2/2 leaves it.
       CalculatorState withCounts(String keys, {Tape tape = const Tape()}) {
         final state = CalculatorState(tape: pressed(keys, tape: tape));
-        return state.copyWith(materialCounts: sheetCountsOf(state));
+        return state.copyWith(stores: storesOf(state));
       }
 
       /// Length 20ft and Height 9ft with Area accepted from the strip.
@@ -5371,28 +5379,44 @@ void main() {
           );
         }
         expect(
-          CalculatorState(
-            tape: pressed('[Length] 2 0 ft [Height] 9 ft = [Length]'),
-          ).materialOffers,
+          countOffers(
+            CalculatorState(
+              tape: pressed('[Length] 2 0 ft [Height] 9 ft = [Length]'),
+            ),
+          ),
           isEmpty,
         );
       });
 
-      test('the counts of an area no longer on the display are never '
-          'offered, so a stale answer cannot show while the store\'s next '
-          'one is on its way', () {
+      test('a silent strip keeps the table under it: an area typed in an '
+          'open bracket, or in a chain that cannot be computed, shows no '
+          'chip on row 1 and every stored size in the table (Section 1.4)', () {
+        for (final keys in ['( 1 8 0 ft ft', '5 lbs + 1 8 0 ft ft']) {
+          final silent = withCounts(keys);
+
+          expect(silent.suggestions, isEmpty, reason: keys);
+          expect(silent.areaForCounts, isNotNull, reason: keys);
+          expect(silent.sizeTable!.rows, hasLength(3), reason: keys);
+        }
+      });
+
+      test('the counts are always those of the area on the display: the '
+          'ladder counts it over the stores in the state, so another area '
+          'is counted at once and no count of an area that left can show; '
+          'with no stores yet there is nothing to offer', () {
         final onScreen = CalculatorState(tape: pressed('1 8 0 ft ft'));
-        final elsewhere = CalculatorState(tape: pressed('4 1 0 ft ft'));
-        final stale = onScreen.copyWith(
-          materialCounts: sheetCountsOf(elsewhere),
-        );
-        expect(stale.materialOffers, isEmpty);
+        final another = CalculatorState(tape: pressed('4 1 0 ft ft'));
+
+        expect(countOffers(onScreen), isEmpty);
         expect(
-          onScreen
-              .copyWith(materialCounts: sheetCountsOf(onScreen))
-              .suggestions,
-          hasLength(3),
+          rowOne(onScreen.copyWith(stores: storesOf(onScreen))),
+          appendixB,
         );
+        expect(rowOne(another.copyWith(stores: storesOf(onScreen))), [
+          'Drywall: 12.81 (48in x 96in)',
+          'Drywall: 11.39 (48in x 108in)',
+          'Drywall: 10.25 (48in x 120in)',
+        ]);
       });
 
       /// [state] with the count at [index] of row 1 accepted; the store's
@@ -5429,7 +5453,7 @@ void main() {
             tape: pressed(keys, tape: counted.tape),
           );
           expect(after.areaForCounts, isNull);
-          expect(after.materialOffers, isEmpty);
+          expect(countOffers(after), isEmpty);
           expect(
             after.equalsLands,
             isNot(
@@ -5475,7 +5499,7 @@ void main() {
         final typed = CalculatorState(
           tape: pressed('1 6 0 ft ft', tape: counted.tape),
         );
-        final next = typed.copyWith(materialCounts: sheetCountsOf(typed));
+        final next = typed.copyWith(stores: storesOf(typed));
         expect(rowOne(next).take(3), [
           'Drywall: 5.00 (48in x 96in)',
           'Drywall: 4.44 (48in x 108in)',
@@ -5493,11 +5517,7 @@ void main() {
         );
         final area = CalculatorState(tape: areaAccepted());
         final stored = area.copyWith(
-          materialCounts: const Trades().countsFor(
-            Trade.drywall,
-            area.areaForCounts!,
-            [sheets.first, turned, sheets[1]],
-          ),
+          stores: TradeStores(sheetSizes: [sheets.first, turned, sheets[1]]),
         );
         expect(rowOne(stored).take(3), [
           'Drywall: 5.63 (48in x 96in)',
@@ -5514,9 +5534,7 @@ void main() {
           'both sides, as it does from the rule answers (term 2.15)', () {
         final chained = CalculatorState(tape: pressed('1 8 0 ft ft × 2'));
         final withStale = chained.copyWith(
-          materialCounts: sheetCountsOf(
-            CalculatorState(tape: pressed('1 8 0 ft ft')),
-          ),
+          stores: storesOf(CalculatorState(tape: pressed('1 8 0 ft ft'))),
         );
         expect(
           withStale.suggestions.single.kind,
@@ -5586,7 +5604,7 @@ void main() {
       }
 
       bool offersThreeCounts(CalculatorState state) =>
-          state.materialOffers.length == 3;
+          countOffers(state).length == 3;
 
       blocTest<CalculatorBloc, CalculatorState>(
         'the store answers behind the key that puts an area on the display: '
@@ -5627,7 +5645,7 @@ void main() {
           );
           await until(
             bloc,
-            (state) => state.materialOffers.length == 4,
+            (state) => countOffers(state).length == 4,
             () => stores.addSize(sheet(48, 100)),
           );
         },
@@ -5699,7 +5717,7 @@ void main() {
             bloc,
             (state) =>
                 state.labelKeyId == Trade.drywall.resultKey &&
-                state.materialOffers.length == 2,
+                countOffers(state).length == 2,
             () => bloc.add(
               CalculatorSuggestionAccepted(bloc.state.suggestions.first),
             ),
@@ -5730,14 +5748,15 @@ void main() {
             bloc,
             (state) =>
                 state.labelKeyId == Trade.drywall.resultKey &&
-                state.materialOffers.length == 2,
+                countOffers(state).length == 2,
             () => bloc.add(
               CalculatorSuggestionAccepted(bloc.state.suggestions.first),
             ),
           );
           await until(
             bloc,
-            (state) => state.valueText == '3ft' && state.materialCounts.isEmpty,
+            (state) =>
+                state.valueText == '3ft' && state.stores == const TradeStores(),
             () => type(bloc, '[Length] 3 ft'),
           );
           await stores.addSize(sheet(48, 100));
@@ -5746,10 +5765,32 @@ void main() {
           expect(bloc.state.areaForCounts, isNull);
           expect(bloc.state.materialCounts, isEmpty);
           expect(
+            bloc.state.stores,
+            const TradeStores(),
+            reason: 'the stores leave the state with the area',
+          );
+          expect(
             rowOne(bloc.state),
             isNot(contains(startsWith(Trade.drywall.offerKey))),
           );
         },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'stores that answer with no area on the display are not kept: an '
+        'answer that arrives after its area left changes nothing',
+        build: () => bloc,
+        act: (bloc) async {
+          await until(
+            bloc,
+            (state) => state.valueText == '3ft',
+            () => type(bloc, '[Length] 3 ft'),
+          );
+          bloc.add(CalculatorTradeStoresArrived(storesOf(bloc.state)));
+        },
+        skip: 3,
+        expect: () => const <CalculatorState>[],
+        verify: (bloc) => expect(bloc.state.stores, const TradeStores()),
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -5761,7 +5802,7 @@ void main() {
           stores.failWatches(StateError('the store could not be read'));
           await until(
             bloc,
-            (state) => state.materialOffers.length == 4,
+            (state) => countOffers(state).length == 4,
             () => stores.addSize(sheet(48, 100)),
           );
         },
@@ -5882,11 +5923,7 @@ void main() {
         final sheet = appendixBSheets().first;
         final unnamed = PieceSize(width: sheet.width, height: sheet.height);
         final state = typed.copyWith(
-          materialCounts: const Trades().countsFor(
-            Trade.drywall,
-            typed.areaForCounts!,
-            [unnamed, sheet, unnamed],
-          ),
+          stores: TradeStores(sheetSizes: [unnamed, sheet, unnamed]),
         );
         expect(state.sizeTable!.rows.map((row) => row.id), [
           '48in x 96in#0',
@@ -5895,14 +5932,19 @@ void main() {
         ]);
       });
 
-      test('counts of an area no longer on the display are not rows: the '
-          'table waits for the store to answer for the new one', () {
-        final before = tapeState(pressed('1 8 0 ft ft'));
-        final after = tapeState(
-          pressed('4 1 0 ft ft'),
-        ).copyWith(materialCounts: sheetCountsOf(before));
-        expect(after.sizeTable!.areaText, '410ft²');
-        expect(after.sizeTable!.rows, isEmpty);
+      test('the rows are the counts of the area on the display: until the '
+          'stores answer the table has its title and no row, and with them '
+          'a new area is counted at once', () {
+        final waiting = tapeState(pressed('4 1 0 ft ft'));
+        expect(waiting.sizeTable!.areaText, '410ft²');
+        expect(waiting.sizeTable!.rows, isEmpty);
+
+        final answered = waiting.copyWith(stores: storesOf(waiting));
+        expect(answered.sizeTable!.rows.map((row) => row.countText), [
+          '12.81',
+          '11.39',
+          '10.25',
+        ]);
       });
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -5957,6 +5999,11 @@ void main() {
             expect(
               after.sizeTable!.rows.map((row) => row.id),
               isNot(contains(before[deletedRow].id)),
+            );
+            expect(
+              after.stores.masonrySizes,
+              hasLength(2),
+              reason: 'a deleted sheet size leaves the other store alone',
             );
           },
           verify: (bloc) async {
@@ -6064,7 +6111,7 @@ void main() {
       ];
 
       List<String> stripSizes(CalculatorState state) => [
-        for (final chip in state.materialOffers) chip.basis!,
+        for (final chip in countOffers(state)) chip.basis!,
       ];
 
       void type180SquareFeet(CalculatorBloc bloc) => bloc

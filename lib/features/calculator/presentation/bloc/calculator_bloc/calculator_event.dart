@@ -229,18 +229,18 @@ class CalculatorToastClosed extends CalculatorEvent {
   const CalculatorToastClosed();
 }
 
-/// The trade store answered, or changed, for the area the bloc is watching
-/// (requirement R9): the counts of that area at every stored size, in the
-/// user's order; none once the area they were counted for has left the
-/// display. Not a key: what the last key said stays.
-class CalculatorMaterialCountsArrived extends CalculatorEvent {
-  /// The counts, one per stored size.
-  final List<TradeCount> counts;
+/// The trade stores answered, or changed, while an area is on the display
+/// (requirement R9): the stored sizes the ladder counts it by, in the
+/// user's order; empty stores once the area has left the display. Not a
+/// key: what the last key said stays.
+class CalculatorTradeStoresArrived extends CalculatorEvent {
+  /// The stores as the ladder reads them.
+  final TradeStores stores;
 
-  const CalculatorMaterialCountsArrived(this.counts);
+  const CalculatorTradeStoresArrived(this.stores);
 
   @override
-  List<Object?> get props => [counts];
+  List<Object?> get props => [stores];
 }
 
 /// A row of the detail panel's sheet table was deleted, by its trash

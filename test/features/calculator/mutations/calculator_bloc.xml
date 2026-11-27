@@ -52,19 +52,6 @@
             <mutation text="bool _takesACount(Tape tape) =&gt; false;"/>
         </regex>
 
-        <!-- RULE 4 (S1b 2/6, CA-1088): the silence after an error chip reaches
-             back past the chip that starts the chain, so the strip never
-             comes back until C -->
-        <regex pattern="case ValueChip\(:final operator\) \|\| BracketChip\(:final operator\):\s*if \(operator == null\) return false;" dotAll="true" id="calculator_state.strip_silent.error_silences_for_ever">
-            <mutation text="case ValueChip(:final operator) || BracketChip(:final operator): if (operator == null) continue;"/>
-        </regex>
-
-        <!-- RULE 5 (S1b 2/6): an open bracket after named values leaves the
-             strip on -->
-        <regex pattern="tape\.openBracket != null \|\|\s*switch \(tape\.runningTotal\) \{" dotAll="true" id="calculator_state.strip_silent.open_bracket_offers">
-            <mutation text="switch (tape.runningTotal) {"/>
-        </regex>
-
         <!-- RULE 1: ✕ never closes the calculator -->
         <regex pattern="if \(state\.tape\.openBracket == null &amp;&amp;\s*outcome == const TapeRefused\(TapeRefusal\.nothingBeingTyped\)\) \{" dotAll="true" id="calculator_bloc.clear_active.never_closes">
             <mutation text="if (false) {"/>
@@ -100,8 +87,8 @@
         </regex>
 
         <!-- RULE 6: the close is left out of the state's equality -->
-        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*groupEditsNoticed,\s*toastsRaised,\s*toastClosed,\s*materialCounts,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
-            <mutation text="removedResults, refusedUnit, groupEditsNoticed, toastsRaised, toastClosed, materialCounts, ];"/>
+        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*groupEditsNoticed,\s*toastsRaised,\s*toastClosed,\s*stores,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="removedResults, refusedUnit, groupEditsNoticed, toastsRaised, toastClosed, stores, ];"/>
         </regex>
 
         <!-- RULE 7: no chip is ever inert -->
@@ -472,29 +459,35 @@
         <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
             <mutation text=""/>
         </regex>
-        <!-- RULES (S2a 2/2, CA-1090): the watch on the sheet-size store -->
-        <!-- RULE: the watch ignores a change of area. Not a rule: ignoring a
-             change of unit system is an equivalent mutant here, since the
-             bloc takes a new unit system on an empty tape only (Section 1.1)
-             and an empty tape has no area to watch. -->
-        <regex pattern="if \(area == _watchedArea &amp;&amp; system == _watchedSystem\) return;" dotAll="true" id="calculator_bloc.watch.ignores_system_or_area">
-            <mutation text="if (system == _watchedSystem) return;"/>
+        <!-- RULES (S2a 2/2, CA-1090; G1, CA-1072): the watch on the trade
+             stores while an area is on the display -->
+        <!-- RULE: the stores are watched with no area on the display, or
+             only then -->
+        <!-- No rule for "if (system == _watchedSystem) return;" nor for
+             "if (next.stores != const TradeStores())": without the first
+             the watch is opened again and answers with the same stores,
+             and without the second an empty event meets empty stores, so
+             both mutants end in an equal state. -->
+        <regex pattern="final system = next\.areaForCounts == null\s*\? null\s*: next\.tape\.preferences\.system;" dotAll="true" id="calculator_bloc.watch.whatever_the_display_holds">
+            <mutation text="final system = next.tape.preferences.system;"/>
+            <mutation text="final system = next.areaForCounts != null ? null : next.tape.preferences.system;"/>
         </regex>
         <!-- RULE (R1, F2): a store error on the watch is left uncaught -->
-        <regex pattern="onError: \(Object error, StackTrace stackTrace\) =&gt; _logger\.warning\(\s*'The sheet counts watch failed',\s*error,\s*stackTrace,\s*\)," dotAll="true" id="calculator_bloc.watch.error_uncaught">
+        <regex pattern="onError: \(Object error, StackTrace stackTrace\) =&gt;\s*_logger\.warning\('The trade stores watch failed', error, stackTrace\)," dotAll="true" id="calculator_bloc.watch.error_uncaught">
             <mutation text=""/>
         </regex>
-        <!-- RULE (R1, F3): the counts of an area that left the display stay
-             in the state -->
-        <regex pattern="add\(const CalculatorMaterialCountsArrived\(\[\]\)\);" dotAll="true" id="calculator_bloc.watch.left_area_keeps_counts">
+        <!-- RULE (R1, F3): the stores read for an area that left the
+             display stay in the state -->
+        <regex pattern="add\(const CalculatorTradeStoresArrived\(TradeStores\(\)\)\);" dotAll="true" id="calculator_bloc.watch.left_area_keeps_stores">
             <mutation text=""/>
         </regex>
-        <!-- RULE: the store's answer is not kept -->
-        <regex pattern="emit\(state\.copyWith\(materialCounts: event\.counts\)\);" dotAll="true" id="calculator_bloc.counts.not_kept">
+        <!-- RULE: the stores' answer is not kept -->
+        <regex pattern="emit\(state\.copyWith\(stores: event\.stores\)\);" dotAll="true" id="calculator_bloc.stores.not_kept">
             <mutation text="emit(state);"/>
         </regex>
-        <!-- RULE: an answer for an area no longer watched is kept -->
-        <regex pattern="if \(event\.counts\.any\(\(count\) =&gt; count\.area != _watchedArea\)\) return;" dotAll="true" id="calculator_bloc.counts.unwatched_area_kept">
+        <!-- RULE: stores that answer after the area left the display are
+             kept -->
+        <regex pattern="if \(_watchedSystem == null &amp;&amp; event\.stores != const TradeStores\(\)\) return;" dotAll="true" id="calculator_bloc.stores.kept_with_no_area">
             <mutation text=""/>
         </regex>
         <!-- RULE: an accepted count lands under the offer's name (Drywall)
@@ -529,10 +522,13 @@
         <regex pattern="\.where\(\(row\) =&gt; row\.id == event\.rowId\)" dotAll="true" id="calculator_bloc.size_row_deleted.wrong_row">
             <mutation text=".where((row) =&gt; row.id != event.rowId)"/>
         </regex>
-        <regex pattern="final remaining = \[\.\.\.counts\]\.\.remove\(row\.count\);" dotAll="true" id="calculator_bloc.size_row_deleted.row_kept_until_store_answers">
-            <mutation text="final remaining = [...counts];"/>
+        <regex pattern="if \(!identical\(size, row\.count\.size\)\) size," dotAll="true" id="calculator_bloc.size_row_deleted.row_kept_until_store_answers">
+            <mutation text="size,"/>
         </regex>
-        <regex pattern="emit\(state\.copyWith\(materialCounts: remaining\)\);" dotAll="true" id="calculator_bloc.size_row_deleted.no_early_emit">
+        <regex pattern="\],\s*masonrySizes: stores\.masonrySizes,\s*\);" dotAll="true" id="calculator_bloc.size_row_deleted.other_store_emptied">
+            <mutation text="], );"/>
+        </regex>
+        <regex pattern="emit\(state\.copyWith\(stores: remaining\)\);" dotAll="true" id="calculator_bloc.size_row_deleted.no_early_emit">
             <mutation text=""/>
         </regex>
         <regex pattern="if \(deleted\.isLeft\(\) &amp;&amp;" dotAll="true" id="calculator_bloc.size_row_deleted.restores_on_success">
