@@ -908,6 +908,21 @@ class CalculatorState extends Equatable {
     materialCounts,
   ];
 
+  /// Whether leaving the calculator banks the tape (term 2.19, "leaving
+  /// the page"; Section 5.1: "the open tape is saved to history, finished
+  /// or not"): it holds more than a value still being typed. An empty tape
+  /// banks nothing, and a lone number that never sealed has nothing to
+  /// keep (rule 4.13); a bracket that stands alone and open is judged by
+  /// what is inside it, so a bare "(" is an empty tape.
+  bool get holdsWorkToBank {
+    final beingTyped = tape.beingTyped == null ? 0 : 1;
+    final bracket = tape.openBracket;
+    if (bracket != null && tape.chips.length == 1) {
+      return bracket.inner.length > beingTyped;
+    }
+    return tape.chips.length > beingTyped;
+  }
+
   /// Whether the detail panel shows under the display: the keypad is
   /// folded away and the display is collapsed (Section 1.4: the panel takes
   /// the room the keys leave; a pulled-down display takes it back).

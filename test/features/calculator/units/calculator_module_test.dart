@@ -2,6 +2,7 @@ import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -85,11 +86,15 @@ void main() {
       });
 
       test('imports the calculation library\'s history and builds a bloc of '
-          'its own for each page over the use case that takes a banked tape '
-          'out again', () async {
+          'its own for each page over the use cases that bank a tape and '
+          'take it out again', () async {
         expect(
           Modular.get<CalculationSessionRepository>(),
           same(Modular.get<CalculationSessionRepository>()),
+        );
+        expect(
+          Modular.get<BankCalculationSessionUseCase>(),
+          isA<BankCalculationSessionUseCase>(),
         );
         expect(
           Modular.get<DeleteCalculationSessionUseCase>(),

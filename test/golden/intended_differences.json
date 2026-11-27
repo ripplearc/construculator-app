@@ -340,30 +340,6 @@
    "dart": {"kind": "all", "checks": [{"kind": "label", "equals": "Rise…"}, {"kind": "stripAt", "index": 0, "equals": "Rise: 0.84ft"}]}
   },
   {
-   "scenario": "S22",
-   "checkpoint": "continuation tape",
-   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
-   "dart": {"kind": "tape", "equals": ["36ft", "÷12ft", "Calc3", "×4"]}
-  },
-  {
-   "scenario": "S22",
-   "checkpoint": "answer committed",
-   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
-   "dart": {"kind": "tapeAt", "index": 4, "equals": "Calc12"}
-  },
-  {
-   "scenario": "S17",
-   "checkpoint": "new session tape",
-   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
-   "dart": {"kind": "tape", "equals": ["36ft", "÷12ft", "Calc3", "×89"]}
-  },
-  {
-   "scenario": "S17",
-   "checkpoint": "committed 267",
-   "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
-   "dart": {"kind": "tapeAt", "index": 4, "equals": "Calc267"}
-  },
-  {
    "scenario": "S66",
    "checkpoint": "close after a real edit: sealed + Area recomputed",
    "reason": "The prototype gives a chip that was edited once a second class, t-editable, beside t-input for a chip typed once. The design has one face for a finished value, editable (UX doc term 2.2), so a sealed chip reads t-input whether it was edited or not; the recomputed Area is checked as the prototype checks it.",
@@ -374,6 +350,12 @@
    "checkpoint": "fixed (5ft) → closes, Area follows",
    "reason": "As above: one face for a finished value (UX doc term 2.2), so the sealed chip reads t-input; the recomputed Area is checked as the prototype checks it.",
    "dart": {"kind": "all", "checks": [{"kind": "tapeKindAt", "index": 1, "equals": "t-input"}, {"kind": "tapeAt", "index": 2, "equals": "Area110ft²"}]}
+  },
+  {
+   "scenario": "S67",
+   "checkpoint": "fixed → exits: Width sealed, Area intact, Height open",
+   "reason": "Decision tree row 32 (\"Rise 6 in Run 12 in = then Width: Pitch tape goes to history. New tape with Width\") and rule 4.9: a function key after a result banks the tape and opens its chip on a clean one. Here Height closes the Width edit and lands after Area 410.67ft², so the tape goes to history and Height opens alone. The prototype goes on with a tape that holds named values; the decision tree wins over the prototype and the doc's walkthrough 15.1. The rest of S67 taps chips of the banked tape, so the replay stops at its next step.",
+   "dart": {"kind": "tape", "equals": ["Height…"]}
   },
   {
    "scenario": "S67",
@@ -392,6 +374,48 @@
    "checkpoint": "the group chip is still open and now empty, reading just \"+(\", with the answer chip still waiting beside it, dimmed, showing a dash",
    "reason": "Inside a bracket a bare number ⌫ empties is dropped at once (UX doc Section 7: '⌫ removes the last token inside the bracket; on an empty bracket it removes the bracket'), so the design reaches the empty group one ⌫ before the prototype and the fourth ⌫ already removes it: the + waits again and the answer with nothing left to compute is gone (Section 5.5).",
    "dart": {"kind": "all", "checks": [{"kind": "bracketOpen", "equals": false}, {"kind": "tapeJoined", "separator": "|", "equals": "2|+…"}]}
+  },
+  {
+   "scenario": "S78",
+   "checkpoint": "on a bare tape the finished 18ft banks — 4yd starts clean",
+   "reason": "UX doc rule 4.5 and decision tree rows 84 and 91: a number typed after a finished value becomes its own chip, and only a key after a result or an error banks the tape (rule 4.9). The prototype banked a bare finished value here until its commit 194e4f4 of 4 October 2026 (Q26); this file's export predates it.",
+   "dart": {"kind": "tape", "equals": ["18ft", "4yd"]}
+  },
+  {
+   "scenario": "S78",
+   "checkpoint": "receipt toast names the save",
+   "reason": "As above: nothing was banked, so no card shows.",
+   "dart": {"kind": "actionToastShown", "equals": false}
+  },
+  {
+   "scenario": "S78",
+   "checkpoint": "Undo restores 18ft",
+   "reason": "As above: with no card, Undo has nothing to bring back and both values stay.",
+   "dart": {"kind": "tape", "equals": ["18ft", "4yd"]}
+  },
+  {
+   "scenario": "S78",
+   "checkpoint": "typing after Undo banks 18ft again — the fresh-digit path has no hole",
+   "reason": "As above: the 8 goes on with the 4yd still being typed and nothing is banked. The path this checkpoint guards, typing after Undo banks the tape again, is pinned by the bloc test 'typing after Undo banks the tape again' on a tape that ends in a result (U1, CA-1097).",
+   "dart": {"kind": "all", "checks": [{"kind": "actionToastShown", "equals": false}, {"kind": "tape", "equals": ["18ft", "4yd 8"]}]}
+  },
+  {
+   "scenario": "S78",
+   "checkpoint": "8ft starts clean, never beside 18ft",
+   "reason": "As above: nothing was banked, and [Feet] closes the 8 as the feet of the 4yd still being typed, carried to 6yd 2ft (UX doc Section 6, compound entry).",
+   "dart": {"kind": "tape", "equals": ["18ft", "6yd 2ft"]}
+  },
+  {
+   "scenario": "S81",
+   "checkpoint": "sealed 18ft, nothing active",
+   "reason": "UX doc rule 4.5 and decision tree rows 84 and 91: a number typed after a finished value becomes its own chip, and only a key after a result or an error banks the tape (rule 4.9). The prototype banked a bare finished value here until its commit 194e4f4 of 4 October 2026 (Q26); this file's export predates it. With no card, the Undo of this scenario changes nothing.",
+   "dart": {"kind": "tape", "equals": ["18ft", "4yd"]}
+  },
+  {
+   "scenario": "S81",
+   "checkpoint": "the chain works: 18ft × 2 = 36ft",
+   "reason": "As above: both values stay on the tape, so × takes the last finished one, 4yd, and 4yd × 2 is 24ft 0in. An operator still chains off a sealed value.",
+   "dart": {"kind": "value", "equals": "24ft 0in"}
   }
  ]
 }

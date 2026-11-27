@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculation/testing/fake_calculation_session_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -22,7 +23,10 @@ import '../../../features/calculator/helpers/calculator_bloc_factory.dart';
 /// own taps are still to come, so a scenario that needs them fails at that
 /// checkpoint — which is what this driver is for: the readable diff of
 /// what the app shows against what the prototype showed, and the score the
-/// CI job reports. A strip chip is accepted by the prefix of its text, as
+/// CI job reports. A finished tape is banked to a fake history (U1), whose
+/// session count the snapshot reads, and the "Saved to history" card is
+/// read as the prototype's action toast, its Undo and View tapped by their
+/// selectors. A strip chip is accepted by the prefix of its text, as
 /// the prototype's `{accept}` step names it, and a tape chip is tapped by
 /// the prefix of its text (S1c). The prototype's steps that only switch on
 /// its own preferences or open its "View all" sheet change nothing here and
@@ -32,7 +36,9 @@ import '../../../features/calculator/helpers/calculator_bloc_factory.dart';
 /// history) are refused, and the runner reports the scenario as
 /// unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
-  CalculatorBloc _bloc = calculatorBlocForTests();
+  FakeCalculationSessionRepository _history =
+      FakeCalculationSessionRepository();
+  late CalculatorBloc _bloc = calculatorBlocForTests(history: _history);
 
   static final CalculatorLabelFormatter _labels = CalculatorLabelFormatter(
     AppLocalizationsEn(),
@@ -41,10 +47,17 @@ class BlocScenarioDriver implements ScenarioDriver {
   /// The bloc under test, for the test to close.
   CalculatorBloc get bloc => _bloc;
 
+  /// Closes the bloc, then the history it banked to on the way out.
+  Future<void> dispose() async {
+    await _bloc.close();
+    _history.dispose();
+  }
+
   @override
   Future<void> reset() async {
-    await _bloc.close();
-    _bloc = calculatorBlocForTests();
+    await dispose();
+    _history = FakeCalculationSessionRepository();
+    _bloc = calculatorBlocForTests(history: _history);
   }
 
   // The prototype's preference for editing in place, which the design
@@ -95,6 +108,8 @@ class BlocScenarioDriver implements ScenarioDriver {
   // The group a `[data-selgroup="…"]` click selects in the "View all"
   // sheet, by its place in the order the bloc holds.
   CalculatorEvent? _clickEventFor(String selector) {
+    if (selector == _undoSelector) return const CalculatorUndoPressed();
+    if (selector == _viewSelector) return const CalculatorHistoryViewPressed();
     final match = _groupSelector.firstMatch(selector);
     final groupId = switch (match?.group(1)) {
       'basic' => CalculatorGroupId.basicGeometry,
@@ -109,6 +124,11 @@ class BlocScenarioDriver implements ScenarioDriver {
   }
 
   static final RegExp _groupSelector = RegExp(r'\[data-selgroup="(\w+)"\]');
+
+  // The buttons of the prototype's action toast, which the design draws as
+  // the "Saved to history" card (Section 1.7).
+  static const String _undoSelector = '#act-toast .at-undo';
+  static const String _viewSelector = '#act-toast .at-view';
 
   // The chip whose text starts with [prefix], row 1 first then row 2, as
   // the prototype's `accept` step finds it.
@@ -130,6 +150,16 @@ class BlocScenarioDriver implements ScenarioDriver {
   static String _rowOneText(CalculatorSuggestion suggestion) =>
       '${_labels.suggestionLabel(suggestion)}: '
       '${_labels.suggestionText(suggestion)}';
+
+  // A tape chip as the prototype's DOM reads it: its key, then its text.
+  // An error chip is its title alone ("Dimension Error", S18 and S71).
+  static String _chipText(CoreCalculatorChip chip, TapeChip tapeChip) =>
+      switch (tapeChip) {
+        ErrorChip(:final error) => _labels.displayLabel(error.name),
+        _ =>
+          '${chip.label ?? ''}'
+              '${_bracketTextAsThePrototypeSpellsIt(chip, tapeChip)}',
+      };
 
   static String _bracketTextAsThePrototypeSpellsIt(
     CoreCalculatorChip chip,
@@ -164,13 +194,20 @@ class BlocScenarioDriver implements ScenarioDriver {
       },
       value: _labels.valueText(state),
       toast: switch (state.toast) {
-        CalculatorEditingGroupToast() || null => null,
+        CalculatorEditingGroupToast() ||
+        CalculatorSavedToHistoryToast() ||
+        null => null,
         final toast => _labels.toastBody(toast),
       },
       actionToast: switch (state.toast) {
         final CalculatorEditingGroupToast toast => _labels.toastBody(toast),
+        final CalculatorSavedToHistoryToast toast => [
+          _labels.toastBody(toast),
+          ?_labels.toastHighlight(toast),
+        ].join(' · '),
         _ => null,
       },
+      historyCount: _history.sessions.length,
       hint: switch (state.stripNote) {
         final note? => _labels.noteText(note),
         null =>
@@ -181,14 +218,13 @@ class BlocScenarioDriver implements ScenarioDriver {
       depKey: state.dependentKeys.isEmpty
           ? null
           : [for (final key in state.dependentKeys) _pillText(key)].join(' | '),
-      // The prototype writes the ellipsis on the chip being typed at the end
-      // of the tape; a chip reopened in place reads as its text (S65: "Width18ft
-      // 8in 78").
+      // The prototype writes the ellipsis on a chip with nothing typed in it
+      // yet ("Width…", "+…"); a chip with digits reads as its text, typed
+      // ("9", S62) or reopened in place (S65: "Width18ft 8in 78").
       tape: [
         for (final (index, chip) in state.chipsList.indexed)
-          '${chip.label ?? ''}'
-              '${_bracketTextAsThePrototypeSpellsIt(chip, state.tape.chips[index])}'
-              '${chip.type == CoreCalculatorChipType.active && state.tape.editing == null && (label?.isTyping ?? false) ? '…' : ''}',
+          '${_chipText(chip, state.tape.chips[index])}'
+              '${_hasNothingTyped(state.tape.chips[index]) ? '…' : ''}',
       ],
       tapeBracket: [
         for (final chip in state.tape.chips)
@@ -230,6 +266,11 @@ class BlocScenarioDriver implements ScenarioDriver {
       ),
     );
   }
+
+  static bool _hasNothingTyped(TapeChip chip) => switch (chip) {
+    ValueChip(isActive: true, entry: EntryBuffer(isEmpty: true)) => true,
+    _ => false,
+  };
 
   static const _operators = {
     'op:×': Operator.multiply,
@@ -296,7 +337,7 @@ void main() {
   });
 
   tearDown(() async {
-    await driver.bloc.close();
+    await driver.dispose();
   });
 
   group('Golden replay against CalculatorBloc', () {
@@ -409,6 +450,88 @@ void main() {
         diff,
         contains("source:   r=>r.depKey==='Sheet size: 47.24in x 94.49in'"),
       );
+    });
+
+    test('the driver reads the "Saved to history" card as the action toast, '
+        'counts the sessions in history, and taps Undo and View by the '
+        'prototype\'s selectors (S62)', () async {
+      for (final key in const [
+        'd:1',
+        'd:2',
+        'unit:ft',
+        'op:×',
+        'd:5',
+        'unit:ft',
+        'equals',
+        'd:9',
+      ]) {
+        await driver.perform(KeyStep(key));
+      }
+      final banked = driver.snapshot();
+      expect(banked.tape, ['9']);
+      expect(banked.actionToast, 'Saved to history · Calc 60ft²');
+      expect(banked.toast, isNull);
+      expect(banked.historyCount, 1);
+
+      expect(
+        await driver.perform(const ClickStep('#act-toast .at-undo')),
+        isTrue,
+      );
+      final undone = driver.snapshot();
+      expect(undone.tape, ['12ft', '×5ft', 'Calc60ft²']);
+      expect(undone.actionToast, isNull);
+      expect(undone.historyCount, 0);
+
+      await driver.perform(const KeyStep('op:×'));
+      final carried = driver.snapshot();
+      expect(carried.tape, ['Calc60ft²', '×…']);
+      expect(
+        carried.actionToast,
+        'Saved to history · Calc 60ft² carried forward',
+      );
+      expect(
+        await driver.perform(const ClickStep('#act-toast .at-view')),
+        isTrue,
+      );
+      expect(driver.snapshot().actionToast, isNull);
+      expect(driver.snapshot().historyCount, 1);
+      expect(driver.bloc.state.historyStage, DisplayAreaStage.fullScreen);
+    });
+
+    test('an error chip reads as its title alone, and a key after it starts a '
+        'clean tape with the error tape in history (S18, S71)', () async {
+      for (final key in const [
+        'd:7',
+        'd:8',
+        'unit:lbs',
+        'op:÷',
+        'd:1',
+        'd:2',
+        'unit:ft',
+        'equals',
+      ]) {
+        await driver.perform(KeyStep(key));
+      }
+      expect(driver.snapshot().tape, ['78lbs', '÷12ft', 'Dimension Error']);
+      expect(driver.snapshot().tapeKinds.last, 't-error');
+
+      await driver.perform(const KeyStep('fk:Length'));
+      final fresh = driver.snapshot();
+      expect(fresh.tape, ['Length…']);
+      expect(fresh.actionToast, 'Saved to history');
+      expect(fresh.historyCount, 1);
+    });
+
+    test('a reset starts the next scenario on an empty history', () async {
+      for (final key in const ['d:2', 'op:+', 'd:3', 'equals', 'd:9']) {
+        await driver.perform(KeyStep(key));
+      }
+      expect(driver.snapshot().historyCount, 1);
+
+      await driver.reset();
+
+      expect(driver.snapshot().historyCount, 0);
+      expect(driver.snapshot().tape, isEmpty);
     });
 
     test('the driver refuses steps the bloc has no event for, an accept '
@@ -588,7 +711,7 @@ void main() {
         await driver.perform(KeyStep(key));
       }
       final typing = driver.snapshot();
-      expect(typing.tape, ['Rise6ft', 'Run1…']);
+      expect(typing.tape, ['Rise6ft', 'Run1']);
       expect(typing.tapeKinds, ['t-input', 't-active']);
       expect(typing.label, 'Run…');
       expect(typing.value, '1');
