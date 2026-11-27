@@ -4,6 +4,7 @@ import 'package:construculator/features/calculator/domain/repositories/recents_r
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/calculation/domain/repositories/calculation_session_repository.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -106,6 +108,16 @@ void main() {
         expect(bloc, isNot(same(another)));
         await bloc.close();
         await another.close();
+      });
+
+      test('binds the use case that reads the trade stores as the ladder '
+          'reads them, over the one trade stores repository', () async {
+        final stores = await Modular.get<WatchTradeStoresUseCase>()(
+          system: MeasurementSystem.imperial,
+        ).first;
+
+        expect(stores.sheetSizes, hasLength(3));
+        expect(stores.masonrySizes, hasLength(2));
       });
 
       test('disposes the trade stores with the module', () async {

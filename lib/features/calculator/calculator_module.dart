@@ -18,6 +18,7 @@ import 'package:construculator/features/calculator/domain/usecases/watch_footing
 import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_weights_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_spacing_counts_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_trade_stores_usecase.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -78,6 +79,9 @@ class CalculatorModule extends Module {
     );
     i.add<WatchMaterialCountsUseCase>(
       () => WatchMaterialCountsUseCase(repository: i()),
+    );
+    i.add<WatchTradeStoresUseCase>(
+      () => WatchTradeStoresUseCase(repository: i()),
     );
     i.add<WatchFootingVolumesUseCase>(
       () => WatchFootingVolumesUseCase(repository: i()),
