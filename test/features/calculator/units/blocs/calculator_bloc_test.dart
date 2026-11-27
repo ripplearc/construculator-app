@@ -145,6 +145,12 @@ void main() {
         '[ASIN]' => current.pressTrigKey(TrigFunction.arcsine),
         '[ACOS]' => current.pressTrigKey(TrigFunction.arccosine),
         '[ATAN]' => current.pressTrigKey(TrigFunction.arctangent),
+        // the key names an area for its trade, or does what every
+        // function key does
+        '[Drywal]' => switch (current.pressTradeKey(Trade.drywall)) {
+          final named? => named,
+          null => current.pressFunctionKey('Drywal'),
+        },
         _ when key.startsWith('tap:') => current.tapChip(
           int.parse(key.substring(4)),
         ),
@@ -3301,7 +3307,6 @@ void main() {
 
         for (final key in const [
           'Msnry',
-          'Drywal',
           'Footng',
           'Fence',
           'Qty@OC',
@@ -3318,6 +3323,27 @@ void main() {
             expect: () => [tapeState(pressed('1 2 ft × 5 ft = [$key]'))],
           );
         }
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the Materials key Drywal goes on with the tape too: it names the '
+          'result\'s area and banks nothing (term 2.7; walkthrough 19.1)',
+          build: () => bloc,
+          act: (bloc) async {
+            final named = bloc.stream.firstWhere(
+              (state) => state.labelKeyId == Trade.drywall.coveredAreaKey,
+            );
+            type(bloc, '1 2 ft × 5 ft = [Drywal]');
+            await named;
+          },
+          verify: (bloc) {
+            expect(bloc.state.bankedTape, isNull);
+            expect(
+              history.tapes.values.single,
+              pressed('1 2 ft × 5 ft = [Drywal]'),
+              reason: 'banked once, whole, when the calculator is left',
+            );
+          },
+        );
 
         blocTest<CalculatorBloc, CalculatorState>(
           'after an error a function key or a digit starts a clean tape and '
@@ -5522,6 +5548,79 @@ void main() {
           ],
         );
       });
+
+      test('Drywal names the area on the tape Drywall covered area: an '
+          'accepted Area in place with the counts left as they were, a '
+          'typed area as a new chip, a Calc area counted from then on; on a '
+          'tape with no area the key opens its chip as before (walkthrough '
+          '19.1, step 9; Section 9)', () {
+        final accepted = withCounts('[Length] 2 0 ft [Height] 9 ft');
+        final area = accepted.copyWith(
+          tape:
+              (accepted.tape.landAnswer(
+                        DeterministicRules.areaKey,
+                        accepted.suggestions.first.value,
+                      )
+                      as TapeChanged)
+                  .tape,
+        );
+        final named = area.copyWith(tape: pressed('[Drywal]', tape: area.tape));
+        final typed = withCounts('1 8 0 ft ft [Drywal]');
+        final calc = withCounts('1 2 ft × 1 5 ft = [Drywal]');
+        final nothing = CalculatorState(
+          tape: pressed('[Length] 3 ft [Drywal]'),
+        );
+
+        expect(named.labelKeyId, Trade.drywall.coveredAreaKey);
+        expect(named.valueText, '180ft²');
+        expect(rowOne(named), rowOne(area));
+        expect(rowOne(named).take(3), appendixB);
+        expect(typed.labelKeyId, Trade.drywall.coveredAreaKey);
+        expect(typed.tape.chips, hasLength(2));
+        expect(rowOne(typed), appendixB);
+        expect(rowOne(calc), appendixB);
+        expect(nothing.labelKeyId, 'Drywal');
+        expect(nothing.tape.chips, hasLength(2));
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the Drywal key on the page\'s bloc names the Area and keeps the '
+        'tape: nothing is banked, and the store is still watched for the '
+        'named area',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc
+            ..add(const CalculatorKeySelected('Length'))
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorKeySelected('Height'))
+            ..add(const CalculatorDigitPressed('9'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorEqualsPressed());
+          await bloc.stream.firstWhere(
+            (state) => state.materialCounts.isNotEmpty,
+          );
+          final named = bloc.stream.firstWhere(
+            (state) => state.labelKeyId == Trade.drywall.coveredAreaKey,
+          );
+          bloc.add(const CalculatorKeySelected('Drywal'));
+          await named;
+        },
+        verify: (bloc) {
+          expect(
+            bloc.state.tape,
+            pressed('[Length] 2 0 ft [Height] 9 ft = [Drywal]'),
+          );
+          expect(rowOne(bloc.state).take(3), appendixB);
+          expect(bloc.state.bankedTape, isNull);
+          expect(
+            history.tapes.values.single,
+            pressed('[Length] 2 0 ft [Height] 9 ft = [Drywal]'),
+            reason: 'banked once, whole, when the calculator is left',
+          );
+        },
+      );
 
       for (final keys in [
         '[Length] 3 ft',

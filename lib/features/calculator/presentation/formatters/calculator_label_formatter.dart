@@ -197,6 +197,8 @@ class CalculatorLabelFormatter {
     DeterministicRules.coneKey => l10n.calculatorAnswerCone,
     _ when id == Trade.drywall.offerKey => l10n.calculatorOfferDrywall,
     _ when id == Trade.drywall.resultKey => l10n.calculatorAnswerNumberOfSheets,
+    _ when id == Trade.drywall.coveredAreaKey =>
+      l10n.calculatorAnswerDrywallCoveredArea,
     _ => _untranslated(id),
   };
 

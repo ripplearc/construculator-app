@@ -601,6 +601,16 @@
             <mutation text=""/>
             <mutation text="if (width == size.width || height == size.height) return;"/>
         </regex>
+
+        <!-- RULES (G1, CA-1072; Section 3.3, walkthrough 19.1): the Drywal
+             key names nothing and opens its chip as before, or names the
+             area for the other trade -->
+        <regex pattern="if \(tape\.pressTradeKey\(trade\) case final named\?\) return named;" dotAll="true" id="calculator_bloc.trade_key.names_nothing">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_tradeKeys = \{'Drywal': Trade\.drywall\};" dotAll="true" id="calculator_bloc.trade_key.wrong_trade">
+            <mutation text="_tradeKeys = {'Drywal': Trade.masonry};"/>
+        </regex>
     </rules>
 
     <commands>
