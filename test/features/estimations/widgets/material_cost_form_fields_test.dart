@@ -8,17 +8,20 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../helpers/cost_line_test_items.dart';
 
 void main() {
   late FakeStorageService storage;
@@ -67,6 +70,8 @@ void main() {
     ValueNotifier<NumberPadSession?>? numberPad,
     ThemeData? theme,
     Widget? trailing,
+    MaterialCostItem? editedItem,
+    double textScale = 1,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -76,12 +81,17 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<MaterialCostFormBloc>.value(
-            value: bloc,
-            child: MaterialCostFormFields(
-              numberPad: numberPad,
-              trailing: trailing,
+        home: MediaQuery.withClampedTextScaling(
+          minScaleFactor: textScale,
+          maxScaleFactor: textScale,
+          child: Scaffold(
+            body: BlocProvider<MaterialCostFormBloc>.value(
+              value: bloc,
+              child: MaterialCostFormFields(
+                numberPad: numberPad,
+                trailing: trailing,
+                editedItem: editedItem,
+              ),
             ),
           ),
         ),
@@ -327,6 +337,206 @@ void main() {
       expect(textOf(tester, nameField).length, 80);
       expect(dataOf().itemName.length, 80);
       expect(find.textContaining('80'), findsNothing);
+    });
+  });
+
+  group('long material name', () {
+    // Longer than the 80 a user can type: an opened line keeps its full name.
+    final longName = ('Type-X fire-rated gypsum board ' * 4).substring(0, 120);
+    final cutText = find.byKey(const Key('sheet_field_cut_text'));
+
+    RenderParagraph cutParagraph(WidgetTester tester) =>
+        tester.renderObject<RenderParagraph>(cutText);
+
+    Future<void> openLongLine(
+      WidgetTester tester, {
+      double textScale = 1,
+    }) async {
+      await pumpFields(
+        tester,
+        editedItem: materialLine(name: longName),
+        textScale: textScale,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a 120 character name shows on one line ending in "…" while '
+        'the field is not focused', (tester) async {
+      await openLongLine(tester);
+
+      final paragraph = cutParagraph(tester);
+      final oneLine = TextPainter(
+        text: paragraph.text,
+        textDirection: TextDirection.ltr,
+        textScaler: paragraph.textScaler,
+        maxLines: 1,
+      )..layout();
+      addTearDown(oneLine.dispose);
+      expect(longName.length, 120);
+      expect(paragraph.overflow, TextOverflow.ellipsis);
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(paragraph.size.height, oneLine.height);
+      expect(
+        tester.getRect(cutText).right,
+        lessThanOrEqualTo(tester.getRect(nameField).right),
+      );
+    });
+
+    for (final textScale in [1.0, 1.5, 2.0, 3.0]) {
+      testWidgets('at text size $textScale draws the cut name where the field '
+          'draws its own text, below the label, so it does not move on a '
+          'tap', (tester) async {
+        await openLongLine(tester, textScale: textScale);
+
+        const firstLetter = TextSelection(baseOffset: 0, extentOffset: 1);
+        final cut = cutParagraph(tester);
+        final field = tester
+            .state<EditableTextState>(
+              find.descendant(
+                of: nameField,
+                matching: find.byType(EditableText),
+              ),
+            )
+            .renderEditable;
+        final cutLetter = cut.localToGlobal(
+          cut.getBoxesForSelection(firstLetter).first.toRect().topLeft,
+        );
+        expect(
+          cutLetter,
+          field.localToGlobal(
+            field.getBoxesForSelection(firstLetter).first.toRect().topLeft,
+          ),
+        );
+        final oneLine = TextPainter(
+          text: cut.text,
+          textDirection: TextDirection.ltr,
+          textScaler: cut.textScaler,
+          maxLines: 1,
+        )..layout();
+        addTearDown(oneLine.dispose);
+        expect(cut.size.height, oneLine.height);
+        final label = find.text(
+          lookupAppLocalizations(const Locale('en')).materialNameLabel,
+        );
+        expect(
+          tester.getRect(cutText).top,
+          greaterThanOrEqualTo(tester.getRect(label).bottom),
+        );
+      });
+    }
+
+    testWidgets('keeps the type size of the field, never shrinking it', (
+      tester,
+    ) async {
+      await openLongLine(tester);
+
+      final fieldStyle = tester.element(nameField).textTheme.bodyLargeRegular;
+      expect(cutParagraph(tester).text.style!.fontSize, fieldStyle.fontSize);
+    });
+
+    testWidgets('keeps the full name in the field and the form', (
+      tester,
+    ) async {
+      await openLongLine(tester);
+
+      expect(textOf(tester, nameField), longName);
+      expect(dataOf().itemName, longName);
+    });
+
+    testWidgets('shows the whole name with the caret once focused', (
+      tester,
+    ) async {
+      await openLongLine(tester);
+
+      await tester.tapAt(tester.getCenter(cutText));
+      await tester.pump();
+
+      expect(cutText, findsNothing);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: nameField, matching: find.byType(TextField)),
+            )
+            .focusNode!
+            .hasFocus,
+        isTrue,
+      );
+      expect(textOf(tester, nameField), longName);
+    });
+
+    testWidgets('puts the caret where the user tapped on the cut name, not at '
+        'its end', (tester) async {
+      await openLongLine(tester);
+
+      await tester.tapAt(tester.getCenter(cutText));
+      await tester.pump();
+
+      final selection = tester
+          .widget<TextField>(
+            find.descendant(of: nameField, matching: find.byType(TextField)),
+          )
+          .controller!
+          .selection;
+      expect(selection.isCollapsed, isTrue);
+      expect(selection.baseOffset, greaterThan(0));
+      expect(selection.baseOffset, lessThan(longName.length));
+    });
+
+    testWidgets('ends in "…" again when the focus moves away', (tester) async {
+      await openLongLine(tester);
+      await tester.tap(nameField);
+      await tester.pump();
+
+      await tester.tap(quantityField);
+      await tester.pump();
+
+      expect(cutParagraph(tester).didExceedMaxLines, isTrue);
+      expect(dataOf().itemName, longName);
+    });
+
+    testWidgets('a name that fits is shown whole, with no "…"', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(nameField, 'Interior paint');
+      FocusManager.instance.primaryFocus!.unfocus();
+      await tester.pump();
+
+      expect(cutText, findsNothing);
+      expect(find.text('Interior paint'), findsOneWidget);
+    });
+
+    testWidgets('an empty name shows its placeholder, not cut text, even when '
+        'the placeholder is wider than the field', (tester) async {
+      tester.view.physicalSize = const Size(200, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpFields(tester);
+
+      expect(cutText, findsNothing);
+      expect(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).materialNamePlaceholder,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a quantity or rate too wide for its row is never cut', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(200, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpFields(tester);
+      await tester.enterText(quantityField, '123456789');
+      await tester.enterText(rateField, '123456789');
+      FocusManager.instance.primaryFocus!.unfocus();
+      await tester.pump();
+
+      final quantity = tester.state<EditableTextState>(
+        find.descendant(of: quantityField, matching: find.byType(EditableText)),
+      );
+      expect(quantity.renderEditable.maxScrollExtent, greaterThan(0));
+      expect(cutText, findsNothing);
     });
   });
 

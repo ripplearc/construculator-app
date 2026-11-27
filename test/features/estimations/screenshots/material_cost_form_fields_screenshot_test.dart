@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/cost_line_test_items.dart';
 
 void main() {
   const size = Size(390.0, 300.0);
@@ -59,8 +60,14 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Future<void> pumpFields(WidgetTester tester, ThemeData theme) async {
-    tester.view.physicalSize = size;
+  Future<void> pumpFields(
+    WidgetTester tester,
+    ThemeData theme, {
+    MaterialCostItem? editedItem,
+    double textScale = 1,
+    Size viewSize = size,
+  }) async {
+    tester.view.physicalSize = viewSize;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     bloc = Modular.get<MaterialCostFormBloc>();
@@ -72,10 +79,14 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<MaterialCostFormBloc>.value(
-            value: bloc,
-            child: const MaterialCostFormFields(),
+        home: MediaQuery.withClampedTextScaling(
+          minScaleFactor: textScale,
+          maxScaleFactor: textScale,
+          child: Scaffold(
+            body: BlocProvider<MaterialCostFormBloc>.value(
+              value: bloc,
+              child: MaterialCostFormFields(editedItem: editedItem),
+            ),
           ),
         ),
       ),
@@ -124,5 +135,32 @@ void main() {
         ),
       );
     });
+
+    // Longer than the 80 a user can type: an opened line keeps its full name.
+    final longName = ('Type-X fire-rated gypsum board ' * 4).substring(0, 120);
+
+    for (final (textScale, name, viewSize) in [
+      (1.0, 'long_name', size),
+      // Large text makes each row taller; the view grows so all three show.
+      (2.0, 'long_name_2x', const Size(390, 400)),
+    ]) {
+      testWidgets('a 120 character name ends in "…" on one line at text size '
+          '$textScale', (tester) async {
+        await pumpFields(
+          tester,
+          theme,
+          editedItem: materialLine(name: longName),
+          textScale: textScale,
+          viewSize: viewSize,
+        );
+
+        await expectLater(
+          find.byType(MaterialCostFormFields),
+          matchesGoldenFile(
+            'goldens/material_cost_form_fields/$name$suffix.png',
+          ),
+        );
+      });
+    }
   });
 }

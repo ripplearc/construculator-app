@@ -50,7 +50,14 @@ class CostLineRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: CoreSpacing.space3,
               children: [
-                Expanded(child: Text(item.itemName, style: nameStyle)),
+                Expanded(
+                  child: Text(
+                    item.itemName,
+                    style: nameStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: constraints.maxWidth / 2,

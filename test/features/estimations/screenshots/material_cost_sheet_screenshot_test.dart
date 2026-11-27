@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
@@ -184,10 +186,8 @@ void main() {
       await expectSheetGolden(tester, 'ready_to_add', suffix);
     });
 
-    testWidgets('save failed, with the error above the button', (tester) async {
-      database.executeError = StateError('disk full');
-      await openSheet(tester, theme);
-      await enter(tester, 'material_name_field', 'Interior paint');
+    Future<void> fillAndTapAdd(WidgetTester tester, String name) async {
+      await enter(tester, 'material_name_field', name);
       await enter(tester, 'material_quantity_field', '3');
       await pickUnit(tester, Unit.gallons);
       await enter(tester, 'material_rate_field', '52');
@@ -195,11 +195,46 @@ void main() {
       await tester.tap(find.text('New material cost'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_to_estimate_button')));
+    }
+
+    final eightyCharacterName = ('Type-X fire-rated gypsum board ' * 3)
+        .substring(0, 80);
+
+    testWidgets('save failed, with the error above the button', (tester) async {
+      database.executeError = StateError('disk full');
+      await openSheet(tester, theme);
+      await fillAndTapAdd(tester, 'Interior paint');
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'save_failed', suffix);
     });
 
-    testWidgets('an 80 character name stays on one line', (tester) async {
+    testWidgets('save failed with an 80 character name: the name stays on one '
+        'line ending in "…"', (tester) async {
+      database.executeError = StateError('disk full');
+      await openSheet(tester, theme);
+      await fillAndTapAdd(tester, eightyCharacterName);
+      await tester.pumpAndSettle();
+      await expectSheetGolden(tester, 'save_failed_long_name', suffix);
+    });
+
+    testWidgets('while an 80 character name saves, it stays on one line '
+        'ending in "…"', (tester) async {
+      final held = Completer<void>();
+      database.writeGate = held;
+      await openSheet(tester, theme);
+      await fillAndTapAdd(tester, eightyCharacterName);
+      await tester.pump();
+      try {
+        await expectSheetGolden(tester, 'saving_long_name', suffix);
+      } finally {
+        held.complete();
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets('an 80 character name stays on one line ending in "…"', (
+      tester,
+    ) async {
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'a' * 80);
       await expectSheetGolden(tester, 'long_name', suffix);
