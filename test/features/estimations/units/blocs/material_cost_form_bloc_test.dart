@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/estimation/data/repositories/unfinished_cost_line_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/unfinished_cost_line_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
@@ -77,12 +76,10 @@ void main() {
           createdAt: DateTime(2026),
         ),
       );
-      unfinishedLines = UnfinishedCostLineRepositoryImpl(
-        storage: storage,
-        authRepository: auth,
-        clock: Modular.get<Clock>(),
-      );
-      Modular.replaceInstance<UnfinishedCostLineRepository>(unfinishedLines);
+      // The module lives for the whole group, so drop the store to stop an
+      // earlier test's pending write from reaching this one.
+      Modular.dispose<UnfinishedCostLineRepository>();
+      unfinishedLines = Modular.get<UnfinishedCostLineRepository>();
       bloc = Modular.get<MaterialCostFormBloc>();
     });
 

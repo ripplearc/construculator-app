@@ -1,4 +1,3 @@
-import 'package:construculator/features/estimation/data/repositories/unfinished_cost_line_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/unfinished_cost_line_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -16,7 +15,6 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,12 +55,7 @@ void main() {
   });
 
   Future<void> openSheetAndType(WidgetTester tester) async {
-    unfinishedLines = UnfinishedCostLineRepositoryImpl(
-      storage: storage,
-      authRepository: auth,
-      clock: Modular.get<Clock>(),
-    );
-    Modular.replaceInstance<UnfinishedCostLineRepository>(unfinishedLines);
+    unfinishedLines = Modular.get<UnfinishedCostLineRepository>();
     tester.view.physicalSize = const Size(412, 917);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
