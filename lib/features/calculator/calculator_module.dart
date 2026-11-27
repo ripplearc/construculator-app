@@ -13,6 +13,7 @@ import 'package:construculator/features/calculator/domain/usecases/add_material_
 import 'package:construculator/features/calculator/domain/usecases/bank_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_calculation_session_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/delete_material_size_usecase.dart';
+import 'package:construculator/features/calculator/domain/usecases/update_material_size_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_fence_count_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_footing_volumes_usecase.dart';
 import 'package:construculator/features/calculator/domain/usecases/watch_material_weights_usecase.dart';
@@ -106,6 +107,9 @@ class CalculatorModule extends Module {
     );
     i.add<AddMaterialSizeUseCase>(
       () => AddMaterialSizeUseCase(repository: i()),
+    );
+    i.add<UpdateMaterialSizeUseCase>(
+      () => UpdateMaterialSizeUseCase(repository: i()),
     );
     i.add<BankCalculationSessionUseCase>(
       () => BankCalculationSessionUseCase(repository: i()),

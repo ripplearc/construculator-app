@@ -2120,6 +2120,19 @@ class Tape extends Equatable {
     return TapeChanged(tape.append(answer));
   }
 
+  /// The tape with the count it ends on made again at [size] (rule 4.7:
+  /// "Editing the pill recomputes the result in place from the values the
+  /// chip holds"): the count keeps its place and its key, and carries
+  /// [size] from now on. `null` when the tape does not end on a count that
+  /// carries a size, or when the area before it has no count at [size].
+  Tape? withLastCountAt(PieceSize size) => switch (chips.lastOrNull) {
+    ResultChip(size: _?) && final count => switch (_recounted(count, size)) {
+      final recount? => _with([...chips.sublist(0, chips.length - 1), recount]),
+      null => null,
+    },
+    _ => null,
+  };
+
   bool get _endsOnTheFailedDivisor {
     if (chips.last case ValueChip(operator: Operator.divide)) {
       return evaluator.fold(chips.sublist(0, chips.length - 1)) is! ChainFailed;

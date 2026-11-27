@@ -80,6 +80,20 @@ class StoredSize extends Equatable {
     seed: seed ?? this.seed,
   );
 
+  /// The size as the engine counts by it, named by what the store calls
+  /// its row — the row's id, or the default it stands in for — so that two
+  /// stored rows of one size stay two pieces.
+  PieceSize get piece =>
+      PieceSize(width: width, height: height, id: id ?? seed);
+
+  /// Whether this is the stored row [size] was made from: the row or the
+  /// default the size is named by ([PieceSize.id]), so that of two rows
+  /// with one size the right one is found, or, for a size with no name,
+  /// a row with its width and height.
+  bool isTheRowOf(PieceSize size) => size.id == null
+      ? width == size.width && height == size.height
+      : (id ?? seed) == size.id;
+
   @override
   List<Object?> get props => [id, store, width, height, position, seed];
 }

@@ -260,6 +260,19 @@
         <regex pattern="List&lt;Object\?&gt; get props =&gt; \[key, value, operator, readIn, size\];" dotAll="true" id="tape_edit.recount.size_not_in_equality">
             <mutation text="List&lt;Object?&gt; get props =&gt; [key, value, operator, readIn];"/>
         </regex>
+
+        <!-- RULE T2b-1 (CA-1096; rule 4.7): a count that names no size is
+             made again at the size asked for, or no count is -->
+        <regex pattern="ResultChip\(size: _\?\) &amp;&amp; final count =&gt; switch \(_recounted\(count, size\)\) \{" dotAll="true" id="tape_edit.resize.count_without_a_size">
+            <mutation text="final ResultChip count =&gt; switch (_recounted(count, size)) {"/>
+        </regex>
+
+        <!-- RULE T2b-2: the count made again is put after the old one, or
+             takes the chip before it with it -->
+        <regex pattern="final recount\? =&gt; _with\(\[\.\.\.chips\.sublist\(0, chips\.length - 1\), recount\]\)," dotAll="true" id="tape_edit.resize.in_place">
+            <mutation text="final recount? =&gt; _with([...chips, recount]),"/>
+            <mutation text="final recount? =&gt; _with([...chips.sublist(0, chips.length - 2), recount]),"/>
+        </regex>
     </rules>
 
     <commands>
