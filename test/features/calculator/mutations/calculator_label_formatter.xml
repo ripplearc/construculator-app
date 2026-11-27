@@ -218,6 +218,30 @@
             <mutation text="l10n.calculatorToastSavedToHistoryCarriedForward('${displayLabel(key)} $text'),"/>
             <mutation text="carriedForward ? l10n.calculatorToastSavedToHistoryCarriedForward(text) : text,"/>
         </regex>
+
+        <!-- RULES (G1, CA-1072; rule 4.7, rows 217 and 218): a sheet count
+             loses its word on the value row or on its chip, every value
+             gets it, a result that waits for its value gets it; the stored
+             size pill is drawn as an offer, or cannot be tapped -->
+        <regex pattern=": countText\(state\.displayLabel\?\.keyId, state\.valueText\);" dotAll="true" id="calculator_label_formatter.count.value_row_without_its_word">
+            <mutation text=": state.valueText;"/>
+        </regex>
+        <regex pattern="keyId == Trade\.drywall\.resultKey\s*\? l10n\.calculatorValueSheets\(value\)\s*: value;" dotAll="true" id="calculator_label_formatter.count.which_key">
+            <mutation text="keyId != Trade.drywall.resultKey ? l10n.calculatorValueSheets(value) : value;"/>
+            <mutation text="l10n.calculatorValueSheets(value);"/>
+        </regex>
+        <!-- No mutant for the chip types: only a result chip ever carries a
+             trade's result key, so giving the word to every type is
+             equivalent. -->
+        <regex pattern="CoreCalculatorChipType\.result \|\| CoreCalculatorChipType\.dashed,\s*final value\?,\s*\)\s*when value != CalculatorState\.staleResultDash =&gt;\s*countText\(chip\.label, value\)," dotAll="true" id="calculator_label_formatter.count.chip">
+            <mutation text="CoreCalculatorChipType.result || CoreCalculatorChipType.dashed, final value?,) when value != CalculatorState.staleResultDash =&gt; value,"/>
+            <mutation text="CoreCalculatorChipType.result, final value?,) when value != CalculatorState.staleResultDash =&gt; countText(chip.label, value),"/>
+            <mutation text="CoreCalculatorChipType.result || CoreCalculatorChipType.dashed, final value?,) =&gt; countText(chip.label, value),"/>
+        </regex>
+        <regex pattern="value: sizeText,\s*kind: id\.kind,\s*onPressed: onPressed," dotAll="true" id="calculator_label_formatter.size_pill.drawn">
+            <mutation text="value: sizeText, kind: CoreDependentKeyKind.offer, onPressed: onPressed,"/>
+            <mutation text="value: sizeText, kind: id.kind,"/>
+        </regex>
     </rules>
 
     <commands>

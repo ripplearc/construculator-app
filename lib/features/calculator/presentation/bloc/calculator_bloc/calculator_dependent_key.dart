@@ -1,9 +1,9 @@
 part of 'calculator_bloc.dart';
 
 /// A pill under the value (Section 1.1, "Dependent-key row"): what the
-/// engine offers to re-read or re-spell on the display today. The pills a
-/// trade result carries (Sheet size, Rate, Waste…) arrive with the stores
-/// (G1 to G3).
+/// engine offers to re-read or re-spell on the display, and the stored
+/// fact a trade result was made from. The other pills a trade result
+/// carries (Rate, Waste…) arrive with their stores (G2, G3).
 sealed class CalculatorDependentKey extends Equatable {
   const CalculatorDependentKey();
 }
@@ -34,4 +34,21 @@ final class CalculatorReadAsPill extends CalculatorDependentKey {
 
   @override
   List<Object?> get props => [offer, sourceText, targetText];
+}
+
+/// The pill of a stored size (rule 4.7: "A result that used a stored fact
+/// carries it as a dependent key"): the sheet size behind a drywall count,
+/// "Sheet size: 48in x 96in", or the piece size behind a masonry count.
+final class CalculatorStoredSizePill extends CalculatorDependentKey {
+  /// Which stored fact the pill names.
+  final DependentKeyId id;
+
+  /// The size as the formatter writes it: 48in x 96in.
+  final String sizeText;
+
+  /// The pill [id] over the size written as [sizeText].
+  const CalculatorStoredSizePill({required this.id, required this.sizeText});
+
+  @override
+  List<Object?> get props => [id, sizeText];
 }

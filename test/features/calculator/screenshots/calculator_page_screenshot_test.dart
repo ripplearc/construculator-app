@@ -381,8 +381,9 @@ void main() {
     });
 
     testWidgets('renders an accepted sheet count on the tape: Area 180ft² '
-        'followed by Number of sheets 5.63, with the other sizes left on '
-        'the strip (Section 9; walkthrough 15.2)', (tester) async {
+        'followed by Number of sheets 5.63 Sheets with its Sheet size pill, '
+        'and the other sizes left on the strip (Section 9; rule 4.7; '
+        'walkthrough 15.2)', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
@@ -407,6 +408,7 @@ void main() {
 
       expect(bloc.state.labelKeyId, Trade.drywall.resultKey);
       expect(bloc.state.valueText, '5.63');
+      expect(bloc.state.dependentKeys, hasLength(1));
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(

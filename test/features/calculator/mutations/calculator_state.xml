@@ -201,6 +201,23 @@
         <regex pattern="rows: \[for \(final count in materialCounts\) _sizeRow\(count, seenSizes\)\]," dotAll="true" id="calculator_state.size_table.rows_dropped">
             <mutation text="rows: const [],"/>
         </regex>
+
+        <!-- RULES (G1, CA-1072; rule 4.7): the Sheet size pill is read off
+             the last chip while another one is on the display; every trade
+             names the count, or none does; a trade's pill is the other's -->
+        <regex pattern="if \(_chipRead case ResultChip\(:final key, size: final size\?\)\)" dotAll="true" id="calculator_state.size_pill.read_off_the_last_chip">
+            <mutation text="if (tape.chips.lastOrNull case ResultChip(:final key, size: final size?))"/>
+        </regex>
+        <regex pattern="if \(trade\.resultKey == key\) return \(trade: trade, size: size\);" dotAll="true" id="calculator_state.size_pill.which_trade">
+            <mutation text="return (trade: trade, size: size);"/>
+            <mutation text="if (trade.resultKey != key) return (trade: trade, size: size);"/>
+        </regex>
+        <regex pattern="Trade\.drywall =&gt; DependentKeyId\.sheetSize," dotAll="true" id="calculator_state.size_pill.sheet_named_piece">
+            <mutation text="Trade.drywall =&gt; DependentKeyId.pieceSize,"/>
+        </regex>
+        <regex pattern="Trade\.masonry =&gt; DependentKeyId\.pieceSize," dotAll="true" id="calculator_state.size_pill.piece_named_sheet">
+            <mutation text="Trade.masonry =&gt; DependentKeyId.sheetSize,"/>
+        </regex>
     </rules>
 
     <commands>

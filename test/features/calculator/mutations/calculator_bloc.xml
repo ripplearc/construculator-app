@@ -456,7 +456,7 @@
         </regex>
 
         <!-- RULE 40: a result after a reopened bracket shows its stale number -->
-        <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
+        <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
             <mutation text=""/>
         </regex>
         <!-- RULES (S2a 2/2, CA-1090; G1, CA-1072): the watch on the trade

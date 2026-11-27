@@ -427,9 +427,16 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                     for (final key in dependentKeys)
                                       labels.dependentKey(
                                         key,
-                                        onPressed: () => bloc.add(
-                                          const CalculatorReadAsAccepted(),
-                                        ),
+                                        onPressed: switch (key) {
+                                          CalculatorReadAsPill() =>
+                                            () => bloc.add(
+                                              const CalculatorReadAsAccepted(),
+                                            ),
+                                          // TODO: [CA-1096] Open the value
+                                          // editor on the stored size.
+                                          // https://ripplearc.youtrack.cloud/issue/CA-1096
+                                          CalculatorStoredSizePill() => () {},
+                                        },
                                       ),
                                   ],
                                   onClose: () => bloc.add(

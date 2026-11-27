@@ -3658,6 +3658,12 @@ abstract class AppLocalizations {
   /// **'Number of sheets'**
   String get calculatorAnswerNumberOfSheets;
 
+  /// Value of an accepted drywall sheet count on the calculator's value row and on its tape chip: the count to two decimals and the word for what it counts
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Sheets'**
+  String calculatorValueSheets(String count);
+
   /// Value of a sheet-count chip on the calculator's suggestion strip: the count to two decimals and the stored sheet size it assumed
   ///
   /// In en, this message translates to:

@@ -2079,6 +2079,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorAnswerNumberOfSheets => 'Number of sheets';
 
   @override
+  String calculatorValueSheets(String count) {
+    return '$count Sheets';
+  }
+
+  @override
   String calculatorOfferSheetCount(String count, String size) {
     return '$count sheets ($size)';
   }
