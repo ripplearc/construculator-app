@@ -324,6 +324,7 @@ class CalculatorState extends Equatable {
           Trade.masonry => DependentKeyId.pieceSize,
         },
         sizeText: tape.formatter.formatPieceSize(size),
+        editorFields: [sizeEntryFaces(size.width), sizeEntryFaces(size.height)],
       ),
   ];
 
@@ -495,6 +496,12 @@ class CalculatorState extends Equatable {
   /// calculator's own entry rules, or why the editor refuses the field.
   SizeEntry sizeEntry(String text) =>
       const SizeEntryParser().read(text, tape.preferences.system);
+
+  /// The field of the size editor that spells [length] under the unit
+  /// system in force, as the editor opened from a pill starts on it
+  /// ("48Inch"); the number is the one the pill writes.
+  String sizeEntryFaces(Length length) =>
+      const SizeEntryParser().facesOf(length, tape.preferences.system);
 
   /// The length a field of the size editor spells, or `null` for a field
   /// the editor refuses ([sizeEntry]).

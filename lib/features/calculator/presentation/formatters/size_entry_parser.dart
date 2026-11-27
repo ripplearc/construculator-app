@@ -135,6 +135,24 @@ class SizeEntryParser {
     ].join('|'),
   );
 
+  /// The key faces that spell [length] in a field under [system], which
+  /// the editor opened from a pill starts on: 48in is "48Inch" and 1200mm
+  /// is "1200MM", the number as the pill writes it
+  /// ([QuantityFormatter.formatStoredLength]), so that [read] takes the
+  /// field back as what the pill shows.
+  String facesOf(Length length, MeasurementSystem system) {
+    final (suffix, face) = switch (system) {
+      MeasurementSystem.imperial => (Unit.inch.suffix, UnitType.inch.label),
+      MeasurementSystem.metric => (
+        Unit.millimetre.suffix,
+        UnitType.millimeter.label,
+      ),
+    };
+    return QuantityFormatter(
+      preferences: CalculatorPreferences(system: system),
+    ).formatStoredLength(length).replaceFirst(suffix, face);
+  }
+
   /// The length [text] spells under [system], or `null` when [read]
   /// refuses it.
   Length? lengthOf(String text, MeasurementSystem system) =>

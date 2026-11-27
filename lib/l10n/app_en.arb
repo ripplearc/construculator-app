@@ -3194,6 +3194,18 @@
   "@calculatorSizeEditorWidthField": {
     "description": "Second field of the calculator's size editor: the height of the sheet size being added"
   },
+  "calculatorSizeEditorEditTitle": "Edit size",
+  "@calculatorSizeEditorEditTitle": {
+    "description": "Title of the calculator's value editor when it opens on a stored size from the pill of a count (UX Design Doc Section 1.5: \"The Edit size sheet\")"
+  },
+  "calculatorSizeEditorUpdateButton": "Update",
+  "@calculatorSizeEditorUpdateButton": {
+    "description": "Face of the equals key of the calculator's value editor when it opens on a stored size: the press rewrites that size (UX Design Doc Section 1.5)"
+  },
+  "calculatorPillEditSizeHint": "Edits the size",
+  "@calculatorPillEditSizeHint": {
+    "description": "Screen-reader hint of the Sheet size and Piece size pills under a count in the calculator: what a tap does"
+  },
   "calculatorSizeEditorAddButton": "Add",
   "@calculatorSizeEditorAddButton": {
     "description": "Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes"

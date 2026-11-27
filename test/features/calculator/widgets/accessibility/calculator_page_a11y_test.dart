@@ -384,7 +384,8 @@ void main() {
     });
 
     testWidgets('the Sheet size pill under an accepted count meets the label '
-        'and contrast guidelines in both themes', (tester) async {
+        'and contrast guidelines in both themes, and says what a tap '
+        'does', (tester) async {
       await setupA11yTest(tester);
       final l10n = AppLocalizationsEn();
       Future<void> type(List<String> keys) async {
@@ -428,6 +429,7 @@ void main() {
           tester.getSemantics(pill).label,
           contains(l10n.calculatorPillSheetSize),
         );
+        expect(tester.getSemantics(pill).hint, l10n.calculatorPillEditSizeHint);
       }
     });
 

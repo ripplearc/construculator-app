@@ -2189,6 +2189,125 @@ void main() {
       expect(bloc.state.sizeTable!.rows, hasLength(3));
     });
 
+    // With the test font's wider glyphs a sheet-count chip does not fit
+    // the collapsed row at phone width, and the strip hides it.
+    const wideEnoughForASheetChip = Size(800, 844);
+
+    Future<void> acceptFirstSheetCount(WidgetTester tester) async {
+      for (final key in const [
+        'calc_key_one',
+        'calc_key_eight',
+        'calc_key_zero',
+        'calc_key_feet',
+        'calc_key_feet',
+      ]) {
+        await press(tester, key);
+      }
+      await settle(tester);
+      await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+      await tester.pump();
+      // A tapped chip keeps its highlight for a second.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+    }
+
+    Future<void> openSizePill(WidgetTester tester) async {
+      await tester.tap(find.byKey(CoreDisplayArea.dependentKeyTestKey(0)));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the Sheet size pill opens the editor titled Edit size on '
+        'the stored size, with an Update key (T2b, CA-1096; Section 1.5; '
+        'walkthrough 19.1, step 11; row 222)', (tester) async {
+      await pumpPage(tester, size: wideEnoughForASheetChip);
+      final l10n = l10nOf(tester);
+      await acceptFirstSheetCount(tester);
+
+      await openSizePill(tester);
+
+      expect(
+        inEditor(find.text(l10n.calculatorSizeEditorEditTitle)),
+        findsOneWidget,
+      );
+      expect(inEditor(find.text('48Inch')), findsOneWidget);
+      expect(inEditor(find.text('96Inch')), findsOneWidget);
+      expect(
+        inEditor(find.text(l10n.calculatorSizeEditorUpdateButton)),
+        findsOneWidget,
+      );
+      expect(
+        inEditor(find.text(l10n.calculatorSizeEditorAddButton)),
+        findsNothing,
+      );
+    });
+
+    testWidgets('the Width field retyped as 100 [Inch] and Update make the '
+        'count again in place: 5.40 Sheets with the pill Sheet size: 48in x '
+        '100in (walkthrough 19.1, steps 12 to 16; row 220)', (tester) async {
+      await pumpPage(tester, size: wideEnoughForASheetChip);
+      final l10n = l10nOf(tester);
+      await acceptFirstSheetCount(tester);
+
+      await openSizePill(tester);
+      await tester.tap(
+        inEditor(find.text('${l10n.calculatorSizeEditorWidthField}*')),
+      );
+      await tester.pump();
+      await typeInEditor(tester, const [
+        'calc_key_clearAll',
+        'calc_key_one',
+        'calc_key_zero',
+        'calc_key_zero',
+        'calc_key_inch',
+      ]);
+      await tester.tap(inEditor(find.byKey(CoreResultButton.testKey)));
+      await tester.pumpAndSettle();
+
+      final display = tester.widget<CoreDisplayArea>(
+        find.byType(CoreDisplayArea),
+      );
+      expect(find.byType(CoreValueEditorSheet), findsNothing);
+      expect(display.value, l10n.calculatorValueSheets('5.40'));
+      expect(display.dependentKeys.single.value, '48in x 100in');
+      expect(
+        blocOf(tester).state.sizeTable!.rows.first.sizeText,
+        '48in x 100in',
+      );
+    });
+
+    testWidgets('the editor swiped down, or closed by a tap above it, '
+        'changes nothing: the count and its pill stay (Section 1.5)', (
+      tester,
+    ) async {
+      await pumpPage(tester, size: wideEnoughForASheetChip);
+      final l10n = l10nOf(tester);
+      await acceptFirstSheetCount(tester);
+      final tape = blocOf(tester).state.tape;
+
+      await openSizePill(tester);
+      await tester.drag(
+        inEditor(find.text(l10n.calculatorSizeEditorEditTitle)),
+        const Offset(0, 600),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(CoreValueEditorSheet), findsNothing);
+
+      await openSizePill(tester);
+      await tester.tapAt(const Offset(195, 20));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreValueEditorSheet), findsNothing);
+      expect(blocOf(tester).state.tape, tape);
+      expect(
+        tester
+            .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
+            .dependentKeys
+            .single
+            .value,
+        '48in x 96in',
+      );
+    });
+
     testWidgets('closing the editor without Add adds nothing', (tester) async {
       await pumpPage(tester);
       await foldOn180SquareFeet(tester);

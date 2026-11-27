@@ -5457,12 +5457,14 @@ void main() {
           CalculatorStoredSizePill(
             id: DependentKeyId.sheetSize,
             sizeText: '48in x 96in',
+            editorFields: ['48Inch', '96Inch'],
           ),
         ]);
         expect(second.dependentKeys, const [
           CalculatorStoredSizePill(
             id: DependentKeyId.sheetSize,
             sizeText: '48in x 108in',
+            editorFields: ['48Inch', '108Inch'],
           ),
         ]);
       });
@@ -5515,6 +5517,7 @@ void main() {
             CalculatorStoredSizePill(
               id: DependentKeyId.pieceSize,
               sizeText: '8in x 16in',
+              editorFields: ['8Inch', '16Inch'],
             ),
           ],
         );
@@ -6453,10 +6456,10 @@ void main() {
           await counted;
         }
 
-        bool saysTheSize(CalculatorState state, String sizeText) =>
-            state.dependentKeys.contains(
-              CalculatorStoredSizePill(id: sheetSize, sizeText: sizeText),
-            );
+        bool saysTheSize(CalculatorState state, String sizeText) => state
+            .dependentKeys
+            .whereType<CalculatorStoredSizePill>()
+            .any((pill) => pill.id == sheetSize && pill.sizeText == sizeText);
 
         Future<List<String>> storedSheets() async => [
           for (final size
@@ -6648,6 +6651,73 @@ void main() {
           verify: (bloc) {
             expect(bloc.state.sizeNotAdded, isFalse);
             expect(bloc.state.toast, isNull);
+            expect(bloc.state.valueText, '5.63');
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'a field left as the editor opened it keeps the stored measure '
+          'exactly: 7-5/8in shows as 7.63Inch, and Update on the other '
+          'field alone leaves it 7-5/8in (row 513)',
+          build: () => bloc,
+          act: (bloc) async {
+            await stores.addSize(
+              StoredSize(
+                store: SizeStore.sheet,
+                width: bloc.state.sizeEntryLength('7Inch5/8')!,
+                height: bloc.state.sizeEntryLength('15Inch5/8')!,
+                position: 0,
+              ),
+            );
+            type180SquareFeet(bloc);
+            final offered = await bloc.stream.firstWhere(
+              (state) => state.materialCounts.length == 4,
+            );
+            final counted = bloc.stream.firstWhere(
+              (state) => state.countOnDisplay != null,
+            );
+            bloc.add(CalculatorSuggestionAccepted(countOffers(offered).last));
+            final pill =
+                (await counted).dependentKeys.single
+                    as CalculatorStoredSizePill;
+            expect(pill.editorFields, ['7.63Inch', '15.63Inch']);
+            final updated = bloc.stream.firstWhere(
+              (state) => saysTheSize(state, '7.63in x 16in'),
+            );
+            bloc.add(
+              CalculatorSizePillEdited([pill.editorFields.first, '16Inch']),
+            );
+            await updated;
+          },
+          verify: (bloc) async {
+            final stored = await stores
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first;
+            expect(
+              stored.map((size) => size.width.inches),
+              contains(const Rational(61, 8)),
+            );
+          },
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'Update with both fields as the editor opened them writes '
+          'nothing: the default stays a default',
+          build: () => bloc,
+          act: (bloc) async {
+            await acceptFirstCount(bloc);
+            bloc
+              ..add(const CalculatorSizePillEdited(['48Inch', '96Inch']))
+              ..add(const CalculatorGroupSelected(1));
+            await bloc.stream.firstWhere(
+              (state) => state.currentGroupIndex == 1,
+            );
+          },
+          verify: (bloc) async {
+            final stored = await stores
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first;
+            expect(stored.first.id, isNull);
             expect(bloc.state.valueText, '5.63');
           },
         );

@@ -221,7 +221,10 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
         onError: controller.addError,
         onDone: controller.close,
       );
-      controller.onCancel = subscription.cancel;
+      // Not handed back to the listener: a read that takes the first
+      // value and leaves (`.first`) would wait on it, and under a widget
+      // test's fake clock that future never completes.
+      controller.onCancel = () => unawaited(subscription.cancel());
     });
   }
 

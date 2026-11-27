@@ -110,6 +110,26 @@ void main() {
       }
     });
 
+    test('a stored size is spelled in key faces as the pill writes it, and '
+        'reads back as that: 48in is 48Inch, 47.24in is 47.24Inch, and under '
+        'Metric 1200mm is 1200MM (T2b, CA-1096; term 2.18)', () {
+      const sheetWidth = Length(48 * Length.ticksPerInch, unit: Unit.inch);
+      final metricSheet = parser.lengthOf('1200MM', metric)!;
+      final prototypeSheet = parser.lengthOf('47.24Inch', imperial)!;
+
+      expect(parser.facesOf(sheetWidth, imperial), '48Inch');
+      expect(parser.facesOf(prototypeSheet, imperial), '47.24Inch');
+      expect(parser.facesOf(metricSheet, metric), '1200MM');
+      expect(
+        parser.lengthOf(parser.facesOf(sheetWidth, imperial), imperial)!.inches,
+        const Rational(48),
+      );
+      expect(
+        parser.lengthOf(parser.facesOf(metricSheet, metric), metric)!.inches,
+        metricSheet.inches,
+      );
+    });
+
     test('a decimal reads exactly', () {
       expect(inchesOf('47.25Inch'), const Rational(189, 4));
       expect(inchesOf('.5Feet'), const Rational(6));

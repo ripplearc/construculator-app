@@ -291,6 +291,7 @@ class CalculatorLabelFormatter {
         label: pillLabel(id),
         value: sizeText,
         kind: id.kind,
+        semanticsHint: l10n.calculatorPillEditSizeHint,
         onPressed: onPressed,
       ),
   };

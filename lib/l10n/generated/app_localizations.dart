@@ -3796,6 +3796,24 @@ abstract class AppLocalizations {
   /// **'Width'**
   String get calculatorSizeEditorWidthField;
 
+  /// Title of the calculator's value editor when it opens on a stored size from the pill of a count (UX Design Doc Section 1.5: "The Edit size sheet")
+  ///
+  /// In en, this message translates to:
+  /// **'Edit size'**
+  String get calculatorSizeEditorEditTitle;
+
+  /// Face of the equals key of the calculator's value editor when it opens on a stored size: the press rewrites that size (UX Design Doc Section 1.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get calculatorSizeEditorUpdateButton;
+
+  /// Screen-reader hint of the Sheet size and Piece size pills under a count in the calculator: what a tap does
+  ///
+  /// In en, this message translates to:
+  /// **'Edits the size'**
+  String get calculatorPillEditSizeHint;
+
   /// Equals key of the calculator's size editor that adds the typed size to the stored sheet sizes
   ///
   /// In en, this message translates to:

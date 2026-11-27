@@ -589,6 +589,18 @@
         <regex pattern="if \(state\.tape != counted\) return;" dotAll="true" id="calculator_bloc.size_updated.over_another_tape">
             <mutation text=""/>
         </regex>
+        <!-- T2b 3/3 (CA-1096): a field left as the editor opened it is read
+             back rounded, or a retyped field keeps the old measure; an
+             Update that changes nothing still writes, or one that changes
+             one side alone writes nothing -->
+        <regex pattern="field == state\.sizeEntryFaces\(stored\)\s*\? stored\s*: state\.sizeEntryLength\(field\);" dotAll="true" id="calculator_bloc.size_updated.untouched_field">
+            <mutation text="state.sizeEntryLength(field);"/>
+            <mutation text="stored;"/>
+        </regex>
+        <regex pattern="if \(width == size\.width &amp;&amp; height == size\.height\) return;" dotAll="true" id="calculator_bloc.size_updated.nothing_changed">
+            <mutation text=""/>
+            <mutation text="if (width == size.width || height == size.height) return;"/>
+        </regex>
     </rules>
 
     <commands>
