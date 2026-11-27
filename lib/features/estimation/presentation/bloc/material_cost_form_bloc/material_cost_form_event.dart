@@ -8,7 +8,10 @@ sealed class MaterialCostFormEvent {
 /// Fired when the form opens, so it can load the unit last used for each
 /// material.
 class MaterialCostFormStarted extends MaterialCostFormEvent {
-  const MaterialCostFormStarted();
+  const MaterialCostFormStarted({required this.estimateId});
+
+  /// The estimate the form adds to.
+  final String estimateId;
 }
 
 /// Fired when the user changes the material name.
@@ -88,4 +91,10 @@ class MaterialCostEditOpened extends MaterialCostFormEvent {
 /// running.
 class MaterialCostDeleteRequested extends MaterialCostFormEvent {
   const MaterialCostDeleteRequested();
+}
+
+/// Fired when the user discards the line through the "Discard this line?"
+/// question.
+class MaterialCostFormDiscarded extends MaterialCostFormEvent {
+  const MaterialCostFormDiscarded();
 }

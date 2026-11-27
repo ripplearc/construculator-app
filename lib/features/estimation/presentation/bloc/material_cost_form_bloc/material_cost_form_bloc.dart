@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/unfinished_cost_line_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/unfinished_cost_line_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/identifiers/interfaces/id_generator.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -21,20 +25,30 @@ const double _lineTotalColumnLimit = 1e16;
 /// Add saves the line on the phone and finishes without waiting for the
 /// server. The line gets its id when the form opens and keeps it through every
 /// retry, so a line the server already has is updated and never added twice.
+///
+/// After every change it keeps the form as the unfinished line on the phone,
+/// so the line survives the phone closing the app. A form that is still as it
+/// opened keeps nothing. Adding or saving the line, deleting it, discarding
+/// it, or changing it back to how it opened removes the line this form kept.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
+  final UnfinishedCostLineRepository _unfinishedLineRepository;
   final Clock _clock;
   final String _lineId;
 
   MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
   bool _unitPicked = false;
+  String _estimateId = '';
+  bool _openingValuesKnown = false;
+  bool _keepsUnfinishedLine = false;
 
   MaterialCostFormBloc({
     required this._repository,
     required this._lastUsedUnitRepository,
+    required this._unfinishedLineRepository,
     required this._clock,
     required IdGenerator idGenerator,
   }) : _lineId = idGenerator.newId(),
@@ -70,6 +84,7 @@ class MaterialCostFormBloc
     on<MaterialCostFormSubmitted>(_onSubmitted);
     on<MaterialCostEditOpened>(_onEditOpened);
     on<MaterialCostDeleteRequested>(_onDeleteRequested);
+    on<MaterialCostFormDiscarded>((_, _) => _removeUnfinishedLine());
   }
 
   void _onEditOpened(
@@ -88,6 +103,7 @@ class MaterialCostFormBloc
       ),
     );
     _formValuesAtOpening = opened;
+    _openingValuesKnown = true;
     emit(MaterialCostFormEditing(opened));
   }
 
@@ -109,7 +125,10 @@ class MaterialCostFormBloc
       result.fold(
         (failure) =>
             MaterialCostFormFailure(draft, failure, whileDeleting: true),
-        (_) => MaterialCostFormDeleted(draft),
+        (_) {
+          _removeUnfinishedLine();
+          return MaterialCostFormDeleted(draft);
+        },
       ),
     );
   }
@@ -118,6 +137,7 @@ class MaterialCostFormBloc
     MaterialCostFormStarted event,
     Emitter<MaterialCostFormState> emit,
   ) async {
+    _estimateId = event.estimateId;
     _rememberedUnits = await _lastUsedUnitRepository.getLastUnits(
       CostItemType.material,
     );
@@ -127,6 +147,7 @@ class MaterialCostFormBloc
       _emit(emit, _withRememberedUnit);
     }
     _formValuesAtOpening = _current();
+    _openingValuesKnown = true;
   }
 
   MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
@@ -188,6 +209,34 @@ class MaterialCostFormBloc
         MaterialCostFormFailure(next, failure),
       _ => MaterialCostFormEditing(next),
     });
+    if (!_openingValuesKnown) return;
+    next.hasUnsavedChanges
+        ? _keepUnfinishedLine(next)
+        : _removeUnfinishedLine();
+  }
+
+  void _keepUnfinishedLine(MaterialCostFormData data) {
+    _keepsUnfinishedLine = true;
+    unawaited(
+      _unfinishedLineRepository.save(
+        UnfinishedCostLine(
+          category: CostItemType.material,
+          estimateId: data.editedItem?.estimateId ?? _estimateId,
+          costItemId: data.editedItem?.id,
+          itemName: data.itemName,
+          quantity: data.quantity,
+          unit: data.unit,
+          rate: data.rate,
+          updatedAt: _clock.now(),
+        ),
+      ),
+    );
+  }
+
+  void _removeUnfinishedLine() {
+    if (!_keepsUnfinishedLine) return;
+    _keepsUnfinishedLine = false;
+    unawaited(_unfinishedLineRepository.remove());
   }
 
   Future<void> _onSubmitted(
@@ -230,6 +279,7 @@ class MaterialCostFormBloc
             unit,
           );
         }
+        _removeUnfinishedLine();
         emit(MaterialCostFormSuccess(draft, saved));
       },
     );

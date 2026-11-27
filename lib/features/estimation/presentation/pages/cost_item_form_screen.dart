@@ -130,6 +130,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 savedLineTotalOf: (state) =>
                     state.data.editedItem?.itemTotalCost,
                 isOwnKeyboardUp: numberPad != null,
+                onDiscarded: () => context.read<MaterialCostFormBloc>().add(
+                  const MaterialCostFormDiscarded(),
+                ),
                 child: _buildSheet(context, numberPad: numberPad),
               ),
         ),

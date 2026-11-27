@@ -1,7 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/unfinished_cost_line_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/unfinished_cost_line_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -14,6 +16,7 @@ import 'package:construculator/libraries/storage/testing/fake_storage_service.da
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +33,7 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late CostItemRepository repository;
     late LastUsedUnitRepository lastUsedUnits;
+    late UnfinishedCostLineRepository unfinishedLines;
     late FakeStorageService storage;
     late FakeAuthRepository auth;
 
@@ -72,6 +76,7 @@ void main() {
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostItemRepository>();
       lastUsedUnits = Modular.get<LastUsedUnitRepository>();
+      unfinishedLines = Modular.get<UnfinishedCostLineRepository>();
     });
 
     tearDownAll(Modular.dispose);
@@ -470,7 +475,7 @@ void main() {
       act: (bloc) async {
         await open(bloc);
         bloc
-          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialCostFormStarted(estimateId: estimateId))
           ..add(const MaterialQuantityUpdated('5'));
       },
       verify: (bloc) {
@@ -617,6 +622,112 @@ void main() {
         expect: () => <MaterialCostFormState>[],
         verify: (_) =>
             expect(fakeSupabaseWrapper.getMethodCallsFor('delete'), isEmpty),
+      );
+    });
+
+    group('unfinished change', () {
+      late UnfinishedCostLine earlierLine;
+
+      setUp(() {
+        earlierLine = UnfinishedCostLine(
+          category: CostItemType.equipment,
+          estimateId: 'estimate-9',
+          itemName: 'Excavator',
+          updatedAt: Modular.get<Clock>().now(),
+        );
+      });
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a change to a saved line as a change to that line',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc.add(const MaterialQuantityUpdated('6'));
+        },
+        verify: (_) async {
+          expect(
+            await unfinishedLines.read(),
+            isA<UnfinishedCostLine>()
+                .having((l) => l.costItemId, 'costItemId', itemId)
+                .having((l) => l.estimateId, 'estimateId', estimateId)
+                .having((l) => l.itemName, 'itemName', 'Rebar')
+                .having((l) => l.quantity, 'quantity', 6)
+                .having((l) => l.isChangeToSavedLine, 'saved line', isTrue),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps nothing for a saved line opened and never changed',
+        setUp: () async {
+          seedLine();
+          await unfinishedLines.save(earlierLine);
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc.add(const MaterialCostFormStarted(estimateId: estimateId));
+        },
+        verify: (_) async => expect(await unfinishedLines.read(), earlierLine),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line once the change is saved',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc
+            ..add(const MaterialQuantityUpdated('6'))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (bloc) async {
+          expect(bloc.state, isA<MaterialCostFormSuccess>());
+          expect(await unfinishedLines.read(), isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'removes the line once the saved line is deleted',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc
+            ..add(const MaterialQuantityUpdated('6'))
+            ..add(const MaterialCostDeleteRequested());
+        },
+        verify: (bloc) async {
+          expect(bloc.state, isA<MaterialCostFormDeleted>());
+          expect(await unfinishedLines.read(), isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the line when deleting the saved line fails',
+        setUp: () {
+          seedLine();
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          await open(bloc);
+          bloc
+            ..add(const MaterialQuantityUpdated('6'))
+            ..add(const MaterialCostDeleteRequested());
+        },
+        verify: (bloc) async {
+          expect(bloc.state, isA<MaterialCostFormFailure>());
+          expect(
+            await unfinishedLines.read(),
+            isA<UnfinishedCostLine>().having(
+              (l) => l.costItemId,
+              'costItemId',
+              itemId,
+            ),
+          );
+        },
       );
     });
   });

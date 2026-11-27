@@ -48,6 +48,9 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// from the view insets; the pad leaves them at zero.
   final bool isOwnKeyboardUp;
 
+  /// Called when the user answers Discard, just before the sheet closes.
+  final VoidCallback? onDiscarded;
+
   final Widget child;
 
   const DiscardLineGuard({
@@ -57,6 +60,7 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
     this.isSaveRunning = _neverRunning,
     this.savedLineTotalOf,
     this.isOwnKeyboardUp = false,
+    this.onDiscarded,
     required this.child,
   });
 
@@ -189,6 +193,7 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       primaryLabel: l10n.discardLineKeepEditingButton,
     );
     if (keepEditing == false && context.mounted) {
+      widget.onDiscarded?.call();
       Navigator.of(context).pop();
     }
   }
