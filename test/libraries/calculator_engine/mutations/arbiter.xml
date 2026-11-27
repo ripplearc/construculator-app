@@ -2,7 +2,9 @@
 <mutations version="1.0">
     <!-- THE ARBITER: THE LADDER THAT CHOOSES THE STRIP (G1, CA-1072; UX
          Design Doc rule 4.4) -->
-    <!-- Targets: when the strip is silent and why (RULES 1-5). -->
+    <!-- Targets: when the strip is silent and why (RULES 1-5); what the
+         rules rung offers, in what order, and the rung and trace it leaves
+         (RULES 6-12). -->
 
     <files>
         <file>lib/libraries/calculator_engine/arbiter.dart</file>
@@ -38,6 +40,52 @@
              error chip silences a value typed after it -->
         <regex pattern="if \(operator == null\) return false;" dotAll="true" id="arbiter.silence.looks_past_the_chain">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE 6: a value that is no calculation is offered as Calc -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; StripOffer\(" dotAll="true" id="arbiter.rules.calc_without_a_calculation">
+            <mutation text="ChainValue(:final value) =&gt; StripOffer("/>
+        </regex>
+
+        <!-- RULE 7: a trig chip leads when it continues a chain, and
+             follows when it stands alone -->
+        <regex pattern="final trigLeads = trigAnswer != null &amp;&amp; !tape\.trigAnswerContinuesAChain;" dotAll="true" id="arbiter.rules.trig_leads">
+            <mutation text="final trigLeads = trigAnswer != null &amp;&amp; tape.trigAnswerContinuesAChain;"/>
+            <mutation text="final trigLeads = trigAnswer != null;"/>
+        </regex>
+
+        <!-- RULE 8: the rule answers stay beside the running total -->
+        <regex pattern="final ruleOffers = runningTotal != null\s*\? const &lt;StripOffer&gt;\[\]\s*: ruleAnswersFor\(tape\);" dotAll="true" id="arbiter.rules.answers_beside_calc">
+            <mutation text="final ruleOffers = ruleAnswersFor(tape);"/>
+        </regex>
+
+        <!-- RULE 9: a trig chip that continues a chain is dropped from the
+             row -->
+        <regex pattern="if \(trigAnswer != null &amp;&amp; !trigLeads\) trigAnswer," dotAll="true" id="arbiter.rules.chained_trig_dropped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 10: an answer already on the tape is offered again -->
+        <regex pattern="if \(!tape\.chips\.any\(\s*\(chip\) =&gt; chip is ResultChip &amp;&amp; chip\.key == answer\.key,\s*\)\)" dotAll="true" id="arbiter.rules.landed_answer_offered_again">
+            <mutation text="if (true)"/>
+        </regex>
+
+        <!-- RULE 11: the rules rung is not said for a trig chip, for the
+             running total or for the rule answers -->
+        <regex pattern="trigAnswer != null \|\| runningTotal != null \|\| ruleOffers\.isNotEmpty;" dotAll="true" id="arbiter.rung.rules">
+            <mutation text="runningTotal != null || ruleOffers.isNotEmpty;"/>
+            <mutation text="trigAnswer != null || ruleOffers.isNotEmpty;"/>
+            <mutation text="trigAnswer != null || runningTotal != null;"/>
+        </regex>
+
+        <!-- RULE 12: the trace says the rules rung answered when it did
+             not, or the rung is the rules' whatever the tape -->
+        <regex pattern="LadderStep\(LadderRung\.rules, applies: answers\)," dotAll="true" id="arbiter.trace.rules">
+            <mutation text="const LadderStep(LadderRung.rules, applies: true),"/>
+        </regex>
+        <regex pattern="rung: answers \? LadderRung\.rules : LadderRung\.none," dotAll="true" id="arbiter.rung.always_rules">
+            <mutation text="rung: LadderRung.rules,"/>
+            <mutation text="rung: LadderRung.none,"/>
         </regex>
     </rules>
 
