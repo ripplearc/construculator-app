@@ -792,6 +792,29 @@ void main() {
       expect(find.byType(CostEstimationTile), findsOneWidget);
     });
 
+    testWidgets('shows a permission error and keeps the estimate when the user '
+        'cannot delete', (tester) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+      await openDeleteConfirmationSheet(tester);
+      fakeProjectRepository.setProjectPermissions(testProjectId, [
+        PermissionConstants.getCostEstimations,
+        PermissionConstants.editCostEstimation,
+      ]);
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().permissionDenied), findsOneWidget);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+    });
+
     testWidgets(
       'calls router.pop when cancel is tapped and estimation remains',
       (tester) async {

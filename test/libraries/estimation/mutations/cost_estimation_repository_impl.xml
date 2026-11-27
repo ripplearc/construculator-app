@@ -106,7 +106,7 @@
         <regex pattern="\.where\(\(edit\) =&gt; edit\.projectId == projectId\)" dotAll="true" id="repo.edits.apply_other_projects">
             <mutation text=".where((edit) =&gt; true)"/>
         </regex>
-        <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)" dotAll="true" id="repo.edits.delete_reflected_any">
+        <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)" dotAll="true" id="repo.edits.create_reflected_any">
             <mutation text="estimates.any((e) =&gt; e.id != estimationId)"/>
         </regex>
 

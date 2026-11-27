@@ -5,8 +5,11 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -23,6 +26,7 @@ void main() {
     final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
+    late FakeProjectRepository fakeProjectRepository;
 
     const testProjectId = 'test-project-123';
     const testEstimationId = 'test-estimation-123';
@@ -38,6 +42,10 @@ void main() {
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+      Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+      fakeProjectRepository =
+          Modular.get<ProjectRepository>() as FakeProjectRepository;
 
       fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
         initialProjectId: testProjectId,
@@ -56,6 +64,9 @@ void main() {
       fakeSupabaseWrapper.reset();
       fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
+      fakeProjectRepository.setProjectPermissions(testProjectId, [
+        PermissionConstants.deleteCostEstimation,
+      ]);
       bloc = Modular.get<DeleteCostEstimationBloc>();
     });
 
@@ -110,6 +121,39 @@ void main() {
             ),
           ),
         ],
+      );
+
+      blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
+        'should emit permission denied and keep the estimation when the user '
+        'lacks the delete permission',
+        build: () {
+          fakeProjectRepository.setProjectPermissions(testProjectId, []);
+          seedEstimationTable([
+            buildEstimationMap(
+              id: testEstimationId,
+              projectId: testProjectId,
+              estimateName: testEstimationName,
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const DeleteCostEstimationRequested(estimationId: testEstimationId),
+        ),
+        expect: () => [
+          isA<DeleteCostEstimationFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.permissionDenied,
+            ),
+          ),
+        ],
+        verify: (_) {
+          expect(fakePhoneDatabase.executeCalls, isEmpty);
+        },
       );
 
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
