@@ -722,7 +722,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
   ) async {
     try {
-      final dto = await _dataSource.getEstimationById(estimationId);
+      final phoneDto = await _localDataSource.loadEstimationById(estimationId);
+      final dto = phoneDto ?? await _dataSource.getEstimationById(estimationId);
       if (dto == null) {
         _logger.warning('Estimation not found: $estimationId');
         return Left(
@@ -733,6 +734,47 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     } catch (e) {
       return Left(
         _handleError(e, 'getting estimation', estimationId: estimationId),
+      );
+    }
+  }
+
+  @override
+  Stream<Either<Failure, CostEstimate>> watchEstimation(
+    String estimationId,
+  ) async* {
+    var phoneHadRow = false;
+    try {
+      await for (final phoneDto in _localDataSource.watchEstimationById(
+        id: estimationId,
+      )) {
+        phoneHadRow = phoneHadRow || phoneDto != null;
+        CostEstimateDto? dto = phoneDto;
+        if (dto == null && !phoneHadRow) {
+          try {
+            dto = await _dataSource.getEstimationById(estimationId);
+          } catch (e) {
+            yield Left(
+              _handleError(
+                e,
+                'getting estimation',
+                estimationId: estimationId,
+              ),
+            );
+            continue;
+          }
+        }
+        if (dto == null) {
+          _logger.warning('Estimation not found: $estimationId');
+          yield Left(
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          );
+        } else {
+          yield Right(dto.toDomain());
+        }
+      }
+    } catch (e) {
+      yield Left(
+        _handleError(e, 'watching estimation', estimationId: estimationId),
       );
     }
   }

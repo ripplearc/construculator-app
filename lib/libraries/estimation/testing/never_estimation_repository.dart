@@ -64,6 +64,10 @@ class NeverEstimationRepository implements CostEstimationRepository {
   ) async => Left(UnexpectedFailure());
 
   @override
+  Stream<Either<Failure, CostEstimate>> watchEstimation(String estimationId) =>
+      Stream.value(Left(UnexpectedFailure()));
+
+  @override
   Future<Either<Failure, CostEstimate>> renameEstimation({
     required String estimationId,
     required String newName,

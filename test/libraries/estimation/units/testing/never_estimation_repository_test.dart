@@ -124,6 +124,12 @@ void main() {
       );
     });
 
+    test('watchEstimation sends one UnexpectedFailure', () async {
+      final result = await repository.watchEstimation('est-1').single;
+
+      expect(result.getLeftOrNull(), isA<UnexpectedFailure>());
+    });
+
     test('getEstimation returns UnexpectedFailure', () async {
       final result = await repository.getEstimation('est-1');
 

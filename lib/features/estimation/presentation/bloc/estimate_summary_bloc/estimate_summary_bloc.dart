@@ -10,13 +10,15 @@ part 'estimate_summary_event.dart';
 part 'estimate_summary_state.dart';
 
 /// Loads the estimate a cost sheet is opened from, so the sheet can show its
-/// name and running total.
+/// name and running total, and keeps the name current when the estimate
+/// changes on this phone or another one.
 ///
 /// The `total_cost` column of an estimate can be out of date, so the loaded
 /// estimate's `totalCost` is the sum of its cost items instead.
 ///
-/// A new request replaces one still loading: only the newest result is
-/// emitted, so a reload after an add is never dropped.
+/// The sum of the cost items is read once for each request, not again for each
+/// change to the estimate row. A new request replaces the one before it: only
+/// the newest request is followed, so a reload after an add is never dropped.
 class EstimateSummaryBloc
     extends Bloc<EstimateSummaryEvent, EstimateSummaryState> {
   final CostEstimationRepository _repository;
@@ -37,16 +39,21 @@ class EstimateSummaryBloc
     Emitter<EstimateSummaryState> emit,
   ) async {
     emit(const EstimateSummaryLoading());
-    final (estimate, total) = await (
-      _repository.getEstimation(event.estimateId),
-      _costItemRepository.getEstimateItemsTotal(event.estimateId),
-    ).wait;
-    estimate.fold(
-      (failure) => emit(EstimateSummaryFailure(failure)),
-      (loaded) => total.fold(
-        (failure) => emit(EstimateSummaryFailure(failure)),
-        (sum) => emit(EstimateSummaryLoaded(loaded.copyWith(totalCost: sum))),
-      ),
+    final total = _costItemRepository.getEstimateItemsTotal(event.estimateId);
+    await emit.forEach(
+      _repository
+          .watchEstimation(event.estimateId)
+          .asyncMap((estimate) async => (estimate, await total)),
+      onData: (result) {
+        final (estimate, total) = result;
+        return estimate.fold(
+          EstimateSummaryFailure.new,
+          (loaded) => total.fold(
+            EstimateSummaryFailure.new,
+            (sum) => EstimateSummaryLoaded(loaded.copyWith(totalCost: sum)),
+          ),
+        );
+      },
     );
   }
 }

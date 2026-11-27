@@ -47,6 +47,18 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     return getEstimationResult ?? (throw UnimplementedError());
   }
 
+  /// The stream that [watchEstimation] returns.
+  Stream<Either<Failure, CostEstimate>>? watchEstimationStream;
+
+  /// The last ID passed to [watchEstimation].
+  String? lastWatchEstimationId;
+
+  @override
+  Stream<Either<Failure, CostEstimate>> watchEstimation(String estimationId) {
+    lastWatchEstimationId = estimationId;
+    return watchEstimationStream ?? (throw UnimplementedError());
+  }
+
   @override
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
     String projectId, {

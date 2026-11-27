@@ -20,6 +20,30 @@
     </exclude>
 
     <rules>
+        <!-- getEstimation: the phone's row wins over the server's -->
+        <regex pattern="final dto = phoneDto \?\? await _dataSource\.getEstimationById\(estimationId\);" dotAll="true" id="repo.get.ignore_phone_row">
+            <mutation text="final dto = await _dataSource.getEstimationById(estimationId);"/>
+        </regex>
+        <regex pattern="final dto = phoneDto \?\? await _dataSource\.getEstimationById\(estimationId\);" dotAll="true" id="repo.get.ignore_server_row">
+            <mutation text="final dto = phoneDto;"/>
+        </regex>
+        <!-- watchEstimation: phone first, server only before the phone ever had the row -->
+        <regex pattern="phoneHadRow = phoneHadRow \|\| phoneDto != null;" dotAll="true" id="repo.watch.never_remember_phone_row">
+            <mutation text="phoneHadRow = false;"/>
+        </regex>
+        <regex pattern="if \(dto == null &amp;&amp; !phoneHadRow\) \{" dotAll="true" id="repo.watch.always_ask_server">
+            <mutation text="if (dto == null) {"/>
+        </regex>
+        <regex pattern="if \(dto == null &amp;&amp; !phoneHadRow\) \{" dotAll="true" id="repo.watch.never_ask_server">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="estimationId: estimationId,\s*\),\s*\);\s*continue;" dotAll="true" id="repo.watch.server_failure_ends_loop">
+            <mutation text="estimationId: estimationId, ), ); return;"/>
+        </regex>
+        <regex pattern="yield Right\(dto\.toDomain\(\)\);" dotAll="true" id="repo.watch.skip_value">
+            <mutation text=""/>
+        </regex>
+
 
         <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
         <regex pattern="return _paginationStates\[streamKey\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
