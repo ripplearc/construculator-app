@@ -76,6 +76,39 @@ void main() {
       },
     );
 
+    test('a held write stores nothing until it is released', () async {
+      final release = fake.holdNextWrite();
+
+      final write = fake.saveData<String>('one', '1');
+      await fake.heldWriteStarted;
+
+      expect(fake.valueOf('one'), isNull);
+      release.complete();
+      await write;
+      expect(fake.valueOf('one'), '1');
+    });
+
+    test('only the next write is held', () async {
+      final release = fake.holdNextWrite();
+      final held = fake.saveData<String>('one', '1');
+      await fake.heldWriteStarted;
+
+      await fake.saveData<String>('two', '2');
+
+      expect(fake.valueOf('two'), '2');
+      release.complete();
+      await held;
+    });
+
+    test('reset drops a hold not used yet', () async {
+      fake.holdNextWrite();
+
+      fake.reset();
+      await fake.saveData<String>('one', '1');
+
+      expect(fake.valueOf('one'), '1');
+    });
+
     test('reset clears the data and every failure switch', () async {
       await fake.saveData<String>('one', '1');
       fake.shouldThrowOnRead = true;
