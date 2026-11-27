@@ -196,8 +196,10 @@ class EstimationModule extends Module {
       () => CostEstimationLogBloc(repository: i.get()),
     );
     i.add<EstimateSummaryBloc>(
-      () =>
-          EstimateSummaryBloc(repository: i.get(), costItemRepository: i.get()),
+      () => EstimateSummaryBloc(
+        repository: i.get(),
+        costItemRepository: i.get(),
+      ),
     );
     i.add<CostItemsBloc>(() => CostItemsBloc(repository: i.get()));
     i.add<MaterialCostFormBloc>(
