@@ -113,6 +113,52 @@
             <mutation text="if (!crossSection.hasFace) return null; return FootingVolume(length: const Length(0, unit: Unit.foot), crossSection: crossSection, system: system);"/>
         </regex>
 
+        <!-- RULE 11: the fence sections are rounded down, always up, or
+             counted over doubles -->
+        <regex pattern="int get sections =&gt; _spacingsIn\(length, onCentre\);" dotAll="true" id="trades.fence.sections">
+            <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor();"/>
+            <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor() + 1;"/>
+            <mutation text="int get sections =&gt; (length.preciseTicks / onCentre.preciseTicks).ceil();"/>
+        </regex>
+
+        <!-- RULE 12: the posts are the sections, or the rails are added -->
+        <regex pattern="int get posts =&gt; sections \+ 1;" dotAll="true" id="trades.fence.posts">
+            <mutation text="int get posts =&gt; sections;"/>
+            <mutation text="int get posts =&gt; sections + 2;"/>
+        </regex>
+        <regex pattern="int get rails =&gt; sections \* railsPerSection;" dotAll="true" id="trades.fence.rails">
+            <mutation text="int get rails =&gt; sections + railsPerSection;"/>
+            <mutation text="int get rails =&gt; posts * railsPerSection;"/>
+        </regex>
+
+        <!-- RULE 13: a fence recount takes a spacing of zero or rails below
+             zero, forgets the length, or drops a pill that was not edited -->
+        <regex pattern="if \(!_isAboveZero\(spacing\) \|\| rails &lt; 0\) return null;" dotAll="true" id="trades.fence.recount_guard">
+            <mutation text=""/>
+            <mutation text="if (!_isAboveZero(spacing)) return null;"/>
+            <mutation text="if (rails &lt; 0) return null;"/>
+            <mutation text="if (!_isAboveZero(spacing) || rails &lt;= 0) return null;"/>
+        </regex>
+        <regex pattern="return FenceCount\(\s*length: length,\s*onCentre: spacing,\s*railsPerSection: rails,\s*\);" dotAll="true" id="trades.fence.recount">
+            <mutation text="return FenceCount(length: length, onCentre: spacing, railsPerSection: this.railsPerSection);"/>
+            <mutation text="return FenceCount(length: length, onCentre: this.onCentre, railsPerSection: rails);"/>
+        </regex>
+
+        <!-- RULE 14: the members forget the closing one, or are rounded
+             down -->
+        <regex pattern="int get members =&gt; _spacingsIn\(span, spacing\) \+ 1;" dotAll="true" id="trades.spacing.members">
+            <mutation text="int get members =&gt; _spacingsIn(span, spacing);"/>
+            <mutation text="int get members =&gt; (span.inches / spacing.inches).floor() + 1;"/>
+            <mutation text="int get members =&gt; _spacingsIn(span, spacing) + 2;"/>
+        </regex>
+
+        <!-- RULE 15: a spacing recount takes a spacing of zero, or forgets
+             the span -->
+        <regex pattern="if \(!_isAboveZero\(spacing\)\) return null;\s*return SpacingCount\(span: span, spacing: spacing\);" dotAll="true" id="trades.spacing.recount">
+            <mutation text="return SpacingCount(span: span, spacing: spacing);"/>
+            <mutation text="if (!_isAboveZero(spacing)) return null; return SpacingCount(span: spacing, spacing: spacing);"/>
+        </regex>
+
         <!-- RULE 16: a length of zero is usable, the smallest one above
              zero is not, or only a length below zero is refused -->
         <regex pattern="bool _isAboveZero\(Length length\) =&gt; length\.preciseTicks &gt; 0;" dotAll="true" id="trades.is_above_zero">
@@ -121,8 +167,39 @@
             <mutation text="bool _isAboveZero(Length length) =&gt; length.ticks &gt; 0;"/>
         </regex>
 
-        <!-- RULE 18: the footing rule takes a length of zero, or a
-             cross-section with no face -->
+        <!-- RULE 17 (R1 and R2, reviews of 19 and 26 Nov, blocker 1): the
+             count of spacings in a length rounds a whole number up too,
+             takes a length of one part of a tick as no section, counts a
+             Calc length only when it is exact or within one part of a tick,
+             takes half a tick past as whole, or puts the bound at a whole
+             tick -->
+        <regex pattern="if \(whole &gt; 0 &amp;&amp; over\.compareTo\(_halfATick\) &lt; 0\) return whole;" dotAll="true" id="trades.spacings.half_a_tick">
+            <mutation text=""/>
+            <mutation text="if (over.compareTo(_halfATick) &lt; 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.isZero) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_halfATick) &lt;= 0) return whole;"/>
+            <mutation text="if (whole &gt; 0 &amp;&amp; over.compareTo(_halfATick * const Rational(2)) &lt; 0) return whole;"/>
+        </regex>
+        <regex pattern="const Rational _halfATick = Rational\(1, Length\.ticksPerInch \* 2\);" dotAll="true" id="trades.spacings.bound_is_one_part">
+            <mutation text="const Rational _halfATick = Rational(1, Length.ticksPerInch * Length.partsPerTick);"/>
+        </regex>
+        <regex pattern="return whole \+ 1;" dotAll="true" id="trades.spacings.rounds_up">
+            <mutation text="return whole;"/>
+        </regex>
+
+        <!-- RULE 17b (R1, nit 1): a length and a spacing too long for exact
+             sums throw instead of being counted in ticks, or are rounded
+             down there -->
+        <regex pattern="\} on RationalOverflow \{\s*final ticksOver" dotAll="true" id="trades.spacings.overflow_caught">
+            <mutation text="} on FormatException { final ticksOver"/>
+        </regex>
+        <regex pattern="return max\(1, \(ticksOver / spacing\.preciseTicks\)\.ceil\(\)\);" dotAll="true" id="trades.spacings.overflow_rounds_up">
+            <mutation text="return max(1, (ticksOver / spacing.preciseTicks).floor());"/>
+        </regex>
+
+        <!-- RULE 18: the footing, fence and spacing rules take a length of
+             zero, a cross-section with no face, a spacing of zero, or rails
+             below zero -->
         <regex pattern="if \(!_isAboveZero\(length\)\) return const \[\];\s*return \[\s*for \(final crossSection in crossSections\)\s*if \(crossSection\.hasFace\)" dotAll="true" id="trades.footing.guards">
             <mutation text="return [ for (final crossSection in crossSections) if (crossSection.hasFace)"/>
             <mutation text="if (!_isAboveZero(length)) return const []; return [ for (final crossSection in crossSections)"/>
@@ -131,6 +208,91 @@
              same piece, so a count cannot name the stored row it came from -->
         <regex pattern="List&lt;Object\?&gt; get props =&gt; \[width, height, id\];" dotAll="true" id="trades.piece_size.name_not_in_equality">
             <mutation text="List&lt;Object?&gt; get props =&gt; [width, height];"/>
+        </regex>
+        <regex pattern="if \(!_isAboveZero\(length\) \|\|\s*!_isAboveZero\(onCentre\) \|\|\s*railsPerSection &lt; 0\) \{\s*return null;\s*\}" dotAll="true" id="trades.fence.guards">
+            <mutation text=""/>
+            <mutation text="if (!_isAboveZero(onCentre) || railsPerSection &lt; 0) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || railsPerSection &lt; 0) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || !_isAboveZero(onCentre)) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || !_isAboveZero(onCentre) || railsPerSection &lt;= 0) { return null; }"/>
+        </regex>
+        <regex pattern="if \(!_isAboveZero\(span\)\) return const \[\];\s*return \[\s*for \(final spacing in spacings\)\s*if \(_isAboveZero\(spacing\)\)" dotAll="true" id="trades.spacing.guards">
+            <mutation text="return [ for (final spacing in spacings) if (_isAboveZero(spacing))"/>
+            <mutation text="if (!_isAboveZero(span)) return const []; return [ for (final spacing in spacings)"/>
+        </regex>
+
+        <!-- E2 (CA-1068) -->
+        <!-- RULE 19: the volume is weighed exactly instead of as shown, is
+             not read back from its unit, or is taken in cubic feet -->
+        <regex pattern="final weighed = shown == 0 \? stored : shown;\s*return weighed / _unitsPerCubicFoot\(volume\.unit\) / _cubicFeetPerCubicYard;" dotAll="true" id="trades.weight.shown_cubic_yards">
+            <mutation text="return volume.cubicFeet / _cubicFeetPerCubicYard;"/>
+            <mutation text="final weighed = shown == 0 ? stored : shown; return weighed / _cubicFeetPerCubicYard;"/>
+            <mutation text="final weighed = shown == 0 ? stored : shown; return weighed / _unitsPerCubicFoot(volume.unit);"/>
+        </regex>
+
+        <!-- RULE 19b: a volume that shows as 0.00 weighs exactly 0 (the
+             stored-value branch is gone), or the branch is the other way
+             round -->
+        <regex pattern="final weighed = shown == 0 \? stored : shown;" dotAll="true" id="trades.weight.in_words_is_weighed_as_stored">
+            <mutation text="final weighed = shown;"/>
+            <mutation text="final weighed = shown != 0 ? stored : shown;"/>
+        </regex>
+
+        <!-- RULE 20: the weight is in pounds, not hundredths; or always in
+             tons, or always in metric tons -->
+        <regex pattern="shownCubicYards \* density\.poundsPerCubicYard \* _hundredthsPerPound,\s*unit: switch \(system\) \{\s*MeasurementSystem\.imperial =&gt; Unit\.ton,\s*MeasurementSystem\.metric =&gt; Unit\.metricTon,\s*\}," dotAll="true" id="trades.weight.weight">
+            <mutation text="shownCubicYards * density.poundsPerCubicYard, unit: switch (system) { MeasurementSystem.imperial =&gt; Unit.ton, MeasurementSystem.metric =&gt; Unit.metricTon, },"/>
+            <mutation text="shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound, unit: Unit.ton,"/>
+            <mutation text="shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound, unit: Unit.metricTon,"/>
+        </regex>
+
+        <!-- RULE 21: a weight recount takes a density that weighs nothing,
+             or forgets the volume or the system -->
+        <regex pattern="if \(!density\.isUsable\) return null;\s*return MaterialWeight\(volume: volume, density: density, system: system\);" dotAll="true" id="trades.weight.recount">
+            <mutation text="return MaterialWeight(volume: volume, density: density, system: system);"/>
+            <mutation text="if (!density.isUsable) return null; return MaterialWeight(volume: const Volume(0), density: density, system: system);"/>
+            <mutation text="if (!density.isUsable) return null; return MaterialWeight(volume: volume, density: density, system: MeasurementSystem.metric);"/>
+        </regex>
+
+        <!-- RULE 22: a density of zero, below zero or not finite is usable -->
+        <regex pattern="bool get isUsable =&gt; poundsPerCubicYard\.isFinite &amp;&amp; poundsPerCubicYard &gt; 0;" dotAll="true" id="trades.density.is_usable">
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard &gt; 0;"/>
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard.isFinite &amp;&amp; poundsPerCubicYard &gt;= 0;"/>
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard.isFinite;"/>
+        </regex>
+
+        <!-- RULE 23: a volume of zero, below zero or not finite is weighed,
+             or a density that weighs nothing is kept -->
+        <regex pattern="if \(!cubicFeet\.isFinite \|\| cubicFeet &lt;= 0\) return const \[\];\s*return \[\s*for \(final density in densities\)\s*if \(density\.isUsable\)" dotAll="true" id="trades.weight.guards">
+            <mutation text="return [ for (final density in densities) if (density.isUsable)"/>
+            <mutation text="if (cubicFeet &lt; 0) return const []; return [ for (final density in densities) if (density.isUsable)"/>
+            <mutation text="if (!cubicFeet.isFinite || cubicFeet &lt;= 0) return const []; return [ for (final density in densities)"/>
+            <mutation text="if (cubicFeet &lt;= 0) return const []; return [ for (final density in densities) if (density.isUsable)"/>
+        </regex>
+
+        <!-- RULE 24: board feet are read as cubic feet, or the cube of a
+             length unit is its square -->
+        <regex pattern="if \(unit == Unit\.boardFoot\) return Volume\.boardFeetPerCubicFoot\.toDouble\(\);\s*final feetPerUnit = Length\.ticksPerFoot / unit\.ticksPerUnit;\s*return feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="trades.weight.units_per_cubic_foot">
+            <mutation text="final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit * feetPerUnit;"/>
+            <mutation text="if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble(); final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit;"/>
+        </regex>
+
+        <!-- RULE 24b: the amount the display rounds is taken in another
+             order than the formatter's (0.725yd³ then weighs as 0.73 where
+             the screen writes 0.72), board feet are read as a length unit,
+             or the cube is a square -->
+        <regex pattern="if \(volume\.unit == Unit\.boardFoot\) return volume\.boardFeet;\s*final feetPerUnit = Length\.ticksPerFoot / volume\.unit\.ticksPerUnit;\s*return volume\.cubicFeet \* feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="trades.weight.amount_in_its_unit">
+            <mutation text="if (volume.unit == Unit.boardFoot) return volume.boardFeet; final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * (feetPerUnit * feetPerUnit * feetPerUnit);"/>
+            <mutation text="final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;"/>
+            <mutation text="if (volume.unit == Unit.boardFoot) return volume.boardFeet; final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit; return volume.cubicFeet * feetPerUnit * feetPerUnit;"/>
+        </regex>
+
+        <!-- RULE 25: the display rounding is rounded down, to one decimal,
+             or half down -->
+        <regex pattern="return \(amount \* scale \+ 0\.5\)\.floorToDouble\(\) / scale;" dotAll="true" id="trades.weight.rounded_as_a_result">
+            <mutation text="return (amount * scale).floorToDouble() / scale;"/>
+            <mutation text="return (amount * scale / 10 + 0.5).floorToDouble() / scale * 10;"/>
+            <mutation text="return (amount * scale + 0.5).ceilToDouble() / scale;"/>
         </regex>
     </rules>
 

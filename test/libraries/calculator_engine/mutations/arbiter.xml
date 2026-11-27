@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- THE ARBITER: THE LADDER THAT CHOOSES THE STRIP (G1, CA-1072; UX
+         Design Doc rule 4.4) -->
+    <!-- Targets: when the strip is silent and why (RULES 1-5). -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/arbiter.dart</file>
+        <file>lib/libraries/calculator_engine/models/arbitration.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: an open bracket is not a silence of its own -->
+        <regex pattern="if \(tape\.openBracket != null\) return StripSilence\.openBracket;" dotAll="true" id="arbiter.silence.open_bracket_answers">
+            <mutation text=""/>
+            <mutation text="if (tape.openBracket != null) return StripSilence.chainFailed;"/>
+        </regex>
+
+        <!-- RULE 2: a step the chain cannot compute is not silent -->
+        <regex pattern="ChainFailed\(\) =&gt; true," dotAll="true" id="arbiter.silence.failed_chain_answers">
+            <mutation text="ChainFailed() =&gt; false,"/>
+        </regex>
+
+        <!-- RULE 3: an error chip the chain ends on is not silent -->
+        <regex pattern="ChainValue\(\) \|\| ChainEmpty\(\) =&gt; _chainHoldsAnError\(tape\)," dotAll="true" id="arbiter.silence.error_chip_answers">
+            <mutation text="ChainValue() || ChainEmpty() =&gt; false,"/>
+            <mutation text="ChainValue() || ChainEmpty() =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 4: an error chip is read as no error, or a result after it
+             as one -->
+        <regex pattern="case ErrorChip\(\):\s*return true;\s*case ResultChip\(\):\s*return false;" dotAll="true" id="arbiter.silence.which_chip_ends_the_look_back">
+            <mutation text="case ErrorChip(): return false; case ResultChip(): return false;"/>
+            <mutation text="case ErrorChip(): return true; case ResultChip(): return true;"/>
+        </regex>
+
+        <!-- RULE 5: the look back runs past the start of the chain, so an
+             error chip silences a value typed after it -->
+        <regex pattern="if \(operator == null\) return false;" dotAll="true" id="arbiter.silence.looks_past_the_chain">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="arbiter" expected-return="0">flutter test test/libraries/calculator_engine/units/arbiter_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
