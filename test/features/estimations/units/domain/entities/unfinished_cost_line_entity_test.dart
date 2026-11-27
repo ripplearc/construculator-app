@@ -45,27 +45,27 @@ void main() {
 
   group('UnfinishedCostLine equality', () {
     UnfinishedCostLine copy({
-      CostItemType? category,
-      String? estimateId,
+      CostItemType category = CostItemType.material,
+      String estimateId = 'estimate-1',
       String? costItemId,
-      String? itemName,
-      double? quantity,
-      Unit? unit,
-      double? rate,
-      double? wastePercent,
-      String? note,
-      DateTime? updatedAt,
+      String itemName = 'Interior paint',
+      double quantity = 12,
+      Unit unit = Unit.liters,
+      double rate = 14.3,
+      double wastePercent = 10,
+      String note = 'Two coats',
+      Duration later = Duration.zero,
     }) => UnfinishedCostLine(
-      category: category ?? line.category,
-      estimateId: estimateId ?? line.estimateId,
-      costItemId: costItemId ?? line.costItemId,
-      itemName: itemName ?? line.itemName,
-      quantity: quantity ?? line.quantity,
-      unit: unit ?? line.unit,
-      rate: rate ?? line.rate,
-      wastePercent: wastePercent ?? line.wastePercent,
-      note: note ?? line.note,
-      updatedAt: updatedAt ?? line.updatedAt,
+      category: category,
+      estimateId: estimateId,
+      costItemId: costItemId,
+      itemName: itemName,
+      quantity: quantity,
+      unit: unit,
+      rate: rate,
+      wastePercent: wastePercent,
+      note: note,
+      updatedAt: line.updatedAt.add(later),
     );
 
     test('lines with the same fields are equal', () {
@@ -82,7 +82,7 @@ void main() {
       ('rate', copy(rate: 14.4)),
       ('waste', copy(wastePercent: 5)),
       ('note', copy(note: 'One coat')),
-      ('change time', copy(updatedAt: line.updatedAt.add(_oneSecond))),
+      ('change time', copy(later: _oneSecond)),
     ]) {
       test('lines that differ only in $field are not equal', () {
         expect(changed, isNot(line));
