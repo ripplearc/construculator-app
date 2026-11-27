@@ -4,7 +4,9 @@
          Doc Section 3.3, walkthroughs 19.1 and 19.2, Section 9) -->
     <!-- Targets: which chip the key names and under which name (RULES 1-5);
          what it lands when no area is on the tape yet (RULES 6-8); how a
-         covered area is made again after an edit before it (RULES 9-11). -->
+         covered area is made again after an edit before it (RULES 9-11);
+         the refusals of CA-1478: an area of zero or less and an empty
+         store (RULES 12-15). -->
 
     <files>
         <file>lib/libraries/calculator_engine/tape.dart</file>
@@ -20,8 +22,8 @@
 
         <!-- RULE 2: only an Area is named, not a Wall or a Circle area
              (Section 3.3: "Takes: An area on the tape") -->
-        <regex pattern="if \(shown case ResultChip\(value: Area\(\)\)\) \{" dotAll="true" id="tape_trade_key.names.any_area_answer">
-            <mutation text="if (shown case ResultChip(value: Area(), key: DeterministicRules.areaKey)) {"/>
+        <regex pattern="if \(shown case ResultChip\(value: final Area area\)\) return area;" dotAll="true" id="tape_trade_key.names.any_area_answer">
+            <mutation text="if (shown case ResultChip(value: final Area area, key: DeterministicRules.areaKey)) return area;"/>
         </regex>
 
         <!-- RULE 3: the named area forgets which answer it was, or a covered
@@ -32,8 +34,8 @@
         </regex>
 
         <!-- RULE 3a: the Area two sides make lands without its answer -->
-        <regex pattern="return _landedNaming\(named, value, DeterministicRules\.areaKey\);" dotAll="true" id="tape_trade_key.lands.answer_forgotten">
-            <mutation text="return landAnswer(named, value);"/>
+        <regex pattern="_ =&gt; _landedNaming\(named, area, DeterministicRules\.areaKey\)," dotAll="true" id="tape_trade_key.lands.answer_forgotten">
+            <mutation text="_ =&gt; landAnswer(named, area),"/>
         </regex>
 
         <!-- RULE 4: the area keeps its old name -->
@@ -60,8 +62,8 @@
 
         <!-- RULE 8: the first area lands when the sides could mean more
              than one -->
-        <regex pattern="if \(areas case \[Answer\(key: DeterministicRules\.areaKey, :final value\)\]\) \{" dotAll="true" id="tape_trade_key.lands.first_of_several">
-            <mutation text="if (areas case [Answer(:final value), ...]) {"/>
+        <regex pattern="if \(areas case \[\s*Answer\(key: DeterministicRules\.areaKey, value: final Area area\),\s*\]\) \{" dotAll="true" id="tape_trade_key.lands.first_of_several">
+            <mutation text="if (areas case [Answer(value: final Area area), ...]) {"/>
         </regex>
 
         <!-- RULE 9: a covered area is not made again after an edit -->
@@ -84,6 +86,31 @@
         </regex>
         <regex pattern="readIn: covered\.readIn,\s*namedFrom: from," dotAll="true" id="tape_trade_key.rebuild.named_answer_forgotten">
             <mutation text="readIn: covered.readIn,"/>
+        </regex>
+
+        <!-- RULE 12 (CA-1478): an area of zero or less is named, or zero
+             alone is -->
+        <regex pattern="if \(!area\.squareTicks\.isFinite \|\| area\.squareTicks &lt;= 0\) \{" dotAll="true" id="tape_trade_key.refuses.area_of_zero_or_less">
+            <mutation text="if (false) {"/>
+            <mutation text="if (!area.squareTicks.isFinite || area.squareTicks &lt; 0) {"/>
+        </regex>
+
+        <!-- RULE 13 (CA-1478): an empty store is not told, or every store
+             is taken for empty -->
+        <regex pattern="if \(storeIsEmpty\) \{" dotAll="true" id="tape_trade_key.refuses.empty_store">
+            <mutation text="if (false) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 14 (CA-1478): the Alert names the other trade's store -->
+        <regex pattern="Trade\.drywall =&gt; TapeRefusal\.noSheetSizes,\s*Trade\.masonry =&gt; TapeRefusal\.noPieceSizes," dotAll="true" id="tape_trade_key.refuses.wrong_store_named">
+            <mutation text="Trade.drywall =&gt; TapeRefusal.noPieceSizes, Trade.masonry =&gt; TapeRefusal.noSheetSizes,"/>
+        </regex>
+
+        <!-- RULE 15 (CA-1478): a tape with nothing to name is refused for
+             its empty store -->
+        <regex pattern="final area = _areaATradeKeyNames;\s*if \(area == null\) return null;" dotAll="true" id="tape_trade_key.refuses.nothing_to_name">
+            <mutation text="final area = _areaATradeKeyNames ?? const Area(1);"/>
         </regex>
     </rules>
 

@@ -3222,6 +3222,26 @@
   "@calculatorToastSizeNotAddedBody": {
     "description": "Body of the 'Size not added' Alert of the calculator (CA-1095)"
   },
+  "calculatorToastAreaMoreThanZeroTitle": "Area must be more than zero",
+  "@calculatorToastAreaMoreThanZeroTitle": {
+    "description": "Red Alert title when the Drywal or Msnry key is pressed on an area of zero or less (UX Design Doc Section 21.3, \"Keys that must also answer\")"
+  },
+  "calculatorToastAreaMoreThanZeroBody": "This area has no count. Tap a chip to change a number, or press C to start a new entry.",
+  "@calculatorToastAreaMoreThanZeroBody": {
+    "description": "Red Alert body when the Drywal or Msnry key is pressed on an area of zero or less (UX Design Doc Section 21.3)"
+  },
+  "calculatorToastNoSheetSizesTitle": "No sheet sizes",
+  "@calculatorToastNoSheetSizesTitle": {
+    "description": "Red Alert title when the Drywal key is pressed on an area and the sheet-size store is empty (UX Design Doc Section 1.4: \"A store may be empty\")"
+  },
+  "calculatorToastNoPieceSizesTitle": "No piece sizes",
+  "@calculatorToastNoPieceSizesTitle": {
+    "description": "Red Alert title when the Msnry key is pressed on an area and the masonry-size store is empty (UX Design Doc Section 1.4)"
+  },
+  "calculatorToastNoSizesBody": "Drag the keypad down and tap + Add size.",
+  "@calculatorToastNoSizesBody": {
+    "description": "Red Alert body when a trade key is pressed and its store holds no size: how to add one (UX Design Doc Section 1.4)"
+  },
   "calculatorSizeEditorSizeError": "Size must be more than zero.",
   "@calculatorSizeEditorSizeError": {
     "description": "Error under a field of the calculator's size editor when the field holds no size, or a size of zero"

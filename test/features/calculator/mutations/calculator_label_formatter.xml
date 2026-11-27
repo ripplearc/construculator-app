@@ -255,6 +255,21 @@
         <regex pattern="_ when id == Trade\.drywall\.coveredAreaKey =&gt;\s*l10n\.calculatorAnswerDrywallCoveredArea," dotAll="true" id="calculator_label_formatter.key_label.covered_area_unnamed">
             <mutation text=""/>
         </regex>
+
+        <!-- RULES (CA-1478): the empty-store Alert is titled for the other
+             trade's store, or a trade key's Alert has the other's words -->
+        <regex pattern="CalculatorNoSizesToast\(trade: Trade\.drywall\) =&gt;\s*l10n\.calculatorToastNoSheetSizesTitle," dotAll="true" id="calculator_label_formatter.toast.no_sheet_sizes_title">
+            <mutation text="CalculatorNoSizesToast(trade: Trade.drywall) =&gt; l10n.calculatorToastNoPieceSizesTitle,"/>
+        </regex>
+        <regex pattern="CalculatorNoSizesToast\(trade: Trade\.masonry\) =&gt;\s*l10n\.calculatorToastNoPieceSizesTitle," dotAll="true" id="calculator_label_formatter.toast.no_piece_sizes_title">
+            <mutation text="CalculatorNoSizesToast(trade: Trade.masonry) =&gt; l10n.calculatorToastNoSheetSizesTitle,"/>
+        </regex>
+        <regex pattern="CalculatorAreaMoreThanZeroToast\(\) =&gt;\s*l10n\.calculatorToastAreaMoreThanZeroBody," dotAll="true" id="calculator_label_formatter.toast.area_of_zero_body">
+            <mutation text="CalculatorAreaMoreThanZeroToast() =&gt; l10n.calculatorToastNoSizesBody,"/>
+        </regex>
+        <regex pattern="CalculatorNoSizesToast\(\) =&gt; l10n\.calculatorToastNoSizesBody," dotAll="true" id="calculator_label_formatter.toast.no_sizes_body">
+            <mutation text="CalculatorNoSizesToast() =&gt; l10n.calculatorToastAreaMoreThanZeroBody,"/>
+        </regex>
     </rules>
 
     <commands>

@@ -336,21 +336,30 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     'Weight',
   };
 
-  void _onKeySelected(
+  Future<void> _onKeySelected(
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
-  ) {
+  ) async {
     final id = event.id;
     if (_unitKeys[id] case final unit?) {
       return _press(emit, (tape) => _pressUnit(tape, unit), unit: unit);
     }
+    final trade = _tradeKeys[id];
+    // The store is read only when the key has an area to name, so every
+    // other key, and the trade key with nothing to name, reaches the tape
+    // in this turn.
+    final storeIsEmpty =
+        trade != null && state.tape.pressTradeKey(trade) != null
+        ? await _readStoreIsEmpty(trade)
+        : false;
     _press(emit, (tape) {
       if (_trigKeys[id] case final function?) {
         return tape.pressTrigKey(function);
       }
       if (id == _dmsKey) return tape.pressDmsKey();
-      if (_tradeKeys[id] case final trade?) {
-        if (tape.pressTradeKey(trade) case final named?) return named;
+      if (trade != null) {
+        final answered = tape.pressTradeKey(trade, storeIsEmpty: storeIsEmpty);
+        if (answered != null) return answered;
       }
       return tape.pressFunctionKey(
         id,
@@ -359,6 +368,23 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       );
     }, goesOnWithTheTape: _materialsKeys.contains(id));
   }
+
+  // One read of the store a trade counts by: the watch on the stores runs
+  // only while a counted area is on the display, and the key is pressed on
+  // two sides or a Calc area before that too. A store that cannot be read
+  // is not called empty.
+  Future<bool> _readStoreIsEmpty(Trade trade) =>
+      _tradeStores(system: state.tape.preferences.system)
+          .map((stores) => stores.sizesFor(trade).isEmpty)
+          .first
+          .catchError((Object error, StackTrace stackTrace) {
+            _logger.warning(
+              'The trade stores could not be read',
+              error,
+              stackTrace,
+            );
+            return false;
+          });
 
   void _onDigitPressed(
     CalculatorDigitPressed event,

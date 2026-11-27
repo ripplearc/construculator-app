@@ -3838,6 +3838,36 @@ abstract class AppLocalizations {
   /// **'This size was not added. Try again.'**
   String get calculatorToastSizeNotAddedBody;
 
+  /// Red Alert title when the Drywal or Msnry key is pressed on an area of zero or less (UX Design Doc Section 21.3, "Keys that must also answer")
+  ///
+  /// In en, this message translates to:
+  /// **'Area must be more than zero'**
+  String get calculatorToastAreaMoreThanZeroTitle;
+
+  /// Red Alert body when the Drywal or Msnry key is pressed on an area of zero or less (UX Design Doc Section 21.3)
+  ///
+  /// In en, this message translates to:
+  /// **'This area has no count. Tap a chip to change a number, or press C to start a new entry.'**
+  String get calculatorToastAreaMoreThanZeroBody;
+
+  /// Red Alert title when the Drywal key is pressed on an area and the sheet-size store is empty (UX Design Doc Section 1.4: "A store may be empty")
+  ///
+  /// In en, this message translates to:
+  /// **'No sheet sizes'**
+  String get calculatorToastNoSheetSizesTitle;
+
+  /// Red Alert title when the Msnry key is pressed on an area and the masonry-size store is empty (UX Design Doc Section 1.4)
+  ///
+  /// In en, this message translates to:
+  /// **'No piece sizes'**
+  String get calculatorToastNoPieceSizesTitle;
+
+  /// Red Alert body when a trade key is pressed and its store holds no size: how to add one (UX Design Doc Section 1.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the keypad down and tap + Add size.'**
+  String get calculatorToastNoSizesBody;
+
   /// Error under a field of the calculator's size editor when the field holds no size, or a size of zero
   ///
   /// In en, this message translates to:

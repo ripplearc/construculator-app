@@ -307,3 +307,28 @@ final class CalculatorSizeNotAddedToast extends CalculatorToast {
   @override
   List<Object?> get props => const [];
 }
+
+/// "Area must be more than zero" / "This area has no count. Tap a chip to
+/// change a number, or press C to start a new entry.": the Drywal or Msnry
+/// key on an area of zero or less (Section 21.3, "Keys that must also
+/// answer"; rows 457, 458, 460; CA-1478).
+final class CalculatorAreaMoreThanZeroToast extends CalculatorToast {
+  const CalculatorAreaMoreThanZeroToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "No sheet sizes" / "Drag the keypad down and tap + Add size.": a trade
+/// key on an area while the store [trade] counts by holds no size, "No
+/// piece sizes" for masonry (Section 1.4: "A store may be empty"; row 411;
+/// CA-1478).
+final class CalculatorNoSizesToast extends CalculatorToast {
+  /// The trade whose store is empty.
+  final Trade trade;
+
+  const CalculatorNoSizesToast(this.trade);
+
+  @override
+  List<Object?> get props => [trade];
+}

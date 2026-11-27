@@ -605,9 +605,26 @@
         <!-- RULES (G1, CA-1072; Section 3.3, walkthrough 19.1): the Drywal
              key names nothing and opens its chip as before, or names the
              area for the other trade -->
-        <regex pattern="if \(tape\.pressTradeKey\(trade\) case final named\?\) return named;" dotAll="true" id="calculator_bloc.trade_key.names_nothing">
+        <regex pattern="if \(answered != null\) return answered;" dotAll="true" id="calculator_bloc.trade_key.names_nothing">
             <mutation text=""/>
         </regex>
+        <!-- RULES (CA-1478; Section 1.4): the store is read once for a key
+             that has an area to name, and an empty store is told; the read
+             is of the key's own trade; Drywal is the drywall trade -->
+        <!-- No mutant for the "has an area to name" guard of the read: a
+             read made for a key with nothing to name changes no answer,
+             it only costs a turn, so the mutant is equivalent. -->
+        <regex pattern="trade != null &amp;&amp; state\.tape\.pressTradeKey\(trade\) != null\s*\? await _readStoreIsEmpty\(trade\)\s*: false;" dotAll="true" id="calculator_bloc.trade_key.empty_store">
+            <mutation text="false;"/>
+        </regex>
+        <regex pattern="\.map\(\(stores\) =&gt; stores\.sizesFor\(trade\)\.isEmpty\)" dotAll="true" id="calculator_bloc.trade_key.store_read_for_the_other_trade">
+            <mutation text=".map((stores) =&gt; stores.sizesFor(Trade.masonry).isEmpty)"/>
+            <mutation text=".map((stores) =&gt; false)"/>
+        </regex>
+        <!-- No rule for the catchError of the one-off read: the fake store
+             answers its first read before it can fail, so no test reaches
+             it; it keeps a store that cannot be read from being called
+             empty, as the watch's onError keeps the strip. -->
         <regex pattern="_tradeKeys = \{'Drywal': Trade\.drywall\};" dotAll="true" id="calculator_bloc.trade_key.wrong_trade">
             <mutation text="_tradeKeys = {'Drywal': Trade.masonry};"/>
         </regex>
