@@ -298,4 +298,41 @@ const Schema schema = Schema([
     Column.real('magnitude'),
     Column.text('unit'),
   ]),
+
+  // The calculator's history (UX Design Doc Section 1.7, term 2.19; Design
+  // Appendices D and E): a banked tape is one session row — what a history
+  // card shows, with the last result laid flat as a recent is — and one
+  // tape row, the chip list as JSON with the version of its format. Both
+  // are local-only and never synced: a session belongs to the phone it was
+  // banked on, has no project and no privacy flag, and survives sign-out.
+  // `creator_user_id` names the account signed in when it was banked.
+  Table.localOnly(
+    'calculator_sessions',
+    [
+      Column.text('creator_user_id'),
+      Column.text('title'),
+      Column.text('result_text'),
+      Column.real('result_value'),
+      Column.text('result_dimension'),
+      Column.text('result_unit'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+      Column.text('last_calculation_at'),
+    ],
+    indexes: [
+      Index('by_recent', [IndexedColumn('last_calculation_at')]),
+    ],
+  ),
+  Table.localOnly(
+    'calculator_tapes',
+    [
+      Column.text('session_id'),
+      Column.text('computation'),
+      Column.integer('schema_version'),
+      Column.text('created_at'),
+    ],
+    indexes: [
+      Index('by_session', [IndexedColumn('session_id')]),
+    ],
+  ),
 ]);

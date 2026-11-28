@@ -79,6 +79,20 @@ void main() {
       expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
     });
 
+    test('registers calculator_sessions and calculator_tapes to clear when '
+        'the user changes, as the remembered values are (UX Design Doc '
+        'Appendix E; K1, CA-1081)', () {
+      for (final table in [
+        DatabaseConstants.calculatorSessionsTable,
+        DatabaseConstants.calculatorTapesTable,
+      ]) {
+        final entry = LocalOnlyTableRegistry.registrations.singleWhere(
+          (entry) => entry.tableName == table,
+        );
+        expect(entry.policy, LocalOnlyTablePolicy.clearWhenUserChanges);
+      }
+    });
+
     test('registers cost_item_refusals to clear when the user changes', () {
       final entry = LocalOnlyTableRegistry.registrations.singleWhere(
         (entry) => entry.tableName == DatabaseConstants.costItemRefusalsTable,
@@ -178,6 +192,8 @@ void main() {
             'DELETE FROM your_rate_refusals',
             'DELETE FROM calculator_recents',
             'DELETE FROM cost_item_refusals',
+            'DELETE FROM calculator_sessions',
+            'DELETE FROM calculator_tapes',
           ]),
         );
       });

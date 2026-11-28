@@ -63,5 +63,16 @@ abstract final class LocalOnlyTableRegistry {
       tableName: DatabaseConstants.costItemRefusalsTable,
       policy: LocalOnlyTablePolicy.clearWhenUserChanges,
     ),
+    // History follows the sign-out design as the remembered values do (UX
+    // Design Doc Appendix E, "Stays on this phone"): a different user
+    // signing in deletes it first.
+    LocalOnlyTableRegistration(
+      tableName: DatabaseConstants.calculatorSessionsTable,
+      policy: LocalOnlyTablePolicy.clearWhenUserChanges,
+    ),
+    LocalOnlyTableRegistration(
+      tableName: DatabaseConstants.calculatorTapesTable,
+      policy: LocalOnlyTablePolicy.clearWhenUserChanges,
+    ),
   ];
 }
