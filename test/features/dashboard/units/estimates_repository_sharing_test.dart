@@ -60,7 +60,7 @@ void main() {
   });
 
   test('an estimate created through the Estimates tab repository shows on the '
-      'dashboard before the phone copy has it', () async {
+      'dashboard', () async {
     final recent = Modular.get<WatchRecentEstimationsUseCase>()(
       const RecentEstimationsParams(),
     );
@@ -71,6 +71,7 @@ void main() {
     await Modular.get<CostEstimationRepository>().createEstimation(
       CostEstimateDto.fromJson(
         EstimationTestDataMapFactory.createFakeEstimationData(
+          id: '5f1c0a9e-3b2d-4c8f-8a47-1d9e6b2c7f30',
           estimateName: 'Created on the Estimates tab',
         ),
       ).toDomain(),

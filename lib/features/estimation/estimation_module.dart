@@ -167,6 +167,8 @@ class EstimationModule extends Module {
     i.add<AddCostEstimationBloc>(
       () => AddCostEstimationBloc(
         addCostEstimationUseCase: Modular.get<AddCostEstimationUseCase>(),
+        projectRepository: Modular.get<ProjectRepository>(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
     i.add<DeleteCostEstimationBloc>(
