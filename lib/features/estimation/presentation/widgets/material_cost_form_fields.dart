@@ -10,6 +10,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_fi
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -25,6 +26,8 @@ const double _quantityValueGap = 3;
 const double _quantityBottomPadding = 6;
 const double _nameBottomPadding = 6;
 
+final RegExp _wasteDigits = RegExp(r'^\d{0,3}(\.\d?)?$');
+
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
@@ -32,10 +35,10 @@ const double _nameBottomPadding = 6;
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
-  /// Where Quantity and Rate put the app's own number pad. While one of them
-  /// has focus it holds that field's [NumberPadSession], and the phone's
-  /// keyboard stays down; otherwise it holds null. Without it both fields
-  /// open the phone's number keyboard.
+  /// Where Quantity, Rate and Waste put the app's own number pad. While one
+  /// of them has focus it holds that field's [NumberPadSession], and the
+  /// phone's keyboard stays down; otherwise it holds null. Without it the
+  /// number fields open the phone's number keyboard.
   final ValueNotifier<NumberPadSession?>? numberPad;
 
   /// Drawn after the last row, inside the scrolling area, so it scrolls with
@@ -73,6 +76,11 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
+  final _wasteController = TextEditingController(
+    text: MaterialCostFormData.newMaterialWastePercent.toStringAsFixed(0),
+  );
+  final _wasteFocus = FocusNode();
+  bool _wasteExpanded = false;
   late final _quantityFormatter = _decimalLimitFormatter(decimals: 4);
   late final _rateFormatter = _decimalLimitFormatter(decimals: 2);
   late final CurrencyDisplayController _rateController;
@@ -100,6 +108,19 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         shown: context.l10n.numberPadRateValue,
       ),
     );
+    _wasteFocus.addListener(() {
+      _followFocus(
+        _wasteFocus,
+        _wasteController,
+        _wasteFormatter,
+        (value) => _bloc.add(MaterialWasteUpdated(value)),
+        shown: context.l10n.numberPadWasteValue,
+      );
+      // Storyboard CUJ 4 "Backspaced empty": an emptied waste folds on blur.
+      if (!_wasteFocus.hasFocus && _bloc.state.data.wastePercent == null) {
+        setState(() => _wasteExpanded = false);
+      }
+    });
     if (widget.editedItem case final item?) {
       _fillFromEditedItem(item);
     } else if (widget.initialRateEntry case final entry?) {
@@ -120,6 +141,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     _nameFocus.dispose();
     _quantityFocus.dispose();
     _rateFocus.dispose();
+    _wasteController.dispose();
+    _wasteFocus.dispose();
     super.dispose();
   }
 
@@ -231,12 +254,66 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                CoreSpacing.space5,
+                CoreSpacing.space4,
+                CoreSpacing.space5,
+                0,
+              ),
+              child: _buildWasteRow(context, isSaving: _isSaving(state)),
+            ),
             ?widget.trailing,
             const SizedBox(height: CoreSpacing.space4),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildWasteRow(BuildContext context, {required bool isSaving}) {
+    final l10n = context.l10n;
+    return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+      buildWhen: (previous, current) =>
+          previous.data.wastePercent != current.data.wastePercent ||
+          previous.data.isWasteSuggested != current.data.isWasteSuggested,
+      builder: (context, state) {
+        final data = state.data;
+        final waste = data.wastePercent;
+        return CoreDetailsRow(
+          key: const Key('material_waste_row'),
+          label: l10n.materialWasteLabel,
+          value: waste == null
+              ? l10n.materialWasteUnsetText
+              : DisplayFormatter.formatPercent(waste),
+          expanded: _wasteExpanded,
+          onToggle: _toggleWasteRow,
+          child: CoreUnderlineTextField(
+            key: const Key('material_waste_field'),
+            size: CoreUnderlineTextFieldSize.compact,
+            label: l10n.materialWasteLabel,
+            controller: _wasteController,
+            focusNode: _wasteFocus,
+            readOnly: isSaving,
+            keyboardType: _numberKeyboard,
+            inputFormatters: [_wasteFormatter],
+            suffixText: '%',
+            selectAllOnFocus: true,
+            onChanged: (value) => _bloc.add(MaterialWasteUpdated(value)),
+            helperText: switch (waste) {
+              null => l10n.materialWasteNoSuggestionHint,
+              _ when data.isWasteSuggested => l10n.materialWasteSuggestedHint,
+              _ => null,
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _toggleWasteRow() {
+    if (_wasteExpanded) _wasteFocus.unfocus();
+    setState(() => _wasteExpanded = !_wasteExpanded);
   }
 
   void _showAttachedRate(MaterialCostFormData data) {
@@ -294,12 +371,26 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     _nameController.text = item.itemName;
     _quantityController.text = formatTrimmedNumber(item.quantity.value);
     _rateController.text = formatTrimmedNumber(item.unitPrice.amount);
+    _wasteController.text = switch (item.wastePercent) {
+      final waste? => formatTrimmedNumber(waste),
+      null => '',
+    };
   }
 
   bool _isSaving(MaterialCostFormState state) =>
       state is MaterialCostFormSubmitting ||
       state is MaterialCostFormSuccess ||
       state is MaterialCostFormDeleted;
+
+  late final TextInputFormatter _wasteFormatter =
+      TextInputFormatter.withFunction((previous, next) {
+        final text = next.text.replaceAll(',', '.');
+        final fits =
+            _wasteDigits.hasMatch(text) &&
+            (double.tryParse(text) ?? 0) <=
+                MaterialCostFormData.maxWastePercent;
+        return fits ? next.copyWith(text: text) : previous;
+      });
 
   TextInputFormatter _decimalLimitFormatter({required int decimals}) {
     final allowed = RegExp('^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$');

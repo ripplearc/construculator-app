@@ -491,7 +491,7 @@ void main() {
           expect(row['quantity'], 7.0);
           expect(row['unit_measurement'], 'liters');
           expect(row['unit_price'], 2.55);
-          expect(row['item_total_cost'], 17.85);
+          expect(row['item_total_cost'], 19.64);
           expect(jsonDecode(row['calculation']! as String), {
             'unit_price': 2.55,
             'quantity': 7.0,
@@ -503,15 +503,30 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'saves no waste and no note when neither was entered',
+        'saves the 10% a new material starts with, and no note',
         build: () => bloc,
         act: (b) {
           filledEvents.forEach(b.add);
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
         verify: (_) {
-          expect(savedRow()['waste_percent'], isNull);
+          expect(savedRow()['waste_percent'], 10.0);
           expect(savedRow()['description'], isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves an emptied waste as empty',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b
+            ..add(const MaterialWasteUpdated(''))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) {
+          expect(savedRow()['waste_percent'], isNull);
+          expect(savedRow()['item_total_cost'], 17.85);
         },
       );
 
@@ -610,6 +625,7 @@ void main() {
             ..add(const MaterialQuantityUpdated('1.5'))
             ..add(const MaterialUnitSelected(Unit.boxes))
             ..add(const MaterialRateUpdated('2.55'))
+            ..add(const MaterialWasteUpdated(''))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
         verify: (_) => expect(savedRow()['item_total_cost'], 3.83),
@@ -651,6 +667,7 @@ void main() {
             ..add(const MaterialQuantityUpdated('0.5'))
             ..add(const MaterialUnitSelected(Unit.boxes))
             ..add(const MaterialRateUpdated('2.01'))
+            ..add(const MaterialWasteUpdated(''))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
         verify: (_) => expect(savedRow()['item_total_cost'], 1.01),
@@ -1103,11 +1120,12 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'is quantity times rate rounded to the cent',
+        'is quantity times rate rounded to the cent with no waste',
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialQuantityUpdated('1.5'))
-          ..add(const MaterialRateUpdated('2.55')),
+          ..add(const MaterialRateUpdated('2.55'))
+          ..add(const MaterialWasteUpdated('')),
         verify: (b) => expect(_dataOf(b.state).lineTotal, 3.83),
       );
 
@@ -1116,7 +1134,8 @@ void main() {
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialQuantityUpdated('0.5'))
-          ..add(const MaterialRateUpdated('2.01')),
+          ..add(const MaterialRateUpdated('2.01'))
+          ..add(const MaterialWasteUpdated('')),
         verify: (b) => expect(_dataOf(b.state).lineTotal, 1.01),
       );
 
@@ -1182,7 +1201,8 @@ void main() {
           ..add(const MaterialCostItemTypeChanged('Paint'))
           ..add(MaterialQuantityUpdated(quantity))
           ..add(const MaterialUnitSelected(Unit.liters))
-          ..add(MaterialRateUpdated(rate));
+          ..add(MaterialRateUpdated(rate))
+          ..add(const MaterialWasteUpdated(''));
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
@@ -1358,12 +1378,32 @@ void main() {
 
     group('waste and note', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'open empty',
+        'open at the suggested 10% waste with no note',
         build: () => bloc,
         act: (b) => b.add(const MaterialCostItemTypeChanged('Paint')),
         verify: (b) {
-          expect(_dataOf(b.state).wastePercent, isNull);
+          expect(_dataOf(b.state).wastePercent, 10);
+          expect(_dataOf(b.state).isWasteSuggested, isTrue);
           expect(_dataOf(b.state).note, isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'no longer hold the suggestion once another waste is typed',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialWasteUpdated('15')),
+        verify: (b) => expect(_dataOf(b.state).isWasteSuggested, isFalse),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'count a waste put back to 10% as unchanged',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialWasteUpdated('15'))
+          ..add(const MaterialWasteUpdated('10')),
+        verify: (b) {
+          expect(_dataOf(b.state).isWasteSuggested, isTrue);
+          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
         },
       );
 

@@ -2863,6 +2863,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String numberPadWasteValue(String value) {
+    return '$value%';
+  }
+
+  @override
+  String get materialWasteLabel => 'Waste';
+
+  @override
+  String get materialWasteUnsetText => '—';
+
+  @override
+  String get materialWasteSuggestedHint =>
+      'Suggested for a new material — change or clear anytime';
+
+  @override
+  String get materialWasteNoSuggestionHint =>
+      'No suggested waste for this material — add your own';
+
+  @override
   String numberPadRateValue(String value) {
     return '\$$value';
   }

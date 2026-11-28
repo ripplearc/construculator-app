@@ -105,7 +105,7 @@ class MaterialCostFormData extends Equatable {
     this.rate,
     this.rateStatus = RateStatus.missing,
     this.attachedPrice,
-    this.wastePercent,
+    this.wastePercent = newMaterialWastePercent,
     this.note,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -143,13 +143,21 @@ class MaterialCostFormData extends Equatable {
   /// The largest waste percentage the form accepts.
   static const double maxWastePercent = 100;
 
+  /// The waste a brand-new material starts with.
+  // TODO: [CA-1157] start a material picked from the cost file at that item's own waste. https://ripplearc.youtrack.cloud/issue/CA-1157
+  static const double newMaterialWastePercent = 10;
+
   /// Extra material allowed for waste, from 0 to [maxWastePercent], or null
-  /// while the field is empty. Empty adds nothing, the same as 0, but is
-  /// kept apart so it can show as a dash.
+  /// while the field is empty. It opens at [newMaterialWastePercent]. Empty
+  /// adds nothing, the same as 0, but is kept apart so it can show as a dash.
   final double? wastePercent;
 
   /// The note saved as the line's description, or null when there is none.
   final String? note;
+
+  /// Whether [wastePercent] still holds the value suggested for a new line.
+  bool get isWasteSuggested =>
+      !isEditingExistingLine && wastePercent == newMaterialWastePercent;
 
   /// Whether name, quantity, unit and rate are all present and in range.
   final bool isValid;

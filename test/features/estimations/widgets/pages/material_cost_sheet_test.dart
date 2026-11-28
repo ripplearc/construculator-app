@@ -187,8 +187,10 @@ void main() {
 
     await fillAllFields(tester);
 
-    expect(find.text(r'$156.00'), findsOneWidget);
-    expect(find.text(r'$2,249.02'), findsOneWidget);
+    expect(find.text(r'$171.60'), findsOneWidget);
+    expect(find.text('incl. 10% waste'), findsOneWidget);
+    expect(find.text(r'+$15.60'), findsOneWidget);
+    expect(find.text(r'$2,264.62'), findsOneWidget);
   });
 
   testWidgets('adds the line and closes the sheet', (tester) async {
@@ -201,7 +203,8 @@ void main() {
     final row = database.rows.single;
     expect(row['estimate_id'], 'estimate-1');
     expect(row['item_name'], 'Interior paint');
-    expect(row['item_total_cost'], 156.0);
+    expect(row['item_total_cost'], 171.6);
+    expect(row['waste_percent'], 10.0);
     expect(find.text('New material cost'), findsNothing);
   });
 
@@ -239,6 +242,60 @@ void main() {
     database.writeGate!.complete();
     await tester.pumpAndSettle();
     expect(find.text('New material cost'), findsNothing);
+  });
+
+  testWidgets('locks the open waste field while the line is being saved', (
+    tester,
+  ) async {
+    await openSheet(tester);
+    await fillAllFields(tester);
+    await tester.tap(find.text('Waste 10%', findRichText: true));
+    await tester.pumpAndSettle();
+    database.writeGate = Completer<void>();
+
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('material_waste_field')),
+              matching: find.byType(TextField),
+            ),
+          )
+          .readOnly,
+      isTrue,
+    );
+
+    database.writeGate!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('New material cost'), findsNothing);
+  });
+
+  testWidgets('keeps the open waste field editable after adding fails', (
+    tester,
+  ) async {
+    database.executeError = StateError('disk full');
+    await openSheet(tester);
+    await fillAllFields(tester);
+    await tester.tap(find.text('Waste 10%', findRichText: true));
+    await tester.pumpAndSettle();
+    final wasteInput = find.descendant(
+      of: find.byKey(const Key('material_waste_field')),
+      matching: find.byType(TextField),
+    );
+
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+    await tester.pump();
+    await tester.pump();
+    await tester.enterText(wasteInput, '20');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+    expect(tester.widget<TextField>(wasteInput).readOnly, isFalse);
+    expect(find.text('Waste 20%', findRichText: true), findsOneWidget);
+    expect(find.text('incl. 20% waste'), findsOneWidget);
   });
 
   testWidgets('keeps the sheet and its values when adding fails', (

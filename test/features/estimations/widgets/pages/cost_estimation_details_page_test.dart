@@ -1785,7 +1785,7 @@ void main() {
 
         await fillValidMaterialForm(tester);
 
-        expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r'$171.60'), findsOneWidget);
         expect(find.text(r' total  — →'), findsOneWidget);
         expect(zeroDollarsInAddToEstimatePanel(), findsNothing);
       });
@@ -1804,7 +1804,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
-        expect(find.text(r'$3,149.62'), findsOneWidget);
+        expect(find.text(r'$3,165.22'), findsOneWidget);
       });
 
       String fieldText(WidgetTester tester, String key) => tester
@@ -1912,9 +1912,9 @@ void main() {
 
         await fillValidMaterialForm(tester);
 
-        expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r'$171.60'), findsOneWidget);
         expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
-        expect(find.text(r'$3,149.62'), findsOneWidget);
+        expect(find.text(r'$3,165.22'), findsOneWidget);
       });
 
       testWidgets('adding saves the line, closes the sheet and shows the '
@@ -1930,7 +1930,7 @@ void main() {
         final saved = database.costItems.rows.single;
         expect(saved['estimate_id'], testEstimationId);
         expect(saved['item_name'], 'Interior paint');
-        expect(saved['item_total_cost'], 156);
+        expect(saved['item_total_cost'], 171.6);
       });
 
       testWidgets('dismissing the sheet while saving still confirms the add', (

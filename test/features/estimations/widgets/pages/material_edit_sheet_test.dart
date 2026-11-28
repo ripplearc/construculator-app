@@ -71,9 +71,13 @@ void main() {
 
   late MaterialCostFormBloc sheetBloc;
 
-  Future<void> openEditSheet(WidgetTester tester) async {
+  Future<void> openEditSheet(
+    WidgetTester tester, {
+    MaterialCostItem? line,
+  }) async {
+    final edited = line ?? rebar;
     fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
-      CostItemDto.fromEntity(rebar).toJson(),
+      CostItemDto.fromEntity(edited).toJson(),
     ]);
     tester.view.physicalSize = const Size(412, 917);
     tester.view.devicePixelRatio = 1.0;
@@ -102,7 +106,7 @@ void main() {
                     yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
                     clock: FakeClockImpl(),
                     presentAsSheet: true,
-                    editedMaterialItem: rebar,
+                    editedMaterialItem: edited,
                     estimate: CostEstimate.defaultEstimate(
                       estimateName: 'Bedroom 2',
                       totalCost: 2993.62,
@@ -183,6 +187,64 @@ void main() {
       expect(inField('material_quantity_field', '5'), findsOneWidget);
       expect(inField('material_rate_field', '100'), findsOneWidget);
       expect(find.byKey(const Key('material_unit_pill')), findsOneWidget);
+    });
+
+    testWidgets('shows a stored line with no waste as a dash and saves a '
+        'change with no waste added', (tester) async {
+      await openEditSheet(tester);
+      expect(find.text('Waste —', findRichText: true), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
+      await tester.tap(find.text('Waste —', findRichText: true));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const Key('material_waste_field')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller!
+            .text,
+        isEmpty,
+      );
+
+      await enter(tester, 'material_quantity_field', '6');
+      await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
+      await tester.pumpAndSettle();
+
+      final line = await storedLine();
+      expect(line.wastePercent, isNull);
+      expect(line.itemTotalCost, 600.0);
+    });
+
+    testWidgets('shows a stored waste with no new-material hint', (
+      tester,
+    ) async {
+      await openEditSheet(
+        tester,
+        line: MaterialCostItem(
+          id: 'item-1',
+          estimateId: 'estimate-1',
+          itemName: 'Rebar',
+          calculation: const {'unit_price': 100.0, 'quantity': 5.0},
+          itemTotalCost: 550.0,
+          createdAt: DateTime.utc(2024),
+          updatedAt: DateTime.utc(2024),
+          currency: 'USD',
+          unitPrice: const Money(amount: 100.0),
+          quantity: const Quantity(value: 5.0, unit: Unit.pieces),
+          rateStatus: RateStatus.ownRateConfirmed,
+          quantityProvenance: QuantityProvenance.manual,
+          wastePercent: 10.0,
+        ),
+      );
+      await tester.tap(find.text('Waste 10%', findRichText: true));
+      await tester.pumpAndSettle();
+
+      expect(inField('material_waste_field', '10'), findsOneWidget);
+      expect(find.text(l10n.materialWasteSuggestedHint), findsNothing);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
     });
 
     testWidgets('offers Save this line and says no change yet', (tester) async {
