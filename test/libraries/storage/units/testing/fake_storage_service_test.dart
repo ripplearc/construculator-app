@@ -55,6 +55,17 @@ void main() {
     );
 
     test(
+      'removeData fails and keeps the value while shouldThrowOnRemove is set',
+      () async {
+        await fake.saveData<String>('one', '1');
+        fake.shouldThrowOnRemove = true;
+
+        await expectLater(fake.removeData('one'), throwsStateError);
+        expect(fake.valueOf('one'), '1');
+      },
+    );
+
+    test(
       'clearAll fails and keeps the data while shouldThrowOnClear is set',
       () async {
         await fake.saveData<String>('one', '1');
@@ -69,11 +80,14 @@ void main() {
       await fake.saveData<String>('one', '1');
       fake.shouldThrowOnRead = true;
       fake.shouldThrowOnWrite = true;
+      fake.shouldThrowOnRemove = true;
       fake.shouldThrowOnClear = true;
 
       fake.reset();
 
       expect(await fake.getData<String>('one'), isNull);
+      await fake.saveData<String>('two', '2');
+      await fake.removeData('two');
       await fake.saveData<String>('two', '2');
       await fake.clearAll();
       expect(fake.valueOf('two'), isNull);
