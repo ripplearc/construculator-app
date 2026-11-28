@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 import '../../../../utils/your_rates_bloc_without_debounce.dart';
 
 void main() {
@@ -31,6 +32,7 @@ void main() {
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
