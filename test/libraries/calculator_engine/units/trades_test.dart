@@ -234,17 +234,21 @@ void main() {
       expect(formatter.format(bigs.single.value), '111.11');
     });
 
-    group('D2: footing (CA-1066)', () {
+    group('D2: footing, fence and members at spacing (CA-1066)', () {
       Length feet(double value) => Length.exact(
         Rational((value * 100).round() * 12, 100),
         unit: Unit.foot,
       );
+      Length inchesLong(double value) =>
+          Length.exact(Rational((value * 100).round(), 100), unit: Unit.inch);
       Length metres(double value) => Length.exact(
         Rational((value * 1000).round() * 10, 254),
         unit: Unit.metre,
       );
       const noLength = Length(0, unit: Unit.foot);
       final crossSections = [inches(16, 8), inches(24, 18)];
+      final seventyFiveFeet = feet(75);
+      final eightFeet = feet(8);
 
       String sizeText(PieceSize size) =>
           '${formatter.formatStoredLength(size.width)} x '
@@ -405,7 +409,403 @@ void main() {
         expect(formatter.format(volume.volume), '2,222,222.22yd³');
       });
 
-      test('volumes compare by what they carry', () {
+      test('S44, row 241: 75ft of fence at 8ft on centre with 3 rails per '
+          'section is 11 posts and 30 rails', () {
+        final fence = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 10);
+        expect(fence.posts, 11);
+        expect(fence.rails, 30);
+        expect(formatter.format(fence.postsValue), '11');
+        expect(formatter.format(fence.railsValue), '30');
+        expect(FenceCount.postsKey, 'Fence posts');
+        expect(FenceCount.railsOfferKey, 'Rails');
+        expect(FenceCount.railsKey, 'Fence rails');
+      });
+
+      test('row 241: the O.C. pill set to 10ft recomputes 9 posts and 24 '
+          'rails, keeping the length and the rails per section', () {
+        final fence = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        final wider = fence.recount(onCentre: feet(10))!;
+        expect(wider.posts, 9);
+        expect(wider.rails, 24);
+        expect(wider.length, seventyFiveFeet);
+        expect(wider.railsPerSection, 3);
+        final twoRails = fence.recount(railsPerSection: 2)!;
+        expect(twoRails.rails, 20);
+        expect(twoRails.onCentre, eightFeet);
+      });
+
+      test('a length that is a whole number of sections takes no extra one: '
+          '80ft at 8ft is 10 sections and 11 posts', () {
+        final fence = trades.fenceFor(
+          feet(80),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 10);
+        expect(fence.posts, 11);
+      });
+
+      test('the sections are counted exactly over the inches, never over '
+          'doubles: 0.9m at 0.3m is 3 sections, 24m at 2.4m is 10, and '
+          '55.5m at 0.5m is 111, where a double ratio reads 112', () {
+        expect(
+          trades
+              .fenceFor(
+                metres(55.5),
+                onCentre: metres(0.5),
+                railsPerSection: 1,
+              )!
+              .sections,
+          111,
+        );
+        expect(
+          trades
+              .fenceFor(metres(0.9), onCentre: metres(0.3), railsPerSection: 1)!
+              .sections,
+          3,
+        );
+        expect(
+          trades
+              .fenceFor(metres(24), onCentre: metres(2.4), railsPerSection: 1)!
+              .sections,
+          10,
+        );
+      });
+
+      group('R1 (review of 19 Nov): a Calc length made by a division', () {
+        const arithmetic = ChainArithmetic();
+        Quantity combined(Quantity left, Operator operator, Quantity right) =>
+            switch (arithmetic.combine(left, operator, right)) {
+              ArithmeticValue(:final value) => value,
+              final outcome => throw StateError('expected a value: $outcome'),
+            };
+        Length calcMetres(double metresLong, double by) =>
+            combined(
+                  combined(
+                    metres(metresLong * by),
+                    Operator.multiply,
+                    metres(1),
+                  ),
+                  Operator.divide,
+                  metres(by),
+                )
+                as Length;
+
+        test('blocker 1: Calc 24m from 57.6m² ÷ 2.4m at 2.4m is 10 '
+            'sections, 11 posts and 30 rails, as a typed 24m is', () {
+          final calc24 = calcMetres(24, 2.4);
+          expect(formatter.format(calc24), '24m');
+          expect(
+            calc24.inches,
+            isNot(metres(24).inches),
+            reason: 'a computed length is kept to 1/512 of a tick',
+          );
+          final fence = trades.fenceFor(
+            calc24,
+            onCentre: metres(2.4),
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 10);
+          expect(fence.posts, 11);
+          expect(fence.rails, 30);
+          expect(
+            trades.spacingCountsFor(calc24, [metres(2.4)]).single.members,
+            11,
+          );
+        });
+
+        test('the other runs of the review read as typed: Calc 2.4m at 0.4m '
+            'is 7 posts, Calc 0.9m at 0.3m is 4, Calc 4.8m at 0.4m is 13, '
+            'and Qty@OC the same', () {
+          for (final (long, by, spacing, posts) in [
+            (2.4, 2.4, 0.4, 7),
+            (0.9, 2.4, 0.3, 4),
+            (4.8, 2.4, 0.4, 13),
+            (24.0, 2.4, 2.4, 11),
+          ]) {
+            final calc = calcMetres(long, by);
+            final fence = trades.fenceFor(
+              calc,
+              onCentre: metres(spacing),
+              railsPerSection: 1,
+            )!;
+            expect(fence.posts, posts, reason: 'Calc ${long}m at ${spacing}m');
+            expect(
+              trades.spacingCountsFor(calc, [metres(spacing)]).single.members,
+              posts,
+              reason: 'Qty@OC on Calc ${long}m at ${spacing}m',
+            );
+          }
+        });
+
+        test('a length less than half a tick past a whole number of '
+            'spacings is that many, and half a tick past is one more', () {
+          final twentyFour = metres(24);
+          Length plusParts(int parts) => Length.exact(
+            twentyFour.inches +
+                Rational(parts, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.metre,
+          );
+          FenceCount fenceOn(Length length) => trades.fenceFor(
+            length,
+            onCentre: metres(2.4),
+            railsPerSection: 1,
+          )!;
+          const halfATick = Length.partsPerTick ~/ 2;
+          expect(fenceOn(plusParts(1)).sections, 10);
+          expect(fenceOn(plusParts(halfATick - 1)).sections, 10);
+          expect(fenceOn(plusParts(halfATick)).sections, 11);
+          expect(
+            trades
+                .fenceFor(
+                  Length.exact(
+                    const Rational(96 * 12) + const Rational(1, 64),
+                    unit: Unit.footInch,
+                  ),
+                  onCentre: eightFeet,
+                  railsPerSection: 1,
+                )!
+                .posts,
+            14,
+            reason: 'a typed 96ft 0-1/64in is past twelve spacings of 8ft',
+          );
+        });
+
+        test('R2 (review of 26 Nov): a Calc length multiplied after its '
+            'division counts as the typed length does — Calc 20m from '
+            '10m² ÷ 2m × 4 at 2m is 10 sections, 11 posts and 30 rails, '
+            'Calc 4m from 2m² ÷ 2m × 4 at 2m is 3 members, and Calc 96ft '
+            'from 96ft² ÷ 7ft × 7 at 8ft is 13 posts', () {
+          Length multiplied(Length side, Length one, Length by, double times) =>
+              combined(
+                    combined(
+                      combined(side, Operator.multiply, one),
+                      Operator.divide,
+                      by,
+                    ),
+                    Operator.multiply,
+                    Scalar(times),
+                  )
+                  as Length;
+
+          final calc20 = multiplied(metres(10), metres(1), metres(2), 4);
+          expect(formatter.format(calc20), '20m');
+          expect(calc20.inches, isNot(metres(20).inches));
+          final fence = trades.fenceFor(
+            calc20,
+            onCentre: metres(2),
+            railsPerSection: 3,
+          )!;
+          expect([fence.sections, fence.posts, fence.rails], [10, 11, 30]);
+
+          final calc4 = multiplied(metres(2), metres(1), metres(2), 4);
+          expect(formatter.format(calc4), '4m');
+          expect(trades.spacingCountsFor(calc4, [metres(2)]).single.members, 3);
+
+          final calc96 = multiplied(feet(96), feet(1), feet(7), 7);
+          expect(formatter.format(calc96), '96ft 0in');
+          expect(
+            trades
+                .fenceFor(calc96, onCentre: eightFeet, railsPerSection: 1)!
+                .posts,
+            13,
+          );
+        });
+
+        test('a length of one part of a tick is still one section', () {
+          final onePart = Length.exact(
+            Rational(1, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.inch,
+          );
+          final fence = trades.fenceFor(
+            onePart,
+            onCentre: eightFeet,
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 1);
+          expect(
+            trades.spacingCountsFor(onePart, [eightFeet]).single.members,
+            2,
+          );
+        });
+
+        test('nit 1: a length and a spacing too long for exact sums are '
+            'counted in ticks, never thrown: 123.456789012m at '
+            '0.4123456789m is 300 sections and 301 posts', () {
+          final long = Length.exact(
+            const Rational(1234567890120, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          final spacing = Length.exact(
+            const Rational(4123456789, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          expect(
+            () => long.inches / spacing.inches,
+            throwsA(isA<RationalOverflow>()),
+            reason: 'the exact ratio does not fit a Rational',
+          );
+          final fence = trades.fenceFor(
+            long,
+            onCentre: spacing,
+            railsPerSection: 1,
+          )!;
+          expect(fence.sections, 300);
+          expect(fence.posts, 301);
+          expect(trades.spacingCountsFor(long, [spacing]).single.members, 301);
+        });
+      });
+
+      test('a length shorter than one spacing is one section: 1in at 8ft '
+          'is 2 posts and 3 rails', () {
+        final fence = trades.fenceFor(
+          inchesLong(1),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 1);
+        expect(fence.posts, 2);
+        expect(fence.rails, 3);
+      });
+
+      test('no rails per section is a fence of posts only; rails below zero '
+          'or a spacing of zero or less are refused, and so is a length of '
+          'zero or less', () {
+        final posts = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 0,
+        )!;
+        expect(posts.rails, 0);
+        expect(posts.posts, 11);
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: eightFeet,
+            railsPerSection: -1,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: noLength,
+            railsPerSection: 3,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: feet(-8),
+            railsPerSection: 3,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(noLength, onCentre: eightFeet, railsPerSection: 3),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(feet(-75), onCentre: eightFeet, railsPerSection: 3),
+          isNull,
+        );
+        expect(posts.recount(onCentre: noLength), isNull);
+        expect(posts.recount(railsPerSection: -1), isNull);
+        expect(posts.recount(railsPerSection: 0)!.rails, 0);
+      });
+
+      test('the longest fence the parser accepts, 19,999,999.99ft at 8ft, '
+          'is 2,500,001 posts and 7,500,000 rails', () {
+        final fence = trades.fenceFor(
+          feet(19999999.99),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(formatter.format(fence.postsValue), '2,500,001');
+        expect(formatter.format(fence.railsValue), '7,500,000');
+      });
+
+      test('S46, row 242: 22ft 8-3/4in at 16in on centre is 19 members, and '
+          'at 24in it is 13, in the store\'s order', () {
+        final span = inchesLong(22 * 12 + 8.75);
+        final counts = trades.spacingCountsFor(span, [
+          inchesLong(16),
+          inchesLong(24),
+        ]);
+        expect(
+          [
+            for (final count in counts)
+              '${SpacingCount.offerKey} @'
+                  '${formatter.formatStoredLength(count.spacing)}: '
+                  '${formatter.format(count.value)}',
+          ],
+          ['Qty @16in: 19', 'Qty @24in: 13'],
+        );
+        expect(SpacingCount.resultKey, 'Quantity');
+      });
+
+      test('row 242: the O.C. pill set to 19.5in recomputes 15 members over '
+          'the same span, and a spacing of zero or less is refused', () {
+        final span = inchesLong(22 * 12 + 8.75);
+        final count = trades.spacingCountsFor(span, [inchesLong(16)]).single;
+        final wider = count.recount(inchesLong(19.5))!;
+        expect(wider.members, 15);
+        expect(wider.span, span);
+        expect(count.recount(noLength), isNull);
+        expect(count.recount(inchesLong(-16)), isNull);
+      });
+
+      test('a span up to one spacing long has two members, one at each '
+          'end: 6in and 16in at 16in', () {
+        expect(
+          trades
+              .spacingCountsFor(inchesLong(6), [inchesLong(16)])
+              .single
+              .members,
+          2,
+        );
+        expect(
+          trades
+              .spacingCountsFor(inchesLong(16), [inchesLong(16)])
+              .single
+              .members,
+          2,
+        );
+      });
+
+      test('a span of zero or less has no members, a spacing of zero or '
+          'less is left out, and no spacings is no count', () {
+        final spacings = [inchesLong(16), inchesLong(24)];
+        expect(trades.spacingCountsFor(noLength, spacings), isEmpty);
+        expect(trades.spacingCountsFor(feet(-22), spacings), isEmpty);
+        expect(
+          trades
+              .spacingCountsFor(feet(22), [noLength, inchesLong(16)])
+              .map((count) => count.spacing),
+          [inchesLong(16)],
+        );
+        expect(trades.spacingCountsFor(feet(22), const []), isEmpty);
+      });
+
+      test('the longest span the parser accepts, 19,999,999.99ft at 16in, '
+          'is 15,000,001 members', () {
+        final count = trades.spacingCountsFor(feet(19999999.99), [
+          inchesLong(16),
+        ]).single;
+        expect(formatter.format(count.value), '15,000,001');
+      });
+
+      test('volumes, fences and counts compare by what they carry', () {
         expect(
           FootingVolume(
             length: feet(22),
@@ -431,6 +831,24 @@ void main() {
               system: MeasurementSystem.imperial,
             ),
           ),
+        );
+        expect(
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+        );
+        expect(
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+          isNot(
+            FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 2),
+          ),
+        );
+        expect(
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+        );
+        expect(
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+          isNot(SpacingCount(span: feet(22), spacing: inchesLong(24))),
         );
       });
     });
