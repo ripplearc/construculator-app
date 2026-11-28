@@ -841,7 +841,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('your_rate_row_paint-1')),
-          matching: find.text('\$51.00 /Liters', findRichText: true),
+          matching: find.text('\$51.00 /l', findRichText: true),
         ),
         findsOneWidget,
       );

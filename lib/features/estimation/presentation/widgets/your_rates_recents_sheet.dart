@@ -442,14 +442,13 @@ class _RecentsLoadError extends StatelessWidget {
   }
 }
 
-// TODO: [CA-1186] Show the unit's short symbol, such as "/gal", with unit.symbol(l10n), as the Rate field on main does since #891. https://ripplearc.youtrack.cloud/issue/CA-1186
 String? _unitSuffixFor(BuildContext context, YourRateEntry entry) {
   final l10n = context.l10n;
   if (entry.category == CostItemType.material) {
     final unit = entry.unit;
     return unit == null
         ? null
-        : l10n.materialRatePerUnitSuffix(unit.displayName(l10n));
+        : l10n.materialRatePerUnitSuffix(unit.symbol(l10n));
   }
   return entry.equipmentMethod == EquipmentPricingMethod.job
       ? l10n.yourRatesJobSuffix
