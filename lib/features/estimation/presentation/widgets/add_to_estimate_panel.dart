@@ -16,19 +16,31 @@ class AddToEstimateBlock {
   const AddToEstimateBlock({required this.note, required this.buttonLabel});
 }
 
+/// A charge included in a line's total, such as its delivery fee or waste,
+/// shown on its own row of the summary card.
+class AddToEstimateCharge {
+  /// The row's label, such as "incl. delivery".
+  final String label;
+
+  /// How much of the line total the charge is.
+  final double amount;
+
+  const AddToEstimateCharge({required this.label, required this.amount});
+}
+
 /// The "Adds to this estimate" summary card: the line total, an optional
-/// delivery row, and the estimate's total before and after.
+/// charge row, and the estimate's total before and after.
 ///
 /// Over a line already on the estimate the card is titled "Changes this
 /// estimate" and shows the difference. Before any change its title reads
 /// "No change yet" and the difference is +\$0.00.
 class AddToEstimatePanel extends StatelessWidget {
-  /// This line's total, including the delivery fee.
+  /// This line's total, including [charge].
   final double lineTotal;
 
-  /// The delivery fee included in [lineTotal]. The delivery row is hidden
-  /// when it is null or zero.
-  final double? deliveryFee;
+  /// A charge included in [lineTotal]. Its row is hidden when it is null or
+  /// zero.
+  final AddToEstimateCharge? charge;
 
   /// The name of the estimate the line is added to.
   final String estimateName;
@@ -44,7 +56,7 @@ class AddToEstimatePanel extends StatelessWidget {
   /// How much saving moves the estimate total, in dollars, when the panel is
   /// above a line that is already on the estimate; `null` when a new line is
   /// being added. The panel then shows that difference and the new total,
-  /// and leaves out the delivery charge row, which is already inside the
+  /// and leaves out the [charge] row, which is already inside the
   /// difference.
   final double? changeInEstimateTotal;
 
@@ -63,7 +75,7 @@ class AddToEstimatePanel extends StatelessWidget {
   const AddToEstimatePanel({
     super.key,
     required this.lineTotal,
-    required this.deliveryFee,
+    required this.charge,
     required this.estimateName,
     required this.estimateTotal,
     required this.block,
@@ -77,7 +89,7 @@ class AddToEstimatePanel extends StatelessWidget {
     final l10n = context.l10n;
     final money = DisplayFormatter.currency;
     final block = this.block;
-    final fee = deliveryFee;
+    final charge = this.charge;
     final change = changeInEstimateTotal;
     final isEditing = isEditingExistingLine || change != null;
     final title = switch (isEditing) {
@@ -96,7 +108,9 @@ class AddToEstimatePanel extends StatelessWidget {
     final shownAmount = change == null
         ? money.format(lineTotal)
         : '${change < 0 ? '-' : '+'}${money.format(change.abs())}';
-    final hasDeliveryFee = change == null && fee != null && fee > 0;
+    final shownCharge = change == null && charge != null && charge.amount > 0
+        ? charge
+        : null;
     final knownTotal = estimateTotal;
     final totalBefore = knownTotal == null
         ? CoreEstimateSummaryCard.emptyAmount
@@ -109,8 +123,8 @@ class AddToEstimatePanel extends StatelessWidget {
       label: [
         title,
         shownAmount,
-        if (hasDeliveryFee)
-          '${l10n.addsToEstimateIncludesDelivery} +${money.format(fee)}',
+        if (shownCharge != null)
+          '${shownCharge.label} +${money.format(shownCharge.amount)}',
         knownTotal == null
             ? l10n.addsToEstimateTotalUnknownSemantics
             : l10n.addsToEstimateTotalSemantics(
@@ -124,12 +138,12 @@ class AddToEstimatePanel extends StatelessWidget {
       child: CoreEstimateSummaryCard(
         title: title,
         lineTotal: shownAmount,
-        extraCharge: hasDeliveryFee
-            ? CoreEstimateSummaryCharge(
-                label: l10n.addsToEstimateIncludesDelivery,
-                amount: '+${money.format(fee)}',
-              )
-            : null,
+        extraCharge: shownCharge == null
+            ? null
+            : CoreEstimateSummaryCharge(
+                label: shownCharge.label,
+                amount: '+${money.format(shownCharge.amount)}',
+              ),
         estimateName: estimateName,
         totalBeforeSuffix: l10n.addsToEstimateTotalBeforeSuffix(totalBefore),
         totalAfter: totalAfter,

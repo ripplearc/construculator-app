@@ -3429,6 +3429,16 @@
       }
     }
   },
+  "addsToEstimateIncludesWaste": "incl. {percent} waste",
+  "@addsToEstimateIncludesWaste": {
+    "description": "Label of the summary card row showing how much of a material line total is its waste allowance, such as incl. 10% waste",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "10%"
+      }
+    }
+  },
   "addsToEstimateIncludesDelivery": "incl. delivery",
   "@addsToEstimateIncludesDelivery": {
     "description": "Label of the summary card row showing how much of the line total is the delivery fee",

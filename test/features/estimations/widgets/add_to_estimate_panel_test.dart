@@ -23,7 +23,13 @@ void main() {
         home: Scaffold(
           body: AddToEstimatePanel(
             lineTotal: lineTotal,
-            deliveryFee: deliveryFee,
+            charge: switch (deliveryFee) {
+              final fee? => AddToEstimateCharge(
+                label: 'incl. delivery',
+                amount: fee,
+              ),
+              null => null,
+            },
             estimateName: estimateName,
             estimateTotal: estimateTotal,
             block: block,

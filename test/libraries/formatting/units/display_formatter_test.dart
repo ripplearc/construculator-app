@@ -210,6 +210,22 @@ void main() {
       });
     });
 
+    group('formatPercent', () {
+      test('shows a whole number with no decimals', () {
+        expect(DisplayFormatter.formatPercent(10), '10%');
+        expect(DisplayFormatter.formatPercent(100), '100%');
+      });
+
+      test('shows a part percentage with one decimal', () {
+        expect(DisplayFormatter.formatPercent(12.5), '12.5%');
+        expect(DisplayFormatter.formatPercent(0.5), '0.5%');
+      });
+
+      test('shows 0 as 0.0% so it reads apart from an empty value', () {
+        expect(DisplayFormatter.formatPercent(0), '0.0%');
+      });
+    });
+
     group('formatFileSize', () {
       test('should format bytes under 1KB', () {
         expect(DisplayFormatter.formatFileSize(0), equals('0B'));

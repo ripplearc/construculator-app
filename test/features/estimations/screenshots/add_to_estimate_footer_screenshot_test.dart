@@ -46,7 +46,13 @@ void main() {
                   color: context.colorTheme.pageBackground,
                   child: AddToEstimateFooter(
                     lineTotal: lineTotal,
-                    deliveryFee: deliveryFee,
+                    charge: switch (deliveryFee) {
+                      final fee? => AddToEstimateCharge(
+                        label: 'incl. delivery',
+                        amount: fee,
+                      ),
+                      null => null,
+                    },
                     estimateName: 'Bedroom 2',
                     estimateTotal: 2993.62,
                     block: block,
