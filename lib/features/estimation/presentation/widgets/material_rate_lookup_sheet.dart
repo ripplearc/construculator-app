@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/helpers/unit_dis
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -13,7 +14,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// "Look up a rate" sheet for a material (storyboard CUJ 4, sub-flow A,
 /// screen 4). Opens searched on [initialQuery] and lists the matching Your
-/// rates under YOUR RATES, each priced per its unit.
+/// rates under YOUR RATES; the previous rows stay on screen while a search
+/// runs. Tapping a row only selects it; the button at the foot stays greyed
+/// out as "Use rate" until a row is picked, then returns that rate.
 ///
 /// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here too, under a FROM SAMPLE COST FILE heading below YOUR RATES, once a real data source exists.
 class MaterialRateLookupSheet extends StatefulWidget {
@@ -22,6 +25,8 @@ class MaterialRateLookupSheet extends StatefulWidget {
 
   /// Dates the "Used …" and "Saved …" line under each saved rate.
   final Clock clock;
+
+  static const double _storyboardHeightRatio = 0.887;
 
   const MaterialRateLookupSheet({
     super.key,
@@ -32,6 +37,30 @@ class MaterialRateLookupSheet extends StatefulWidget {
   @override
   State<MaterialRateLookupSheet> createState() =>
       _MaterialRateLookupSheetState();
+
+  /// Opens this sheet in a [CoreQuickSheet] and returns the picked
+  /// [YourRateEntry], or null if the sheet was closed without one.
+  static Future<YourRateEntry?> show({
+    required BuildContext context,
+    required String initialQuery,
+    required Clock clock,
+    required YourRatesBloc Function() blocFactory,
+  }) {
+    return CoreQuickSheet.show<YourRateEntry>(
+      context: context,
+      backgroundColor: sheetSurface(context),
+      isFixedHeight: true,
+      fixedHeightRatio: _storyboardHeightRatio,
+      useSafeArea: true,
+      child: BlocProvider<YourRatesBloc>(
+        create: (_) => blocFactory(),
+        child: MaterialRateLookupSheet(
+          initialQuery: initialQuery,
+          clock: clock,
+        ),
+      ),
+    );
+  }
 }
 
 const _textInset = EdgeInsets.symmetric(horizontal: CoreSpacing.space2);
@@ -40,6 +69,9 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
   late final _searchController = TextEditingController(
     text: widget.initialQuery,
   );
+
+  List<YourRateEntry> _shownEntries = const [];
+  String? _selectedId;
 
   @override
   void initState() {
@@ -57,15 +89,30 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     YourRatesSearched(query, category: CostItemType.material),
   );
 
+  void _onRowTap(YourRateEntry entry) =>
+      setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
+
+  void _onStateChanged(BuildContext context, YourRatesState state) {
+    if (state is! YourRatesSearchResults) return;
+    _shownEntries = state.results;
+    if (!state.results.any((entry) => entry.id == _selectedId)) {
+      _selectedId = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocBuilder<YourRatesBloc, YourRatesState>(
+    return BlocConsumer<YourRatesBloc, YourRatesState>(
+      listener: _onStateChanged,
       builder: (context, state) {
         final entries = switch (state) {
           YourRatesSearchResults(:final results) => results,
-          _ => const <YourRateEntry>[],
+          _ => _shownEntries,
         };
+        final selected = entries
+            .where((entry) => entry.id == _selectedId)
+            .firstOrNull;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -75,7 +122,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SheetHeader(title: l10n.yourRatesLookupTitle),
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -96,6 +143,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             onChanged: _search,
                           ),
                         ),
+                        // TODO: [CA-1482] show CoreUI's progress bar here while a search runs, above the rows kept from the last search. https://ripplearc.youtrack.cloud/issue/CA-1482
                         const SizedBox(height: CoreSpacing.space6),
                         if (entries.isNotEmpty)
                           Padding(
@@ -109,7 +157,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             ),
                           ),
                         for (final entry in entries)
-                          CoreListRow(
+                          CoreListRow.selectable(
                             key: Key('your_rate_row_${entry.id}'),
                             title: entry.itemName,
                             subtitle: entry.recencyLabel(
@@ -120,12 +168,38 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                               entry.rate.amount,
                             ),
                             unit: _unitSuffix(context, entry),
+                            selected: entry.id == selected?.id,
+                            onTap: () => _onRowTap(entry),
                           ),
                       ],
                     ),
                   ),
                 ),
               ),
+              if (entries.isNotEmpty) ...[
+                const CoreDivider(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: CoreSpacing.space5,
+                    vertical: CoreSpacing.space4,
+                  ),
+                  child: CoreButton(
+                    key: const Key('material_lookup_use_button'),
+                    label: selected == null
+                        ? l10n.materialLookupUseRateButton
+                        : l10n
+                              .yourRatesUseButtonLabel(
+                                DisplayFormatter.currency.format(
+                                  selected.rate.amount,
+                                ),
+                                _unitSuffix(context, selected) ?? '',
+                              )
+                              .trim(),
+                    isDisabled: selected == null,
+                    onPressed: () => Navigator.of(context).pop(selected),
+                  ),
+                ),
+              ],
             ],
           ),
         );
