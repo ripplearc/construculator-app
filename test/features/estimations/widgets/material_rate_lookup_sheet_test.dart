@@ -241,7 +241,7 @@ void main() {
 
       expect(closed, isFalse);
       expect(useButtonWidget(tester).isDisabled, isFalse);
-      expect(useButtonWidget(tester).label, r'Use $52.00 /Liters');
+      expect(useButtonWidget(tester).label, r'Use $52.00 /l');
     });
 
     testWidgets('the button returns the picked rate and closes the sheet', (
