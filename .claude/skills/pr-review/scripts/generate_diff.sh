@@ -96,6 +96,6 @@ if ! git show "$PR_BRANCH:$FILE" >/dev/null 2>&1; then
 fi
 
 # Generate unified diff with specified context lines
-DIFF=$(git diff --no-prefix -U"$CONTEXT" "$BASE_BRANCH".."$PR_BRANCH" -- "$FILE" 2>/dev/null || error_exit "Git diff failed" "GIT_ERROR")
+DIFF=$(git diff --no-prefix -U"$CONTEXT" "$BASE_BRANCH"..."$PR_BRANCH" -- "$FILE" 2>/dev/null || error_exit "Git diff failed" "GIT_ERROR")
 
 jq -n --arg file "$FILE" --arg diff "$DIFF" '{file: $file, diff: $diff}'

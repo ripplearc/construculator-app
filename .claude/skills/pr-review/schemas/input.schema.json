@@ -13,6 +13,11 @@
       "description": "Target branch for the PR",
       "default": "main"
     },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "GitHub PR number. When given, the skill reads the PR text with gh and runs PR Text Matches Diff"
+    },
     "rules": {
       "type": "array",
       "items": {
@@ -30,7 +35,9 @@
           "Localization",
           "Mutation Testing",
           "Accessibility",
-          "Sentry Logging"
+          "Sentry Logging",
+          "PR Text Matches Diff",
+          "Ink Needs Material"
         ]
       },
       "description": "Optional subset of rules to apply, by name. Any active rule name is valid; \"Abstraction Naming\" and \"State Derivation\" are deprecated (covered by \"Naming & Abstraction\" and \"UI / Business Separation\"). When omitted, all applicable rules auto-run.",
