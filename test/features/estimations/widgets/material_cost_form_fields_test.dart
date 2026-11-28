@@ -206,7 +206,7 @@ void main() {
     });
 
     testWidgets('the search button ends where the rate underline ends, and '
-        'the hint sits 12 dp under it with 8 dp after its icon', (
+        'the hint icon sits 13 dp under it with 8 dp after the icon', (
       tester,
     ) async {
       await pumpFields(tester);
