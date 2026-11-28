@@ -172,6 +172,7 @@ class EstimationModule extends Module {
     i.add<DeleteCostEstimationBloc>(
       () => DeleteCostEstimationBloc(
         costEstimationRepository: i.get(),
+        projectRepository: Modular.get<ProjectRepository>(),
         currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
       ),
     );
