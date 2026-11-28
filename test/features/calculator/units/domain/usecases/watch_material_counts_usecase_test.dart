@@ -86,6 +86,34 @@ void main() {
       ]);
     });
 
+    test('172.8 m² of the metric sheet seeds counts 60.00, 53.33 and 48.00 '
+        'sheets, since a seed is exact (CA-1466)', () async {
+      final squareTicksPerSquareMetre =
+          Unit.metre.ticksPerUnit * Unit.metre.ticksPerUnit;
+      final counts = await useCase(
+        trade: Trade.drywall,
+        area: Area(172.8 * squareTicksPerSquareMetre, unit: Unit.metre),
+        system: MeasurementSystem.metric,
+      ).first;
+      const metric = QuantityFormatter(
+        preferences: CalculatorPreferences(system: MeasurementSystem.metric),
+      );
+      expect(
+        [
+          for (final count in counts)
+            '${metric.format(count.value)} '
+                '(${metric.formatStoredLength(count.size.width)} x '
+                '${metric.formatStoredLength(count.size.height)})',
+        ],
+        [
+          '60.00 (1200mm x 2400mm)',
+          '53.33 (1200mm x 2700mm)',
+          '48.00 (1200mm x 3000mm)',
+        ],
+      );
+      expect(counts.first.value.value, closeTo(60, 1e-9));
+    });
+
     test('reads the sheet sizes of the unit system asked for', () async {
       final counts = await useCase(
         trade: Trade.drywall,
@@ -105,7 +133,9 @@ void main() {
         [
           '5.81 (1200mm x 2400mm)',
           '5.16 (1200mm x 2700mm)',
-          '4.64 (1200mm x 3000mm)',
+          // 16.7225 m² ÷ 3.6 m² is 4.645, which the rounded ticks of the
+          // seed read as 4.64 before CA-1466
+          '4.65 (1200mm x 3000mm)',
         ],
       );
     });
