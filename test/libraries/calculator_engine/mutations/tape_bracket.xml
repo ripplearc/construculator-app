@@ -120,11 +120,6 @@
             <mutation text="ChainValue(:final value) =&gt; (value: value, steps: 0),"/>
         </regex>
 
-        <!-- RULE 15: = drops the closed tape when nothing lands -->
-        <regex pattern="TapeOutcome\(\) =&gt; TapeChanged\(\s*closed,\s*notice: notice \?\? TapeNotice\.bracketClosedNothingToCompute,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
-            <mutation text="final TapeOutcome refused =&gt; refused,"/>
-        </regex>
-
         <!-- RULE 16: closing a reopened bracket empty throws the group
              away -->
         <regex pattern="if \(bracket\.original != null\) return _restored\(bracket\);\s*return TapeChanged\(\s*_removeBracket\(bracket\),\s*notice: TapeNotice\.emptyBracketsRemoved," dotAll="true" id="tape.close_bracket.forget_original">
@@ -166,6 +161,20 @@
             <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
         </regex>
 
+
+        <!-- RULE R66 (decision tree rows 66, 107): a closed bracket on its own
+             is not a calculation -->
+        <regex pattern="ChainValue\(:final value\)\s*when tape\._endsWithClosedBracket \|\|\s*closedInchPart &amp;&amp; tape\._isALoneUnnamedValue =&gt;" dotAll="true" id="tape.equals.lone_group_not_landed">
+            <mutation text="ChainValue(:final value) when closedInchPart &amp;&amp; tape._isALoneUnnamedValue =&gt;"/>
+        </regex>
+
+        <!-- RULE R108 (B2, decision tree row 108): = on a bracket whose
+             operator waits for its number closes the bracket, drops the
+             operator and lands Calc 12, or refuses the bracket with a number -->
+        <regex pattern="if \(_with\(bracket\.inner\)\.active case ValueChip\(\s*operator: _\?,\s*:final entry,\s*\) when entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.equals.bracket_operator_dropped">
+            <mutation text=""/>
+            <mutation text="if (_with(bracket.inner).active case ValueChip(operator: _?, :final entry) when !entry.isEmpty) { return const TapeRefused(TapeRefusal.operatorNeedsANumber); }"/>
+        </regex>
     </rules>
 
     <commands>

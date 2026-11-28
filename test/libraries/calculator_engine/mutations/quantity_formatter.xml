@@ -211,6 +211,12 @@
         <regex pattern="if \(decimals == 0\) return _twoDigits\(whole\);" dotAll="true" id="quantity_formatter.dms.whole_seconds_with_point">
             <mutation text=""/>
         </regex>
+
+        <!-- RULE R110 (decision tree row 110): a bare fraction of an inch
+             keeps its 0- in front -->
+        <regex pattern="final text = whole == 0 &amp;&amp; fraction\.text\.isNotEmpty\s*\?" dotAll="true" id="quantity_formatter.inches.zero_whole_written">
+            <mutation text="final text = false ?"/>
+        </regex>
     </rules>
 
     <commands>

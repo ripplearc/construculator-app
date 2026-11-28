@@ -239,9 +239,14 @@ void main() {
         );
       });
 
-      test('cannot finish a number with no unit', () {
+      test('closes the inch part of a compound and lands (decision tree row '
+          '79), but cannot finish a fraction under way', () {
         expect(
-          press(const Tape(), '2 ft + 1 8 ft 8').pressEquals(),
+          lastResult(press(const Tape(), '2 ft + 1 8 ft 8 =')),
+          'Calc 20ft 8in',
+        );
+        expect(
+          press(const Tape(), '2 ft + 1 8 ft 8 /').pressEquals(),
           const TapeRefused(TapeRefusal.finishThisValueFirst),
         );
       });
