@@ -62,6 +62,22 @@ class MaterialRateUpdated extends MaterialCostFormEvent {
   final String value;
 }
 
+/// Fired when the user edits the waste percentage.
+class MaterialWasteUpdated extends MaterialCostFormEvent {
+  const MaterialWasteUpdated(this.value);
+
+  /// The raw waste text entered by the user; empty clears the waste.
+  final String value;
+}
+
+/// Fired when the user edits the note.
+class MaterialNoteUpdated extends MaterialCostFormEvent {
+  const MaterialNoteUpdated(this.value);
+
+  /// The note text entered by the user.
+  final String value;
+}
+
 /// Fired when a saved price is attached to the line. Its unit becomes the
 /// line's unit.
 // TODO: [CA-1527] fire this when a rate is put on the form from Your recents, the look-up or a sample cost file. https://ripplearc.youtrack.cloud/issue/CA-1527

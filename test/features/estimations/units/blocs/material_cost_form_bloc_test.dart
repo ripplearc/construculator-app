@@ -503,6 +503,105 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves no waste and no note when neither was entered',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) {
+          expect(savedRow()['waste_percent'], isNull);
+          expect(savedRow()['description'], isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves the waste, the total with waste and the note as the '
+        'description',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b
+            ..add(const MaterialWasteUpdated('12.5'))
+            ..add(const MaterialNoteUpdated(' Bedroom walls only '))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) {
+          final row = savedRow();
+          expect(row['waste_percent'], 12.5);
+          expect(row['item_total_cost'], 20.08);
+          expect(row['description'], ' Bedroom walls only ');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves a typed 0 waste as zero, not as empty',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b
+            ..add(const MaterialWasteUpdated('0'))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) => expect(savedRow()['waste_percent'], 0.0),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'ignores a waste and a note typed while the save is in flight',
+        setUp: () => database.writeGate = Completer<void>(),
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b
+            ..add(const MaterialWasteUpdated('10'))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
+          final nextState = expectLater(
+            b.stream,
+            emits(isA<MaterialCostFormSuccess>()),
+          );
+          b
+            ..add(const MaterialWasteUpdated('50'))
+            ..add(const MaterialNoteUpdated('Late note'));
+          database.writeGate!.complete();
+          await nextState;
+        },
+        verify: (b) {
+          final data = (b.state as MaterialCostFormSuccess).data;
+          expect(data.wastePercent, 10);
+          expect(data.note, isNull);
+          expect(savedRow()['waste_percent'], 10.0);
+          expect(savedRow()['description'], isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves a waste and a note typed after a failed save on the next try',
+        setUp: () => database.executeError = StateError('disk full'),
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          b
+            ..add(const MaterialWasteUpdated('12.5'))
+            ..add(const MaterialNoteUpdated('Walls'));
+          await b.stream.firstWhere(
+            (s) => s is MaterialCostFormFailure && s.data.note == 'Walls',
+          );
+          database.executeError = null;
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        verify: (_) {
+          final row = savedRow();
+          expect(row['waste_percent'], 12.5);
+          expect(row['item_total_cost'], 20.08);
+          expect(row['description'], 'Walls');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'rounds the line total to the cent',
         build: () => bloc,
         act: (b) {
@@ -1022,6 +1121,48 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'adds the waste to quantity times rate',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialRateUpdated('52'))
+          ..add(const MaterialWasteUpdated('15')),
+        verify: (b) {
+          expect(_dataOf(b.state).wasteAmount, 23.40);
+          expect(_dataOf(b.state).lineTotal, 179.40);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'rounds the waste to the cent',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('1.5'))
+          ..add(const MaterialRateUpdated('2.55'))
+          ..add(const MaterialWasteUpdated('12.5')),
+        verify: (b) {
+          expect(_dataOf(b.state).wasteAmount, 0.48);
+          expect(_dataOf(b.state).lineTotal, 4.31);
+        },
+      );
+
+      for (final waste in ['', '0']) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'adds nothing for a waste of "$waste"',
+          build: () => bloc,
+          act: (b) => b
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialRateUpdated('52'))
+            ..add(const MaterialWasteUpdated('15'))
+            ..add(MaterialWasteUpdated(waste)),
+          verify: (b) {
+            expect(_dataOf(b.state).wasteAmount, 0);
+            expect(_dataOf(b.state).lineTotal, 156);
+          },
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'is zero when a value is not a finite number',
         build: () => bloc,
         act: (b) => b
@@ -1073,6 +1214,19 @@ void main() {
             MaterialFieldError.quantityTooLarge,
           );
         },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'flags the quantity when the waste pushes the total past the limit',
+        build: () => bloc,
+        act: (b) {
+          fill(b, '19999999999', '500000');
+          b.add(const MaterialWasteUpdated('1'));
+        },
+        verify: (b) => expect(
+          _dataOf(b.state).fieldErrors[MaterialFormField.quantity],
+          MaterialFieldError.quantityTooLarge,
+        ),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
@@ -1145,6 +1299,8 @@ void main() {
         const MaterialQuantityUpdated('3'),
         const MaterialUnitSelected(Unit.liters),
         const MaterialRateUpdated('5'),
+        const MaterialWasteUpdated('15'),
+        const MaterialNoteUpdated('Bedroom walls'),
       ]) {
         blocTest<MaterialCostFormBloc, MaterialCostFormState>(
           'appear when ${event.runtimeType} changes a field',
@@ -1198,6 +1354,73 @@ void main() {
           expect(hasChanges(b), isTrue);
         });
       });
+    });
+
+    group('waste and note', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'open empty',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostItemTypeChanged('Paint')),
+        verify: (b) {
+          expect(_dataOf(b.state).wastePercent, isNull);
+          expect(_dataOf(b.state).note, isNull);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keep a typed 0 waste apart from an empty one',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialWasteUpdated('0')),
+        verify: (b) => expect(_dataOf(b.state).wastePercent, 0),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'empty the waste when its text is cleared',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialWasteUpdated('15'))
+          ..add(const MaterialWasteUpdated('')),
+        verify: (b) => expect(_dataOf(b.state).wastePercent, isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'accept a waste of 100',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialWasteUpdated('100')),
+        verify: (b) => expect(_dataOf(b.state).wastePercent, 100),
+      );
+
+      for (final waste in ['100.1', '-1']) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'ignore a waste of $waste and keep the last one',
+          build: () => bloc,
+          act: (b) => b
+            ..add(const MaterialWasteUpdated('15'))
+            ..add(MaterialWasteUpdated(waste)),
+          verify: (b) => expect(_dataOf(b.state).wastePercent, 15),
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'never block Add when the waste is empty',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialUnitSelected(Unit.gallons))
+          ..add(const MaterialRateUpdated('52'))
+          ..add(const MaterialWasteUpdated('')),
+        verify: (b) => expect(_dataOf(b.state).isValid, isTrue),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'empty a note that is only spaces',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialNoteUpdated('Walls'))
+          ..add(const MaterialNoteUpdated('   ')),
+        verify: (b) => expect(_dataOf(b.state).note, isNull),
+      );
     });
 
     group('material name', () {

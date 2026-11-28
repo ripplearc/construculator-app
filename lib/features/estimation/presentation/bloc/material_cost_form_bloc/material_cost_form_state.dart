@@ -21,7 +21,8 @@ enum MaterialFieldError {
   quantityNotPositive,
 
   /// The quantity is larger than the database column can hold, or is so large
-  /// that quantity times rate no longer fits the line total column.
+  /// that quantity times rate, with waste, no longer fits the line total
+  /// column.
   quantityTooLarge,
 
   /// The rate is below $0.01 or above $999,999.99.
@@ -104,6 +105,8 @@ class MaterialCostFormData extends Equatable {
     this.rate,
     this.rateStatus = RateStatus.missing,
     this.attachedPrice,
+    this.wastePercent,
+    this.note,
     this.isValid = false,
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
@@ -137,6 +140,17 @@ class MaterialCostFormData extends Equatable {
   /// empty.
   final AttachedPrice? attachedPrice;
 
+  /// The largest waste percentage the form accepts.
+  static const double maxWastePercent = 100;
+
+  /// Extra material allowed for waste, from 0 to [maxWastePercent], or null
+  /// while the field is empty. Empty adds nothing, the same as 0, but is
+  /// kept apart so it can show as a dash.
+  final double? wastePercent;
+
+  /// The note saved as the line's description, or null when there is none.
+  final String? note;
+
   /// Whether name, quantity, unit and rate are all present and in range.
   final bool isValid;
 
@@ -145,8 +159,9 @@ class MaterialCostFormData extends Equatable {
   /// button names what is missing.
   final Map<MaterialFormField, MaterialFieldError> fieldErrors;
 
-  /// Whether any of name, quantity, unit or rate differs from how the form
-  /// opened. Typing a value and then restoring the original clears it.
+  /// Whether any of name, quantity, unit, rate, waste or note differs from
+  /// how the form opened. Typing a value and then restoring the original
+  /// clears it.
   final bool hasUnsavedChanges;
 
   /// The line already on the estimate that this form edits, or `null` when
@@ -178,15 +193,23 @@ class MaterialCostFormData extends Equatable {
   /// picked.
   final String? recalledRateId;
 
-  /// Quantity times rate rounded to the cent, or 0 while either is missing or
-  /// unusable.
-  double get lineTotal {
+  /// Quantity times rate plus [wasteAmount], or 0 while quantity or rate is
+  /// missing or unusable.
+  double get lineTotal => (_baseCents + _wasteCents) / 100;
+
+  /// What [wastePercent] adds to quantity times rate, rounded to the cent.
+  double get wasteAmount => _wasteCents / 100;
+
+  double get _baseCents {
     final quantity = this.quantity;
     final rate = this.rate;
     if (quantity == null || rate == null) return 0;
     if (!quantity.isFinite || !rate.isFinite) return 0;
-    return (quantity * (rate * 100).round()).roundToDouble() / 100;
+    return (quantity * (rate * 100).round()).roundToDouble();
   }
+
+  double get _wasteCents =>
+      (_baseCents * (wastePercent ?? 0) / 100).roundToDouble();
 
   /// Whether the name field contains a non-empty value.
   bool get isItemNameValid => itemName.trim().isNotEmpty;
@@ -218,6 +241,8 @@ class MaterialCostFormData extends Equatable {
     Object? rate = _unset,
     RateStatus? rateStatus,
     Object? attachedPrice = _unset,
+    Object? wastePercent = _unset,
+    Object? note = _unset,
     bool? isValid,
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
@@ -233,6 +258,10 @@ class MaterialCostFormData extends Equatable {
       attachedPrice: attachedPrice == _unset
           ? this.attachedPrice
           : attachedPrice as AttachedPrice?,
+      wastePercent: wastePercent == _unset
+          ? this.wastePercent
+          : wastePercent as double?,
+      note: note == _unset ? this.note : note as String?,
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
@@ -253,6 +282,8 @@ class MaterialCostFormData extends Equatable {
     rate,
     rateStatus,
     attachedPrice,
+    wastePercent,
+    note,
     isValid,
     fieldErrors,
     hasUnsavedChanges,

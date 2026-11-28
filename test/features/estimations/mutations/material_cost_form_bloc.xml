@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- MATERIAL COST FORM BLOC MUTATION TESTING -->
-    <!-- Targets: Add enablement, quantity and rate bounds, rate status -->
+    <!-- Targets: Add enablement, quantity, rate and waste bounds, rate status, waste in the total, note -->
 
     <files>
         <file>lib/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart</file>
@@ -70,8 +70,8 @@
         <regex pattern="if \(!draft\.isValid \|\|" dotAll="false" id="bloc.submit.skip_validity_guard">
             <mutation text="if (false ||"/>
         </regex>
-        <regex pattern="\)\.round\(\) / 100" dotAll="false" id="bloc.submit.total_rounding">
-            <mutation text=").floor() / 100"/>
+        <regex pattern="\(quantity \* \(rate \* 100\)\.round\(\)\)\.roundToDouble\(\)" dotAll="false" id="bloc.submit.total_rounding">
+            <mutation text="(quantity * (rate * 100).round()).floorToDouble()"/>
         </regex>
         <regex pattern="quantity \* \(rate" dotAll="false" id="bloc.submit.total_operator">
             <mutation text="quantity + (rate"/>
@@ -152,10 +152,57 @@
         <regex pattern="id: _lineId," dotAll="false" id="bloc.submit.new_id_each_save">
             <mutation text="id: '$_lineId-${now.microsecondsSinceEpoch}',"/>
         </regex>
+        <regex pattern="waste &gt;= 0 &amp;&amp;" dotAll="false" id="bloc.waste.min_boundary">
+            <mutation text="waste &gt; 0 &amp;&amp;"/>
+        </regex>
+        <regex pattern="waste &lt;= MaterialCostFormData\.maxWastePercent" dotAll="false" id="bloc.waste.max_boundary">
+            <mutation text="waste &lt; MaterialCostFormData.maxWastePercent"/>
+        </regex>
+        <regex pattern="maxWastePercent = 100;" dotAll="false" id="state.waste.max_constant">
+            <mutation text="maxWastePercent = 1000;"/>
+        </regex>
+        <regex pattern="if \(waste != null &amp;&amp;\s+!\(" dotAll="false" id="bloc.waste.skip_range_check">
+            <mutation text="if (false &amp;&amp; !("/>
+        </regex>
+        <regex pattern="\(_baseCents \+ _wasteCents\) / 100" dotAll="false" id="state.total.adds_waste">
+            <mutation text="_baseCents / 100"/>
+            <mutation text="(_baseCents - _wasteCents) / 100"/>
+        </regex>
+        <regex pattern="\(wastePercent \?\? 0\) / 100\)\.roundToDouble\(\)" dotAll="false" id="state.waste.rounding">
+            <mutation text="(wastePercent ?? 0) / 100)"/>
+            <mutation text="(wastePercent ?? 0) / 100).floorToDouble()"/>
+        </regex>
+        <regex pattern="double get wasteAmount =&gt; _wasteCents / 100;" dotAll="false" id="state.waste.amount">
+            <mutation text="double get wasteAmount =&gt; 0;"/>
+        </regex>
+        <regex pattern="quantity \* \(1 \+ \(draft\.wastePercent \?\? 0\) / 100\)" dotAll="false" id="bloc.line_total.waste_factor">
+            <mutation text="quantity"/>
+        </regex>
+        <regex pattern="wastePercent: draft\.wastePercent," dotAll="false" id="bloc.submit.waste">
+            <mutation text="wastePercent: null,"/>
+        </regex>
+        <regex pattern="description: draft\.note," dotAll="false" id="bloc.submit.note">
+            <mutation text="description: null,"/>
+        </regex>
+        <regex pattern="data\.wastePercent != _formValuesAtOpening\.wastePercent" dotAll="false" id="bloc.dirty.waste">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="data\.note != _formValuesAtOpening\.note" dotAll="false" id="bloc.dirty.note">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="e\.value\.trim\(\)\.isEmpty \? null : e\.value" dotAll="false" id="bloc.note.blank_is_null">
+            <mutation text="e.value"/>
+        </regex>
+        <regex pattern="wastePercent: item\.wastePercent," dotAll="false" id="bloc.edit_opened.waste">
+            <mutation text="wastePercent: null,"/>
+        </regex>
+        <regex pattern="note: item\.description," dotAll="false" id="bloc.edit_opened.note">
+            <mutation text="note: null,"/>
+        </regex>
     </rules>
 
     <commands>
-        <command group="bloc" expected-return="0">fvm flutter test test/features/estimations/units/blocs/material_cost_form_bloc_test.dart</command>
+        <command group="bloc" expected-return="0">fvm flutter test test/features/estimations/units/blocs/material_cost_form_bloc_test.dart test/features/estimations/units/blocs/material_cost_form_bloc_edit_test.dart</command>
     </commands>
 
     <threshold failure="85"/>
