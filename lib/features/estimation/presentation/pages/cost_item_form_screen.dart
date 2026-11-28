@@ -407,6 +407,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           editedItem: widget.editedMaterialItem,
           initialRateEntry: widget.initialRateEntry,
           initialName: widget.initialName,
+          yourRatesBlocFactory: widget.yourRatesBlocFactory,
+          clock: widget.clock,
           numberPad: widget.presentAsSheet ? _numberPad : null,
           trailing: trailing,
         ),

@@ -2494,6 +2494,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String materialRateLookupHint(String searchIcon) {
+    return 'Never priced this? Use the $searchIcon above to look it up in the cost file.';
+  }
+
+  @override
+  String get materialRateLookupHintSearchIcon => 'search icon';
+
+  @override
   String get materialLookupUseRateButton => 'Use rate';
 
   @override

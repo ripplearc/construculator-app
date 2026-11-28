@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/number_pad_put_back_label.dart';
 import 'package:construculator/features/estimation/presentation/helpers/trimmed_number_format.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
+import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -25,11 +29,12 @@ const double _quantityValueGap = 3;
 const double _quantityBottomPadding = 6;
 const double _nameBottomPadding = 6;
 
+const double _lookupButtonTapSize = 48;
+
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
 // TODO: [CA-1184] open a picked saved rate on the quantity-only screen instead of this full form. https://ripplearc.youtrack.cloud/issue/CA-1184
-// TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
   /// Where Quantity and Rate put the app's own number pad. While one of them
@@ -54,6 +59,14 @@ class MaterialCostFormFields extends StatefulWidget {
   /// name and leaves the rate empty. Ignored when [initialRateEntry] is set.
   final String? initialName;
 
+  /// Creates the bloc behind the Look up a rate sheet, opened from the search
+  /// button in the Rate row.
+  final YourRatesBloc Function() yourRatesBlocFactory;
+
+  /// Dates the "Used …" and "Saved …" line under each rate on the Look up a
+  /// rate sheet.
+  final Clock clock;
+
   const MaterialCostFormFields({
     super.key,
     this.numberPad,
@@ -61,6 +74,8 @@ class MaterialCostFormFields extends StatefulWidget {
     this.editedItem,
     this.initialRateEntry,
     this.initialName,
+    required this.yourRatesBlocFactory,
+    required this.clock,
   });
 
   @override
@@ -112,6 +127,21 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     }
   }
 
+  Future<void> _openRateLookup() async {
+    final entry = await MaterialRateLookupSheet.show(
+      context: context,
+      initialQuery: _nameController.text.trim(),
+      clock: widget.clock,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (entry == null || !mounted) return;
+    if (_nameController.text.trim().isEmpty) {
+      _nameController.text = entry.itemName;
+    }
+    _rateController.text = formatTrimmedNumber(entry.rate.amount);
+    context.read<MaterialCostFormBloc>().add(MaterialRateLookedUp(entry));
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -137,6 +167,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       listener: (context, state) => _showAttachedRate(state.data),
       buildWhen: (previous, current) =>
           previous.data.unit != current.data.unit ||
+          _isRateMissing(previous) != _isRateMissing(current) ||
           _isSaving(previous) != _isSaving(current),
       builder: (context, state) => SingleChildScrollView(
         child: Column(
@@ -197,37 +228,74 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
-            _RevealedFieldRow(
-              key: const Key('material_rate_row'),
-              label: l10n.materialRateLabel,
-              valueGap: CoreSpacing.space2,
-              onTap: _rateFocus.requestFocus,
-              child: Row(
-                spacing: CoreSpacing.space1,
+            _RevealedWithGap(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Flexible(
-                    child: _SheetTextField(
-                      key: const Key('material_rate_field'),
-                      fitsText: true,
-                      readOnly: _isSaving(state),
-                      controller: _rateController,
-                      focusNode: _rateFocus,
-                      label: l10n.materialRateLabel,
-                      hintText: l10n.materialRatePlaceholder,
-                      keyboardType: _numberKeyboard,
-                      onTap: _selectAll(_rateController),
-                      inputFormatters: [_rateFormatter],
-                      onChanged: (value) =>
-                          bloc.add(MaterialRateUpdated(value)),
-                    ),
-                  ),
-                  if (state.data.unit case final unit?)
-                    Text(
-                      l10n.materialRatePerUnitSuffix(unit.symbol(l10n)),
-                      style: context.textTheme.bodyMediumRegular.copyWith(
-                        color: context.colorTheme.textBody,
+                  SheetFieldRow(
+                    key: const Key('material_rate_row'),
+                    label: l10n.materialRateLabel,
+                    valueGap: 0,
+                    bottomPadding: 0,
+                    trailingInset: CoreSpacing.space5,
+                    onTap: _rateFocus.requestFocus,
+                    child: SizedBox(
+                      height: _lookupButtonTapSize,
+                      child: Row(
+                        spacing: CoreSpacing.space1,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              spacing: CoreSpacing.space1,
+                              children: [
+                                Flexible(
+                                  child: _SheetTextField(
+                                    key: const Key('material_rate_field'),
+                                    fitsText: true,
+                                    readOnly: _isSaving(state),
+                                    controller: _rateController,
+                                    focusNode: _rateFocus,
+                                    label: l10n.materialRateLabel,
+                                    hintText: l10n.materialRatePlaceholder,
+                                    keyboardType: _numberKeyboard,
+                                    onTap: _selectAll(_rateController),
+                                    inputFormatters: [_rateFormatter],
+                                    onChanged: (value) =>
+                                        bloc.add(MaterialRateUpdated(value)),
+                                  ),
+                                ),
+                                if (state.data.unit case final unit?)
+                                  Flexible(
+                                    child: Text(
+                                      l10n.materialRatePerUnitSuffix(
+                                        unit.symbol(l10n),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.textTheme.bodyMediumRegular
+                                          .copyWith(
+                                            color: context.colorTheme.textBody,
+                                          ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (_isRateMissing(state))
+                            SizedBox.square(
+                              dimension: _lookupButtonTapSize,
+                              child: CoreOutlinedIconButton(
+                                key: const Key('lookup_rate_button'),
+                                icon: CoreIcons.search,
+                                semanticLabel: l10n.yourRatesLookupButton,
+                                onTap: () => unawaited(_openRateLookup()),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
+                  ),
+                  if (_isRateMissing(state)) const _RateLookupHint(),
                 ],
               ),
             ),
@@ -296,6 +364,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     _rateController.text = formatTrimmedNumber(item.unitPrice.amount);
   }
 
+  bool _isRateMissing(MaterialCostFormState state) =>
+      state.data.rateStatus == RateStatus.missing;
+
   bool _isSaving(MaterialCostFormState state) =>
       state is MaterialCostFormSubmitting ||
       state is MaterialCostFormSuccess ||
@@ -308,6 +379,62 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       final text = next.text.replaceAll(',', '.');
       return allowed.hasMatch(text) ? next.copyWith(text: text) : previous;
     });
+  }
+}
+
+class _RateLookupHint extends StatelessWidget {
+  const _RateLookupHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final l10n = context.l10n;
+    final searchIcon = l10n.materialRateLookupHintSearchIcon;
+    final hint = l10n.materialRateLookupHint(searchIcon);
+    final at = hint.indexOf(searchIcon);
+    return Padding(
+      key: const Key('material_rate_lookup_hint'),
+      padding: const EdgeInsets.fromLTRB(
+        CoreSpacing.space5,
+        CoreSpacing.space3,
+        CoreSpacing.space5,
+        0,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: CoreSpacing.space2,
+        children: [
+          CoreIconWidget(
+            icon: CoreIcons.info,
+            size: CoreIconSize.size16,
+            color: colorTheme.iconGrayMid,
+          ),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                // A translation without the bold words shows as plain text.
+                children: at < 0
+                    ? [TextSpan(text: hint)]
+                    : [
+                        TextSpan(text: hint.substring(0, at)),
+                        TextSpan(
+                          text: searchIcon,
+                          style: textTheme.bodySmallSemiBold.copyWith(
+                            color: colorTheme.textHeadline,
+                          ),
+                        ),
+                        TextSpan(text: hint.substring(at + searchIcon.length)),
+                      ],
+              ),
+              style: textTheme.bodySmallRegular.copyWith(
+                color: colorTheme.textBody,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

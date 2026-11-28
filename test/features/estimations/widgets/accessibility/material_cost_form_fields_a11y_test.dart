@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
@@ -42,7 +43,13 @@ void main() {
         create: (_) => Modular.get<MaterialCostFormBloc>(),
         child: Column(
           children: [
-            Flexible(child: MaterialCostFormFields(numberPad: numberPad)),
+            Flexible(
+              child: MaterialCostFormFields(
+                yourRatesBlocFactory: Modular.get<YourRatesBloc>,
+                clock: FakeClockImpl(),
+                numberPad: numberPad,
+              ),
+            ),
             const MaterialAddToEstimateFooter(
               estimateId: 'estimate-1',
               estimateName: 'Bedroom 2',
