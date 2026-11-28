@@ -906,6 +906,75 @@ void main() {
       expect(textOf(tester, nameField), 'Exterior paint · Premium Plus');
     });
 
+    void seedOwnPaintRate() => database.seedRow({
+      'id': 'own-paint',
+      'company_id': 'company-1',
+      'category': 'material',
+      'item_name': 'Interior paint',
+      'rate_amount': 40.0,
+      'rate_currency': 'USD',
+      'unit': 'liters',
+      'saved_at': '2026-01-10T00:00:00.000Z',
+    });
+
+    Future<void> clearRateAndPickOwnPaintRate(WidgetTester tester) async {
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('your_rates_search_field')),
+        'interior paint',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rate_row_own-paint')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_lookup_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a saved-rate pick after a sample pick goes back to the '
+        'typed name', (tester) async {
+      seedOwnPaintRate();
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await tester.enterText(nameField, 'Interior paint');
+      await pickSample(tester);
+
+      await clearRateAndPickOwnPaintRate(tester);
+
+      expect(textOf(tester, nameField), 'Interior paint');
+      expect(textOf(tester, rateField), '40');
+      expect(bloc.state.data.itemName, 'Interior paint');
+      expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+    });
+
+    testWidgets('a saved-rate pick after a sample pick with no typed name '
+        'takes the saved name', (tester) async {
+      seedOwnPaintRate();
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await pickSample(tester);
+
+      await clearRateAndPickOwnPaintRate(tester);
+
+      expect(textOf(tester, nameField), 'Interior paint');
+      expect(bloc.state.data.itemName, 'Interior paint');
+    });
+
+    testWidgets('a sample pick after a saved-rate pick adds to the name '
+        'the saved pick left', (tester) async {
+      seedOwnPaintRate();
+      await pumpFields(tester, sampleRows: const [proClassic, premiumPlus]);
+      await tester.enterText(nameField, 'Interior paint');
+      await pickSample(tester);
+      await clearRateAndPickOwnPaintRate(tester);
+      await tester.enterText(rateField, '');
+      await tester.pumpAndSettle();
+
+      await pickSample(tester, id: 'premium');
+
+      expect(textOf(tester, nameField), 'Interior paint · Premium Plus');
+    });
+
     testWidgets('uses the product alone as the name while none is typed', (
       tester,
     ) async {

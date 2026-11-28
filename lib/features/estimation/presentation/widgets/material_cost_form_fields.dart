@@ -102,6 +102,11 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     final bloc = context.read<MaterialCostFormBloc>();
     switch (pick) {
       case MaterialLookupYourRate(:final entry):
+        if (_typedNameBeforeSample case final typedName?) {
+          _typedNameBeforeSample = null;
+          _nameController.text = typedName;
+          bloc.add(MaterialCostItemTypeChanged(typedName));
+        }
         if (_nameController.text.trim().isEmpty) {
           _nameController.text = entry.itemName;
         }
