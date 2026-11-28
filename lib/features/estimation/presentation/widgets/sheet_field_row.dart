@@ -28,6 +28,11 @@ class SheetFieldRow extends StatelessWidget {
   /// Called when the row is tapped outside any button inside it.
   final VoidCallback? onTap;
 
+  /// The space between the value and the sheet's right edge. A row with a
+  /// button at its end passes [CoreSpacing.space5], so the button's tap area
+  /// ends where the divider ends.
+  final double trailingInset;
+
   static const _contentInset = CoreSpacing.space5 + 2;
 
   const SheetFieldRow({
@@ -37,6 +42,7 @@ class SheetFieldRow extends StatelessWidget {
     this.valueGap = CoreSpacing.space1,
     this.bottomPadding = CoreSpacing.space3,
     this.onTap,
+    this.trailingInset = _contentInset,
   });
 
   @override
@@ -55,7 +61,7 @@ class SheetFieldRow extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(
               _contentInset,
               CoreSpacing.space3,
-              _contentInset,
+              trailingInset,
               bottomPadding,
             ),
             child: Column(

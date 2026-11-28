@@ -45,6 +45,18 @@ class MaterialCostFormBloc
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialSavedRateRecalled>(_onSavedRateRecalled);
     on<MaterialNamePrefilled>(_onNamePrefilled);
+    on<MaterialRateLookedUp>(
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(
+          itemName: d.isItemNameValid ? d.itemName : e.entry.itemName,
+          rate: e.entry.rate.amount,
+          unit: e.entry.unit ?? d.unit,
+          rateStatus: RateStatus.ownRateConfirmed,
+          recalledRateId: e.entry.id,
+        ),
+      ),
+    );
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,
