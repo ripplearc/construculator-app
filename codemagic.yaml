@@ -2,10 +2,12 @@ workflows:
   pre-check:
     name: Pre-check
     instance_type: linux_x2
+    max_build_duration: 90
     environment:
       groups:
         - notification_emails
         - ripple_arc
+        - codemagic_api
     cache:
       cache_paths:
         - .fvm/
@@ -14,6 +16,9 @@ workflows:
         - ios/Pods
         - $FLUTTER_ROOT/.pub-cache
     scripts:
+      - name: Decide whether the iOS build is needed
+        script: |
+          bash scripts/ci/decide_ios_build.sh | tee "$HOME/ios_build_decision.txt"
       - name: Install FVM
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
@@ -44,6 +49,11 @@ workflows:
           command -v lcov >/dev/null || sudo apt-get install -y lcov
           bash scripts/ci/run_changed_tests_with_coverage.sh "${CM_PULL_REQUEST_DEST:-main}" coverage/changed
         test_report: coverage/changed/flutter.json
+
+      - name: Build iOS when needed
+        script: |
+          command -v jq >/dev/null || sudo apt-get install -y jq
+          bash scripts/ci/build_ios_when_needed.sh "${CM_BRANCH:-}" "$HOME/ios_build_decision.txt"
     publishing:
       email:
         recipients:
@@ -457,11 +467,6 @@ workflows:
         - $FLUTTER_ROOT/.pub-cache
         - /usr/local/Homebrew
     scripts:
-      - name: Decide whether the iOS build is needed
-        script: |
-          DECISION=$(bash scripts/ci/ios_build_needed.sh)
-          echo "iOS build: $DECISION"
-          echo "IOS_BUILD_DECISION=${DECISION%%:*}" >> "$CM_ENV"
       - name: Check for FORCE_FAIL
         script: |
           if [ "$FORCE_FAIL" = "true" ]; then
@@ -469,51 +474,25 @@ workflows:
             exit 1
           fi
       - name: Install FVM
-        script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
-          dart pub global activate fvm
+        script: dart pub global activate fvm
       - name: Install Flutter version via FVM
-        script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
-          fvm install
+        script: fvm install
       - name: Install Dependencies
         script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           fvm flutter pub get
       - name: Install iOS Dependencies
         script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
           cd ios
           pod install
           cd ..
       - name: Generate env file
         script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/generate_env_file.sh
           bash scripts/ci/generate_env_file.sh
       - name: Build Ios Debug
         script: |
-          if [ "$IOS_BUILD_DECISION" = "skip" ]; then
-            echo "Skipped: no iOS-related file changed."
-            exit 0
-          fi
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "📦 Pre-caching iOS artifacts..."
           fvm flutter precache --ios

@@ -171,32 +171,50 @@ When triggered, the workflow starts these Codemagic pipelines for the PR source 
 
 - `pre-check`
 - `comprehensive-check`
-- `ios-debug-build`
 
-The Comprehensive Check also runs everything the Pre-check runs (see below), so the separate Pre-check build only repeats machine start-up, analysis and the changed-test run. It is skipped when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`. The variable is unset today, so all three pipelines still start. Switch over in this order, because the GitHub ruleset "Merge to Main Branch" requires a `Pre-check` status from Codemagic:
+`#RunCheck` does not start `ios-debug-build`. The Pre-check starts it, and only when an iOS-related file changed (see below).
 
-1. A repository owner removes the `Pre-check` required status check from the ruleset "Merge to Main Branch". While Pre-check still runs, nothing is blocked.
-2. Set the variable: `gh variable set RUNCHECK_SKIP_PRECHECK --body true`.
-3. To go back, delete the variable: `gh variable delete RUNCHECK_SKIP_PRECHECK`. `#RunCheck` then starts all three pipelines again. Restore the required `Pre-check` status in the ruleset only after that. While it is required, a PR with no Pre-check status cannot merge.
+The Comprehensive Check also runs everything the Pre-check runs (see below), so a separate Pre-check build only repeats machine start-up, analysis and the changed-test run, and starts the iOS build. The Pre-check is skipped when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`. While it is `true`, no iOS build is decided or started on `#RunCheck`, `#RunCheck ios` forces nothing, and the job summary of the `#RunCheck` run says so. Check it with `gh variable list`. It was `true` when CA-1534 was written. The ruleset "Merge to Main Branch" has no required status checks. The required checks are "Comprehensive Check" (ruleset 4525023) and "Ios Debug Build" (ruleset 4720367), both from the Codemagic app only. Check them with `gh api repos/ripplearc/construculator-app/rules/branches/main`. Switch over in this order:
+
+1. To make the iOS check run again, delete the variable: `gh variable delete RUNCHECK_SKIP_PRECHECK`. `#RunCheck` then starts both pipelines.
+2. To skip the Pre-check again, set it: `gh variable set RUNCHECK_SKIP_PRECHECK --body true`. The iOS build is then not started by `#RunCheck`. Do this only if a required check still covers iOS.
 
 The `pre-check` workflow stays in `codemagic.yaml` for manual runs.
 
 The pipelines start independently through `scripts/ci/trigger_codemagic_builds.sh`. A failure in one does not stop the others from starting. If Codemagic rejects a request, or answers without a `buildId`, the workflow run turns red instead of reporting success.
 
-### Skipping the iOS build when no iOS-related file changed
+### Starting the iOS build only when an iOS-related file changed
 
-The `ios-debug-build` Codemagic workflow decides for itself whether it needs to build. Its first step runs `scripts/ci/ios_build_needed.sh`. The script fetches `main` (as `scripts/run_check.sh` does, because `#RunCheck` builds have no pull request destination), lists the files the commit changed since it left `main`, including the old name of a renamed file, and compares them with `scripts/ci/ios_build_paths.conf`. The list covers `ios/`, `pubspec.yaml`, `pubspec.lock`, `pubspec_overrides.yaml`, `.fvmrc`, `codemagic.yaml`, `.github/workflows/run_c_check.yml`, `assets/`, `config/`, `scripts/ci/`, `l10n.yaml`, `build.yaml` and `flutter_launcher_icons-*.yaml`.
+Codemagic has to start a Mac before the first step of `ios-debug-build` can run, even when the step then does nothing. The file check is a git command, so it runs in the Linux `pre-check` workflow, and the Pre-check starts the Mac build only when it is needed.
 
-- **When nothing iOS-related changed**, the first step writes `IOS_BUILD_DECISION=skip` to `$CM_ENV`. Codemagic has no "skip the remaining steps" switch, so every later step starts with a guard that reads the variable and exits at once. The build itself takes about a minute (the time for the Mac machine to start is not counted, and it waits in Codemagic's queue like any other build) and Codemagic still reports `Ios Debug Build` as passed, so the required check is never empty.
-- **Force it:** `#RunCheck ios` always runs the iOS build. `trigger_codemagic_builds.sh` reads the comment and sends `FORCE_IOS_BUILD=true` to Codemagic in the build request. Every other comment sends `false`. Both scripts read the comment words through `comment_has_runcheck_word` in `scripts/ci/runcheck_words.sh`. `plan_runcheck.sh` also treats `#RunCheck ios` as a force word for the iOS build only, so it runs again on a commit that already has an `Ios Debug Build` result (for example a skipped one). It never starts a second copy of an iOS build that is still running.
-- **It runs the iOS build when unsure:** a changed file that the list does not mention, a failed fetch of `main`, no common commit with `main`, a failed file listing, or no changed file at all. The last case is the nightly build, which runs on `main` itself.
-- **Off switch:** the script answers `skip` only when the variable `IOS_SKIP_ENABLED` is `true` in the build. Unset, empty or any other value always runs the iOS build. Set it as a variable in a Codemagic environment group the iOS workflow already uses (for example `ripple_arc`), and set it to `false` or delete it to go back to always building, with no pull request.
+1. **First step of the Pre-check:** `scripts/ci/decide_ios_build.sh` copies `ios_build_needed.sh` and `ios_build_paths.conf` from `origin/main` into a temporary folder and runs that copy on the checked-out commit. The copy fetches `main`, lists the files the commit changed since it left `main`, including the old name of a renamed file, and compares them with the list. The list covers `ios/`, `pubspec.yaml`, `pubspec.lock`, `pubspec_overrides.yaml`, `.fvmrc`, `codemagic.yaml`, `.github/workflows/run_c_check.yml`, `assets/`, `config/`, `scripts/ci/`, `l10n.yaml`, `build.yaml` and `flutter_launcher_icons-*.yaml`. The step keeps the one-line answer in `$HOME/ios_build_decision.txt`.
+2. **Last step of the Pre-check, "Build iOS when needed":** `scripts/ci/build_ios_when_needed.sh` reads that file. Only a line that starts with `skip:` ends the step at once. A missing file, an empty file or any other text builds. Otherwise `scripts/ci/start_ios_build_and_wait.sh` starts `ios-debug-build` on the same branch through the Codemagic API and polls the build every 30 seconds, at most 90 times (45 minutes). The step runs last on purpose: a Pre-check that fails early never starts a Mac build. The Linux Pre-check keeps running (and is billed) while it waits.
+3. **The Pre-check passes only if the Mac build finishes.** It fails when the Mac build fails, is canceled, times out or ends in any status the script does not know, when the Codemagic API answers with an error on start or while waiting, and when the build is still running after 90 polls. One failed poll fails the Pre-check at once.
+4. **The Mac build is canceled when the script stops while it may still run:** after a polling error, after the last poll, after a status word the script does not know, and on SIGTERM (SIGINT is handled the same way by bash but is not tested), which is what Codemagic is expected to send when the Pre-check is canceled (not verified). This is best effort. A Mac build can still be left running if the Pre-check runner is killed without a signal, if Codemagic does not send one, or if the start request times out after Codemagic accepted it (the script has no build id yet). The `pre-check` workflow has `max_build_duration: 90` (setup and tests, plus the 45-minute wait), so Codemagic ends a stuck Pre-check. With `RUNCHECK_DEDUPE` on, a newer `#RunCheck` also cancels queued and running builds on older commits of the pull request, Mac builds included.
+
+The `ios-debug-build` workflow no longer decides anything. Whoever starts it gets a full build. The Mac build is started by branch, so if a newer commit lands during the Pre-check, the Mac build tests the newer head while the Pre-check judged the older one. The Codemagic status words the wait script reads (`queued`, `preparing`, `fetching`, `testing`, `building`, `publishing`, `finishing` as running, `finished` as success) come from the Codemagic documentation and were not confirmed against a live response. Any other word fails the Pre-check, which is safe but can be a false red. Each poll prints the status, so the first real run shows the words.
+
+- **Rules come from `main`:** the path list and the decision script come from `origin/main`, so a pull request cannot loosen them for its own files. A change to either file only counts after it is merged. What a pull request does control is the glue: `codemagic.yaml`, `decide_ios_build.sh`, `build_ios_when_needed.sh` and `start_ios_build_and_wait.sh` run from the pull request commit, so a hostile branch could edit them to skip the Mac build. The guards are code-owner approval of `codemagic.yaml` and `scripts/ci/` (`.github/CODEOWNERS`, ruleset "Protect Config Files"), which acts only at merge time, after the build on the branch has already run. A Pre-check that skips the Mac build is therefore not proof for a pull request that edits these files.
+- **It builds when unsure:** a changed file that the list does not mention, a failed fetch of `main`, a missing or failing script or list on `main`, no common commit with `main`, a failed file listing, a decision other than `skip`, or no changed file at all. The last case is the nightly build, which runs on `main` itself.
+- **Force it:** `#RunCheck ios` always builds. `trigger_codemagic_builds.sh` reads the comment and sends `FORCE_IOS_BUILD=true` to the Pre-check. Every other comment sends `false`. Both scripts read the comment words through `comment_has_runcheck_word` in `scripts/ci/runcheck_words.sh`. `plan_runcheck.sh` treats `#RunCheck ios` as a force word for the Pre-check only, so the whole Pre-check (analysis and tests too, not only the iOS build) runs again on a commit that already has a Pre-check result. It never starts a second copy of a Pre-check that is still running. The nightly build starts `ios-debug-build` directly, and that workflow always builds.
+- **No variable can turn a build into a skip.** `FORCE_IOS_BUILD` can only force a build. The old `IOS_SKIP_ENABLED` switch and the `BASE_BRANCH` and `IOS_BUILD_PATHS_FILE` overrides are gone, so the decision depends on the git diff and the rules on `main` alone. To go back to always building, revert the change to `codemagic.yaml`.
 - **Safety net:** the nightly iOS build on `main` (see below). The Android build in the Comprehensive Check is not skipped. It still compiles the Dart code on every comment, which is why leaving out the iOS build is safe.
 - **New top-level paths:** `ios_build_needed_test.sh` fails until every top-level path in the repository is classified in `ios_build_paths.conf`, so a new directory cannot be forgotten.
 
-Only Codemagic posts the `Ios Debug Build` result. No GitHub Actions workflow posts it, so a workflow pushed to a side branch cannot fake it.
+Only Codemagic posts the `Ios Debug Build` result. No GitHub Actions workflow posts it, so a workflow pushed to a side branch cannot fake it. A pull request with no iOS-related file has no `Ios Debug Build` check at all.
 
-**Owner action: one.** Add `IOS_SKIP_ENABLED=true` to a Codemagic environment group the iOS workflow uses, when the skip should start. Until then every iOS build runs in full. Leave the source of the required check "Ios Debug Build" as Codemagic only, and change no ruleset or repository variable for it.
+**Owner actions, in this order, all before or on the day the pull request merges:**
+
+1. Create a Codemagic API token with the least role that can start and cancel builds and read them (a bot user's token is better than a personal one). Add it as a secure variable named `CODEMAGIC_API_TOKEN` to a new Codemagic environment group `codemagic_api`. Only the `pre-check` workflow imports that group. The group is imported for the whole Pre-check, so any code the build runs (tests, pub hooks, `codemagic.yaml`) can read the token. Treat it as readable by anyone who can push a branch, and rotate it on a schedule. The Pre-check takes the app id from `CM_PROJECT_ID`, so no second variable is needed. The group must exist before the merge, or the Pre-check build cannot start.
+2. Delete the repository variable `RUNCHECK_SKIP_PRECHECK` if it is `true` (see above), so the Pre-check runs on `#RunCheck`.
+3. Add `Pre-check` to the required status checks, with Codemagic as its only source. Today it is not required, so a red Pre-check, which now includes the Mac build, does not block a merge.
+4. Only then remove "Ios Debug Build" from the required checks. Never set the source of a required check to "Any source". Until this is done, a pull request with no iOS file has no "Ios Debug Build" check and cannot merge, so do steps 2 to 4 on the day of the merge.
+5. `IOS_SKIP_ENABLED` is no longer read. Delete it from the Codemagic group where it was set.
+6. Tell the authors of open pull requests to rebase on `main` before they rely on the missing "Ios Debug Build" check. Codemagic reads `codemagic.yaml` from the branch it builds, so a branch based on the old `main` has a Pre-check with no iOS steps, and `#RunCheck` no longer starts `ios-debug-build` for it. The ruleset does not require branches to be up to date, so such a pull request can merge with no iOS build.
+
+**The `codemagic_api` group and the branch builds:** every Pre-check build of a branch that contains this change needs the group to exist, including the real runs below.
+
+**Showing it before the merge:** a `#RunCheck` comment runs `run_c_check.yml` from `main` (comment workflows use the default branch), which still starts `ios-debug-build` next to the Pre-check. Use `gh workflow run run_c_check.yml --ref <branch> -f pr_number=<N> -f dry_run=false` instead. The test branches must contain this change, because Codemagic reads `codemagic.yaml` from the branch it builds. Until this change is merged, `origin/main` still holds the old decision script, which skips only when `IOS_SKIP_ENABLED` is `true` in the build's groups. Set it in `ripple_arc` for the skip run, or show that case on the first pull request after the merge.
 
 A change to a workflow file, to `.github/CODEOWNERS`, or to another protected file needs a code owner's approval in a pull request to `main` (ruleset "Protect Config Files"). `.github/CODEOWNERS` covers all of `.github/workflows/` and `scripts/ci/`.
 
@@ -253,8 +271,9 @@ CI mirrors this quick check:
   - A change with no `lib/` file, for example only `scripts/`, passes (CA-1033).
   - The base is the pull request target. When there is none, as for `#RunCheck`, it is `main`. `#RunCheck` starts builds by branch, so Codemagic gives no pull request target, and the script never compares against an empty branch name. If it cannot find the merge base it fails. It never treats that as "no tests changed".
 - Publishes the test report to `coverage/changed/flutter.json`.
+- Decides whether an iOS-related file changed (first step) and, when one did, starts the Mac build and waits for it (last step).
 
-The Comprehensive Check runs the same changed-test step, so `#RunCheck` does not need this workflow once `RUNCHECK_SKIP_PRECHECK` is `true`.
+The Pre-check also decides whether an iOS-related file changed (first step) and starts and waits for the Mac `ios-debug-build` when one did (last step); see "Starting the iOS build only when an iOS-related file changed". The Comprehensive Check runs the same changed-test step, but not the iOS steps, so skipping the Pre-check with `RUNCHECK_SKIP_PRECHECK` also drops the iOS check.
 
 If this passes, proceed to full validation with `--all` or `--comp`.
 
@@ -318,6 +337,8 @@ CI validates iOS builds separately:
 - Pre-caches iOS artifacts and builds the iOS debug app with `--no-codesign --flavor fishfood --dart-define=ENVIRONMENT=dev`.
 - Exports iOS debug artifact (`.app`).
 
+The Pre-check starts this workflow when an iOS-related file changed (see "Starting the iOS build only when an iOS-related file changed"). The workflow always builds when it starts.
+
 Building every iOS flavor in CI is tracked separately in CA-934. `--no-codesign`
 means no provisioning profile or certificate is selected, so there is nothing to
 resolve per flavor here; that applies once a signed iOS workflow exists.
@@ -371,6 +392,7 @@ The CI builds use environment-specific configuration files generated from Codema
 **Workflow mapping:**
 
 - `comprehensive-check`, `periodic-check`, `ios-debug-build` → use `construculator_dev`
+- `pre-check` → uses `ripple_arc` and `codemagic_api`, which holds `CODEMAGIC_API_TOKEN` for the iOS build it starts
 - `dogfood-release` → uses `construculator_qa`
 
 **Adding new environment variables:**

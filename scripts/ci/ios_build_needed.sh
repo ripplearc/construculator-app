@@ -7,21 +7,20 @@ set -euo pipefail
 #
 # Prints one line on stdout: "run: <reason>" or "skip: <reason>".
 # "skip" is printed only when the commit changes at least one file compared with
-# the base branch and every changed file is listed as not iOS-related in
-# ios_build_paths.conf. A file the list does not mention, an empty diff (for
-# example the nightly build on main) and anything else the script cannot
-# establish answers "run".
+# origin/main and every changed file is listed as not iOS-related in
+# ios_build_paths.conf, next to this script. A file the list does not mention,
+# an empty diff (for example the nightly build on main) and anything else the
+# script cannot establish answers "run".
 #
 # --classify prints "ios", "other" or "unknown" for one path.
 #
 # Environment:
 #   FORCE_IOS_BUILD   "true" always answers "run" (set by #RunCheck ios)
-#   IOS_SKIP_ENABLED  "true" lets the script answer "skip"; anything else, or
-#                     unset, always answers "run" (the off switch)
-#   BASE_BRANCH       branch to compare with, defaults to main
+# No variable can make the script answer "skip".
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PATHS_FILE="${IOS_BUILD_PATHS_FILE:-$SCRIPT_DIR/ios_build_paths.conf}"
+PATHS_FILE="$SCRIPT_DIR/ios_build_paths.conf"
+BASE_BRANCH=main
 
 # Prints "ios", "other" or "unknown", then the matching pattern.
 classify() {
@@ -49,8 +48,6 @@ if [ "${1:-}" = "--classify" ]; then
   exit 0
 fi
 
-BASE_BRANCH="${BASE_BRANCH:-main}"
-
 run_because() {
   echo "run: $1"
   exit 0
@@ -58,10 +55,6 @@ run_because() {
 
 if [ "${FORCE_IOS_BUILD:-false}" = "true" ]; then
   run_because "FORCE_IOS_BUILD is true (#RunCheck ios)"
-fi
-
-if [ "${IOS_SKIP_ENABLED:-false}" != "true" ]; then
-  run_because "IOS_SKIP_ENABLED is not true, so skipping is switched off"
 fi
 
 # #RunCheck builds have no pull request destination, so the base is fetched by

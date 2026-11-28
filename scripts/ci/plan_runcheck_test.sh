@@ -133,10 +133,10 @@ set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed failure 
 run_target
 assert_true "skips a workflow that already failed on the head commit" field_is .skip '["comprehensive-check"]'
 
-set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' in_progress null b2)"
+set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' in_progress null b2)"
 run_target
-assert_true "skips a workflow that is still running" field_is .skip '["ios-debug-build"]'
-assert_true "says it is still running" comment_contains "Ios Debug Build: still running"
+assert_true "skips a workflow that is still running" field_is .skip '["comprehensive-check"]'
+assert_true "says it is still running" comment_contains "Comprehensive Check: still running"
 
 set_runs headsha0123456 "$(run_json $CM 'Pre-check' queued null b3)"
 run_target
@@ -164,9 +164,13 @@ set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed cancelle
 run_target
 assert_true "skips when any run on the commit finished, even after a canceled one" field_is .skip '["comprehensive-check"]'
 
-set_runs headsha0123456 "$(run_json $CM 'Pre-check' completed success b4)" "$(run_json $CM 'Ios Debug Build' completed failure b5)"
+set_runs headsha0123456 "$(run_json $CM 'Pre-check' completed success b4)" "$(run_json $CM 'Comprehensive Check' completed failure b5)"
 run_target
-assert_true "decides each workflow on its own result" field_is .skip '["pre-check","ios-debug-build"]'
+assert_true "decides each workflow on its own result" field_is .skip '["pre-check","comprehensive-check"]'
+
+set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' completed success b6)"
+run_target
+assert_true "does not plan the iOS build, which only the Pre-check starts" field_is .skip '[]'
 
 run_target comprehensive-check
 assert_true "only considers the workflows it is given" field_is .skip '[]'
@@ -182,17 +186,17 @@ set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' in_progress null b
 COMMENT_BODY="#runcheck FORCE" run_target
 assert_true "force never starts a second copy of a running workflow" field_is .skip '["comprehensive-check"]'
 
-set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' completed success b1)" "$(run_json $CM 'Comprehensive Check' completed success b2)"
+set_runs headsha0123456 "$(run_json $CM 'Pre-check' completed success b1)" "$(run_json $CM 'Comprehensive Check' completed success b2)"
 COMMENT_BODY="#RunCheck ios" run_target
-assert_true "#RunCheck ios starts a finished iOS build again and nothing else" field_is .skip '["comprehensive-check"]'
+assert_true "#RunCheck ios starts a finished Pre-check again and nothing else" field_is .skip '["comprehensive-check"]'
 
-set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' in_progress null b1)"
+set_runs headsha0123456 "$(run_json $CM 'Pre-check' in_progress null b1)"
 COMMENT_BODY="#RunCheck ios" run_target
-assert_true "#RunCheck ios never starts a second copy of a running iOS build" field_is .skip '["ios-debug-build"]'
+assert_true "#RunCheck ios never starts a second copy of a running Pre-check" field_is .skip '["pre-check"]'
 
-set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' completed success b1)"
+set_runs headsha0123456 "$(run_json $CM 'Pre-check' completed success b1)"
 COMMENT_BODY="#RunCheck iosx" run_target
-assert_true "does not read #RunCheck iosx as the iOS force word" field_is .skip '["ios-debug-build"]'
+assert_true "does not read #RunCheck iosx as the iOS force word" field_is .skip '["pre-check"]'
 
 set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed success b1)"
 COMMENT_BODY="#RunCheck forced" run_target

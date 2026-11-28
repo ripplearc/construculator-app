@@ -12,6 +12,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TARGET="${SCRIPT_DIR}/trigger_codemagic_builds.sh"
 
 FAILURES=0
@@ -110,7 +111,7 @@ body_field_is() { [ "$(jq -r "$2" "${WORK_DIR}/calls/body.$1")" = "$3" ]; }
 export CODEMAGIC_API_TOKEN="test-token"
 export CODEMAGIC_APP_ID="test-app"
 
-run_target ok feature/x pre-check comprehensive-check ios-debug-build
+run_target ok feature/x pre-check comprehensive-check periodic-check
 assert_true "starts every workflow when the API accepts them" exit_code_is 0
 assert_true "sends one request per workflow" requests_sent 3
 assert_true "sends the workflow id" body_field_is 2 .workflowId comprehensive-check
@@ -123,12 +124,12 @@ assert_true "posts to /builds" args_contain 1 "https://api.codemagic.io/builds"
 assert_true "fails on an HTTP error" args_contain 1 "--fail-with-body"
 
 for forcing in "#RunCheck ios" "please #RunCheck ios now" "#runcheck   IOS"; do
-  COMMENT_BODY="$forcing" run_target ok feature/x ios-debug-build
+  COMMENT_BODY="$forcing" run_target ok feature/x pre-check
   assert_true "forces the iOS build for the comment '$forcing'" body_field_is 1 .environment.variables.FORCE_IOS_BUILD true
 done
 
 for plain in "#RunCheck" "#RunCheck iosx" "see issue#RunCheck ios" "#RunCheck force" $'#RunCheck\nios'; do
-  COMMENT_BODY="$plain" run_target ok feature/x ios-debug-build
+  COMMENT_BODY="$plain" run_target ok feature/x pre-check
   assert_true "does not force the iOS build for the comment '$plain'" body_field_is 1 .environment.variables.FORCE_IOS_BUILD false
 done
 
@@ -173,14 +174,14 @@ assert_true "dry run shows the request body" output_contains '"workflowId":"comp
 export CODEMAGIC_API_TOKEN="test-token"
 export CODEMAGIC_APP_ID="test-app"
 
-SKIP_WORKFLOWS="pre-check" run_target ok feature/x pre-check comprehensive-check ios-debug-build
+SKIP_WORKFLOWS="pre-check" run_target ok feature/x pre-check comprehensive-check periodic-check
 assert_true "starts the remaining workflows when one is skipped" exit_code_is 0
 assert_true "sends one request fewer" requests_sent 2
 assert_true "does not send the skipped workflow" body_field_is 1 .workflowId comprehensive-check
 assert_true "says which workflow it skipped" output_contains "Skipping pre-check"
 assert_true "records the skip in the job summary" summary_contains "Skipped \`pre-check\`"
 
-SKIP_WORKFLOWS="pre-check ios-debug-build" run_target ok feature/x pre-check comprehensive-check ios-debug-build
+SKIP_WORKFLOWS="pre-check periodic-check" run_target ok feature/x pre-check comprehensive-check periodic-check
 assert_true "can skip more than one workflow" requests_sent 1
 
 SKIP_WORKFLOWS="pre" run_target ok feature/x pre-check
@@ -191,6 +192,11 @@ assert_true "an empty skip list skips nothing" requests_sent 2
 
 run_target ok feature/x
 assert_true "rejects a call with no workflow ids" exit_code_is 2
+
+assert_true "#RunCheck does not start the iOS build itself, the Pre-check does" \
+  bash -c "! grep -q ios-debug-build '$REPO_ROOT/.github/workflows/run_c_check.yml'"
+assert_true "the nightly build still starts the iOS build, which then always builds" \
+  grep -Fq "trigger_codemagic_builds.sh main ios-debug-build" "$REPO_ROOT/.github/workflows/nightly_ios_build.yml"
 
 if [ "$FAILURES" -gt 0 ]; then
   echo "❌ ${FAILURES} case(s) failed"

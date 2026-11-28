@@ -5,7 +5,7 @@ set -euo pipefail
 # request head commit, and which builds on older commits of the pull request are
 # still queued or running.
 # Usage: ./scripts/ci/plan_runcheck.sh [workflow-id...]
-#        (default: pre-check comprehensive-check ios-debug-build)
+#        (default: pre-check comprehensive-check)
 #
 # Prints one JSON object on stdout: {"skip": [...], "cancel": [...], "comment": "..."}
 #   skip     workflow ids that must not be started again
@@ -18,7 +18,7 @@ set -euo pipefail
 # its name that is queued, running, successful or failed. A canceled or timed-out
 # run is not a result. `#RunCheck force` in the comment starts a workflow again
 # after a finished run, but never while one is still running. `#RunCheck ios`
-# does the same for ios-debug-build only.
+# does the same for pre-check only, because the Pre-check starts the iOS build.
 #
 # Environment:
 #   GH_REPO, GITHUB_TOKEN, PR_NUMBER, HEAD_SHA   required
@@ -39,7 +39,7 @@ CODEMAGIC_APP_SLUG="codemagic-ci-cd"
 OLDER_COMMITS_TO_CHECK=10
 
 if [ "$#" -eq 0 ]; then
-  set -- pre-check comprehensive-check ios-debug-build
+  set -- pre-check comprehensive-check
 fi
 
 api_get() {
@@ -53,7 +53,6 @@ check_name_of() {
   case "$1" in
     pre-check) echo "Pre-check" ;;
     comprehensive-check) echo "Comprehensive Check" ;;
-    ios-debug-build) echo "Ios Debug Build" ;;
     *) return 1 ;;
   esac
 }
@@ -75,7 +74,7 @@ if HEAD_RUNS=$(api_get "commits/$HEAD_SHA/check-runs?per_page=100") &&
   for WORKFLOW_ID in "$@"; do
     CHECK_NAME=$(check_name_of "$WORKFLOW_ID") || continue
     WORKFLOW_FORCE=$FORCE
-    if [ "$WORKFLOW_ID" = "ios-debug-build" ] && [ "$FORCE_IOS" = "true" ]; then
+    if [ "$WORKFLOW_ID" = "pre-check" ] && [ "$FORCE_IOS" = "true" ]; then
       WORKFLOW_FORCE=true
     fi
     VERDICT=$(jq -r --arg app "$CODEMAGIC_APP_SLUG" --arg name "$CHECK_NAME" --arg force "$WORKFLOW_FORCE" '
