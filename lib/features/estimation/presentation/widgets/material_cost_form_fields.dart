@@ -391,9 +391,8 @@ class _RateLookupHint extends StatelessWidget {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     final searchIcon = l10n.materialRateLookupHintSearchIcon;
-    final [before, after] = l10n
-        .materialRateLookupHint(searchIcon)
-        .split(searchIcon);
+    final hint = l10n.materialRateLookupHint(searchIcon);
+    final at = hint.indexOf(searchIcon);
     return Padding(
       key: const Key('material_rate_lookup_hint'),
       padding: const EdgeInsets.fromLTRB(
@@ -414,16 +413,19 @@ class _RateLookupHint extends StatelessWidget {
           Expanded(
             child: Text.rich(
               TextSpan(
-                children: [
-                  TextSpan(text: before),
-                  TextSpan(
-                    text: searchIcon,
-                    style: textTheme.bodySmallSemiBold.copyWith(
-                      color: colorTheme.textHeadline,
-                    ),
-                  ),
-                  TextSpan(text: after),
-                ],
+                // A translation without the bold words shows as plain text.
+                children: at < 0
+                    ? [TextSpan(text: hint)]
+                    : [
+                        TextSpan(text: hint.substring(0, at)),
+                        TextSpan(
+                          text: searchIcon,
+                          style: textTheme.bodySmallSemiBold.copyWith(
+                            color: colorTheme.textHeadline,
+                          ),
+                        ),
+                        TextSpan(text: hint.substring(at + searchIcon.length)),
+                      ],
               ),
               style: textTheme.bodySmallRegular.copyWith(
                 color: colorTheme.textBody,

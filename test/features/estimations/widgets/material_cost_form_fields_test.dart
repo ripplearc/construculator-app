@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/helpers/unit_dis
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
@@ -17,6 +18,7 @@ import 'package:construculator/libraries/storage/testing/fake_storage_service.da
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -87,6 +89,8 @@ void main() {
     Widget? trailing,
     YourRateEntry? initialRateEntry,
     String? initialName,
+    List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+        AppLocalizations.localizationsDelegates,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -94,7 +98,7 @@ void main() {
       MaterialApp(
         theme: theme ?? CoreTheme.light(),
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<MaterialCostFormBloc>.value(
@@ -1119,6 +1123,27 @@ void main() {
       );
     });
 
+    testWidgets('a translation without the bold words shows the hint as '
+        'plain text', (tester) async {
+      await pumpFields(
+        tester,
+        localizationsDelegates: [
+          const _HintWithoutBoldWordsDelegate(),
+          ...AppLocalizations.localizationsDelegates,
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.descendant(
+          of: hint,
+          matching: find.text(_HintWithoutBoldWords.hint, findRichText: true),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a typed rate removes the search button and the hint', (
       tester,
     ) async {
@@ -1226,4 +1251,26 @@ void main() {
       expect(lookupButton, findsOneWidget);
     });
   });
+}
+
+class _HintWithoutBoldWords extends AppLocalizationsEn {
+  static const hint = 'Never priced this? Look it up in the cost file.';
+
+  @override
+  String materialRateLookupHint(String searchIcon) => hint;
+}
+
+class _HintWithoutBoldWordsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _HintWithoutBoldWordsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<AppLocalizations> load(Locale locale) =>
+      SynchronousFuture(_HintWithoutBoldWords());
+
+  @override
+  bool shouldReload(_HintWithoutBoldWordsDelegate old) => false;
 }
