@@ -16,7 +16,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// screen 4). Opens searched on [initialQuery] and lists the matching Your
 /// rates under YOUR RATES; the previous rows stay on screen while a search
 /// runs. Tapping a row only selects it; the button at the foot stays greyed
-/// out as "Use rate" until a row is picked, then returns that rate.
+/// out as "Use rate" until a row is picked, then returns that rate. A search
+/// with no match shows one "No matches" line and no button: there is no way
+/// to create an entry here.
 ///
 /// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here too, under a FROM SAMPLE COST FILE heading below YOUR RATES, once a real data source exists.
 class MaterialRateLookupSheet extends StatefulWidget {
@@ -72,6 +74,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 
   List<YourRateEntry> _shownEntries = const [];
   String? _selectedId;
+  bool _retrying = false;
 
   @override
   void initState() {
@@ -89,11 +92,21 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     YourRatesSearched(query, category: CostItemType.material),
   );
 
+  void _retry() {
+    setState(() => _retrying = true);
+    _search(_searchController.text);
+  }
+
   void _onRowTap(YourRateEntry entry) =>
       setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
 
   void _onStateChanged(BuildContext context, YourRatesState state) {
+    if (state is YourRatesError) {
+      _retrying = false;
+      _shownEntries = const [];
+    }
     if (state is! YourRatesSearchResults) return;
+    _retrying = false;
     _shownEntries = state.results;
     if (!state.results.any((entry) => entry.id == _selectedId)) {
       _selectedId = null;
@@ -108,8 +121,10 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
       builder: (context, state) {
         final entries = switch (state) {
           YourRatesSearchResults(:final results) => results,
+          YourRatesError() => const <YourRateEntry>[],
           _ => _shownEntries,
         };
+        final hasReadError = state is YourRatesError || _retrying;
         final selected = entries
             .where((entry) => entry.id == _selectedId)
             .firstOrNull;
@@ -145,7 +160,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                         ),
                         // TODO: [CA-1482] show CoreUI's progress bar here while a search runs, above the rows kept from the last search. https://ripplearc.youtrack.cloud/issue/CA-1482
                         const SizedBox(height: CoreSpacing.space6),
-                        if (entries.isNotEmpty)
+                        if (entries.isNotEmpty || hasReadError)
                           Padding(
                             padding: _textInset.copyWith(
                               bottom: CoreSpacing.space2,
@@ -153,6 +168,40 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             child: Text(
                               l10n.yourRatesName.toUpperCase(),
                               style: context.textTheme.bodySmallSemiBold
+                                  .copyWith(color: context.colorTheme.textBody),
+                            ),
+                          ),
+                        if (hasReadError)
+                          Padding(
+                            padding: _textInset.copyWith(
+                              top: CoreSpacing.space1,
+                            ),
+                            child: CoreInlineErrorRow(
+                              key: const Key('your_rates_load_error'),
+                              message: l10n.yourRatesLoadError,
+                              actionLabel: l10n.yourRatesTryAgain,
+                              actionKey: const Key(
+                                'your_rates_try_again_button',
+                              ),
+                              isActionDisabled: _retrying,
+                              onAction: _retry,
+                            ),
+                          )
+                        else if (entries.isEmpty &&
+                            state is YourRatesSearchResults &&
+                            state.query.trim().isNotEmpty)
+                          Padding(
+                            key: const Key('material_lookup_no_match'),
+                            padding: const EdgeInsets.fromLTRB(
+                              CoreSpacing.space2,
+                              CoreSpacing.space3,
+                              CoreSpacing.space2,
+                              CoreSpacing.space6,
+                            ),
+                            child: Text(
+                              l10n.yourRatesNoMatchState(state.query),
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.bodyMediumRegular
                                   .copyWith(color: context.colorTheme.textBody),
                             ),
                           ),
