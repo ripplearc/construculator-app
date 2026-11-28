@@ -21,7 +21,7 @@ import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const size = Size(390.0, 300.0);
-  const openWasteSize = Size(390.0, 480.0);
+  const openWasteSize = Size(390.0, 520.0);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeSupabaseWrapper fakeSupabase;
@@ -157,6 +157,15 @@ void main() {
       'waste_zero': (tester) async {
         await openWaste(tester);
         await typeWaste(tester, '0');
+      },
+      'waste_note_typed': (tester) async {
+        await openWaste(tester);
+        await tester.enterText(
+          find.byKey(const Key('material_note_field')),
+          'Bedroom walls only, two coats',
+        );
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
       },
     };
     for (final entry in wasteStates.entries) {

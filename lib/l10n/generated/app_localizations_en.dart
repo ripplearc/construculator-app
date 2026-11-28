@@ -2868,6 +2868,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get materialAddNoteLink => 'Add note';
+
+  @override
+  String get materialNoteLabel => 'Note';
+
+  @override
+  String get materialNotePlaceholder => 'Add a note (optional)';
+
+  @override
   String get materialWasteLabel => 'Waste';
 
   @override

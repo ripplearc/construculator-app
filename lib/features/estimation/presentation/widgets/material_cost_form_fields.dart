@@ -33,7 +33,6 @@ final RegExp _wasteDigits = RegExp(r'^\d{0,3}(\.\d?)?$');
 ///
 // TODO: [CA-1184] open a picked saved rate on the quantity-only screen instead of this full form. https://ripplearc.youtrack.cloud/issue/CA-1184
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
-// TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
   /// Where Quantity, Rate and Waste put the app's own number pad. While one
   /// of them has focus it holds that field's [NumberPadSession], and the
@@ -80,6 +79,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     text: MaterialCostFormData.newMaterialWastePercent.toStringAsFixed(0),
   );
   final _wasteFocus = FocusNode();
+  final _noteController = TextEditingController();
+  final _noteFocus = FocusNode();
   bool _wasteExpanded = false;
   late final _quantityFormatter = _decimalLimitFormatter(decimals: 4);
   late final _rateFormatter = _decimalLimitFormatter(decimals: 2);
@@ -116,10 +117,10 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         (value) => _bloc.add(MaterialWasteUpdated(value)),
         shown: context.l10n.numberPadWasteValue,
       );
-      // Storyboard CUJ 4 "Backspaced empty": an emptied waste folds on blur.
-      if (!_wasteFocus.hasFocus && _bloc.state.data.wastePercent == null) {
-        setState(() => _wasteExpanded = false);
-      }
+      if (!_wasteFocus.hasFocus) _foldEmptiedWaste();
+    });
+    _noteFocus.addListener(() {
+      if (!_noteFocus.hasFocus) _foldEmptiedWaste();
     });
     if (widget.editedItem case final item?) {
       _fillFromEditedItem(item);
@@ -133,6 +134,13 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     }
   }
 
+  void _foldEmptiedWaste() {
+    // Storyboard CUJ 4 "Backspaced empty": fold once focus leaves the row.
+    if (_wasteFocus.hasFocus || _noteFocus.hasFocus) return;
+    if (_bloc.state.data.wastePercent != null) return;
+    setState(() => _wasteExpanded = false);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -143,6 +151,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     _rateFocus.dispose();
     _wasteController.dispose();
     _wasteFocus.dispose();
+    _noteController.dispose();
+    _noteFocus.dispose();
     super.dispose();
   }
 
@@ -288,23 +298,42 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               : DisplayFormatter.formatPercent(waste),
           expanded: _wasteExpanded,
           onToggle: _toggleWasteRow,
-          child: CoreUnderlineTextField(
-            key: const Key('material_waste_field'),
-            size: CoreUnderlineTextFieldSize.compact,
-            label: l10n.materialWasteLabel,
-            controller: _wasteController,
-            focusNode: _wasteFocus,
-            readOnly: isSaving,
-            keyboardType: _numberKeyboard,
-            inputFormatters: [_wasteFormatter],
-            suffixText: '%',
-            selectAllOnFocus: true,
-            onChanged: (value) => _bloc.add(MaterialWasteUpdated(value)),
-            helperText: switch (waste) {
-              null => l10n.materialWasteNoSuggestionHint,
-              _ when data.isWasteSuggested => l10n.materialWasteSuggestedHint,
-              _ => null,
-            },
+          actionLabel: l10n.materialAddNoteLink,
+          onAction: _openNoteField,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CoreUnderlineTextField(
+                key: const Key('material_waste_field'),
+                size: CoreUnderlineTextFieldSize.compact,
+                label: l10n.materialWasteLabel,
+                controller: _wasteController,
+                focusNode: _wasteFocus,
+                readOnly: isSaving,
+                keyboardType: _numberKeyboard,
+                inputFormatters: [_wasteFormatter],
+                suffixText: '%',
+                selectAllOnFocus: true,
+                onChanged: (value) => _bloc.add(MaterialWasteUpdated(value)),
+                helperText: switch (waste) {
+                  null => l10n.materialWasteNoSuggestionHint,
+                  _ when data.isWasteSuggested =>
+                    l10n.materialWasteSuggestedHint,
+                  _ => null,
+                },
+              ),
+              const SizedBox(height: CoreSpacing.space4),
+              CoreUnderlineTextField(
+                key: const Key('material_note_field'),
+                size: CoreUnderlineTextFieldSize.compact,
+                label: l10n.materialNoteLabel,
+                hintText: l10n.materialNotePlaceholder,
+                controller: _noteController,
+                focusNode: _noteFocus,
+                readOnly: isSaving,
+                onChanged: (value) => _bloc.add(MaterialNoteUpdated(value)),
+              ),
+            ],
           ),
         );
       },
@@ -312,8 +341,16 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   }
 
   void _toggleWasteRow() {
-    if (_wasteExpanded) _wasteFocus.unfocus();
+    if (_wasteExpanded) {
+      _wasteFocus.unfocus();
+      _noteFocus.unfocus();
+    }
     setState(() => _wasteExpanded = !_wasteExpanded);
+  }
+
+  void _openNoteField() {
+    setState(() => _wasteExpanded = true);
+    _noteFocus.requestFocus();
   }
 
   void _showAttachedRate(MaterialCostFormData data) {
@@ -375,6 +412,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       final waste? => formatTrimmedNumber(waste),
       null => '',
     };
+    _noteController.text = item.description ?? '';
   }
 
   bool _isSaving(MaterialCostFormState state) =>

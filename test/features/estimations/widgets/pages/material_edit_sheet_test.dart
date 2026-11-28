@@ -247,6 +247,32 @@ void main() {
       expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
     });
 
+    testWidgets('shows the stored note in the note field', (tester) async {
+      await openEditSheet(
+        tester,
+        line: MaterialCostItem(
+          id: 'item-1',
+          estimateId: 'estimate-1',
+          itemName: 'Rebar',
+          calculation: const {'unit_price': 100.0, 'quantity': 5.0},
+          itemTotalCost: 500.0,
+          createdAt: DateTime.utc(2024),
+          updatedAt: DateTime.utc(2024),
+          currency: 'USD',
+          unitPrice: const Money(amount: 100.0),
+          quantity: const Quantity(value: 5.0, unit: Unit.pieces),
+          rateStatus: RateStatus.ownRateConfirmed,
+          quantityProvenance: QuantityProvenance.manual,
+          description: 'Back wall only',
+        ),
+      );
+      await tester.tap(find.text('Waste —', findRichText: true));
+      await tester.pumpAndSettle();
+
+      expect(inField('material_note_field', 'Back wall only'), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
+    });
+
     testWidgets('offers Save this line and says no change yet', (tester) async {
       await openEditSheet(tester);
 

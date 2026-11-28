@@ -4202,6 +4202,18 @@
       }
     }
   },
+  "materialAddNoteLink": "Add note",
+  "@materialAddNoteLink": {
+    "description": "Link on the material waste row that opens the row and puts the cursor in the note field"
+  },
+  "materialNoteLabel": "Note",
+  "@materialNoteLabel": {
+    "description": "Label of the optional note field on the material waste row; the note is saved as the line's description"
+  },
+  "materialNotePlaceholder": "Add a note (optional)",
+  "@materialNotePlaceholder": {
+    "description": "Placeholder of the empty material note field"
+  },
   "materialWasteLabel": "Waste",
   "@materialWasteLabel": {
     "description": "Label of the material waste row and of its percentage field"

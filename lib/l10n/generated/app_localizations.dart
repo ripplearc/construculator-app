@@ -4860,6 +4860,24 @@ abstract class AppLocalizations {
   /// **'{value}%'**
   String numberPadWasteValue(String value);
 
+  /// Link on the material waste row that opens the row and puts the cursor in the note field
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get materialAddNoteLink;
+
+  /// Label of the optional note field on the material waste row; the note is saved as the line's description
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get materialNoteLabel;
+
+  /// Placeholder of the empty material note field
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get materialNotePlaceholder;
+
   /// Label of the material waste row and of its percentage field
   ///
   /// In en, this message translates to:

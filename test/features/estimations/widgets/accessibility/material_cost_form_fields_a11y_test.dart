@@ -103,8 +103,19 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('a11y: the open waste field reads as a text field labelled '
-        'Waste', (tester) async {
+    testWidgets('a11y: the Add note link meets tap target and label '
+        'guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.bySemanticsLabel('Add note'),
+      );
+    });
+
+    testWidgets('a11y: the open waste and note fields read as text fields '
+        'with their labels', (tester) async {
       await setupA11yTest(tester);
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(makeWidget(CoreTheme.light()));
@@ -119,6 +130,14 @@ void main() {
       );
       expect(semantics.flagsCollection.isTextField, isTrue);
       expect(semantics.label, contains('Waste'));
+      final note = tester.getSemantics(
+        find.descendant(
+          of: find.byKey(const Key('material_note_field')),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(note.flagsCollection.isTextField, isTrue);
+      expect(note.label, contains('Note'));
       handle.dispose();
     });
 
