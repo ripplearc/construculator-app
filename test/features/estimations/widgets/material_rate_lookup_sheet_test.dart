@@ -153,7 +153,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('your_rate_row_screws')),
-          matching: find.text('\$18.00 /Boxes', findRichText: true),
+          matching: find.text('\$18.00 /bx', findRichText: true),
         ),
         findsOneWidget,
       );

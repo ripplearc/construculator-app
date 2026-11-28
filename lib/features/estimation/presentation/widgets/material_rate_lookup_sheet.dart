@@ -136,7 +136,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
   String? _unitSuffix(BuildContext context, YourRateEntry entry) =>
       switch (entry.unit) {
         final unit? => context.l10n.materialRatePerUnitSuffix(
-          unit.displayName(context.l10n),
+          unit.symbol(context.l10n),
         ),
         null => null,
       };
