@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/number_p
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -27,6 +28,7 @@ const double _nameBottomPadding = 6;
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
+// TODO: [CA-1184] open a picked saved rate on the quantity-only screen instead of this full form. https://ripplearc.youtrack.cloud/issue/CA-1184
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
@@ -44,11 +46,21 @@ class MaterialCostFormFields extends StatefulWidget {
   /// fields from, or `null` when the form adds a new line.
   final MaterialCostItem? editedItem;
 
+  /// A rate picked on the Your recents sheet before the form opened. Fills the
+  /// name, rate and unit.
+  final YourRateEntry? initialRateEntry;
+
+  /// A name typed on the Your recents search before the form opened. Fills the
+  /// name and leaves the rate empty. Ignored when [initialRateEntry] is set.
+  final String? initialName;
+
   const MaterialCostFormFields({
     super.key,
     this.numberPad,
     this.trailing,
     this.editedItem,
+    this.initialRateEntry,
+    this.initialName,
   });
 
   @override
@@ -58,16 +70,19 @@ class MaterialCostFormFields extends StatefulWidget {
 class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _rateController = TextEditingController();
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
   late final _quantityFormatter = _decimalLimitFormatter(decimals: 4);
   late final _rateFormatter = _decimalLimitFormatter(decimals: 2);
+  late final CurrencyDisplayController _rateController;
 
   @override
   void initState() {
     super.initState();
+    // Made before the pad's focus listener below, so the controller's caret
+    // move on focus runs first and the pad's select-all wins.
+    _rateController = CurrencyDisplayController(focusNode: _rateFocus);
     _quantityFocus.addListener(
       () => _followFocus(
         _quantityFocus,
@@ -85,7 +100,16 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         shown: context.l10n.numberPadRateValue,
       ),
     );
-    if (widget.editedItem case final item?) _fillFromEditedItem(item);
+    if (widget.editedItem case final item?) {
+      _fillFromEditedItem(item);
+    } else if (widget.initialRateEntry case final entry?) {
+      _nameController.text = entry.itemName;
+      _rateController.text = formatTrimmedNumber(entry.rate.amount);
+      _bloc.add(MaterialSavedRateRecalled(entry));
+    } else if (widget.initialName case final name?) {
+      _nameController.text = name;
+      _bloc.add(MaterialNamePrefilled(name));
+    }
   }
 
   @override
@@ -193,7 +217,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                       keyboardType: _numberKeyboard,
                       onTap: _selectAll(_rateController),
                       inputFormatters: [_rateFormatter],
-                      // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                       onChanged: (value) =>
                           bloc.add(MaterialRateUpdated(value)),
                     ),
@@ -393,11 +416,17 @@ class _SheetTextField extends StatelessWidget {
   }
 
   double _textWidth(BuildContext context, TextStyle style) {
+    final shownStyle =
+        Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style;
     final painter = TextPainter(
-      text: TextSpan(
-        text: controller.text.isEmpty ? hintText : controller.text,
-        style: Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style,
-      ),
+      // Measures what the controller paints, such as "$52.00" for "52".
+      text: controller.text.isEmpty
+          ? TextSpan(text: hintText, style: shownStyle)
+          : controller.buildTextSpan(
+              context: context,
+              style: shownStyle,
+              withComposing: false,
+            ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,

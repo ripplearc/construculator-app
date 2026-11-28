@@ -108,6 +108,7 @@ class MaterialCostFormData extends Equatable {
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
     this.editedItem,
+    this.recalledRateId,
   });
 
   /// The material name entered by the user.
@@ -171,6 +172,12 @@ class MaterialCostFormData extends Equatable {
     return (_toCents(lineTotal) - _toCents(edited.itemTotalCost)) / 100;
   }
 
+  /// The id of the Your rates entry the name and rate came from, or null when
+  /// the user typed them. Editing the name or the rate clears it, so adding
+  /// the line marks the saved rate as used only while it is still the one
+  /// picked.
+  final String? recalledRateId;
+
   /// Quantity times rate rounded to the cent, or 0 while either is missing or
   /// unusable.
   double get lineTotal {
@@ -215,6 +222,7 @@ class MaterialCostFormData extends Equatable {
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
     Object? editedItem = _unset,
+    Object? recalledRateId = _unset,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -231,6 +239,9 @@ class MaterialCostFormData extends Equatable {
       editedItem: editedItem == _unset
           ? this.editedItem
           : editedItem as MaterialCostItem?,
+      recalledRateId: recalledRateId == _unset
+          ? this.recalledRateId
+          : recalledRateId as String?,
     );
   }
 
@@ -246,6 +257,7 @@ class MaterialCostFormData extends Equatable {
     fieldErrors,
     hasUnsavedChanges,
     editedItem,
+    recalledRateId,
   ];
 }
 

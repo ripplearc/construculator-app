@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/identifiers/interfaces/id_generator.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -25,6 +26,7 @@ class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
+  final YourRatesRepository _yourRatesRepository;
   final Clock _clock;
   final String _lineId;
 
@@ -35,15 +37,20 @@ class MaterialCostFormBloc
   MaterialCostFormBloc({
     required this._repository,
     required this._lastUsedUnitRepository,
+    required this._yourRatesRepository,
     required this._clock,
     required IdGenerator idGenerator,
   }) : _lineId = idGenerator.newId(),
        super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
+    on<MaterialSavedRateRecalled>(_onSavedRateRecalled);
+    on<MaterialNamePrefilled>(_onNamePrefilled);
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(
         emit,
-        (d) => _withRememberedUnit(d.copyWith(itemName: e.value)),
+        (d) => _withRememberedUnit(
+          d.copyWith(itemName: e.value, recalledRateId: null),
+        ),
       ),
     );
     on<MaterialQuantityUpdated>(
@@ -122,6 +129,8 @@ class MaterialCostFormBloc
       CostItemType.material,
     );
     if (_current().isEditingExistingLine) return;
+    // A recalled rate brings its own unit, or none so the user picks one.
+    if (_formValuesAtOpening.recalledRateId != null) return;
     final current = _current();
     if (_withRememberedUnit(current).unit != current.unit) {
       _emit(emit, _withRememberedUnit);
@@ -150,6 +159,40 @@ class MaterialCostFormBloc
     );
   }
 
+  void _onSavedRateRecalled(
+    MaterialSavedRateRecalled event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final entry = event.entry;
+    _emit(emit, (d) {
+      final recalled = d.copyWith(
+        itemName: entry.itemName,
+        rate: entry.rate.amount,
+        unit: entry.unit,
+        rateStatus: RateStatus.ownRateConfirmed,
+        recalledRateId: entry.id,
+      );
+      _formValuesAtOpening = recalled;
+      return recalled;
+    });
+  }
+
+  void _onNamePrefilled(
+    MaterialNamePrefilled event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    _emit(emit, (d) {
+      final prefilled = _withRememberedUnit(
+        d.copyWith(itemName: event.name, recalledRateId: null),
+      );
+      _formValuesAtOpening = _formValuesAtOpening.copyWith(
+        itemName: event.name,
+        unit: prefilled.unit,
+      );
+      return prefilled;
+    });
+  }
+
   void _onRateUpdated(
     MaterialRateUpdated event,
     Emitter<MaterialCostFormState> emit,
@@ -166,6 +209,7 @@ class MaterialCostFormBloc
           _ => RateStatus.ownRateUnconfirmed,
         },
         attachedPrice: null,
+        recalledRateId: null,
       );
     });
   }
@@ -229,6 +273,11 @@ class MaterialCostFormBloc
             draft.itemName,
             unit,
           );
+        }
+        if (draft.recalledRateId case final rateId?) {
+          // The line is already added, so a failed record must not stop the
+          // user. The rate then keeps its older "Used" date.
+          await _yourRatesRepository.recordRateUse(rateId);
         }
         emit(MaterialCostFormSuccess(draft, saved));
       },

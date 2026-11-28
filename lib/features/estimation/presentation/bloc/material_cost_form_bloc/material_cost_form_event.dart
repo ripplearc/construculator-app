@@ -11,6 +11,25 @@ class MaterialCostFormStarted extends MaterialCostFormEvent {
   const MaterialCostFormStarted();
 }
 
+/// Fired when the form opens on a rate picked from Your rates. The name, rate
+/// and unit arrive filled in and count as how the form opened, so closing it
+/// untouched asks nothing.
+class MaterialSavedRateRecalled extends MaterialCostFormEvent {
+  const MaterialSavedRateRecalled(this.entry);
+
+  /// The saved rate that was picked.
+  final YourRateEntry entry;
+}
+
+/// Fired when the form opens on a name typed on the Your recents search. The
+/// name counts as how the form opened, so closing it untouched asks nothing.
+class MaterialNamePrefilled extends MaterialCostFormEvent {
+  const MaterialNamePrefilled(this.name);
+
+  /// The name typed on the search.
+  final String name;
+}
+
 /// Fired when the user changes the material name.
 class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   const MaterialCostItemTypeChanged(this.value);
