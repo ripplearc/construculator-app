@@ -192,9 +192,11 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                             state.query.trim().isNotEmpty)
                           Padding(
                             key: const Key('material_lookup_no_match'),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: CoreSpacing.space2,
-                              vertical: CoreSpacing.space6,
+                            padding: const EdgeInsets.fromLTRB(
+                              CoreSpacing.space2,
+                              CoreSpacing.space3,
+                              CoreSpacing.space2,
+                              CoreSpacing.space6,
                             ),
                             child: Text(
                               l10n.yourRatesNoMatchState(state.query),

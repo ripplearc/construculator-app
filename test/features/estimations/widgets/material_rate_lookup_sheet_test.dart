@@ -404,6 +404,20 @@ void main() {
       expect(find.byKey(useButton), findsNothing);
       expect(find.textContaining('Create'), findsNothing);
     });
+
+    testWidgets('puts the no-match line 36 dp under the search box, as the '
+        'frame does', (tester) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, 'epoxy grout');
+
+      final noMatchLine = find.text(l10n.yourRatesNoMatchState('epoxy grout'));
+      final searchBox = find.byKey(const Key('your_rates_search_field'));
+      expect(
+        tester.getTopLeft(noMatchLine).dy - tester.getBottomLeft(searchBox).dy,
+        CoreSpacing.space6 + CoreSpacing.space3,
+      );
+    });
   });
 
   group('MaterialRateLookupSheet – saved prices cannot be read', () {
