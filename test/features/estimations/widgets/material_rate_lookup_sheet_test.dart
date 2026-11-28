@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/sample_rate_row.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/extensions/build_context_extensions.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -25,6 +27,7 @@ void main() {
   late FakeClockImpl clock;
   late AppLocalizations l10n;
   YourRateEntry? result;
+  List<SampleRateRow> sampleRows = const [];
   var closed = false;
 
   const useButton = Key('material_lookup_use_button');
@@ -68,6 +71,7 @@ void main() {
   setUp(() {
     result = null;
     closed = false;
+    sampleRows = const [];
     database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
@@ -112,6 +116,7 @@ void main() {
                     initialQuery: initialQuery,
                     clock: clock,
                     blocFactory: yourRatesBlocWithoutDebounce,
+                    sampleRatesFor: (_) => sampleRows,
                   );
                   closed = true;
                 },
@@ -534,6 +539,148 @@ void main() {
 
       expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
       expect(find.textContaining('No matches'), findsNothing);
+    });
+  });
+
+  group('MaterialRateLookupSheet – sample cost file', () {
+    SampleRateRow paint(String id, double rate) => SampleRateRow(
+      id: id,
+      productName: 'Paint $id',
+      rate: Money(amount: rate),
+      unit: Unit.liters,
+    );
+
+    final sampleGroup = find.byKey(const Key('material_lookup_sample_group'));
+    final notice = find.byKey(const Key('material_lookup_sample_notice'));
+
+    testWidgets('lists the sample rates under FROM SAMPLE COST FILE, below '
+        'YOUR RATES, with the notice directly under the heading', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      expect(find.text('FROM SAMPLE COST FILE'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: notice,
+          matching: find.text(l10n.materialLookupSampleNotice),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('YOUR RATES')).dy,
+        lessThan(tester.getTopLeft(find.text('FROM SAMPLE COST FILE')).dy),
+      );
+      expect(
+        tester.getTopLeft(notice).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const Key('sample_rate_row_a'))).dy,
+        ),
+      );
+    });
+
+    testWidgets('spaces the sample rows like the YOUR RATES rows', (
+      tester,
+    ) async {
+      // A details line, as the saved rows' "Saved …" line, so both rows
+      // are the same height.
+      SampleRateRow withDetails(SampleRateRow row) => SampleRateRow(
+        id: row.id,
+        productName: row.productName,
+        rate: row.rate,
+        unit: row.unit,
+        details: 'Satin, white',
+      );
+      sampleRows = [withDetails(paint('a', 52)), withDetails(paint('b', 38))];
+      await openSheet(tester);
+
+      double topOf(String key) => tester.getTopLeft(find.byKey(Key(key))).dy;
+      expect(
+        topOf('sample_rate_row_b') - topOf('sample_rate_row_a'),
+        topOf('your_rate_row_signature') - topOf('your_rate_row_proclassic'),
+      );
+    });
+
+    testWidgets('a new search lists the sample rates for the new words', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      sampleRows = [paint('b', 38)];
+      await typeQuery(tester, 'premium');
+
+      expect(find.byKey(const Key('sample_rate_row_b')), findsOneWidget);
+      expect(find.byKey(const Key('sample_rate_row_a')), findsNothing);
+    });
+
+    testWidgets('shows no sample heading and no notice without sample rates', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      expect(sampleGroup, findsNothing);
+      expect(find.text(l10n.materialLookupSampleNotice), findsNothing);
+    });
+
+    testWidgets('shows the sample group alone, without a YOUR RATES heading, '
+        'when no saved rate matches', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester, initialQuery: 'epoxy grout');
+
+      expect(sampleGroup, findsOneWidget);
+      expect(find.text('YOUR RATES'), findsNothing);
+      expect(find.byKey(const Key('material_lookup_no_match')), findsNothing);
+    });
+
+    testWidgets('keeps the sample group when Your rates cannot be read', (
+      tester,
+    ) async {
+      sampleRows = [paint('a', 52)];
+      database.getAllError = StateError('database locked');
+      await openSheet(tester);
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
+      expect(notice, findsOneWidget);
+    });
+
+    testWidgets('the notice uses Body Small text with 12 dp above and below '
+        'and 16 dp at the sides', (tester) async {
+      sampleRows = [paint('a', 52)];
+      await openSheet(tester);
+
+      final text = find.descendant(of: notice, matching: find.byType(Text));
+      final box = tester.getRect(notice);
+      final textRect = tester.getRect(text);
+      const border = 1;
+      expect(textRect.top - box.top, CoreSpacing.space3 + border);
+      expect(box.bottom - textRect.bottom, CoreSpacing.space3 + border);
+      expect(textRect.left - box.left, CoreSpacing.space4 + border);
+      final style = tester.widget<Text>(text).style!;
+      final bodySmall = tester.element(notice).textTheme.bodySmallRegular;
+      expect(style.fontSize, bodySmall.fontSize);
+      expect(style.height, bodySmall.height);
+    });
+
+    testWidgets('the sample heading sits as far under the search box as '
+        'YOUR RATES does when it comes first', (tester) async {
+      sampleRows = [paint('a', 52)];
+      double gapUnderSearch(String heading) =>
+          tester.getRect(find.text(heading)).top -
+          tester
+              .getRect(find.byKey(const Key('your_rates_search_field')))
+              .bottom;
+
+      await openSheet(tester);
+      final yourRatesGap = gapUnderSearch(l10n.yourRatesName.toUpperCase());
+
+      await typeQuery(tester, 'no saved rate matches this');
+      final sampleGap = gapUnderSearch(
+        l10n.materialLookupSampleHeading.toUpperCase(),
+      );
+
+      expect(sampleGap, yourRatesGap);
     });
   });
 }
