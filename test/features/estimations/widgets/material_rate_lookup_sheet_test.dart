@@ -697,7 +697,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('sample_rate_row_a')));
       await tester.pumpAndSettle();
-      expect(useButtonWidget(tester).label, r'Use $52.00 /Liters');
+      expect(useButtonWidget(tester).label, r'Use $52.00 /l');
       await tester.tap(find.byKey(useButton));
       await tester.pumpAndSettle();
 
@@ -725,7 +725,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
+      expect(useButtonWidget(tester).label, r'Use $38.00 /l');
     });
 
     testWidgets('a saved row and a sample row with the same id are two '
@@ -746,7 +746,7 @@ void main() {
 
       expect(isPicked('your_rate_row_proclassic'), isFalse);
       expect(isPicked('sample_rate_row_proclassic'), isTrue);
-      expect(useButtonWidget(tester).label, r'Use $38.00 /Liters');
+      expect(useButtonWidget(tester).label, r'Use $38.00 /l');
       await tester.tap(find.byKey(useButton));
       await tester.pumpAndSettle();
       expect(result, isA<MaterialLookupSampleRate>());
