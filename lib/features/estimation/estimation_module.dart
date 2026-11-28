@@ -156,6 +156,7 @@ class EstimationModule extends Module {
       () => UnfinishedCostLineRepositoryImpl(
         storage: i.get(),
         authRepository: i.get(),
+        clock: i.get(),
       ),
     );
 
