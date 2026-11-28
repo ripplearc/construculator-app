@@ -580,6 +580,28 @@ void main() {
       );
     });
 
+    testWidgets('spaces the sample rows like the YOUR RATES rows', (
+      tester,
+    ) async {
+      // A details line, as the saved rows' "Saved …" line, so both rows
+      // are the same height.
+      SampleRateRow withDetails(SampleRateRow row) => SampleRateRow(
+        id: row.id,
+        productName: row.productName,
+        rate: row.rate,
+        unit: row.unit,
+        details: 'Satin, white',
+      );
+      sampleRows = [withDetails(paint('a', 52)), withDetails(paint('b', 38))];
+      await openSheet(tester);
+
+      double topOf(String key) => tester.getTopLeft(find.byKey(Key(key))).dy;
+      expect(
+        topOf('sample_rate_row_b') - topOf('sample_rate_row_a'),
+        topOf('your_rate_row_signature') - topOf('your_rate_row_proclassic'),
+      );
+    });
+
     testWidgets('a new search lists the sample rates for the new words', (
       tester,
     ) async {

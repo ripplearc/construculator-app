@@ -303,7 +303,6 @@ class _SampleGroup extends StatelessWidget {
     return Column(
       key: const Key('material_lookup_sample_group'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: CoreSpacing.space2,
       children: [
         Padding(
           padding: _textInset.copyWith(
@@ -316,6 +315,7 @@ class _SampleGroup extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: CoreSpacing.space2),
         // TODO: [CA-1510] use CoreUI's inline notice once it exists. https://ripplearc.youtrack.cloud/issue/CA-1510
         Padding(
           padding: _textInset,
@@ -338,6 +338,7 @@ class _SampleGroup extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: CoreSpacing.space2),
         for (final row in rows)
           CoreListRow(
             key: Key('sample_rate_row_${row.id}'),
