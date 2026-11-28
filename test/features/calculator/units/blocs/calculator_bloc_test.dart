@@ -48,8 +48,20 @@ void main() {
         '=' => current.pressEquals(),
         '⌫' => current.backspace(),
         '(' => current.pressBracket(),
+        '[DMS]' => current.pressDmsKey(),
+        '✕' => current.clearActive(),
+        '[SIN]' => current.pressTrigKey(TrigFunction.sine),
+        '[COS]' => current.pressTrigKey(TrigFunction.cosine),
+        '[TAN]' => current.pressTrigKey(TrigFunction.tangent),
+        '[ASIN]' => current.pressTrigKey(TrigFunction.arcsine),
+        '[ACOS]' => current.pressTrigKey(TrigFunction.arccosine),
+        '[ATAN]' => current.pressTrigKey(TrigFunction.arctangent),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
+          keyWantsUnit: !PlainNumberKeys.all.contains(
+            key.substring(1, key.length - 1),
+          ),
+          readsDegrees: key == '[${PlainNumberKeys.pitch}]',
         ),
         _ => current.typeDigit(key),
       };
@@ -398,6 +410,237 @@ void main() {
         skip: 9,
         expect: () => [tapeState(pressed('5 lbs + [Width] 5 ft + ( 3 lbs'))],
         verify: (bloc) => expect(bloc.state.valueText, '3lbs'),
+      );
+    });
+
+    group('S1a 2/2: the keys the bloc tells apart', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a trig key presses its function, after its number (38 [SIN]) or '
+        'before it ([ATAN] 16)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('SIN'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorKeySelected('ATAN'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('6')),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('3 8 [SIN]')),
+          CalculatorState.initial(),
+          tapeState(pressed('[ATAN]')),
+          tapeState(pressed('[ATAN] 1')),
+          tapeState(pressed('[ATAN] 1 6')),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
+          expect(bloc.state.valueText, '16');
+          expect(bloc.state.isTyping, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        "the keyboard's SIN id reaches the engine's sine: 38 [SIN] answers "
+        'Sine 0.615661 on the tape',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('SIN')),
+        skip: 2,
+        expect: () => [tapeState(pressed('3 8 [SIN]'))],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, TrigFunction.sine.key);
+          expect(bloc.state.valueText, '0.615661');
+          expect(bloc.state.isTyping, isFalse);
+          expect(bloc.state.chipsList.last.label, TrigFunction.sine.key);
+          expect(bloc.state.chipsList.last.value, '0.615661');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        "the keyboard's ATAN id reaches the engine's arctangent: [ATAN] 1 6 "
+        'offers Arctangent 86.42°',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('ATAN'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('6')),
+        skip: 2,
+        expect: () => [tapeState(pressed('[ATAN] 1 6'))],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
+          expect(bloc.state.valueText, '16');
+          expect(
+            bloc.state.tape.trigAnswer,
+            isA<Answer>().having(
+              (answer) => const QuantityFormatter().format(answer.value),
+              'text',
+              '86.42°',
+            ),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the D:M:S key types a segment: 38 [DMS] 30 [DMS] 45',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('DMS'))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorKeySelected('DMS'))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorDigitPressed('5')),
+        skip: 7,
+        expect: () => [tapeState(pressed('3 8 [DMS] 3 0 [DMS] 4 5'))],
+        verify: (bloc) => expect(bloc.state.valueText, '38°30\'45"'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Pitch, Slope and Sides take a plain number, so an operator leaves '
+        'the bare number as complete',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorKeySelected('Sides'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorOperatorPressed(Operator.add)),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('[Pitch] 3 0 +')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides]')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides] 6')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides] 6 +')),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['30', '+6', '+'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a length unit under Slope is refused with the tape\'s own reason',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Slope'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('[Slope] 6')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.slopeTakesAGrade),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'R2 (review of 18 Nov, F1): Sides takes a count, so every unit under '
+        'it is refused and the 6 stays: Sides 6 [Feet], a second [Feet] and '
+        '[Lbs] never read 6ft, 6ft² or 6lbs',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Sides'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('lbs')),
+        verify: (bloc) {
+          expect(bloc.state.tape, pressed('[Sides] 6'));
+          expect(
+            bloc.state.refusal,
+            const TapeRefused(TapeRefusal.sidesTakesACount),
+          );
+          expect(bloc.state.valueText, '6');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Pitch holds a length only: a unit pressed again under it keeps the '
+        'length instead of raising it to an area (Pitch 6 [Inch] [Inch] stays '
+        'Pitch 6in), and a weight under it is refused with the number kept',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.inch))
+          ..add(const CalculatorUnitSelected(Unit.inch))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorKeySelected('lbs')),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('[Pitch] 6 in')).copyWith(
+            refusal: () => const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+          ),
+          tapeState(pressed('[Pitch] 6 in ft')),
+          CalculatorState.initial(),
+          tapeState(pressed('[Pitch]')),
+          tapeState(pressed('[Pitch] 6')),
+          tapeState(pressed('[Pitch] 6')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.needsLength),
+          ),
+        ],
+        verify: (bloc) => expect(bloc.state.tape.active!.entry.text, '6'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '✕ in a bracket with nothing typed in it yet is refused with its own '
+        'reason, and inside it clears the chip being typed there',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorActiveValueCleared())
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorActiveValueCleared()),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('2 + (')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingTypedInGroup),
+          ),
+          tapeState(pressed('2 + ( 3')),
+          tapeState(pressed('2 + ( 3 ✕')),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '✕ clears the value being typed and leaves the tape before it; with '
+        'nothing being typed it is refused',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorActiveValueCleared())
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorActiveValueCleared()),
+        skip: 5,
+        expect: () => [
+          tapeState(pressed('2 ft + 1 8 ✕')),
+          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingToCompute),
+          ),
+          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
+          ),
+        ],
       );
     });
 

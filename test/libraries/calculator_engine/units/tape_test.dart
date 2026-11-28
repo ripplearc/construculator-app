@@ -395,6 +395,29 @@ void main() {
         );
       });
 
+      test('R2 of #820: under a key that takes a count every unit is '
+          'refused, a weight and an area-raising second press included, '
+          'and the number stays typed; inside a bracket too', () {
+        final sides = press(const Tape(), '[Sides] 6');
+        for (final unit in [Unit.foot, Unit.inch, Unit.pound, Unit.metre]) {
+          expect(
+            sides.pressUnit(unit, takesACount: true),
+            const TapeRefused(TapeRefusal.sidesTakesACount),
+            reason: unit.name,
+          );
+        }
+        expect(
+          press(const Tape(), '6').pressUnit(Unit.foot),
+          isA<TapeChanged>(),
+          reason: 'a bare number with no flag still takes the unit',
+        );
+        final inBracket = press(changed(const Tape().pressBracket()), '6');
+        expect(
+          inBracket.pressUnit(Unit.foot, takesACount: true),
+          const TapeRefused(TapeRefusal.sidesTakesACount),
+        );
+      });
+
       test('a length-only key refuses the raise on its finished value', () {
         final tape = press(const Tape(), '[Width] 2 2 ft');
         final refused = tape.pressUnit(Unit.foot, holdsLengthOnly: true);
@@ -503,6 +526,148 @@ void main() {
         final converted = tape.chips.first as ValueChip;
         expect(converted.isActive, isFalse);
         expect(converted.value(parser), const Length(14336, unit: Unit.yard));
+      });
+
+      test('CA-1087: ✕ empties the chip being typed and keeps it open under '
+          'its key and the operator that leads into it, inside an open '
+          'bracket too', () {
+        const formatter = QuantityFormatter();
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        final emptied = changed(
+          press(const Tape(), '2 2 ft + 1 8').clearActive(),
+        );
+        expect(texts(emptied), ['22ft', '']);
+        expect(
+          emptied.active,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue),
+        );
+        expect(landed(press(emptied, '2 0 ft =')), '42ft 0in');
+        final length = changed(press(const Tape(), '[Length] 7').clearActive());
+        expect(texts(length), ['Length']);
+        expect(
+          length.active,
+          isA<ValueChip>().having(
+            (chip) => chip.entry.isEmpty,
+            'empty',
+            isTrue,
+          ),
+        );
+        final width = press(const Tape(), '[Width] 5');
+        expect(
+          width.pressUnit(Unit.pound, holdsLengthOnly: true),
+          const TapeEntryRefused(EntryRefusal.needsLength),
+        );
+        expect(texts(press(changed(width.clearActive()), '5 ft')), [
+          'Width5ft',
+        ]);
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final inside = changed(press(opened, '3 × 4').clearActive());
+        expect(
+          (inside.chips.last as BracketChip).inner.last,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.multiply)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
+              .having((chip) => chip.isActive, 'active', isTrue),
+        );
+        final closed = changed(press(inside, '5').pressBracket());
+        expect(landed(press(closed, '=')), '17');
+      });
+
+      test('✕ with nothing being typed is refused and changes nothing: an '
+          'empty tape, a finished tape, the empty chip an operator opened, '
+          'the divisor ÷ 0 reopened', () {
+        const formatter = QuantityFormatter();
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        const refused = TapeRefused(TapeRefusal.nothingBeingTyped);
+        expect(const Tape().clearActive(), refused);
+        expect(press(const Tape(), '2 ft × 3 =').clearActive(), refused);
+        expect(press(const Tape(), '2 2 ft +').clearActive(), refused);
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final plus = press(opened, '3 +');
+        expect(plus.clearActive(), refused);
+        expect(
+          landed(press(changed(press(plus, '4').pressBracket()), '=')),
+          '9',
+        );
+        final divided = changed(
+          press(const Tape(), '5').pressOperator(Operator.divide),
+        );
+        final reopened = press(divided, '0 =');
+        expect(reopened.clearActive(), refused);
+        expect(landed(press(reopened, '2 =')), '2.5');
+      });
+
+      test('✕ in a bracket with nothing typed in it is refused with its own '
+          'reason, before anything is typed and again once ✕ emptied the '
+          'chip inside, while a group that holds a value says nothing is '
+          'being typed (walkthrough 12.9)', () {
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        expect(
+          opened.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+        );
+        final emptied = changed(press(opened, '3').clearActive());
+        expect(
+          (emptied.chips.last as BracketChip).inner.single,
+          isA<ValueChip>()
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
+              .having((chip) => chip.isActive, 'active', isTrue),
+        );
+        expect(
+          emptied.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+        );
+        final waiting = changed(press(opened, '3').pressOperator(Operator.add));
+        expect(
+          waiting.clearActive(),
+          const TapeRefused(TapeRefusal.nothingBeingTyped),
+        );
+      });
+
+      test('⌫ after ✕ emptied a chip inside a bracket that holds other values '
+          'removes that chip only, and the bracket stays open '
+          '(2 + ( 3 × 4 ✕ ⌫)', () {
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final emptied = changed(press(opened, '3 × 4').clearActive());
+        final removed = changed(emptied.backspace());
+        expect(removed.openBracket, isNotNull);
+        expect(removed.openBracket!.inner, hasLength(1));
+        expect(removed.openBracket!.inner.single, isA<ValueChip>());
+        final closed = changed(removed.pressBracket()).chips.last;
+        expect(
+          closed,
+          isA<BracketChip>()
+              .having((chip) => chip.isOpen, 'open', isFalse)
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.inner, 'inner', hasLength(1)),
+        );
+      });
+
+      test('⌫ on a bracket whose only chip ✕ emptied removes the bracket, as '
+          'on one with nothing typed in it, and the operator before it waits '
+          'again (2 + ( 3 ✕ ⌫)', () {
+        const formatter = QuantityFormatter();
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final emptied = changed(press(opened, '3').clearActive());
+        final removed = changed(emptied.backspace());
+        expect(removed.openBracket, isNull);
+        expect(
+          removed.active,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue),
+        );
+        expect(
+          formatter.format(
+            (press(removed, '3 =').chips.last as ResultChip).value,
+          ),
+          '5',
+        );
+        expect(changed(opened.backspace()), removed);
       });
 
       test('LengthOnlyKeys names every key that takes a length and nothing '
