@@ -84,13 +84,23 @@
         </regex>
 
         <!-- RULE 10: a metric chain answers in the trade compound -->
-        <regex pattern="Unit _lengthUnit\(List&lt;Unit&gt; units\) =&gt; _metricUnitOf\(units\) \?\? Unit\.footInch;" dotAll="true" id="chain_arithmetic.length_unit.always_imperial">
+        <regex pattern="Unit _lengthUnit\(List&lt;Unit&gt; units\) =&gt; _votedUnit\(units, Unit\.footInch\);" dotAll="true" id="chain_arithmetic.length_unit.always_imperial">
             <mutation text="Unit _lengthUnit(List&lt;Unit&gt; units) =&gt; Unit.footInch;"/>
         </regex>
 
-        <!-- RULE 11: one metric operand is enough for a metric answer -->
-        <regex pattern="if \(lengths\.isEmpty \|\| !lengths\.every\(\(unit\) =&gt; unit\.isMetric\)\) \{" dotAll="true" id="chain_arithmetic.metric_unit.any">
-            <mutation text="if (lengths.isEmpty || !lengths.any((unit) =&gt; unit.isMetric)) {"/>
+        <!-- RULE 11: one metric operand is enough for a metric answer, or a
+             mixed pair answers in the imperial unit (CA-1516) -->
+        <regex pattern="if \(lengths\.isEmpty \|\| !lengths\.any\(\(unit\) =&gt; unit\.isMetric\)\) \{" dotAll="true" id="chain_arithmetic.voted_unit.imperial_fallback">
+            <mutation text="if (lengths.isEmpty || !lengths.every((unit) =&gt; unit.isMetric)) {"/>
+            <mutation text="if (lengths.isEmpty) {"/>
+        </regex>
+
+        <!-- RULE 11a (CA-1516): a mixed product, quotient or sum keeps the
+             prototype's vote (the smallest unit typed) instead of the
+             setting, or an all-metric one follows the setting -->
+        <regex pattern="if \(!lengths\.every\(\(unit\) =&gt; unit\.isMetric\)\) \{\s*return _settingUnit\(imperial\);\s*\}" dotAll="true" id="chain_arithmetic.voted_unit.mixed_ignores_setting">
+            <mutation text=""/>
+            <mutation text="return _settingUnit(imperial);"/>
         </regex>
 
         <!-- RULE 11b: a mixed sum ignores the System of units setting, or an
@@ -98,13 +108,6 @@
         <regex pattern="system == MeasurementSystem\.metric \? Unit\.metre : imperial;" dotAll="true" id="chain_arithmetic.setting_unit.ignores_setting">
             <mutation text="imperial;"/>
             <mutation text="Unit.metre;"/>
-        </regex>
-
-        <!-- RULE 11c: a mixed length sum keeps the product's vote, or a
-             same-system one follows the setting -->
-        <regex pattern="Unit _lengthSumUnit\(Unit first, Unit second\) =&gt; _mixesSystems\(first, second\)\s*\? _settingUnit\(Unit\.footInch\)\s*: _lengthUnit\(\[first, second\]\);" dotAll="true" id="chain_arithmetic.length_sum.wrong_vote">
-            <mutation text="Unit _lengthSumUnit(Unit first, Unit second) =&gt; _lengthUnit([first, second]);"/>
-            <mutation text="Unit _lengthSumUnit(Unit first, Unit second) =&gt; _settingUnit(Unit.footInch);"/>
         </regex>
 
         <!-- RULE 11d: a mixed area sum keeps the first operand's unit, or a
@@ -126,13 +129,13 @@
         </regex>
 
         <!-- RULE 12: acres and board feet join the vote on the system -->
-        <regex pattern="units\.where\(\(unit\) =&gt; unit\.compoundRank &gt; 0\);" dotAll="true" id="chain_arithmetic.metric_unit.unitless_vote">
+        <regex pattern="units\.where\(\(unit\) =&gt; unit\.compoundRank &gt; 0\);" dotAll="true" id="chain_arithmetic.voted_unit.unitless_vote">
             <mutation text="units.where((unit) =&gt; unit.compoundRank &gt;= 0);"/>
         </regex>
 
         <!-- RULE 13: an all-metric answer is always in metres, so 2cm × 3cm
              reads 0m², or in the first unit typed, so 1m + 1mm reads 1m -->
-        <regex pattern="return lengths\.reduce\(_smallerUnit\);" dotAll="true" id="chain_arithmetic.metric_unit.not_the_smallest">
+        <regex pattern="return lengths\.reduce\(_smallerUnit\);" dotAll="true" id="chain_arithmetic.voted_unit.not_the_smallest">
             <mutation text="return Unit.metre;"/>
             <mutation text="return lengths.first;"/>
         </regex>
@@ -175,7 +178,7 @@
         </regex>
 
         <!-- RULE 19: the largest metric unit typed wins -->
-        <regex pattern="b\.ticksPerUnit &lt; a\.ticksPerUnit \? b : a;" dotAll="true" id="chain_arithmetic.metric_unit.largest_wins">
+        <regex pattern="b\.ticksPerUnit &lt; a\.ticksPerUnit \? b : a;" dotAll="true" id="chain_arithmetic.voted_unit.largest_wins">
             <mutation text="b.ticksPerUnit &gt; a.ticksPerUnit ? b : a;"/>
         </regex>
     </rules>

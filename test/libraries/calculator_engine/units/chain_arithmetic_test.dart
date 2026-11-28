@@ -753,23 +753,235 @@ void main() {
         }
       });
 
-      test(
-        'a mixed product or quotient answers in feet under either setting',
+      group(
+        'a mixed product or quotient follows the setting too (CA-1516)',
         () {
-          for (final table in [arithmetic, metric]) {
+          const twoMetres = Length(5040, unit: Unit.metre);
+          final cubicMetre = Volume(
+            Unit.metre.ticksPerUnit *
+                Unit.metre.ticksPerUnit *
+                Unit.metre.ticksPerUnit /
+                (Length.ticksPerFoot *
+                    Length.ticksPerFoot *
+                    Length.ticksPerFoot),
+            unit: Unit.metre,
+          );
+          final litres550 = Volume(
+            cubicMetre.cubicFeet * 0.55,
+            unit: Unit.metre,
+          );
+
+          test('0.55m³ ÷ 22ft reads 0.88ft² or 0.08m²', () {
             expect(
-              text(table.combine(feet(12), Operator.multiply, metre)),
-              '39.38ft²',
+              text(arithmetic.combine(litres550, Operator.divide, feet(22))),
+              '0.88ft²',
             );
             expect(
-              text(table.combine(metre, Operator.multiply, feet(12))),
-              '39.38ft²',
+              text(metric.combine(litres550, Operator.divide, feet(22))),
+              '0.08m²',
             );
+          });
+
+          test('2m × 3ft and 3ft × 2m read 19.69ft² or 1.83m²', () {
+            for (final (left, right) in [
+              (twoMetres, feet(3)),
+              (feet(3), twoMetres),
+            ]) {
+              expect(
+                text(arithmetic.combine(left, Operator.multiply, right)),
+                '19.69ft²',
+              );
+              expect(
+                text(metric.combine(left, Operator.multiply, right)),
+                '1.83m²',
+              );
+            }
+          });
+
+          test('an area times a length, in either order', () {
+            for (final (left, right) in [
+              (squareFeet(12), metre),
+              (metre, squareFeet(12)),
+            ]) {
+              expect(
+                text(arithmetic.combine(left, Operator.multiply, right)),
+                '39.38ft³',
+              );
+              expect(
+                text(metric.combine(left, Operator.multiply, right)),
+                '1.11m³',
+              );
+            }
+          });
+
+          test('an area or a volume divided by a length or an area', () {
             expect(
-              text(table.combine(squareFeet(12), Operator.divide, metre)),
+              text(arithmetic.combine(squareFeet(12), Operator.divide, metre)),
               '3ft 7-7/8in',
             );
-          }
+            expect(
+              text(metric.combine(squareFeet(12), Operator.divide, metre)),
+              '1.11m',
+            );
+            final twelveCubicFeet = Volume(12, unit: Unit.foot);
+            expect(
+              text(
+                arithmetic.combine(
+                  twelveCubicFeet,
+                  Operator.divide,
+                  squareMetre,
+                ),
+              ),
+              '1ft 1-3/8in',
+            );
+            expect(
+              text(
+                metric.combine(twelveCubicFeet, Operator.divide, squareMetre),
+              ),
+              '0.34m',
+            );
+            expect(
+              text(arithmetic.combine(cubicMetre, Operator.divide, feet(12))),
+              '2.94ft²',
+            );
+            expect(
+              text(metric.combine(cubicMetre, Operator.divide, feet(12))),
+              '0.27m²',
+            );
+          });
+
+          test('one system alone keeps its own vote under either setting', () {
+            expect(
+              text(metric.combine(feet(12), Operator.multiply, feet(2))),
+              '24ft²',
+            );
+            expect(
+              text(metric.combine(squareFeet(12), Operator.divide, feet(2))),
+              '6ft 0in',
+            );
+            expect(
+              text(
+                arithmetic.combine(
+                  const Length.exact(Rational(10000, 127), unit: Unit.metre),
+                  Operator.multiply,
+                  const Length.exact(
+                    Rational(2500, 127),
+                    unit: Unit.centimetre,
+                  ),
+                ),
+              ),
+              '10,000cm²',
+            );
+          });
+
+          test('a zero operand reads 0 in the setting\'s unit: 0m × 3ft and '
+              '0ft² ÷ 1m', () {
+            const zeroMetres = Length(0, unit: Unit.metre);
+            expect(
+              text(arithmetic.combine(zeroMetres, Operator.multiply, feet(3))),
+              '0ft²',
+            );
+            expect(
+              text(metric.combine(zeroMetres, Operator.multiply, feet(3))),
+              '0m²',
+            );
+            expect(
+              text(arithmetic.combine(squareFeet(0), Operator.divide, metre)),
+              '0ft 0in',
+            );
+            expect(
+              text(metric.combine(squareFeet(0), Operator.divide, metre)),
+              '0m',
+            );
+          });
+
+          test('a mixed quotient by zero is ÷ 0 under either setting: '
+              '12ft² ÷ 0m and 1m³ ÷ 0ft', () {
+            const error = ArithmeticFailed(CalculationError.divisionByZero);
+            const zeroMetres = Length(0, unit: Unit.metre);
+            for (final table in [arithmetic, metric]) {
+              expect(
+                table.combine(squareFeet(12), Operator.divide, zeroMetres),
+                error,
+              );
+              expect(
+                table.combine(cubicMetre, Operator.divide, feet(0)),
+                error,
+              );
+            }
+          });
+
+          test('a negative mixed operand carries its sign in the setting\'s '
+              'unit: −2m × 3ft and 12ft² ÷ −1m', () {
+            const minusTwoMetres = Length(-5040, unit: Unit.metre);
+            const minusMetre = Length(-2520, unit: Unit.metre);
+            expect(
+              text(
+                arithmetic.combine(minusTwoMetres, Operator.multiply, feet(3)),
+              ),
+              '-19.69ft²',
+            );
+            expect(
+              text(metric.combine(minusTwoMetres, Operator.multiply, feet(3))),
+              '-1.83m²',
+            );
+            expect(
+              text(
+                arithmetic.combine(squareFeet(12), Operator.divide, minusMetre),
+              ),
+              '-3ft 7-7/8in',
+            );
+            expect(
+              text(metric.combine(squareFeet(12), Operator.divide, minusMetre)),
+              '-1.11m',
+            );
+          });
+
+          test('the metric side typed in millimetres or centimetres still '
+              'answers in the setting\'s unit: 500mm × 3ft reads 0.46m², not '
+              'mm², and 1cm × 1ft reads 0.03ft²', () {
+            const fiveHundredMillimetres = Length.exact(
+              Rational(2500, 127),
+              unit: Unit.millimetre,
+            );
+            const centimetre = Length.exact(
+              Rational(50, 127),
+              unit: Unit.centimetre,
+            );
+            final squareMetres = value(
+              metric.combine(
+                fiveHundredMillimetres,
+                Operator.multiply,
+                feet(3),
+              ),
+            );
+            expect((squareMetres as Area).unit, Unit.metre);
+            expect(formatter.format(squareMetres), '0.46m²');
+            final squareFeetAnswer = value(
+              arithmetic.combine(centimetre, Operator.multiply, feet(1)),
+            );
+            expect((squareFeetAnswer as Area).unit, Unit.foot);
+            expect(formatter.format(squareFeetAnswer), '0.03ft²');
+          });
+
+          test('an all-imperial volume under Metric stays in cubic feet: '
+              '12ft² × 2ft', () {
+            expect(
+              text(metric.combine(squareFeet(12), Operator.multiply, feet(2))),
+              '24ft³',
+            );
+          });
+
+          test('a mixed quotient whose length outgrows the tick range is '
+              'refused under either setting: 1e18ft² ÷ 1m', () {
+            const error = ArithmeticFailed(CalculationError.outOfRange);
+            for (final table in [arithmetic, metric]) {
+              expect(
+                table.combine(squareFeet(1e18), Operator.divide, metre),
+                error,
+              );
+            }
+          });
         },
       );
 
