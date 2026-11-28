@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -34,15 +36,27 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// checkbox-select-then-confirm step, and isn't filtered to a single pricing
 /// method — tapping a row recalls it immediately.
 ///
-/// Returns a [YourRatesRecentsResult]: the tapped entry, the "+ New equipment
-/// cost" action, or a dismissal (swipe down, tap outside, or back).
+/// The Material sheet (storyboard CUJ 4, screen 2 "Your recents") is the same
+/// list for [CostItemType.material]: "Add material", "Search or type a
+/// material", "New material cost", and each rate shown per its unit.
+///
+/// Returns a [YourRatesRecentsResult]: the tapped entry, the "+ New … cost"
+/// action, or a dismissal (swipe down, tap outside, or back).
 class YourRatesRecentsSheet extends StatefulWidget {
   /// Supplies "now" for each row's recency subtitle — see [Clock]'s own doc
   /// comment for why this is injected rather than calling [DateTime.now]
   /// directly.
   final Clock clock;
 
-  const YourRatesRecentsSheet({super.key, required this.clock});
+  /// Whose saved rates are listed: [CostItemType.equipment] or
+  /// [CostItemType.material].
+  final CostItemType category;
+
+  const YourRatesRecentsSheet({
+    super.key,
+    required this.clock,
+    required this.category,
+  });
 
   @override
   State<YourRatesRecentsSheet> createState() => _YourRatesRecentsSheetState();
@@ -51,6 +65,7 @@ class YourRatesRecentsSheet extends StatefulWidget {
   static Future<YourRatesRecentsResult> show({
     required BuildContext context,
     required Clock clock,
+    required CostItemType category,
     required YourRatesBloc Function() blocFactory,
   }) async {
     final result = await CoreQuickSheet.show<YourRatesRecentsResult>(
@@ -58,7 +73,7 @@ class YourRatesRecentsSheet extends StatefulWidget {
       backgroundColor: sheetSurface(context),
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
-        child: YourRatesRecentsSheet(clock: clock),
+        child: YourRatesRecentsSheet(clock: clock, category: category),
       ),
     );
     return result ?? const YourRatesRecentsDismissed();
@@ -83,14 +98,32 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     super.dispose();
   }
 
+  _RecentsWords _words(AppLocalizations l10n) => switch (widget.category) {
+    CostItemType.material => (
+      title: l10n.yourRatesMaterialRecentsTitle,
+      searchHint: l10n.yourRatesMaterialSearchHint,
+      createAction: l10n.yourRatesCreateMaterialAction,
+      newCostAction: l10n.yourRatesNewMaterialCostAction,
+      loadErrorHint: l10n.yourRatesMaterialRecentsLoadErrorHint,
+    ),
+    CostItemType.equipment => (
+      title: l10n.yourRatesRecentsTitle,
+      searchHint: l10n.yourRatesSearchHint,
+      createAction: l10n.yourRatesCreateEquipmentAction,
+      newCostAction: l10n.yourRatesNewEquipmentCostAction,
+      loadErrorHint: l10n.yourRatesRecentsLoadErrorHint,
+    ),
+    CostItemType.labor => throw UnsupportedError('No labor recents yet'),
+  };
+
   void _loadRecents() => context.read<YourRatesBloc>().add(
-    const YourRatesRecentsQueried('', CostItemType.equipment),
+    YourRatesRecentsQueried('', widget.category),
   );
 
   void _onQueryChanged(String query) {
     setState(() {});
     context.read<YourRatesBloc>().add(
-      YourRatesRecentsQueried(query, CostItemType.equipment),
+      YourRatesRecentsQueried(query, widget.category),
     );
   }
 
@@ -99,7 +132,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       : context.read<YourRatesBloc>().add(
           YourRatesRecentsQueried(
             _searchController.text,
-            CostItemType.equipment,
+            widget.category,
             immediate: true,
           ),
         );
@@ -107,10 +140,10 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   void _onRowTap(YourRateEntry entry) =>
       Navigator.of(context).pop(YourRatesRecentsPicked(entry));
 
-  void _onNewEquipmentCost() =>
-      Navigator.of(context).pop(const YourRatesRecentsNewEquipmentCost());
+  void _onNewCost() =>
+      Navigator.of(context).pop(const YourRatesRecentsNewCost());
 
-  void _onCreateTypedEquipment(String name) {
+  void _onCreateTypedName(String name) {
     if (_createPendingFor != null) return;
     final bloc = context.read<YourRatesBloc>();
     final state = bloc.state;
@@ -123,9 +156,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       return;
     }
     _createPendingFor = name;
-    bloc.add(
-      YourRatesRecentsQueried(name, CostItemType.equipment, immediate: true),
-    );
+    bloc.add(YourRatesRecentsQueried(name, widget.category, immediate: true));
   }
 
   void _announceFailedRetry(BuildContext context) {
@@ -164,7 +195,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     Navigator.of(context).pop(
       saved != null
           ? YourRatesRecentsPicked(saved)
-          : YourRatesRecentsNewEquipmentCost(name: name),
+          : YourRatesRecentsNewCost(name: name),
     );
   }
 
@@ -173,11 +204,12 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final now = widget.clock.now();
+    final words = _words(l10n);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SheetHeader(title: l10n.yourRatesRecentsTitle),
+        SheetHeader(title: words.title),
         Padding(
           padding: const EdgeInsets.only(
             left: CoreSpacing.space5,
@@ -186,6 +218,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
           ),
           child: SheetSearchField(
             controller: _searchController,
+            hintText: words.searchHint,
             onChanged: _onQueryChanged,
           ),
         ),
@@ -212,10 +245,12 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                   final loadError = switch (state) {
                     YourRatesError() => _RecentsLoadError(
                       isRetrying: false,
+                      hint: words.loadErrorHint,
                       onTryAgain: _onTryAgain,
                     ),
                     YourRatesRetrying() => _RecentsLoadError(
                       isRetrying: true,
+                      hint: words.loadErrorHint,
                       onTryAgain: _onTryAgain,
                     ),
                     _ => null,
@@ -270,10 +305,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                             final value = DisplayFormatter.currency.format(
                               entry.rate.amount,
                             );
-                            final unit = _unitSuffixFor(
-                              context,
-                              entry.equipmentMethod,
-                            );
+                            final unit = _unitSuffixFor(context, entry);
                             // TODO: [CA-1379] each row is 3 dp taller than the storyboard until CoreUI changes the CoreListRow padding
                             // https://ripplearc.youtrack.cloud/issue/CA-1379
                             return CoreListRow(
@@ -320,18 +352,16 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         ),
                         child: isSearching
                             ? CoreListRow.action(
-                                key: const Key('create_typed_equipment_row'),
+                                key: const Key('create_typed_name_row'),
                                 icon: CoreIcons.add,
-                                title: l10n.yourRatesCreateEquipmentAction(
-                                  typedName,
-                                ),
-                                onTap: () => _onCreateTypedEquipment(typedName),
+                                title: words.createAction(typedName),
+                                onTap: () => _onCreateTypedName(typedName),
                               )
                             : CoreListRow.action(
-                                key: const Key('new_equipment_cost_row'),
+                                key: const Key('new_cost_row'),
                                 icon: CoreIcons.add,
-                                title: l10n.yourRatesNewEquipmentCostAction,
-                                onTap: _onNewEquipmentCost,
+                                title: words.newCostAction,
+                                onTap: _onNewCost,
                               ),
                       ),
                     ],
@@ -346,11 +376,24 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
+typedef _RecentsWords = ({
+  String title,
+  String searchHint,
+  String Function(String typedName) createAction,
+  String newCostAction,
+  String loadErrorHint,
+});
+
 class _RecentsLoadError extends StatelessWidget {
   final bool isRetrying;
+  final String hint;
   final VoidCallback onTryAgain;
 
-  const _RecentsLoadError({required this.isRetrying, required this.onTryAgain});
+  const _RecentsLoadError({
+    required this.isRetrying,
+    required this.hint,
+    required this.onTryAgain,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -376,7 +419,7 @@ class _RecentsLoadError extends StatelessWidget {
                 CoreInlineErrorRow(message: l10n.yourRatesLoadError),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
-                  l10n.yourRatesRecentsLoadErrorHint,
+                  hint,
                   style: textTheme.bodySmallRegular.copyWith(
                     color: colorTheme.textBody,
                   ),
@@ -399,10 +442,18 @@ class _RecentsLoadError extends StatelessWidget {
   }
 }
 
-String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
-    method == EquipmentPricingMethod.job
-    ? context.l10n.yourRatesJobSuffix
-    : context.l10n.yourRatesDaySuffix;
+String? _unitSuffixFor(BuildContext context, YourRateEntry entry) {
+  final l10n = context.l10n;
+  if (entry.category == CostItemType.material) {
+    final unit = entry.unit;
+    return unit == null
+        ? null
+        : l10n.materialRatePerUnitSuffix(unit.symbol(l10n));
+  }
+  return entry.equipmentMethod == EquipmentPricingMethod.job
+      ? l10n.yourRatesJobSuffix
+      : l10n.yourRatesDaySuffix;
+}
 
 /// What the user chose on [YourRatesRecentsSheet].
 sealed class YourRatesRecentsResult {
@@ -416,12 +467,13 @@ final class YourRatesRecentsPicked extends YourRatesRecentsResult {
   const YourRatesRecentsPicked(this.entry);
 }
 
-/// "+ New equipment cost" was tapped, or a typed name was created as new.
-/// [name] is the typed name, or null when the form opens blank.
-final class YourRatesRecentsNewEquipmentCost extends YourRatesRecentsResult {
+/// "+ New equipment cost" or "+ New material cost" was tapped, or a typed
+/// name was created as new. [name] is the typed name, or null when the form
+/// opens blank.
+final class YourRatesRecentsNewCost extends YourRatesRecentsResult {
   final String? name;
 
-  const YourRatesRecentsNewEquipmentCost({this.name});
+  const YourRatesRecentsNewCost({this.name});
 }
 
 /// The sheet was closed without a choice: swipe down, tap outside, or back.

@@ -145,7 +145,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       case EquipmentCostItem():
         unawaited(_editLine(() => _openEquipmentSheet(null, editedItem: line)));
       case MaterialCostItem():
-        unawaited(_editLine(() => _openMaterialSheet(editedItem: line)));
+        unawaited(_editLine(() => _openMaterialSheet(null, editedItem: line)));
       case _:
         break;
     }
@@ -160,36 +160,38 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     }
   }
 
-  Future<void> _openMaterialSheet({MaterialCostItem? editedItem}) =>
-      _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
-        type: CostItemType.material,
-        asksBeforeClosing: true,
-        editedItem: editedItem,
-        blocFactory: widget.materialCostFormBlocFactory,
-        addedItemIdOf: (state) =>
-            state is MaterialCostFormSuccess &&
-                !state.data.isEditingExistingLine
-            ? state.savedItem.id
-            : null,
-        outcomeOf: (state) => switch (state) {
-          MaterialCostFormSubmitting() => _SheetOutcome.submitting,
-          MaterialCostFormSuccess(:final data)
-              when data.isEditingExistingLine =>
-            _SheetOutcome.changed,
-          MaterialCostFormSuccess() => _SheetOutcome.added,
-          MaterialCostFormDeleted() => _SheetOutcome.changed,
-          MaterialCostFormFailure() => _SheetOutcome.failed,
-          _ => _SheetOutcome.editing,
-        },
-        failedMessageOf: (state) => switch (state) {
-          MaterialCostFormFailure(whileDeleting: true) =>
-            context.l10n.deleteLineFailedError,
-          MaterialCostFormFailure(:final data)
-              when data.isEditingExistingLine =>
-            context.l10n.saveLineFailedError,
-          _ => context.l10n.addToEstimateFailedError,
-        },
-      );
+  Future<void> _openMaterialSheet(
+    YourRateEntry? entry, {
+    String? name,
+    MaterialCostItem? editedItem,
+  }) => _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
+    type: CostItemType.material,
+    asksBeforeClosing: true,
+    entry: entry,
+    name: name,
+    editedItem: editedItem,
+    blocFactory: widget.materialCostFormBlocFactory,
+    addedItemIdOf: (state) =>
+        state is MaterialCostFormSuccess && !state.data.isEditingExistingLine
+        ? state.savedItem.id
+        : null,
+    outcomeOf: (state) => switch (state) {
+      MaterialCostFormSubmitting() => _SheetOutcome.submitting,
+      MaterialCostFormSuccess(:final data) when data.isEditingExistingLine =>
+        _SheetOutcome.changed,
+      MaterialCostFormSuccess() => _SheetOutcome.added,
+      MaterialCostFormDeleted() => _SheetOutcome.changed,
+      MaterialCostFormFailure() => _SheetOutcome.failed,
+      _ => _SheetOutcome.editing,
+    },
+    failedMessageOf: (state) => switch (state) {
+      MaterialCostFormFailure(whileDeleting: true) =>
+        context.l10n.deleteLineFailedError,
+      MaterialCostFormFailure(:final data) when data.isEditingExistingLine =>
+        context.l10n.saveLineFailedError,
+      _ => context.l10n.addToEstimateFailedError,
+    },
+  );
 
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
@@ -442,7 +444,11 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     if (type == null || !context.mounted) return;
     switch (type) {
       case CostItemType.material:
-        await _openMaterialSheet();
+        await _openRecentsThenForm(
+          context,
+          CostItemType.material,
+          _openMaterialSheet,
+        );
       case CostItemType.labor:
         await widget.router.pushNamed(
           '$fullAddLabourCostRoute/${widget.estimationId}',
@@ -451,14 +457,23 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
         _costItemsBloc.add(const CostItemsRefreshed());
       case CostItemType.equipment:
-        await _openRecentsThenEquipmentForm(context);
+        await _openRecentsThenForm(
+          context,
+          CostItemType.equipment,
+          _openEquipmentSheet,
+        );
     }
   }
 
-  Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
+  Future<void> _openRecentsThenForm(
+    BuildContext context,
+    CostItemType category,
+    Future<void> Function(YourRateEntry? entry, {String? name}) openForm,
+  ) async {
     final result = await YourRatesRecentsSheet.show(
       context: context,
       clock: widget.clock,
+      category: category,
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (!context.mounted) return;
@@ -466,9 +481,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       case YourRatesRecentsDismissed():
         return;
       case YourRatesRecentsPicked(:final entry):
-        await _openEquipmentSheet(entry);
-      case YourRatesRecentsNewEquipmentCost(:final name):
-        await _openEquipmentSheet(null, name: name);
+        await openForm(entry);
+      case YourRatesRecentsNewCost(:final name):
+        await openForm(null, name: name);
     }
   }
 }
