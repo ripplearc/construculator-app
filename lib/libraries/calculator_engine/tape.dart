@@ -168,6 +168,14 @@ enum TapeRefusal {
   /// [( )] to close with nothing open.
   noBracketToClose,
 
+  /// A digit, [/], a unit key, an operator, = or [( )] while the inside of
+  /// the open bracket ends with the Too large chip (the red Alert "Over
+  /// 19,999,999.99" / "Press ⌫ to change the numbers in the bracket.";
+  /// Section 5.3, "An error inside a bracket", doc edit #83; rule 4.12:
+  /// inside an open bracket a digit after Too large does not start a clean
+  /// tape). ⌫ repairs the inside.
+  bracketHoldsTooLarge,
+
   /// The D:M:S key on a pitch answer, in any of its three spellings
   /// (Pitch-rise per 12in run 6in/12in, Pitch-degrees 26.57°, Pitch-grade
   /// 50%): nothing changes, and the strip note reads "Pitch has no D:M:S.
@@ -262,7 +270,9 @@ final class TapeChanged extends TapeOutcome {
 
 /// Closing a bracket was refused because its inside cannot be computed; the
 /// bracket stays open with everything typed in it, and ⌫ repairs it
-/// (Section 5.3, "An error inside a bracket").
+/// (Section 5.3, "An error inside a bracket"). A step inside above the
+/// limit is not refused this way: the Too large error chip lands inside the
+/// bracket instead, as it does outside one ([Tape.closeBracket]).
 final class TapeBracketFailed extends TapeOutcome {
   /// The step that failed, with both operands for the toast.
   final ChainFailed failure;
@@ -392,10 +402,13 @@ class Tape extends Equatable {
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
 
-  /// Folds the chips into the running total.
+  /// Folds the chips into the running total, refusing an answer that shows
+  /// a number above the limit under the tape's own ton: 19,000,000 long
+  /// tons is 21,280,000 short tons, and only the short ton is too large.
   ChainEvaluator get evaluator => ChainEvaluator(
     parser: parser,
     arithmetic: ChainArithmetic(system: preferences.system),
+    formatter: QuantityFormatter(preferences: preferences),
   );
 
   /// Whether nothing has been typed.
@@ -477,7 +490,7 @@ class Tape extends Equatable {
     if (question == null) return null;
     final (:function, :operand, :key) = question;
     final answer = function.of(operand);
-    if (answer == null) return null;
+    if (answer == null || formatter.isTooLarge(answer)) return null;
     return Answer(key: key, value: answer, sources: [function.key]);
   }
 
@@ -629,6 +642,12 @@ class Tape extends Equatable {
   /// zero (rule 4.12), and a digit or a unit key in the same place is still
   /// refused ([TapeRefusal.addAnOperatorFirst],
   /// [TapeRefusal.groupCannotTakeUnit]).
+  ///
+  /// An answer above 19,999,999.99 is Too large, as any step of a chain is
+  /// (Section 5.3; owner decision of 28 October 2026): 89.999999995 [TAN]
+  /// lands the Too large error chip in place of its result, and [TAN]
+  /// 89.999999995 offers nothing on the strip ([trigAnswer]) while = lands
+  /// the same chip; ⌫ removes it and reopens the number, as after any error.
   TapeOutcome pressTrigKey(TrigFunction function) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
@@ -731,9 +750,7 @@ class Tape extends Equatable {
     Quantity operand,
   ) {
     if (function.answerTo(operand) case final answer?) {
-      return TapeChanged(
-        tape.append(ResultChip(key: function.key, value: answer)),
-      );
+      return TapeChanged(tape.append(tape._landedAnswer(function.key, answer)));
     }
     if (operand is! Scalar && operand is! Angle) {
       return const TapeRefused(TapeRefusal.trigNeedsAPlainAngle);
@@ -765,8 +782,22 @@ class Tape extends Equatable {
     return TapeChanged(
       _replaceActive(
         _asTrigChip(chip, function),
-      ).append(ResultChip(key: function.key, value: answer)),
+      ).append(_landedAnswer(function.key, answer)),
     );
+  }
+
+  TapeChip _landedAnswer(String key, Quantity answer) =>
+      formatter.isTooLarge(answer)
+      ? const ErrorChip(CalculationError.outOfRange)
+      : ResultChip(key: key, value: answer);
+
+  bool get _offersATooLargeTrigAnswer {
+    if (_trigQuestionAsked case (:final function, :final operand, key: _)) {
+      if (function.of(operand) case final answer?) {
+        return formatter.isTooLarge(answer);
+      }
+    }
+    return false;
   }
 
   /// A function key opens a new active chip with that name (rule 4.1); on
@@ -910,7 +941,7 @@ class Tape extends Equatable {
   /// starts a chip of its own, as a digit after any finished value does.
   TapeOutcome typeDigit(String digit) {
     if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.typeDigit(digit));
+      return _typedInside(bracket, (inner) => inner.typeDigit(digit));
     }
     if (_endsWithClosedBracket) {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
@@ -1249,11 +1280,24 @@ class Tape extends Equatable {
         : NumberReading.degrees;
     final next = stops[(stops.indexOf(current) + 1) % stops.length];
     final entry = switch (next) {
-      NumberReading.degrees => _plain(raw),
-      NumberReading.risePerFoot => EntryBuffer(
-        List.unmodifiable([Token(digits: raw, unit: Unit.inch, typedAs: raw)]),
+      NumberReading.degrees => _plain(
+        raw,
+        startedWithPoint: token.startedWithPoint,
       ),
-      _ => _readAsDegreesMinutesSeconds(raw),
+      NumberReading.risePerFoot => EntryBuffer(
+        List.unmodifiable([
+          Token(
+            digits: raw,
+            unit: Unit.inch,
+            typedAs: raw,
+            startedWithPoint: token.startedWithPoint,
+          ),
+        ]),
+      ),
+      _ => _readAsDegreesMinutesSeconds(
+        raw,
+        startedWithPoint: token.startedWithPoint,
+      ),
     };
     if (entry == null) return null;
     return ReadAsOffer(chipIndex: index, from: current, to: next, next: entry);
@@ -1273,12 +1317,22 @@ class Tape extends Equatable {
 
   static bool _holdsARecalledAngle(ValueChip chip) => chip.exactValue is Angle;
 
-  static EntryBuffer _plain(String digits) =>
-      EntryBuffer(List.unmodifiable([Token(digits: digits)]));
+  static EntryBuffer _plain(String digits, {bool startedWithPoint = false}) =>
+      EntryBuffer(
+        List.unmodifiable([
+          Token(digits: digits, startedWithPoint: startedWithPoint),
+        ]),
+      );
 
-  static EntryBuffer? _readAsDegreesMinutesSeconds(String digits) {
+  static EntryBuffer? _readAsDegreesMinutesSeconds(
+    String digits, {
+    bool startedWithPoint = false,
+  }) {
     if (!digits.contains('.')) return null;
-    return switch (_plain(digits).typeDigit('.', readsAngles: true)) {
+    return switch (_plain(
+      digits,
+      startedWithPoint: startedWithPoint,
+    ).typeDigit('.', readsAngles: true)) {
       EntryChanged(:final buffer) => buffer,
       EntryOutcome() => null,
     };
@@ -1313,7 +1367,7 @@ class Tape extends Equatable {
   /// recalled under Pitch never becomes the typed start of 45/2in.
   TapeOutcome typeFraction() {
     if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.typeFraction());
+      return _typedInside(bracket, (inner) => inner.typeFraction());
     }
     final chip = active;
     if (chip == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
@@ -1342,7 +1396,7 @@ class Tape extends Equatable {
     bool takesAGrade = false,
   }) {
     if (openBracket case final bracket?) {
-      return _inside(
+      return _typedInside(
         bracket,
         (inner) => inner.pressUnit(
           unit,
@@ -1417,10 +1471,14 @@ class Tape extends Equatable {
   /// division that failed is gone (5 ÷ 0 = × 2 = is Calc 10 on a clean
   /// tape, where the prototype refuses the key). After a result, or a
   /// sealed value, the operator chains off it. With nothing before it the
-  /// press explains itself ("Type a value first").
+  /// press explains itself ("Type a value first"). On a trig chip whose
+  /// answer is above the limit ([TAN] 89.999999995 then ÷) the operator
+  /// lands the Too large chip instead of a step, as = does (Section 5.3:
+  /// "any step of a chain on the way to it"), so the chip never becomes a
+  /// running total.
   TapeOutcome pressOperator(Operator operator) {
     if (openBracket case final bracket?) {
-      return _inside(bracket, (inner) => inner.pressOperator(operator));
+      return _typedInside(bracket, (inner) => inner.pressOperator(operator));
     }
     final chip = active;
     if (chip != null) {
@@ -1434,6 +1492,11 @@ class Tape extends Equatable {
       }
       final tape = _withFractionClosedAsInches();
       if (tape._unfinished case final refusal?) return refusal;
+      if (tape._offersATooLargeTrigAnswer) {
+        return TapeChanged(
+          tape.append(const ErrorChip(CalculationError.outOfRange)),
+        );
+      }
       return TapeChanged(tape._sealed().append(ValueChip(operator: operator)));
     }
     final last = chips.isEmpty ? null : chips.last;
@@ -1477,6 +1540,9 @@ class Tape extends Equatable {
   TapeOutcome pressEquals() {
     if (openBracket != null) {
       return switch (closeBracket()) {
+        TapeChanged(:final tape, notice: null)
+            when tape._endsOnAnErrorInsideTheBracket =>
+          TapeChanged(tape),
         TapeChanged(:final tape, notice: null) => _landedAfterClose(tape),
         TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =>
           _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
@@ -1514,6 +1580,9 @@ class Tape extends Equatable {
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
   }
+
+  bool get _endsOnAnErrorInsideTheBracket =>
+      openBracket?.inner.lastOrNull is ErrorChip;
 
   bool get _endsOnTheFailedDivisor {
     if (chips.last case ValueChip(operator: Operator.divide)) {
@@ -1657,7 +1726,13 @@ class Tape extends Equatable {
   /// chip, and a value before it is active again, so a digit continues it.
   /// Closing empty a bracket that ⌫ reopened cancels the edit instead and
   /// brings the group back as it was. An inside that cannot be computed
-  /// keeps the bracket open (Section 5.3).
+  /// keeps the bracket open (Section 5.3), except a step above the limit:
+  /// that lands the Too large error chip inside the bracket, the strip goes
+  /// silent, and ⌫ removes the chip and reopens the number before it, as
+  /// outside a bracket (Section 5, "Too large": "any step of a chain on the
+  /// way to it"; owner decision of 28 October 2026). While the chip is there
+  /// the bracket takes no key but ⌫ ([TapeRefusal.bracketHoldsTooLarge]):
+  /// = and [( )] included, so the failed part is never folded away.
   TapeOutcome closeBracket() {
     final bracket = openBracket;
     if (bracket == null) return const TapeRefused(TapeRefusal.noBracketToClose);
@@ -1672,8 +1747,20 @@ class Tape extends Equatable {
         notice: TapeNotice.emptyBracketsRemoved,
       );
     }
+    if (inner.chips.last is ErrorChip) {
+      return const TapeRefused(TapeRefusal.bracketHoldsTooLarge);
+    }
     if (inner._unfinished case final refusal?) return refusal;
     final total = inner.runningTotal;
+    if (total case ChainFailed(error: CalculationError.outOfRange)) {
+      return _replaceLastChip(
+        bracket.copyWith(
+          inner: inner
+              .append(const ErrorChip(CalculationError.outOfRange))
+              .chips,
+        ),
+      );
+    }
     if (total case final ChainFailed failure) return TapeBracketFailed(failure);
     if (total is ChainEmpty) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
@@ -1703,6 +1790,16 @@ class Tape extends Equatable {
   Tape append(TapeChip chip) {
     final sealed = _sealed();
     return sealed._with([...sealed.chips, chip]);
+  }
+
+  TapeOutcome _typedInside(
+    BracketChip bracket,
+    TapeOutcome Function(Tape inner) key,
+  ) {
+    if (bracket.inner.lastOrNull is ErrorChip) {
+      return const TapeRefused(TapeRefusal.bracketHoldsTooLarge);
+    }
+    return _inside(bracket, key);
   }
 
   TapeOutcome _inside(
