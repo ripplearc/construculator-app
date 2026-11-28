@@ -7,34 +7,4 @@ abstract class CostEstimationDataSource {
   ///
   /// Returns the matching [CostEstimateDto], or null when no row has this ID.
   Future<CostEstimateDto?> getEstimationById(String estimationId);
-
-  /// Used to create a new cost estimation
-  ///
-  /// Returns a [CostEstimateDto] with the created cost estimation.
-  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation);
-
-  /// Deletes a cost estimation by its ID.
-  Future<void> deleteEstimation(String estimationId);
-
-  /// Changes the lock status of a cost estimation.
-  ///
-  /// [estimationId] The ID of the estimation to update.
-  /// [isLocked] Whether the estimation should be locked or unlocked.
-  ///
-  /// Returns a [CostEstimateDto] with the updated lock state.
-  Future<CostEstimateDto> changeLockStatus({
-    required String estimationId,
-    required bool isLocked,
-  });
-
-  /// Renames a cost estimation.
-  ///
-  /// [estimationId] The ID of the estimation to rename.
-  /// [newName] The new name for the estimation.
-  ///
-  /// Returns a [CostEstimateDto] with the updated name.
-  Future<CostEstimateDto> renameEstimation({
-    required String estimationId,
-    required String newName,
-  });
 }
