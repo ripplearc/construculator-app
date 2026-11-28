@@ -903,6 +903,7 @@ void main() {
     final scrolledLine = find.byKey(CostItemFormScreen.scrolledLineKey);
     // A row's bottom edge is its underline.
     final rateRow = find.byKey(const Key('material_rate_row'));
+    final rateHint = find.byKey(const Key('material_rate_lookup_hint'));
     final nameRow = find.byKey(const Key('material_name_row'));
 
     Future<void> focus(WidgetTester tester, Finder field) async {
@@ -922,8 +923,10 @@ void main() {
       expect(scrolledLine, findsNothing);
     });
 
-    testWidgets('a field below the view scrolls to sit 12 above the pinned '
-        'card, and a line appears under the title', (tester) async {
+    testWidgets('a field below the view scrolls, with the hint under it, to '
+        'sit 12 above the pinned card, and a line appears under the title', (
+      tester,
+    ) async {
       await openSheet(tester);
       expect(Scrollable.of(tester.element(rate)).position.pixels, 0);
 
@@ -934,20 +937,24 @@ void main() {
       final form = Scrollable.of(tester.element(rate)).context;
       final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
       expect(find.byType(CoreNumberKeypad), findsOneWidget);
-      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
+      expect(visibleEnd - tester.getRect(rateHint).bottom, 12);
+      expect(
+        tester.getRect(rateRow).bottom,
+        lessThanOrEqualTo(tester.getRect(rateHint).top),
+      );
       expect(tester.getRect(panel).top, visibleEnd + CoreSpacing.space4);
       expect(scrolledLine, findsOneWidget);
     });
 
     testWidgets('on a short phone, where the card scrolls with the form, the '
-        'field still sits 12 above the pad', (tester) async {
+        'field and its hint still sit 12 above the pad', (tester) async {
       await openSheet(tester, size: const Size(393, 780));
 
       await focus(tester, rate);
 
       final form = Scrollable.of(tester.element(rate)).context;
       final visibleEnd = tester.getRect(find.byWidget(form.widget)).bottom;
-      expect(visibleEnd - tester.getRect(rateRow).bottom, 12);
+      expect(visibleEnd - tester.getRect(rateHint).bottom, 12);
       expect(
         find.descendant(of: find.byWidget(form.widget), matching: panel),
         findsOneWidget,

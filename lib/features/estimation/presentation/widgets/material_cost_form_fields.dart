@@ -228,70 +228,77 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
-            _RevealedFieldRow(
-              key: const Key('material_rate_row'),
-              label: l10n.materialRateLabel,
-              valueGap: 0,
-              bottomPadding: 0,
-              trailingInset: CoreSpacing.space5,
-              onTap: _rateFocus.requestFocus,
-              child: SizedBox(
-                height: _lookupButtonTapSize,
-                child: Row(
-                  spacing: CoreSpacing.space1,
-                  children: [
-                    Expanded(
+            _RevealedWithGap(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SheetFieldRow(
+                    key: const Key('material_rate_row'),
+                    label: l10n.materialRateLabel,
+                    valueGap: 0,
+                    bottomPadding: 0,
+                    trailingInset: CoreSpacing.space5,
+                    onTap: _rateFocus.requestFocus,
+                    child: SizedBox(
+                      height: _lookupButtonTapSize,
                       child: Row(
                         spacing: CoreSpacing.space1,
                         children: [
-                          Flexible(
-                            child: _SheetTextField(
-                              key: const Key('material_rate_field'),
-                              fitsText: true,
-                              readOnly: _isSaving(state),
-                              controller: _rateController,
-                              focusNode: _rateFocus,
-                              label: l10n.materialRateLabel,
-                              hintText: l10n.materialRatePlaceholder,
-                              keyboardType: _numberKeyboard,
-                              onTap: _selectAll(_rateController),
-                              inputFormatters: [_rateFormatter],
-                              onChanged: (value) =>
-                                  bloc.add(MaterialRateUpdated(value)),
+                          Expanded(
+                            child: Row(
+                              spacing: CoreSpacing.space1,
+                              children: [
+                                Flexible(
+                                  child: _SheetTextField(
+                                    key: const Key('material_rate_field'),
+                                    fitsText: true,
+                                    readOnly: _isSaving(state),
+                                    controller: _rateController,
+                                    focusNode: _rateFocus,
+                                    label: l10n.materialRateLabel,
+                                    hintText: l10n.materialRatePlaceholder,
+                                    keyboardType: _numberKeyboard,
+                                    onTap: _selectAll(_rateController),
+                                    inputFormatters: [_rateFormatter],
+                                    onChanged: (value) =>
+                                        bloc.add(MaterialRateUpdated(value)),
+                                  ),
+                                ),
+                                if (state.data.unit case final unit?)
+                                  Flexible(
+                                    child: Text(
+                                      l10n.materialRatePerUnitSuffix(
+                                        unit.symbol(l10n),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.textTheme.bodyMediumRegular
+                                          .copyWith(
+                                            color: context.colorTheme.textBody,
+                                          ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          if (state.data.unit case final unit?)
-                            Flexible(
-                              child: Text(
-                                l10n.materialRatePerUnitSuffix(
-                                  unit.symbol(l10n),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.bodyMediumRegular
-                                    .copyWith(
-                                      color: context.colorTheme.textBody,
-                                    ),
+                          if (_isRateMissing(state))
+                            SizedBox.square(
+                              dimension: _lookupButtonTapSize,
+                              child: CoreOutlinedIconButton(
+                                key: const Key('lookup_rate_button'),
+                                icon: CoreIcons.search,
+                                semanticLabel: l10n.yourRatesLookupButton,
+                                onTap: () => unawaited(_openRateLookup()),
                               ),
                             ),
                         ],
                       ),
                     ),
-                    if (_isRateMissing(state))
-                      SizedBox.square(
-                        dimension: _lookupButtonTapSize,
-                        child: CoreOutlinedIconButton(
-                          key: const Key('lookup_rate_button'),
-                          icon: CoreIcons.search,
-                          semanticLabel: l10n.yourRatesLookupButton,
-                          onTap: () => unawaited(_openRateLookup()),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                  if (_isRateMissing(state)) const _RateLookupHint(),
+                ],
               ),
             ),
-            if (_isRateMissing(state)) const _RateLookupHint(),
             ?widget.trailing,
             const SizedBox(height: CoreSpacing.space4),
           ],
@@ -561,7 +568,6 @@ class _RevealedFieldRow extends SheetFieldRow {
     super.valueGap,
     super.bottomPadding,
     super.onTap,
-    super.trailingInset,
   });
 
   @override
